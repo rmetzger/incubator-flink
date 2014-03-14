@@ -153,7 +153,7 @@ public class JobGraphBuilder {
         GlobalPartitioner.class, ChannelType.INMEMORY);
   }
 
-  public void ShuffleConnect(String upStreamComponentName,
+  public void shuffleConnect(String upStreamComponentName,
       String downStreamComponentName) {
 
     connect(upStreamComponentName, downStreamComponentName,

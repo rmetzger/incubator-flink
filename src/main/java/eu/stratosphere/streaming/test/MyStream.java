@@ -21,6 +21,7 @@ import eu.stratosphere.streaming.api.invokable.DefaultSourceInvokable;
 import eu.stratosphere.streaming.api.invokable.DefaultTaskInvokable;
 import eu.stratosphere.streaming.api.invokable.DefaultSinkInvokable;
 import eu.stratosphere.test.util.TestBase2;
+import eu.stratosphere.types.StringValue;
 
 public class MyStream extends TestBase2 {
 
@@ -31,9 +32,9 @@ public class MyStream extends TestBase2 {
     graphBuilder.setSource("querySource", DefaultSourceInvokable.class);
     graphBuilder.setTask("cellTask", DefaultTaskInvokable.class, 2);
     graphBuilder.setSink("sink", DefaultSinkInvokable.class);
-
-    graphBuilder.globalConnect("infoSource", "cellTask");
-    graphBuilder.broadcastConnect("querySource", "cellTask");
+    
+    graphBuilder.fieldsConnect("infoSource", "cellTask", 0, StringValue.class);
+    graphBuilder.fieldsConnect("querySource", "cellTask",0, StringValue.class);
     graphBuilder.broadcastConnect("cellTask", "sink");
 
     return graphBuilder.getJobGraph();
