@@ -3,6 +3,7 @@ package eu.stratosphere.streaming.api.invokable;
 import java.util.List;
 
 import eu.stratosphere.nephele.io.RecordWriter;
+import eu.stratosphere.streaming.api.FlatStreamRecord;
 import eu.stratosphere.types.Record;
 
 public abstract class StreamInvokable {
@@ -13,14 +14,13 @@ public abstract class StreamInvokable {
     this.outputs = outputs;
   }
 
-  public final void emit(Record record) {
+  public final void emit(FlatStreamRecord streamRecord) {
     for (RecordWriter<Record> output : outputs) {
       try {
-        output.emit(record);
+        output.emit(streamRecord.getRecord());
       } catch (Exception e) {
         System.out.println("Emit error");
       }
     }
   }
-
 }

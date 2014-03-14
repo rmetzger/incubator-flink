@@ -15,6 +15,7 @@
 
 package eu.stratosphere.streaming.test;
 
+import eu.stratosphere.streaming.api.FlatStreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.types.IntValue;
 import eu.stratosphere.types.LongValue;
@@ -35,8 +36,8 @@ public class QuerySourceInvokable extends UserSourceInvokable {
       record2.setField(1, new LongValue(510));
       record2.setField(2, new LongValue(100));
 
-      emit(record1);
-      emit(record2);
+      emit(new FlatStreamRecord(record1));
+      emit(new FlatStreamRecord(record2));
     }
   }
 
