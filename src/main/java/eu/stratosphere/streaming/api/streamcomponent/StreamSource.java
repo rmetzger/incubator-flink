@@ -61,11 +61,13 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 		Configuration taskConfiguration = getTaskConfiguration();
 		StreamComponentFactory.setConfigOutputs(this, taskConfiguration,
 				outputs, partitioners);
-		recordBuffer = new FaultTolerancyBuffer(outputs);
+		recordBuffer = new FaultTolerancyBuffer(outputs,sourceInstanceID);
 		userFunction = (UserSourceInvokable) StreamComponentFactory
 				.setUserFunction(taskConfiguration, outputs, sourceInstanceID,
 						recordBuffer);
 		StreamComponentFactory.setAckListener(recordBuffer, sourceInstanceID,
+				outputs);
+		StreamComponentFactory.setFailListener(recordBuffer, sourceInstanceID,
 				outputs);
 
 	}

@@ -9,6 +9,8 @@ import eu.stratosphere.nephele.io.RecordReader;
 import eu.stratosphere.nephele.io.RecordWriter;
 import eu.stratosphere.streaming.api.AckEvent;
 import eu.stratosphere.streaming.api.AckEventListener;
+import eu.stratosphere.streaming.api.FailEvent;
+import eu.stratosphere.streaming.api.FailEventListener;
 import eu.stratosphere.streaming.api.FaultTolerancyBuffer;
 import eu.stratosphere.streaming.api.invokable.DefaultSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.DefaultTaskInvokable;
@@ -29,6 +31,16 @@ public final class StreamComponentFactory {
 		for (RecordWriter<Record> output : outputs) {
 			// TODO: separate outputs
 			output.subscribeToEvent(eventListener, AckEvent.class);
+		}
+	}
+	
+	public static void setFailListener(FaultTolerancyBuffer recordBuffer,
+			String sourceInstanceID, List<RecordWriter<Record>> outputs) {
+		EventListener eventListener = new FailEventListener(sourceInstanceID,
+				recordBuffer);
+		for (RecordWriter<Record> output : outputs) {
+			// TODO: separate outputs
+			output.subscribeToEvent(eventListener, FailEvent.class);
 		}
 	}
 

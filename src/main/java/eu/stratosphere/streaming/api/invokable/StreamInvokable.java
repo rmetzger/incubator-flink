@@ -28,7 +28,7 @@ public abstract class StreamInvokable {
 		for (RecordWriter<Record> output : outputs) {
 			try {
 
-				output.emit(streamRecord.getRecord());
+				output.emit(streamRecord.getRecordWithId());
 
 				System.out.println(this.getClass().getName());
 				System.out.println("Emitted " + streamRecord.getId() + "-"

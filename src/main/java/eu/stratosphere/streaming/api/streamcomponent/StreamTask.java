@@ -24,6 +24,7 @@ import eu.stratosphere.nephele.io.RecordReader;
 import eu.stratosphere.nephele.io.RecordWriter;
 import eu.stratosphere.nephele.template.AbstractTask;
 import eu.stratosphere.streaming.api.AckEvent;
+import eu.stratosphere.streaming.api.FailEvent;
 import eu.stratosphere.streaming.api.FaultTolerancyBuffer;
 import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
@@ -55,16 +56,16 @@ public class StreamTask extends AbstractTask {
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
 
-		StreamComponentFactory.setConfigInputs(this,
-				taskConfiguration, inputs);
-		StreamComponentFactory.setConfigOutputs(this,
-				taskConfiguration, outputs, partitioners);
+		StreamComponentFactory.setConfigInputs(this, taskConfiguration, inputs);
+		StreamComponentFactory.setConfigOutputs(this, taskConfiguration, outputs,
+				partitioners);
 
-		recordBuffer = new FaultTolerancyBuffer(outputs);
-		userFunction = (UserTaskInvokable) StreamComponentFactory
-				.setUserFunction(taskConfiguration, outputs, taskInstanceID,
-						recordBuffer);
-		StreamComponentFactory.setAckListener(recordBuffer, taskInstanceID,
+		recordBuffer = new FaultTolerancyBuffer(outputs, taskInstanceID);
+		userFunction = (UserTaskInvokable) StreamComponentFactory.setUserFunction(
+				taskConfiguration, outputs, taskInstanceID, recordBuffer);
+		StreamComponentFactory
+				.setAckListener(recordBuffer, taskInstanceID, outputs);
+		StreamComponentFactory.setFailListener(recordBuffer, taskInstanceID,
 				outputs);
 	}
 
@@ -77,15 +78,20 @@ public class StreamTask extends AbstractTask {
 				if (input.hasNext()) {
 					hasInput = true;
 					StreamRecord streamRecord = new StreamRecord(input.next());
-					String id = streamRecord.popId();
+					String id = streamRecord.getId();
 					// TODO: Enclose invoke in try-catch to properly fail
 					// records
-					userFunction.invoke(streamRecord.getRecord());
-					System.out.println(this.getClass().getName() + "-"
-							+ taskInstanceID);
-					System.out.println(recordBuffer.getRecordBuffer());
-					System.out.println("---------------------");
-					input.publishEvent(new AckEvent(id));
+					try {
+						userFunction.invoke(streamRecord.getRecord());
+						System.out
+								.println(this.getClass().getName() + "-" + taskInstanceID);
+						System.out.println(recordBuffer.getRecordBuffer());
+						System.out.println("---------------------");
+						input.publishEvent(new AckEvent(id));
+					} catch (Exception e) {
+						input.publishEvent(new FailEvent(id));
+					}
+
 				}
 			}
 		}

@@ -53,7 +53,7 @@ public class StreamSink extends AbstractOutputTask {
 				if (input.hasNext()) {
 					hasInput = true;
 					StreamRecord rec = new StreamRecord(input.next());
-					String id = rec.popId();
+					String id = rec.getId();
 					userFunction.invoke(rec.getRecord());
 					input.publishEvent(new AckEvent(id));
 				}
