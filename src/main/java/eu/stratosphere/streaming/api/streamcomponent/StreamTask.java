@@ -13,34 +13,32 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.api;
+package eu.stratosphere.streaming.api.streamcomponent;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.io.ChannelSelector;
 import eu.stratosphere.nephele.io.RecordReader;
 import eu.stratosphere.nephele.io.RecordWriter;
 import eu.stratosphere.nephele.template.AbstractTask;
+import eu.stratosphere.streaming.api.AckEvent;
+import eu.stratosphere.streaming.api.FaultTolerancyBuffer;
+import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.types.Record;
 
-//TODO: Refactor, create common ancestor with StreamSource
 public class StreamTask extends AbstractTask {
 
 	private List<RecordReader<Record>> inputs;
 	private List<RecordWriter<Record>> outputs;
 	private List<ChannelSelector<Record>> partitioners;
 	private UserTaskInvokable userFunction;
-	private int numberOfInputs;
-	private int numberOfOutputs;
-
 	private static int numTasks = 0;
 	private String taskInstanceID = "";
-	private Map<String, StreamRecord> recordBuffer;
+
+	private FaultTolerancyBuffer recordBuffer;
 
 	public StreamTask() {
 		// TODO: Make configuration file visible and call setClassInputs() here
@@ -48,24 +46,24 @@ public class StreamTask extends AbstractTask {
 		outputs = new LinkedList<RecordWriter<Record>>();
 		partitioners = new LinkedList<ChannelSelector<Record>>();
 		userFunction = null;
-		numberOfInputs = 0;
-		numberOfOutputs = 0;
 		numTasks++;
 		taskInstanceID = Integer.toString(numTasks);
-		recordBuffer = new TreeMap<String, StreamRecord>();
+
 	}
 
 	@Override
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
 
-		numberOfInputs = StreamComponentFactory.setConfigInputs(this,
+		StreamComponentFactory.setConfigInputs(this,
 				taskConfiguration, inputs);
-		numberOfOutputs = StreamComponentFactory.setConfigOutputs(this,
+		StreamComponentFactory.setConfigOutputs(this,
 				taskConfiguration, outputs, partitioners);
 
-		userFunction = StreamComponentFactory.setUserFunction(taskConfiguration, outputs,
-				taskInstanceID, recordBuffer);
+		recordBuffer = new FaultTolerancyBuffer(outputs);
+		userFunction = (UserTaskInvokable) StreamComponentFactory
+				.setUserFunction(taskConfiguration, outputs, taskInstanceID,
+						recordBuffer);
 		StreamComponentFactory.setAckListener(recordBuffer, taskInstanceID,
 				outputs);
 	}
@@ -85,7 +83,7 @@ public class StreamTask extends AbstractTask {
 					userFunction.invoke(streamRecord.getRecord());
 					System.out.println(this.getClass().getName() + "-"
 							+ taskInstanceID);
-					System.out.println(recordBuffer.toString());
+					System.out.println(recordBuffer.getRecordBuffer());
 					System.out.println("---------------------");
 					input.publishEvent(new AckEvent(id));
 				}

@@ -1,15 +1,19 @@
-package eu.stratosphere.streaming.api;
+package eu.stratosphere.streaming.api.streamcomponent;
 
 import java.util.List;
-import java.util.Map;
 
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.event.task.EventListener;
 import eu.stratosphere.nephele.io.ChannelSelector;
 import eu.stratosphere.nephele.io.RecordReader;
 import eu.stratosphere.nephele.io.RecordWriter;
+import eu.stratosphere.streaming.api.AckEvent;
+import eu.stratosphere.streaming.api.AckEventListener;
+import eu.stratosphere.streaming.api.FaultTolerancyBuffer;
+import eu.stratosphere.streaming.api.invokable.DefaultSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.DefaultTaskInvokable;
-import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
+import eu.stratosphere.streaming.api.invokable.StreamInvokable;
+import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.partitioner.DefaultPartitioner;
 import eu.stratosphere.streaming.partitioner.FieldsPartitioner;
 import eu.stratosphere.types.Key;
@@ -18,7 +22,7 @@ import eu.stratosphere.types.StringValue;
 
 public final class StreamComponentFactory {
 
-	public static void setAckListener(Map<String, StreamRecord> recordBuffer,
+	public static void setAckListener(FaultTolerancyBuffer recordBuffer,
 			String sourceInstanceID, List<RecordWriter<Record>> outputs) {
 		EventListener eventListener = new AckEventListener(sourceInstanceID,
 				recordBuffer);
@@ -88,16 +92,32 @@ public final class StreamComponentFactory {
 		return numberOfOutputs;
 	}
 
-	public static UserTaskInvokable setUserFunction(
+	public static UserSinkInvokable setUserFunction(Configuration taskConfiguration) {
+		
+		Class<? extends UserSinkInvokable> userFunctionClass = taskConfiguration
+				.getClass("userfunction", DefaultSinkInvokable.class,
+						UserSinkInvokable.class);
+		UserSinkInvokable userFunction = null;
+		
+		try {
+			userFunction = userFunctionClass.newInstance();
+		} catch (Exception e) {
+
+		}
+		return userFunction;
+	}
+	
+	public static StreamInvokable setUserFunction(
 			Configuration taskConfiguration,
 			List<RecordWriter<Record>> outputs, String instanceID,
-			Map<String, StreamRecord> recordBuffer) {
-		
-		Class<? extends UserTaskInvokable> userFunctionClass = taskConfiguration
+			FaultTolerancyBuffer recordBuffer) {
+
+		//Default value is a TaskInvokable even if it was called from a source
+		Class<? extends StreamInvokable> userFunctionClass = taskConfiguration
 				.getClass("userfunction", DefaultTaskInvokable.class,
-						UserTaskInvokable.class);
-		UserTaskInvokable userFunction = null;
-		
+						StreamInvokable.class);
+		StreamInvokable userFunction = null;
+
 		try {
 			userFunction = userFunctionClass.newInstance();
 			userFunction.declareOutputs(outputs, instanceID, recordBuffer);
