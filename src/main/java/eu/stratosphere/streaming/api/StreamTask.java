@@ -56,28 +56,6 @@ public class StreamTask extends AbstractTask {
 		recordBuffer = new TreeMap<String, StreamRecord>();
 	}
 
-	// alternative: remove the comments on these two functions as well as the
-	// two statements in registerInputOuput functions.
-
-	// private void setConfigInputs(Configuration taskConfiguration) {
-	// numberOfInputs = taskConfiguration.getInteger("numberOfInputs", 0);
-	// for (int i = 0; i < numberOfInputs; i++) {
-	// inputs.add(new RecordReader<Record>(this, Record.class));
-	// }
-	// }
-	//
-	// private void setConfigOutputs(Configuration taskConfiguration) {
-	// numberOfOutputs = taskConfiguration.getInteger("numberOfOutputs", 0);
-	// for (int i = 1; i <= numberOfOutputs; i++) {
-	// StreamComponentFactory.setPartitioner(taskConfiguration, i,
-	// partitioners);
-	// }
-	// for (ChannelSelector<Record> outputPartitioner : partitioners) {
-	// outputs.add(new RecordWriter<Record>(this, Record.class,
-	// outputPartitioner));
-	// }
-	// }
-
 	public void setUserFunction(Configuration taskConfiguration) {
 		Class<? extends UserTaskInvokable> userFunctionClass = taskConfiguration
 				.getClass("userfunction", DefaultTaskInvokable.class,
@@ -93,8 +71,6 @@ public class StreamTask extends AbstractTask {
 	@Override
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
-		// setConfigInputs(taskConfiguration);
-		// setConfigOutputs(taskConfiguration);
 
 		numberOfInputs = StreamComponentFactory.setConfigInputs(this,
 				taskConfiguration, inputs);

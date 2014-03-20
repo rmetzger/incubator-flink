@@ -38,15 +38,6 @@ public class StreamSink extends AbstractOutputTask {
 		numberOfInputs = 0;
 	}
 
-	// alternative: remove the comments on this function as well as the
-	// statement in cregisterInputOuput functions.
-	// private void setConfigInputs(Configuration taskConfiguration) {
-	// numberOfInputs = taskConfiguration.getInteger("numberOfInputs", 0);
-	// for (int i = 0; i < numberOfInputs; i++) {
-	// inputs.add(new RecordReader<Record>(this, Record.class));
-	// }
-	// }
-
 	public void setUserFunction(Configuration taskConfiguration) {
 		Class<? extends UserSinkInvokable> userFunctionClass = taskConfiguration
 				.getClass("userfunction", DefaultSinkInvokable.class,

@@ -1,6 +1,5 @@
 package eu.stratosphere.streaming.api;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +8,6 @@ import eu.stratosphere.nephele.event.task.EventListener;
 import eu.stratosphere.nephele.io.ChannelSelector;
 import eu.stratosphere.nephele.io.RecordReader;
 import eu.stratosphere.nephele.io.RecordWriter;
-import eu.stratosphere.nephele.template.AbstractTask;
 import eu.stratosphere.streaming.partitioner.DefaultPartitioner;
 import eu.stratosphere.streaming.partitioner.FieldsPartitioner;
 import eu.stratosphere.types.Key;
@@ -17,7 +15,6 @@ import eu.stratosphere.types.Record;
 import eu.stratosphere.types.StringValue;
 
 public final class StreamComponentFactory {
-	// TODO: put setConfigInputs here
 
 	public static void setAckListener(Map<String, StreamRecord> recordBuffer,
 			String sourceInstanceID, List<RecordWriter<Record>> outputs) {
@@ -29,6 +26,7 @@ public final class StreamComponentFactory {
 		}
 	}
 
+	// for StreamTask
 	public static int setConfigInputs(StreamTask taskBase,
 			Configuration taskConfiguration, List<RecordReader<Record>> inputs) {
 		int numberOfInputs = taskConfiguration.getInteger("numberOfInputs", 0);
@@ -40,6 +38,7 @@ public final class StreamComponentFactory {
 
 	// this function can be removed as duplication of the above function if
 	// modification on kernel is allowed.
+	// for StreamSink
 	public static int setConfigInputs(StreamSink taskBase,
 			Configuration taskConfiguration, List<RecordReader<Record>> inputs) {
 		int numberOfInputs = taskConfiguration.getInteger("numberOfInputs", 0);
@@ -49,6 +48,7 @@ public final class StreamComponentFactory {
 		return numberOfInputs;
 	}
 
+	//for StreamTask
 	public static int setConfigOutputs(StreamTask taskBase,
 			Configuration taskConfiguration,
 			List<RecordWriter<Record>> outputs,
@@ -68,6 +68,7 @@ public final class StreamComponentFactory {
 	
 	// this function can be removed as duplication of the above function if
 	// modification on kernel is allowed.
+	// for StreamSource
 	public static int setConfigOutputs(StreamSource taskBase,
 			Configuration taskConfiguration,
 			List<RecordWriter<Record>> outputs,

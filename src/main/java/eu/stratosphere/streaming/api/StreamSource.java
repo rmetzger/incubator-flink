@@ -62,20 +62,6 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 		return null;
 	}
 
-	// alternative: remove the comments on this function as well as the
-	// statement in cregisterInputOuput functions.
-	// private void setConfigOutputs(Configuration taskConfiguration) {
-	// numberOfOutputs = taskConfiguration.getInteger("numberOfOutputs", 0);
-	// for (int i = 1; i <= numberOfOutputs; i++) {
-	// StreamComponentFactory.setPartitioner(taskConfiguration, i,
-	// partitioners);
-	// }
-	// for (ChannelSelector<Record> outputPartitioner : partitioners) {
-	// outputs.add(new RecordWriter<Record>(this, Record.class,
-	// outputPartitioner));
-	// }
-	// }
-
 	public void setUserFunction(Configuration taskConfiguration) {
 		Class<? extends UserSourceInvokable> userFunctionClass = taskConfiguration
 				.getClass("userfunction", DefaultSourceInvokable.class,
@@ -92,7 +78,6 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 	@Override
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
-		// setConfigOutputs(taskConfiguration);
 		numberOfOutputs = StreamComponentFactory.setConfigOutputs(this,
 				taskConfiguration, outputs, partitioners);
 		setUserFunction(taskConfiguration);
