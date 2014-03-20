@@ -24,12 +24,12 @@ public abstract class StreamInvokable {
 	public final void emit(Record record) {
 
 		StreamRecord streamRecord = new StreamRecord(record, channelID).addId();
+		emittedRecords.put(streamRecord.getId(), streamRecord);
 
 		for (RecordWriter<Record> output : outputs) {
 			try {
 
 				output.emit(streamRecord.getRecord());
-				emittedRecords.put(streamRecord.getId(), streamRecord);
 
 				System.out.println(this.getClass().getName());
 				System.out.println("Emitted " + streamRecord.getId() + "-"
