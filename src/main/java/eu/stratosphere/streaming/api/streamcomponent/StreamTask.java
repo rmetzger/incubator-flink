@@ -58,18 +58,21 @@ public class StreamTask extends AbstractTask {
 	@Override
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
+		StreamComponentHelper<StreamTask> streamTaskHelper = new StreamComponentHelper<StreamTask>();
 
-		StreamComponentFactory.setConfigInputs(this, taskConfiguration, inputs);
-		StreamComponentFactory.setConfigOutputs(this, taskConfiguration, outputs,
-				partitioners);
+		try {
+			streamTaskHelper.setConfigInputs(this, taskConfiguration, inputs);
+			streamTaskHelper.setConfigOutputs(this, taskConfiguration, outputs,
+					partitioners);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		recordBuffer = new FaultTolerancyBuffer(outputs, taskInstanceID);
-		userFunction = (UserTaskInvokable) StreamComponentFactory.setUserFunction(
+		userFunction = (UserTaskInvokable) streamTaskHelper.getUserFunction(
 				taskConfiguration, outputs, taskInstanceID, recordBuffer);
-		StreamComponentFactory
-				.setAckListener(recordBuffer, taskInstanceID, outputs);
-		StreamComponentFactory.setFailListener(recordBuffer, taskInstanceID,
-				outputs);
+		streamTaskHelper.setAckListener(recordBuffer, taskInstanceID, outputs);
+		streamTaskHelper.setFailListener(recordBuffer, taskInstanceID, outputs);
 	}
 
 	@Override
@@ -82,7 +85,7 @@ public class StreamTask extends AbstractTask {
 					hasInput = true;
 					StreamRecord streamRecord = new StreamRecord(input.next());
 					String id = streamRecord.getId();
-					//TODO create method for concurrent publishing 
+					// TODO create method for concurrent publishing
 					try {
 						userFunction.invoke(streamRecord.getRecord());
 
@@ -95,6 +98,7 @@ public class StreamTask extends AbstractTask {
 								Thread.sleep(rnd.nextInt(50));
 							}
 						}
+
 					} catch (Exception e) {
 						boolean concurrentModificationOccured = false;
 						while (!concurrentModificationOccured) {
