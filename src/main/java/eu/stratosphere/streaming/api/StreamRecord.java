@@ -40,6 +40,7 @@ public final class StreamRecord {
 	}
 
 	public Record getRecord() {
+		
 		Record newRecord=this.record.createCopy();
 		newRecord.removeField(newRecord.getNumFields() - 1);
 		return newRecord;

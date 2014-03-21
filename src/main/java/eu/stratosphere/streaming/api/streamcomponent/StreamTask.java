@@ -17,6 +17,7 @@ package eu.stratosphere.streaming.api.streamcomponent;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.io.ChannelSelector;
@@ -38,6 +39,8 @@ public class StreamTask extends AbstractTask {
 	private UserTaskInvokable userFunction;
 	private static int numTasks = 0;
 	private String taskInstanceID = "";
+
+	private Random rnd = new Random();
 
 	private FaultTolerancyBuffer recordBuffer;
 
@@ -79,19 +82,30 @@ public class StreamTask extends AbstractTask {
 					hasInput = true;
 					StreamRecord streamRecord = new StreamRecord(input.next());
 					String id = streamRecord.getId();
-					// TODO: Enclose invoke in try-catch to properly fail
-					// records
+					//TODO create method for concurrent publishing 
 					try {
 						userFunction.invoke(streamRecord.getRecord());
-						System.out
-								.println(this.getClass().getName() + "-" + taskInstanceID);
-						System.out.println(recordBuffer.getRecordBuffer());
-						System.out.println("---------------------");
-						input.publishEvent(new AckEvent(id));
-					} catch (Exception e) {
-						input.publishEvent(new FailEvent(id));
-					}
 
+						boolean concurrentModificationOccured = false;
+						while (!concurrentModificationOccured) {
+							try {
+								input.publishEvent(new AckEvent(id));
+								concurrentModificationOccured = true;
+							} catch (Exception e) {
+								Thread.sleep(rnd.nextInt(50));
+							}
+						}
+					} catch (Exception e) {
+						boolean concurrentModificationOccured = false;
+						while (!concurrentModificationOccured) {
+							try {
+								input.publishEvent(new FailEvent(id));
+								concurrentModificationOccured = true;
+							} catch (Exception f) {
+								Thread.sleep(rnd.nextInt(50));
+							}
+						}
+					}
 				}
 			}
 		}
