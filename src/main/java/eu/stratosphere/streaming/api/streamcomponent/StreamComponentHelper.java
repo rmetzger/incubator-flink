@@ -1,8 +1,10 @@
 package eu.stratosphere.streaming.api.streamcomponent;
 
 import java.util.List;
+import java.util.Random;
 
 import eu.stratosphere.configuration.Configuration;
+import eu.stratosphere.nephele.event.task.AbstractTaskEvent;
 import eu.stratosphere.nephele.event.task.EventListener;
 import eu.stratosphere.nephele.io.ChannelSelector;
 import eu.stratosphere.nephele.io.RecordReader;
@@ -24,7 +26,8 @@ import eu.stratosphere.types.Record;
 import eu.stratosphere.types.StringValue;
 
 public final class StreamComponentHelper<T extends AbstractInvokable> {
-
+	private Random random = new Random();
+	
 	public void setAckListener(FaultTolerancyBuffer recordBuffer,
 			String sourceInstanceID, List<RecordWriter<Record>> outputs) {
 		EventListener eventListener = new AckEventListener(sourceInstanceID,
@@ -118,6 +121,19 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 		return userFunction;
 	}
 
+	//TODO: use TCP-like waiting
+	public void threadSafePublish (AbstractTaskEvent e, RecordReader<Record> input) throws InterruptedException {
+		boolean concurrentModificationOccured = false;
+		while (!concurrentModificationOccured) {
+			try {
+				input.publishEvent(e);
+				concurrentModificationOccured = true;
+			} catch (Exception exeption) {
+				Thread.sleep(random.nextInt(50));
+			}
+		}
+	}
+	
 	private void setPartitioner(Configuration taskConfiguration, int nrOutput,
 			List<ChannelSelector<Record>> partitioners) {
 		Class<? extends ChannelSelector<Record>> partitioner = taskConfiguration

@@ -17,7 +17,6 @@ package eu.stratosphere.streaming.api.streamcomponent;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.io.ChannelSelector;
@@ -39,8 +38,7 @@ public class StreamTask extends AbstractTask {
 	private UserTaskInvokable userFunction;
 	private static int numTasks = 0;
 	private String taskInstanceID = "";
-
-	private Random rnd = new Random();
+	StreamComponentHelper<StreamTask> streamTaskHelper;
 
 	private FaultTolerancyBuffer recordBuffer;
 
@@ -52,13 +50,12 @@ public class StreamTask extends AbstractTask {
 		userFunction = null;
 		numTasks++;
 		taskInstanceID = Integer.toString(numTasks);
-
+		streamTaskHelper = new StreamComponentHelper<StreamTask>();
 	}
 
 	@Override
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
-		StreamComponentHelper<StreamTask> streamTaskHelper = new StreamComponentHelper<StreamTask>();
 
 		try {
 			streamTaskHelper.setConfigInputs(this, taskConfiguration, inputs);
@@ -88,27 +85,9 @@ public class StreamTask extends AbstractTask {
 					// TODO create method for concurrent publishing
 					try {
 						userFunction.invoke(streamRecord.getRecord());
-
-						boolean concurrentModificationOccured = false;
-						while (!concurrentModificationOccured) {
-							try {
-								input.publishEvent(new AckEvent(id));
-								concurrentModificationOccured = true;
-							} catch (Exception e) {
-								Thread.sleep(rnd.nextInt(50));
-							}
-						}
-
+						streamTaskHelper.threadSafePublish(new AckEvent(id), input);
 					} catch (Exception e) {
-						boolean concurrentModificationOccured = false;
-						while (!concurrentModificationOccured) {
-							try {
-								input.publishEvent(new FailEvent(id));
-								concurrentModificationOccured = true;
-							} catch (Exception f) {
-								Thread.sleep(rnd.nextInt(50));
-							}
-						}
+						streamTaskHelper.threadSafePublish(new FailEvent(id), input);
 					}
 				}
 			}
