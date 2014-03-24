@@ -22,13 +22,13 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	public StreamRecord() {
 		this.numOfFields = 1;
 		fields = new Value[1];
-		setId();
+		//setId();
 	}
 
 	public StreamRecord(int length) {
 		this.numOfFields = length;
 		fields = new Value[length];
-		setId();
+	//	setId();
 	}
 
 	public StreamRecord(int length, String channelID) {
@@ -45,9 +45,9 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		return numOfFields;
 	}
 
-	public StreamRecord setId() {
+	public StreamRecord setId(String channelID) {
 		Random rnd = new Random();
-		uid.setValue(channelID + "-" + rnd.nextInt(1000));
+		uid.setValue(channelID + "-" + rnd.nextInt());
 		return this;
 	}
 

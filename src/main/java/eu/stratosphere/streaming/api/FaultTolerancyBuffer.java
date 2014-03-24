@@ -93,7 +93,16 @@ public class FaultTolerancyBuffer {
 	private void removeRecord(String recordID) {
 		recordBuffer.remove(recordID);
 		ackCounter.remove(recordID);
-		recordsByTime.get(recordTimestamps.remove(recordID)).remove(recordID);
+		try {
+			
+		Long ts = recordTimestamps.remove(recordID);	
+		recordsByTime.get(
+				ts)
+				.remove(recordID); }
+		catch(Exception e){
+			System.out.println(e.getMessage());
+			System.out.println(recordID);
+		}
 	}
 
 	public void ackRecord(String recordID) {
@@ -113,8 +122,8 @@ public class FaultTolerancyBuffer {
 	public void failRecord(String recordID) {
 		// Create new id to avoid double counting acks
 		System.out.println("Fail ID: " + recordID);
-		StreamRecord newRecord = popRecord(recordID).setChannelId(channelID)
-				.setId();
+		StreamRecord newRecord = popRecord(recordID)
+				.setId(channelID);
 		reEmit(newRecord);
 	}
 
