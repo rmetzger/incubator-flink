@@ -20,16 +20,21 @@ import java.util.Map;
 
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.types.IntValue;
+import eu.stratosphere.types.LongValue;
 import eu.stratosphere.types.Record;
 import eu.stratosphere.types.StringValue;
 
 public class WindowWordCountCounter extends UserTaskInvokable {
-
+	
+	private int windowSize = 100;
+	private int slidingStep = 20;
+	
 	private Map<String, Integer> wordCounts = new HashMap<String, Integer>();
 	private StringValue wordValue = new StringValue("");
 	private IntValue countValue = new IntValue(1);
+	private LongValue timestamp = new LongValue(0);
 	private String word = "";
-	private Record outputRecord = new Record(wordValue, countValue);
+	private Record outputRecord = new Record(3);
 	private int count = 1;
 
 	@Override
@@ -37,22 +42,20 @@ public class WindowWordCountCounter extends UserTaskInvokable {
 
 		record.getFieldInto(0, wordValue);
 		word = wordValue.getValue();
+		record.getFieldInto(1, timestamp);
 
 		if (wordCounts.containsKey(word)) {
 			count = wordCounts.get(word) + 1;
 			wordCounts.put(word, count);
 			countValue.setValue(count);
-			outputRecord.setField(0, wordValue);
-			outputRecord.setField(1, countValue);
-			emit(outputRecord);
 		} else {
-
 			wordCounts.put(word, 1);
 			countValue.setValue(1);
-			Record outputRecord = new Record(wordValue, countValue);
-			emit(outputRecord);
-
 		}
+		outputRecord.setField(0, wordValue);
+		outputRecord.setField(1, countValue);
+		outputRecord.setField(2, timestamp);
+		emit(outputRecord);
 
 	}
 }

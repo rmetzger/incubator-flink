@@ -27,9 +27,9 @@ import eu.stratosphere.types.StringValue;
 public class WindowWordCountSource extends UserSourceInvokable {
 	private BufferedReader br = null;
 	private String line;
-	// the system should support long int.
 	private long timestamp;
-	private Record hamletRecord=null;
+	private Record hamletRecord = null;
+
 	public WindowWordCountSource() {
 		try {
 			br = new BufferedReader(
@@ -43,19 +43,18 @@ public class WindowWordCountSource extends UserSourceInvokable {
 
 	@Override
 	public void invoke() throws Exception {
-		line = br.readLine();
-		line=line.replaceAll("[\\-\\+\\.\\^:,]","");
+		line = br.readLine().replaceAll("[\\-\\+\\.\\^:,]", "");
 		timestamp = 0;
-		//while (line != null) {
-		for(int i=0; i<1000; ++i){
-			if(line==""){
-				continue;
+		// while (line != null) {
+		for (int i = 0; i < 2; ++i) {
+			if (line != "") {
+				hamletRecord = new Record(new StringValue(line), new LongValue(timestamp));
+				System.out.println("========line number: " + timestamp + ", "
+						+ line + "==========");
+				emit(hamletRecord);
+				line = br.readLine();
+				++timestamp;
 			}
-			hamletRecord = new Record(new StringValue("You do not understand yourself so clearly"));
-			System.out.println("========line number: "+timestamp+", "+line+"==========");
-			emit(hamletRecord);
-			line = br.readLine();
-			++timestamp;
 		}
 	}
 }

@@ -27,7 +27,7 @@ public class WordCountSource extends UserSourceInvokable {
 
 	@Override
 	public void invoke() throws Exception {
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 2; i++) {
 			emit(mottoRecord);
 		}
 	}
