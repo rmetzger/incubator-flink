@@ -62,20 +62,17 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 		StreamComponentHelper<StreamSource> streamSourceHelper = new StreamComponentHelper<StreamSource>();
 
 		try {
-			streamSourceHelper.setConfigOutputs(this, taskConfiguration,
-					outputs, partitioners);
+			streamSourceHelper.setConfigOutputs(this, taskConfiguration, outputs,
+					partitioners);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		recordBuffer = new FaultTolerancyBuffer(outputs, sourceInstanceID);
-		userFunction = (UserSourceInvokable) streamSourceHelper
-				.getUserFunction(taskConfiguration, outputs, sourceInstanceID,
-						recordBuffer);
-		streamSourceHelper.setAckListener(recordBuffer, sourceInstanceID,
-				outputs);
-		streamSourceHelper.setFailListener(recordBuffer, sourceInstanceID,
-				outputs);
+		userFunction = (UserSourceInvokable) streamSourceHelper.getUserFunction(
+				taskConfiguration, outputs, sourceInstanceID, recordBuffer);
+		streamSourceHelper.setAckListener(recordBuffer, sourceInstanceID, outputs);
+		streamSourceHelper.setFailListener(recordBuffer, sourceInstanceID, outputs);
 
 	}
 
@@ -84,7 +81,6 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 
 		userFunction.invoke();
 		System.out.println(this.getClass().getName() + "-" + sourceInstanceID);
-		System.out.println(recordBuffer.getRecordBuffer());
 		System.out.println("---------------------");
 
 	}

@@ -17,6 +17,7 @@ package eu.stratosphere.streaming.test.wordcount;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
@@ -36,6 +37,7 @@ public class WordCountCounter extends UserTaskInvokable {
 	public void invoke(StreamRecord record) throws Exception {
 		wordValue = (StringValue) record.getField(0);
 		word = wordValue.getValue();
+		
 		if (wordCounts.containsKey(word)) {
 			count = wordCounts.get(word) + 1;
 			wordCounts.put(word, count);

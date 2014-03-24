@@ -22,7 +22,7 @@ public abstract class StreamInvokable {
 
 	public final void emit(StreamRecord record) {
 
-		record.setId();
+		record.setId(channelID);
 		emittedRecords.addRecord(record);
 
 		for (RecordWriter<StreamRecord> output : outputs) {

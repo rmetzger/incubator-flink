@@ -1,5 +1,7 @@
 package eu.stratosphere.streaming.api.streamcomponent;
 
+import java.io.IOException;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Random;
 
@@ -27,7 +29,7 @@ import eu.stratosphere.types.StringValue;
 
 public final class StreamComponentHelper<T extends AbstractInvokable> {
 	private Random random = new Random();
-	
+
 	public void setAckListener(FaultTolerancyBuffer recordBuffer,
 			String sourceInstanceID, List<RecordWriter<StreamRecord>> outputs) {
 		EventListener eventListener = new AckEventListener(sourceInstanceID,
@@ -59,8 +61,7 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 				inputs.add(new RecordReader<StreamRecord>((StreamSink) taskBase,
 						StreamRecord.class));
 			} else {
-				throw new Exception(
-						"Nonsupported object passed to setConfigInputs");
+				throw new Exception("Nonsupported object passed to setConfigInputs");
 			}
 		}
 	}
@@ -68,8 +69,7 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 	public void setConfigOutputs(T taskBase, Configuration taskConfiguration,
 			List<RecordWriter<StreamRecord>> outputs,
 			List<ChannelSelector<StreamRecord>> partitioners) throws Exception {
-		int numberOfOutputs = taskConfiguration
-				.getInteger("numberOfOutputs", 0);
+		int numberOfOutputs = taskConfiguration.getInteger("numberOfOutputs", 0);
 		for (int i = 1; i <= numberOfOutputs; i++) {
 			setPartitioner(taskConfiguration, i, partitioners);
 		}
@@ -81,8 +81,7 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 				outputs.add(new RecordWriter<StreamRecord>((StreamSource) taskBase,
 						StreamRecord.class, outputPartitioner));
 			} else {
-				throw new Exception(
-						"Nonsupported object passed to setConfigOutputs");
+				throw new Exception("Nonsupported object passed to setConfigOutputs");
 			}
 		}
 	}
@@ -121,42 +120,43 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 		return userFunction;
 	}
 
-	//TODO: use TCP-like waiting
-	public void threadSafePublish (AbstractTaskEvent e, RecordReader<StreamRecord> input) throws InterruptedException {
+	// TODO: use TCP-like waiting
+	public void threadSafePublish(AbstractTaskEvent event,
+			RecordReader<StreamRecord> input) throws InterruptedException,
+			IOException {
+
 		boolean concurrentModificationOccured = false;
 		while (!concurrentModificationOccured) {
 			try {
-				input.publishEvent(e);
+				input.publishEvent(event);
 				concurrentModificationOccured = true;
-			} catch (Exception exeption) {
-				Thread.sleep(random.nextInt(50));
+			} catch (ConcurrentModificationException exeption) {
+				System.out.println("waiting...");
 			}
 		}
 	}
-	
+
 	private void setPartitioner(Configuration taskConfiguration, int nrOutput,
 			List<ChannelSelector<StreamRecord>> partitioners) {
 		Class<? extends ChannelSelector<StreamRecord>> partitioner = taskConfiguration
-				.getClass("partitionerClass_" + nrOutput,
-						DefaultPartitioner.class, ChannelSelector.class);
+				.getClass("partitionerClass_" + nrOutput, DefaultPartitioner.class,
+						ChannelSelector.class);
 
 		try {
 			if (partitioner.equals(FieldsPartitioner.class)) {
-				int keyPosition = taskConfiguration.getInteger(
-						"partitionerIntParam_" + nrOutput, 1);
+				int keyPosition = taskConfiguration.getInteger("partitionerIntParam_"
+						+ nrOutput, 1);
 				Class<? extends Key> keyClass = taskConfiguration.getClass(
-						"partitionerClassParam_" + nrOutput, StringValue.class,
-						Key.class);
+						"partitionerClassParam_" + nrOutput, StringValue.class, Key.class);
 
-				partitioners.add(partitioner.getConstructor(int.class,
-						Class.class).newInstance(keyPosition, keyClass));
+				partitioners.add(partitioner.getConstructor(int.class, Class.class)
+						.newInstance(keyPosition, keyClass));
 
 			} else {
 				partitioners.add(partitioner.newInstance());
 			}
 		} catch (Exception e) {
-			System.out.println("partitioner error" + " " + "partitioner_"
-					+ nrOutput);
+			System.out.println("partitioner error" + " " + "partitioner_" + nrOutput);
 			System.out.println(e);
 		}
 	}
