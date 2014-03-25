@@ -13,22 +13,36 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.api.invokable;
+package eu.stratosphere.streaming.test.batch.wordcount;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 
 import eu.stratosphere.streaming.api.AtomRecord;
 import eu.stratosphere.streaming.api.StreamRecord;
+import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
+import eu.stratosphere.types.LongValue;
 import eu.stratosphere.types.StringValue;
 
-public class DefaultSourceInvokable extends UserSourceInvokable {
+public class BatchWordCountSource extends UserSourceInvokable {
+	private final String motto = "Gyuszi Gabor Big Marci Gyuszi";
+	private long timestamp;
+	private StreamRecord mottoRecords = new StreamRecord(2);
 
-  private String motto = "Stratosphere -- Big Data looks tiny from here";
-  private String[] mottoArray = motto.split(" ");
-
-  @Override
-  public void invoke() throws Exception {
-    for (CharSequence word : mottoArray) {
-      emit(new StreamRecord(new AtomRecord(new StringValue(word))));
-    }
-  }
+	@Override
+	public void invoke() throws Exception {
+		timestamp = 0;
+		for (int i = 0; i < 100; ++i) {
+			AtomRecord mottoRecord = new AtomRecord(2);
+			mottoRecord.setField(0, new StringValue(motto));
+			mottoRecord.setField(1, new LongValue(timestamp));
+			mottoRecords.addRecord(mottoRecord);
+			++timestamp;
+			if (timestamp % 10 == 0) {
+				emit(mottoRecords);
+			}
+		}
+	}
 
 }

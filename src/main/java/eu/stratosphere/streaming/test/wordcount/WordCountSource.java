@@ -15,21 +15,23 @@
 
 package eu.stratosphere.streaming.test.wordcount;
 
+import eu.stratosphere.streaming.api.AtomRecord;
 import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.types.StringValue;
 
 public class WordCountSource extends UserSourceInvokable {
-	
-//	private final String motto = "Stratosphere Big Data looks tiny from here";
+
+	// private final String motto =
+	// "Stratosphere Big Data looks tiny from here";
 	private final String motto = "Gyuszi Gabor Big Marci Gyuszi";
-	private final StreamRecord mottoRecord = new StreamRecord(new StringValue(motto));
+	private StreamRecord mottoRecord;
 
 	@Override
 	public void invoke() throws Exception {
+		mottoRecord = new StreamRecord(new AtomRecord(new StringValue(motto)));
 		for (int i = 0; i < 10000; i++) {
 			emit(mottoRecord);
 		}
 	}
-
 }
