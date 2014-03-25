@@ -16,7 +16,6 @@
 package eu.stratosphere.streaming.test.batch;
 
 import eu.stratosphere.streaming.api.StreamRecord;
-import eu.stratosphere.streaming.api.StreamRecordBatch;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.types.IntValue;
 import eu.stratosphere.types.StringValue;
@@ -28,8 +27,7 @@ public class StreamSink implements UserSinkInvokable {
 
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		StreamRecordBatch recordBatch = (StreamRecordBatch) record;
-		word = (StringValue) recordBatch.getField(0, 0);
+		word = (StringValue) record.getField(0, 0);
 		// count = (IntValue) record.getField(1);
 		System.out.println("========" + word.getValue() + "=========");
 

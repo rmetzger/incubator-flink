@@ -15,8 +15,8 @@
 
 package eu.stratosphere.streaming.test.batch.wordcount;
 
+import eu.stratosphere.streaming.api.AtomRecord;
 import eu.stratosphere.streaming.api.StreamRecord;
-import eu.stratosphere.streaming.api.StreamRecordBatch;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.types.LongValue;
 import eu.stratosphere.types.StringValue;
@@ -27,21 +27,20 @@ public class BatchWordCountSplitter extends UserTaskInvokable {
 	private LongValue timestamp = new LongValue(0);
 	private String[] words = new String[0];
 	private StringValue wordValue = new StringValue("");
-	private StreamRecord outputRecord = new StreamRecord(2);
+	private AtomRecord outputRecord = new AtomRecord(2);
 
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		StreamRecordBatch records=(StreamRecordBatch) record;
-		int numberOfRecords = records.getNumOfRecords();
+		int numberOfRecords = record.getNumOfRecords();
 		for(int i=0; i<numberOfRecords; ++i){
-			sentence = (StringValue) records.getField(i, 0);
-			timestamp = (LongValue) records.getField(i, 1);
+			sentence = (StringValue) record.getField(i, 0);
+			timestamp = (LongValue) record.getField(i, 1);
 			words = sentence.getValue().split(" ");
 			for (CharSequence word : words) {
 				wordValue.setValue(word);
 				outputRecord.setField(0, wordValue);
 				outputRecord.setField(1, timestamp);
-				emit(outputRecord);
+				emit(new StreamRecord(outputRecord));
 			}
 		}
 	}

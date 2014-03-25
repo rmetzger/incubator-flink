@@ -29,9 +29,9 @@ public class BatchWordCountSink implements UserSinkInvokable {
 
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		word=(StringValue) record.getField(0);
-		count=(IntValue) record.getField(1);
-		timestamp=(LongValue) record.getField(2);
+		word=(StringValue) record.getField(0, 0);
+		count=(IntValue) record.getField(0, 1);
+		timestamp=(LongValue) record.getField(0, 2);
 		System.out.println("============================================");
 		System.out.println(word.getValue() + " " + count.getValue() + " "
 				+ timestamp.getValue());

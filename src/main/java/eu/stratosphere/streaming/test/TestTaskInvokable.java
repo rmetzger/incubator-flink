@@ -15,6 +15,7 @@
 
 package eu.stratosphere.streaming.test;
 
+import eu.stratosphere.streaming.api.AtomRecord;
 import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.test.cellinfo.WorkerEngineExact;
@@ -24,23 +25,25 @@ import eu.stratosphere.types.StringValue;
 
 public class TestTaskInvokable extends UserTaskInvokable {
 
-  private WorkerEngineExact engine = new WorkerEngineExact(10, 1000, 0);
+	private WorkerEngineExact engine = new WorkerEngineExact(10, 1000, 0);
 
-  @Override
-  public void invoke(StreamRecord record) throws Exception {
-    IntValue value1 = (IntValue) record.getField(0);
-    LongValue value2 = (LongValue) record.getField(1);
-    
-    // INFO
-    if (record.getNumOfFields() == 2) {
-      engine.put(value1.getValue(), value2.getValue());
-      emit(new StreamRecord(new StringValue(value1 + " " + value2)));
-    }
-    // QUERY
-    else if (record.getNumOfFields() == 3) {
-      LongValue value3 = (LongValue) record.getField(2);
-      emit(new StreamRecord(new StringValue(String.valueOf(engine.get(
-          value2.getValue(), value3.getValue(), value1.getValue())))));
-    }
-  }
+	@Override
+	public void invoke(StreamRecord record) throws Exception {
+		IntValue value1 = (IntValue) record.getField(0, 0);
+		LongValue value2 = (LongValue) record.getField(0, 1);
+
+		// INFO
+		if (record.getNumOfFields() == 2) {
+			engine.put(value1.getValue(), value2.getValue());
+			emit(new StreamRecord(new AtomRecord(new StringValue(value1 + " "
+					+ value2))));
+		}
+		// QUERY
+		else if (record.getNumOfFields() == 3) {
+			LongValue value3 = (LongValue) record.getField(0, 2);
+			emit(new StreamRecord(new AtomRecord(new StringValue(
+					String.valueOf(engine.get(value2.getValue(),
+							value3.getValue(), value1.getValue()))))));
+		}
+	}
 }

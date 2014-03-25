@@ -18,6 +18,7 @@ package eu.stratosphere.streaming.test.window.wordcount;
 import java.util.HashMap;
 import java.util.Map;
 
+import eu.stratosphere.streaming.api.AtomRecord;
 import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.types.IntValue;
@@ -34,13 +35,13 @@ public class WindowWordCountCounter extends UserTaskInvokable {
 	private IntValue countValue = new IntValue(1);
 	private LongValue timestamp = new LongValue(0);
 	private String word = "";
-	private StreamRecord outputRecord = new StreamRecord(3);
+	private AtomRecord outputRecord = new AtomRecord(3);
 	private int count = 1;
 
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		wordValue=(StringValue) record.getField(0);
-		timestamp=(LongValue) record.getField(1);
+		wordValue=(StringValue) record.getField(0, 0);
+		timestamp=(LongValue) record.getField(0, 1);
 
 		if (wordCounts.containsKey(word)) {
 			count = wordCounts.get(word) + 1;
@@ -53,7 +54,7 @@ public class WindowWordCountCounter extends UserTaskInvokable {
 		outputRecord.setField(0, wordValue);
 		outputRecord.setField(1, countValue);
 		outputRecord.setField(2, timestamp);
-		emit(outputRecord);
+		emit(new StreamRecord(outputRecord));
 
 	}
 }

@@ -19,8 +19,8 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
+import eu.stratosphere.streaming.api.AtomRecord;
 import eu.stratosphere.streaming.api.StreamRecord;
-import eu.stratosphere.streaming.api.StreamRecordBatch;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.types.LongValue;
 import eu.stratosphere.types.StringValue;
@@ -29,7 +29,7 @@ public class BatchWordCountSource extends UserSourceInvokable {
 	private BufferedReader br = null;
 	private String line;
 	private long timestamp;
-	private StreamRecordBatch hamletRecords = new StreamRecordBatch();
+	private StreamRecord hamletRecords = new StreamRecord(2);
 
 	public BatchWordCountSource() {
 		try {
@@ -46,16 +46,17 @@ public class BatchWordCountSource extends UserSourceInvokable {
 	public void invoke() throws Exception {
 		line = br.readLine().replaceAll("[\\-\\+\\.\\^:,]", "");
 		timestamp = 0;
-		// while (line != null) {
-		for (int i = 0; i < 2; ++i) {
+		while (line != null) {
 			if (line != "") {
-				StreamRecord hamletRecord = new StreamRecord(2);
+				AtomRecord hamletRecord = new AtomRecord(2);
 				hamletRecord.setField(0, new StringValue(line));
 				hamletRecord.setField(1, new LongValue(timestamp));
 				hamletRecords.addRecord(hamletRecord);
-				emit(hamletRecords);
-				line = br.readLine();
 				++timestamp;
+				if(timestamp%10==0){
+					emit(hamletRecords);
+				}
+				line = br.readLine();
 			}
 		}
 	}

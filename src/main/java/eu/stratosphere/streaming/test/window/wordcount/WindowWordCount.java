@@ -21,6 +21,7 @@ import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.test.util.TestBase2;
 import eu.stratosphere.types.StringValue;
 
+//TODO: window operator remains unfinished.
 public class WindowWordCount extends TestBase2 {
 
 	@Override
