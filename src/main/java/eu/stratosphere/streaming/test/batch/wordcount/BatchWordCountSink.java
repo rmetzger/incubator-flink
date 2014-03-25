@@ -13,47 +13,29 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.test.window.wordcount;
-
-import java.util.HashMap;
-import java.util.Map;
+package eu.stratosphere.streaming.test.batch.wordcount;
 
 import eu.stratosphere.streaming.api.StreamRecord;
-import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
+import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.types.IntValue;
 import eu.stratosphere.types.LongValue;
 import eu.stratosphere.types.StringValue;
 
-public class WindowWordCountCounter extends UserTaskInvokable {
-	
-	private int windowSize = 100;
-	private int slidingStep = 20;
-	
-	private Map<String, Integer> wordCounts = new HashMap<String, Integer>();
-	private StringValue wordValue = new StringValue("");
-	private IntValue countValue = new IntValue(1);
+public class BatchWordCountSink implements UserSinkInvokable {
+
+	private StringValue word = new StringValue("");
+	private IntValue count = new IntValue(1);
 	private LongValue timestamp = new LongValue(0);
-	private String word = "";
-	private StreamRecord outputRecord = new StreamRecord(3);
-	private int count = 1;
 
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		wordValue=(StringValue) record.getField(0);
-		timestamp=(LongValue) record.getField(1);
-
-		if (wordCounts.containsKey(word)) {
-			count = wordCounts.get(word) + 1;
-			wordCounts.put(word, count);
-			countValue.setValue(count);
-		} else {
-			wordCounts.put(word, 1);
-			countValue.setValue(1);
-		}
-		outputRecord.setField(0, wordValue);
-		outputRecord.setField(1, countValue);
-		outputRecord.setField(2, timestamp);
-		emit(outputRecord);
+		word=(StringValue) record.getField(0);
+		count=(IntValue) record.getField(1);
+		timestamp=(LongValue) record.getField(2);
+		System.out.println("============================================");
+		System.out.println(word.getValue() + " " + count.getValue() + " "
+				+ timestamp.getValue());
+		System.out.println("============================================");
 
 	}
 }

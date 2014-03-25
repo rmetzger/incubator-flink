@@ -13,7 +13,7 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.test.window.wordcount;
+package eu.stratosphere.streaming.test.batch.wordcount;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +24,7 @@ import eu.stratosphere.types.IntValue;
 import eu.stratosphere.types.LongValue;
 import eu.stratosphere.types.StringValue;
 
-public class WindowWordCountCounter extends UserTaskInvokable {
+public class BatchWordCountCounter extends UserTaskInvokable {
 	
 	private int windowSize = 100;
 	private int slidingStep = 20;

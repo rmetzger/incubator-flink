@@ -13,29 +13,26 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.test.window.wordcount;
+package eu.stratosphere.streaming.test.batch;
 
 import eu.stratosphere.streaming.api.StreamRecord;
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.types.IntValue;
-import eu.stratosphere.types.LongValue;
+import eu.stratosphere.streaming.api.StreamRecordBatch;
+import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.types.StringValue;
 
-public class WindowWordCountSink implements UserSinkInvokable {
+public class StreamSource  extends UserSourceInvokable {
+//	private final String motto = "Stratosphere Big Data looks tiny from here";
+	private final String motto = "Gyuszi Gabor Big Marci Gyuszi";
+	private final StreamRecord mottoRecord = new StreamRecord(new StringValue(motto));
 
-	private StringValue word = new StringValue("");
-	private IntValue count = new IntValue(1);
-	private LongValue timestamp = new LongValue(0);
-
+	
 	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		word=(StringValue) record.getField(0);
-		count=(IntValue) record.getField(1);
-		timestamp=(LongValue) record.getField(2);
-		System.out.println("============================================");
-		System.out.println(word.getValue() + " " + count.getValue() + " "
-				+ timestamp.getValue());
-		System.out.println("============================================");
+	public void invoke() throws Exception {
+		for (int i = 0; i < 100; i++) {
 
+			StreamRecordBatch recordBatch=new StreamRecordBatch();
+			recordBatch.addRecord(mottoRecord);
+			emit(recordBatch);
+		}
 	}
 }

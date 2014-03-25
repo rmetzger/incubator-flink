@@ -13,28 +13,27 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.test.window.wordcount;
+package eu.stratosphere.streaming.test.batch.wordcount;
 
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
-
 import eu.stratosphere.test.util.TestBase2;
 import eu.stratosphere.types.StringValue;
 
-public class WindowWordCount extends TestBase2 {
+public class BatchWordCount extends TestBase2 {
 
 	@Override
 	public JobGraph getJobGraph() {
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
-		graphBuilder.setSource("WindowWordCountSource", WindowWordCountSource.class);
-//		graphBuilder.setTask("WindowWordCountSplitter", WindowWordCountSplitter.class, 1);
-//		graphBuilder.setTask("WindowWordCountCounter", WindowWordCountCounter.class, 1);
-		graphBuilder.setSink("WindowWordCountSink", WindowWordCountSink.class);
+		graphBuilder.setSource("BatchWordCountSource", BatchWordCountSource.class);
+		graphBuilder.setTask("BatchWordCountSplitter", BatchWordCountSplitter.class, 2);
+		graphBuilder.setTask("BatchWordCountCounter", BatchWordCountCounter.class, 2);
+		graphBuilder.setSink("BatchWordCountSink", BatchWordCountSink.class);
 
-		graphBuilder.broadcastConnect("WindowWordCountSource", "WindowWordCountSplitter");
-		graphBuilder.fieldsConnect("WindowWordCountSplitter", "WindowWordCountCounter", 0,
+		graphBuilder.broadcastConnect("BatchWordCountSource", "BatchWordCountSplitter");
+		graphBuilder.fieldsConnect("BatchWordCountSplitter", "BatchWordCountCounter", 0,
 				StringValue.class);
-		graphBuilder.broadcastConnect("WindowWordCountCounter", "WindowWordCountSink");
+		graphBuilder.broadcastConnect("BatchWordCountCounter", "BatchWordCountSink");
 
 		return graphBuilder.getJobGraph();
 	}

@@ -13,28 +13,21 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.test.window.wordcount;
+package eu.stratosphere.streaming.test.batch;
 
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
-
 import eu.stratosphere.test.util.TestBase2;
-import eu.stratosphere.types.StringValue;
 
-public class WindowWordCount extends TestBase2 {
+public class MyBatchStream extends TestBase2{
 
 	@Override
 	public JobGraph getJobGraph() {
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
-		graphBuilder.setSource("WindowWordCountSource", WindowWordCountSource.class);
-//		graphBuilder.setTask("WindowWordCountSplitter", WindowWordCountSplitter.class, 1);
-//		graphBuilder.setTask("WindowWordCountCounter", WindowWordCountCounter.class, 1);
-		graphBuilder.setSink("WindowWordCountSink", WindowWordCountSink.class);
+		graphBuilder.setSource("StreamSource", StreamSource.class);
+		graphBuilder.setSink("StreamSink", StreamSink.class);
 
-		graphBuilder.broadcastConnect("WindowWordCountSource", "WindowWordCountSplitter");
-		graphBuilder.fieldsConnect("WindowWordCountSplitter", "WindowWordCountCounter", 0,
-				StringValue.class);
-		graphBuilder.broadcastConnect("WindowWordCountCounter", "WindowWordCountSink");
+		graphBuilder.broadcastConnect("StreamSource", "StreamSink");
 
 		return graphBuilder.getJobGraph();
 	}

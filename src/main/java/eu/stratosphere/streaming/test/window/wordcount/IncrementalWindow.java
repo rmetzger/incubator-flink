@@ -6,5 +6,9 @@ public class IncrementalWindow {
 	private int fullTupleNum;
 	private int slideTupleNum;
 	
+	public IncrementalWindow(int batchRange, int windowSize, int slidingStep){}
 	
+	void pushBack(){}
+	
+	void popFront(){}
 }

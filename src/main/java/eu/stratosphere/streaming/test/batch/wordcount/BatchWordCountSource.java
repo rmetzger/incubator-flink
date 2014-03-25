@@ -13,28 +13,29 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.test.window.wordcount;
+package eu.stratosphere.streaming.test.batch.wordcount;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
 import eu.stratosphere.streaming.api.StreamRecord;
+import eu.stratosphere.streaming.api.StreamRecordBatch;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.types.LongValue;
 import eu.stratosphere.types.StringValue;
 
-public class WindowWordCountSource extends UserSourceInvokable {
+public class BatchWordCountSource extends UserSourceInvokable {
 	private BufferedReader br = null;
 	private String line;
 	private long timestamp;
-	private StreamRecord hamletRecord = null;
+	private StreamRecordBatch hamletRecords = new StreamRecordBatch();
 
-	public WindowWordCountSource() {
+	public BatchWordCountSource() {
 		try {
 			br = new BufferedReader(
 					new FileReader(
-							"src/main/java/eu/stratosphere/streaming/test/window/wordcount/hamlet.txt"));
+							"src/main/java/eu/stratosphere/streaming/test/batch/wordcount/hamlet.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -48,15 +49,15 @@ public class WindowWordCountSource extends UserSourceInvokable {
 		// while (line != null) {
 		for (int i = 0; i < 2; ++i) {
 			if (line != "") {
-				hamletRecord = new StreamRecord(2);
+				StreamRecord hamletRecord = new StreamRecord(2);
 				hamletRecord.setField(0, new StringValue(line));
 				hamletRecord.setField(1, new LongValue(timestamp));
-				System.out.println("========line number: " + timestamp + ", "
-						+ line + "==========");
-				emit(hamletRecord);
+				hamletRecords.addRecord(hamletRecord);
+				emit(hamletRecords);
 				line = br.readLine();
 				++timestamp;
 			}
 		}
 	}
+
 }

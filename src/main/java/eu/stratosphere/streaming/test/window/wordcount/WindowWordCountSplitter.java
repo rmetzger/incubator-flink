@@ -15,9 +15,9 @@
 
 package eu.stratosphere.streaming.test.window.wordcount;
 
+import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.types.LongValue;
-import eu.stratosphere.types.Record;
 import eu.stratosphere.types.StringValue;
 
 public class WindowWordCountSplitter extends UserTaskInvokable {
@@ -26,12 +26,12 @@ public class WindowWordCountSplitter extends UserTaskInvokable {
 	private LongValue timestamp = new LongValue(0);
 	private String[] words = new String[0];
 	private StringValue wordValue = new StringValue("");
-	private Record outputRecord = new Record(wordValue, timestamp);
+	private StreamRecord outputRecord = new StreamRecord(2);
 
 	@Override
-	public void invoke(Record record) throws Exception {
-		record.getFieldInto(0, sentence);
-		record.getFieldInto(1, timestamp);
+	public void invoke(StreamRecord record) throws Exception {
+		sentence=(StringValue) record.getField(0);
+		timestamp=(LongValue) record.getField(1);
 		System.out.println("************sentence=" + sentence.getValue() + ", timestamp="
 				+ timestamp.getValue()+"************");
 		words = sentence.getValue().split(" ");
