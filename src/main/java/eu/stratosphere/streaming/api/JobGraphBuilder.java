@@ -121,18 +121,20 @@ public class JobGraphBuilder {
 		config.setClass("userfunction", InvokableClass);
 		components.put(sinkName, sink);
 	}
-/**
- * Connects to JobGraph components with the given names, partitioning and channel type
- * 
- * @param upStreamComponentName
- * Name of the upstream component, that will emit the records
- * @param downStreamComponentName
- * Name of the downstream component, that will receive the records
- * @param PartitionerClass
- * Class of the partitioner
- * @param channelType
- * Channel Type
- */
+
+	/**
+	 * Connects to JobGraph components with the given names, partitioning and
+	 * channel type
+	 * 
+	 * @param upStreamComponentName
+	 *          Name of the upstream component, that will emit the records
+	 * @param downStreamComponentName
+	 *          Name of the downstream component, that will receive the records
+	 * @param PartitionerClass
+	 *          Class of the partitioner
+	 * @param channelType
+	 *          Channel Type
+	 */
 	private void connect(String upStreamComponentName,
 			String downStreamComponentName,
 			Class<? extends ChannelSelector<StreamRecord>> PartitionerClass,
@@ -159,11 +161,13 @@ public class JobGraphBuilder {
 	/**
 	 * Connects two components with the given names by broadcast partitioning.
 	 * <p>
-	 * Broadcast partitioning: All the emmitted tuples are replicated to all of the output instances
+	 * Broadcast partitioning: All the emmitted tuples are replicated to all of
+	 * the output instances
+	 * 
 	 * @param upStreamComponentName
-	 * Name of the upstream component, that will emit the records
+	 *          Name of the upstream component, that will emit the records
 	 * @param downStreamComponentName
-	 * Name of the downstream component, that will receive the records
+	 *          Name of the downstream component, that will receive the records
 	 */
 	public void broadcastConnect(String upStreamComponentName,
 			String downStreamComponentName) {
@@ -171,18 +175,22 @@ public class JobGraphBuilder {
 		connect(upStreamComponentName, downStreamComponentName,
 				BroadcastPartitioner.class, ChannelType.INMEMORY);
 	}
+
 	/**
-	 * Connects two components with the given names by fields partitioning on the given field.
+	 * Connects two components with the given names by fields partitioning on the
+	 * given field.
 	 * <p>
-	 * Fields partitioning: Tuples are hashed by the given key, and grouped to outputs accordingly
+	 * Fields partitioning: Tuples are hashed by the given key, and grouped to
+	 * outputs accordingly
+	 * 
 	 * @param upStreamComponentName
-	 * Name of the upstream component, that will emit the records
+	 *          Name of the upstream component, that will emit the records
 	 * @param downStreamComponentName
-	 * Name of the downstream component, that will receive the records
+	 *          Name of the downstream component, that will receive the records
 	 * @param keyPosition
-	 * Position of key in the record
+	 *          Position of key in the record
 	 * @param keyClass
-	 * Class of the key Value stored in the record
+	 *          Class of the key Value stored in the record
 	 */
 	public void fieldsConnect(String upStreamComponentName,
 			String downStreamComponentName, int keyPosition,
@@ -215,14 +223,17 @@ public class JobGraphBuilder {
 			e.printStackTrace();
 		}
 	}
+
 	/**
 	 * Connects two components with the given names by global partitioning.
 	 * <p>
-	 * Global partitioning: sends all emitted records to one output instance (i.e. the first one)
+	 * Global partitioning: sends all emitted records to one output instance (i.e.
+	 * the first one)
+	 * 
 	 * @param upStreamComponentName
-	 * Name of the upstream component, that will emit the records
+	 *          Name of the upstream component, that will emit the records
 	 * @param downStreamComponentName
-	 * Name of the downstream component, that will receive the records
+	 *          Name of the downstream component, that will receive the records
 	 */
 	public void globalConnect(String upStreamComponentName,
 			String downStreamComponentName) {
@@ -230,14 +241,17 @@ public class JobGraphBuilder {
 		connect(upStreamComponentName, downStreamComponentName,
 				GlobalPartitioner.class, ChannelType.INMEMORY);
 	}
+
 	/**
 	 * Connects two components with the given names by shuffle partitioning.
 	 * <p>
-	 * Shuffle partitioning: sends the output records to a randomly selected channel
+	 * Shuffle partitioning: sends the output records to a randomly selected
+	 * channel
+	 * 
 	 * @param upStreamComponentName
-	 * Name of the upstream component, that will emit the records
+	 *          Name of the upstream component, that will emit the records
 	 * @param downStreamComponentName
-	 * Name of the downstream component, that will receive the records
+	 *          Name of the downstream component, that will receive the records
 	 */
 	public void shuffleConnect(String upStreamComponentName,
 			String downStreamComponentName) {
@@ -262,8 +276,7 @@ public class JobGraphBuilder {
 
 	/**
 	 * 
-	 * @return
-	 * The JobGraph object
+	 * @return The JobGraph object
 	 */
 	public JobGraph getJobGraph() {
 		setNumberOfJobInputs();
