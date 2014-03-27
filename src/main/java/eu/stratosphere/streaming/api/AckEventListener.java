@@ -26,7 +26,7 @@ import eu.stratosphere.nephele.event.task.EventListener;
 public class AckEventListener implements EventListener {
 
 	private String taskInstanceID;
-	private FaultTolerancyBuffer recordBuffer;
+	private FaultToleranceBuffer recordBuffer;
 
 	/**
 	 * Creates an AckEventListener that monitors AckEvents sent to task with the
@@ -38,7 +38,7 @@ public class AckEventListener implements EventListener {
 	 *          The fault tolerance buffer associated with this task
 	 */
 	public AckEventListener(String taskInstanceID,
-			FaultTolerancyBuffer recordBuffer) {
+			FaultToleranceBuffer recordBuffer) {
 		this.taskInstanceID = taskInstanceID;
 		this.recordBuffer = recordBuffer;
 	}
