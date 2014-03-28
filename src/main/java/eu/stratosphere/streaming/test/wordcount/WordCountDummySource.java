@@ -21,7 +21,9 @@ public class WordCountDummySource extends UserSourceInvokable {
 		lineValue.setValue(line);
 		values[0] = lineValue;
 		StreamRecord record = new StreamRecord(lineValue);
+		System.out.println(record.getNumOfRecords());
 
+		record.copy();
 		emit(record);
 
 		line = "second two";
