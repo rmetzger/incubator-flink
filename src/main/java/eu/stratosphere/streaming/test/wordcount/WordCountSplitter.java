@@ -28,7 +28,7 @@ public class WordCountSplitter extends UserTaskInvokable {
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
 		sentence = (StringValue) record.getRecord(0).getField(0);
-		System.out.println("to split: " + sentence.getValue());
+		// System.out.println("to split: " + sentence.getValue());
 		words = sentence.getValue().split(" ");
 		for (CharSequence word : words) {
 			wordValue.setValue(word);
