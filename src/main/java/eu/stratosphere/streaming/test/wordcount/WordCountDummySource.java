@@ -3,7 +3,6 @@ package eu.stratosphere.streaming.test.wordcount;
 import eu.stratosphere.streaming.api.StreamRecord;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.types.StringValue;
-import eu.stratosphere.types.Value;
 
 public class WordCountDummySource extends UserSourceInvokable {
 
@@ -19,7 +18,6 @@ public class WordCountDummySource extends UserSourceInvokable {
 	public void invoke() throws Exception {
 		for (int i = 0; i < 1; i++) {
 			emit(new StreamRecord(lineValue));
-		System.out.println("xxxxxxxxx");
 		}
 	}
 }
