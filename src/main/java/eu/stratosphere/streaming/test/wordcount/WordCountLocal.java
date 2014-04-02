@@ -145,7 +145,7 @@ public class WordCountLocal {
 			
 			exec.start();
 			//JobClient client = exec.getJobClient(jG);
-			client.run(null, jG, true);
+//			client.run(null, jG, true);
 
 //			client.submitJobAndWait();
 
