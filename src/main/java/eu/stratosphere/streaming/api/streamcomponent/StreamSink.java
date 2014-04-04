@@ -37,7 +37,7 @@ public class StreamSink extends AbstractOutputTask {
 	private UserSinkInvokable userFunction;
 	private StreamComponentHelper<StreamSink> streamSinkHelper;
 	private String name;
-	
+
 	public StreamSink() {
 		// TODO: Make configuration file visible and call setClassInputs() here
 		inputs = new LinkedList<RecordReader<StreamRecord>>();
@@ -72,9 +72,10 @@ public class StreamSink extends AbstractOutputTask {
 					try {
 						userFunction.invoke(rec);
 						streamSinkHelper.threadSafePublish(new AckEvent(id), input);
+						log.debug("Ack sent from " + name + ": " + id);
 					} catch (Exception e) {
 						streamSinkHelper.threadSafePublish(new FailEvent(id), input);
-						log.warn("Invoking record " + id + " failed due to " + e.getMessage());
+						log.warn("Invoking record " + id + " at " + name + " failed due to " + e.getMessage());
 					}
 				}
 

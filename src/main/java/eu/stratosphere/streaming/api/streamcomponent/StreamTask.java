@@ -63,7 +63,7 @@ public class StreamTask extends AbstractTask {
 	public void registerInputOutput() {
 		taskConfiguration = getTaskConfiguration();
 		name = taskConfiguration.getString("componentName", "MISSING_COMPONENT_NAME");
-		
+
 		try {
 			streamTaskHelper.setConfigInputs(this, taskConfiguration, inputs);
 			streamTaskHelper.setConfigOutputs(this, taskConfiguration, outputs, partitioners);
@@ -73,7 +73,7 @@ public class StreamTask extends AbstractTask {
 
 		recordBuffer = new FaultToleranceBuffer(outputs, taskInstanceID, taskConfiguration.getInteger(
 				"numberOfOutputChannels", -1));
-		userFunction = (UserTaskInvokable) streamTaskHelper.getUserFunction(taskConfiguration, outputs, taskInstanceID,
+		userFunction = (UserTaskInvokable) streamTaskHelper.getUserFunction(taskConfiguration, outputs, taskInstanceID, name,
 				recordBuffer);
 		streamTaskHelper.setAckListener(recordBuffer, taskInstanceID, outputs);
 		streamTaskHelper.setFailListener(recordBuffer, taskInstanceID, outputs);
@@ -96,6 +96,7 @@ public class StreamTask extends AbstractTask {
 					try {
 						userFunction.invoke(streamRecord);
 						streamTaskHelper.threadSafePublish(new AckEvent(id), input);
+						log.debug("Ack sent from " + name + ": " + id);
 					} catch (Exception e) {
 						streamTaskHelper.threadSafePublish(new FailEvent(id), input);
 						log.warn("Invoking record " + id + " failed due to " + e.getMessage());

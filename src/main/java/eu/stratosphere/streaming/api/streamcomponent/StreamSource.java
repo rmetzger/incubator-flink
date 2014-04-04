@@ -77,7 +77,7 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 		
 		recordBuffer = new FaultToleranceBuffer(outputs, sourceInstanceID, taskConfiguration.getInteger("numberOfOutputChannels", -1));
 		userFunction = (UserSourceInvokable) streamSourceHelper.getUserFunction(
-				taskConfiguration, outputs, sourceInstanceID, recordBuffer);
+				taskConfiguration, outputs, sourceInstanceID, name, recordBuffer);
 		streamSourceHelper.setAckListener(recordBuffer, sourceInstanceID, outputs);
 		streamSourceHelper.setFailListener(recordBuffer, sourceInstanceID, outputs);
 	}
