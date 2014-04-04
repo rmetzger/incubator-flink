@@ -43,7 +43,7 @@ public class FailEvent extends AbstractTaskEvent {
 	 */
 	public FailEvent(String recordId) {
 		setRecordId(recordId);
-		log.debug("Fail sent " + recordId);
+		log.debug("Fail sent: " + recordId);
 	}
 
 	@Override

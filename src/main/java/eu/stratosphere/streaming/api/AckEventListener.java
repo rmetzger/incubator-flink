@@ -61,7 +61,7 @@ public class AckEventListener implements EventListener {
 			Long nt = System.nanoTime();
 			recordBuffer.ackRecord(ackEvent.getRecordId());
 
-			log.debug("Ack recieved " + ackEvent.getRecordId() + "\nAck exec. time(ns): " + (System.nanoTime() - nt));
+			log.debug("Ack processed " + ackEvent.getRecordId() + " with exec. time (ns): " + (System.nanoTime() - nt));
 		}
 	}
 }

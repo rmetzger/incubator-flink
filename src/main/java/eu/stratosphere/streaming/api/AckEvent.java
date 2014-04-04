@@ -45,7 +45,7 @@ public class AckEvent extends AbstractTaskEvent {
 	public AckEvent(String recordId) {
 
 		setRecordId(recordId);
-		log.debug("Ack sent widh ID: " + recordId);
+		log.debug("Ack sent: " + recordId);
 	}
 
 	@Override

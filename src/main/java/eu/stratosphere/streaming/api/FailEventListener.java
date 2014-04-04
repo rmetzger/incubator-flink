@@ -57,7 +57,7 @@ public class FailEventListener implements EventListener {
 		String failCID = recordId.split("-", 2)[0];
 		if (failCID.equals(taskInstanceID)) {
 			recordBuffer.failRecord(recordId);
-			log.debug("Fail recieved " + recordId + " conaining: " + recordBuffer.getRecordBuffer());
+			log.debug("Fail recieved: " + recordId + " conaining: " + recordBuffer.getRecordBuffer());
 			//log.trace(recordBuffer.getRecordBuffer());
 		}
 

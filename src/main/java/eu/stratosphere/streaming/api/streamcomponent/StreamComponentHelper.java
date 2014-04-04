@@ -19,6 +19,9 @@ import java.io.IOException;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.event.task.AbstractTaskEvent;
 import eu.stratosphere.nephele.event.task.EventListener;
@@ -41,7 +44,8 @@ import eu.stratosphere.types.Key;
 import eu.stratosphere.types.StringValue;
 
 public final class StreamComponentHelper<T extends AbstractInvokable> {
-	
+	private static final Log log = LogFactory.getLog(StreamComponentHelper.class);
+
 	public void setAckListener(FaultToleranceBuffer recordBuffer,
 			String sourceInstanceID, List<RecordWriter<StreamRecord>> outputs) {
 		EventListener eventListener = new AckEventListener(sourceInstanceID,
@@ -108,7 +112,7 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 		try {
 			userFunction = userFunctionClass.newInstance();
 		} catch (Exception e) {
-
+			log.error("Cannot instanciate user function: " + userFunctionClass.getSimpleName());
 		}
 		return userFunction;
 	}
@@ -126,8 +130,10 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 		try {
 			userFunction = userFunctionClass.newInstance();
 			userFunction.declareOutputs(outputs, instanceID, recordBuffer);
+		} catch (InstantiationException e) {
+			log.error("Cannot instanciate user function: " + userFunctionClass.getSimpleName());
 		} catch (Exception e) {
-
+			log.error("Cannot use user function: " + userFunctionClass.getSimpleName());
 		}
 		return userFunction;
 	}
@@ -143,7 +149,7 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 				input.publishEvent(event);
 				concurrentModificationOccured = true;
 			} catch (ConcurrentModificationException exeption) {
-				System.out.println("waiting...");
+				log.trace("Waiting to publish " + event.getClass());
 			}
 		}
 	}
@@ -167,9 +173,9 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 			} else {
 				partitioners.add(partitioner.newInstance());
 			}
+			log.debug("Partitioner set: " + partitioner.getSimpleName()+ " with " + nrOutput + " outputs");
 		} catch (Exception e) {
-			System.out.println("partitioner error" + " " + "partitioner_" + nrOutput);
-			System.out.println(e);
+			log.error("Error while setting partitioner: " + partitioner.getSimpleName() + " with " + nrOutput + " outputs", e);
 		}
 	}
 
