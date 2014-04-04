@@ -81,6 +81,7 @@ public class StreamSink extends AbstractOutputTask {
 
 			}
 		}
+		System.out.println("Result: "+userFunction.getResult());
 		log.debug("Sink " + name + " invoke finished");
 	}
 }
