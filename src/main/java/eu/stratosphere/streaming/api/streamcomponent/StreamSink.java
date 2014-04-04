@@ -36,7 +36,8 @@ public class StreamSink extends AbstractOutputTask {
 	private List<RecordReader<StreamRecord>> inputs;
 	private UserSinkInvokable userFunction;
 	private StreamComponentHelper<StreamSink> streamSinkHelper;
-
+	private String name;
+	
 	public StreamSink() {
 		// TODO: Make configuration file visible and call setClassInputs() here
 		inputs = new LinkedList<RecordReader<StreamRecord>>();
@@ -47,7 +48,8 @@ public class StreamSink extends AbstractOutputTask {
 	@Override
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
-		
+		name = taskConfiguration.getString("componentName", "MISSING_COMPONENT_NAME");
+
 		try {
 			streamSinkHelper.setConfigInputs(this, taskConfiguration, inputs);
 		} catch (Exception e) {
@@ -58,7 +60,7 @@ public class StreamSink extends AbstractOutputTask {
 
 	@Override
 	public void invoke() throws Exception {
-		log.debug("Sink " + streamSinkHelper.getUserFunction(getTaskConfiguration()).getClass().getSimpleName() + " invoked");
+		log.debug("Sink " + name + " invoked");
 		boolean hasInput = true;
 		while (hasInput) {
 			hasInput = false;
@@ -72,11 +74,12 @@ public class StreamSink extends AbstractOutputTask {
 						streamSinkHelper.threadSafePublish(new AckEvent(id), input);
 					} catch (Exception e) {
 						streamSinkHelper.threadSafePublish(new FailEvent(id), input);
+						log.warn("Invoking record " + id + " failed due to " + e.getMessage());
 					}
 				}
 
 			}
 		}
-		log.debug("Sink " + streamSinkHelper.getUserFunction(getTaskConfiguration()).getClass().getSimpleName() + " invoke finished");
+		log.debug("Sink " + name + " invoke finished");
 	}
 }

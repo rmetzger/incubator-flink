@@ -87,6 +87,7 @@ public class JobGraphBuilder {
 		Configuration config = new TaskConfig(source.getConfiguration())
 				.getConfiguration();
 		config.setClass("userfunction", InvokableClass);
+		config.setString("componentName", sourceName);
 		components.put(sourceName, source);
 		numberOfInstances.put(sourceName, 1);
 		log.debug("Source set: " + sourceName);
@@ -111,6 +112,7 @@ public class JobGraphBuilder {
 		Configuration config = new TaskConfig(task.getConfiguration())
 				.getConfiguration();
 		config.setClass("userfunction", InvokableClass);
+		config.setString("componentName", taskName);
 		components.put(taskName, task);
 		numberOfInstances.put(taskName, parallelism);
 		log.debug("Task set: " + taskName);
@@ -132,6 +134,7 @@ public class JobGraphBuilder {
 		Configuration config = new TaskConfig(sink.getConfiguration())
 				.getConfiguration();
 		config.setClass("userfunction", InvokableClass);
+		config.setString("componentName", sinkName);
 		components.put(sinkName, sink);
 		numberOfInstances.put(sinkName, 1);
 		log.debug("Sink set: " + sinkName);

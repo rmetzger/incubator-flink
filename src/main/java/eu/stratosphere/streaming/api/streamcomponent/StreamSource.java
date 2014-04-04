@@ -66,6 +66,7 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 	@Override
 	public void registerInputOutput() {
 		Configuration taskConfiguration = getTaskConfiguration();
+		name = taskConfiguration.getString("componentName", "MISSING_COMPONENT_NAME");
 
 		try {
 			streamSourceHelper.setConfigOutputs(this, taskConfiguration, outputs,
@@ -83,7 +84,7 @@ public class StreamSource extends AbstractInputTask<RandIS> {
 
 	@Override
 	public void invoke() throws Exception {
-		log.debug("Source invoked with instance id " + sourceInstanceID);
+		log.debug("Source " + name + " invoked with instance id " + sourceInstanceID);
 		userFunction.invoke();
 	}
 

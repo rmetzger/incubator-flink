@@ -42,7 +42,9 @@ public class StreamTask extends AbstractTask {
 	private UserTaskInvokable userFunction;
 	private static int numTasks = 0;
 	private String taskInstanceID = "";
+	private String name;
 	StreamComponentHelper<StreamTask> streamTaskHelper;
+	Configuration taskConfiguration;
 
 	private FaultToleranceBuffer recordBuffer;
 
@@ -59,28 +61,28 @@ public class StreamTask extends AbstractTask {
 
 	@Override
 	public void registerInputOutput() {
-		Configuration taskConfiguration = getTaskConfiguration();
-
+		taskConfiguration = getTaskConfiguration();
+		name = taskConfiguration.getString("componentName", "MISSING_COMPONENT_NAME");
+		
 		try {
 			streamTaskHelper.setConfigInputs(this, taskConfiguration, inputs);
-			streamTaskHelper.setConfigOutputs(this, taskConfiguration, outputs,
-					partitioners);
+			streamTaskHelper.setConfigOutputs(this, taskConfiguration, outputs, partitioners);
 		} catch (StreamComponentException e) {
 			log.error("Cannot register inputs/outputs for " + getClass().getSimpleName(), e);
 		}
 
-		recordBuffer = new FaultToleranceBuffer(outputs, taskInstanceID,taskConfiguration.getInteger("numberOfOutputChannels", -1));
-		userFunction = (UserTaskInvokable) streamTaskHelper.getUserFunction(
-				taskConfiguration, outputs, taskInstanceID, recordBuffer);
+		recordBuffer = new FaultToleranceBuffer(outputs, taskInstanceID, taskConfiguration.getInteger(
+				"numberOfOutputChannels", -1));
+		userFunction = (UserTaskInvokable) streamTaskHelper.getUserFunction(taskConfiguration, outputs, taskInstanceID,
+				recordBuffer);
 		streamTaskHelper.setAckListener(recordBuffer, taskInstanceID, outputs);
 		streamTaskHelper.setFailListener(recordBuffer, taskInstanceID, outputs);
 	}
 
-	//TODO: log userfunction name
+	// TODO: log userfunction name
 	@Override
 	public void invoke() throws Exception {
-		log.debug("Task invoked with instance id " + taskInstanceID);
-		//log.debug("Task " + getClass().getSimpleName() + " " + streamTaskHelper.getUserFunction(getTaskConfiguration()).getClass().getSimpleName() + " invoked with id " + taskInstanceID);
+		log.debug("Task " + name + " invoked with instance id " + taskInstanceID);
 
 		boolean hasInput = true;
 		while (hasInput) {
@@ -97,12 +99,11 @@ public class StreamTask extends AbstractTask {
 					} catch (Exception e) {
 						streamTaskHelper.threadSafePublish(new FailEvent(id), input);
 						log.warn("Invoking record " + id + " failed due to " + e.getMessage());
-						//TODO: consider logging stacktrace
 					}
 				}
 			}
 		}
-		log.debug("Task invoke finished with instance id " + taskInstanceID);
+		log.debug("Task " + name + "invoke finished with instance id " + taskInstanceID);
 	}
 
 }
