@@ -18,6 +18,9 @@ package eu.stratosphere.streaming.api.streamcomponent;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.io.ChannelSelector;
 import eu.stratosphere.nephele.io.RecordReader;
@@ -30,6 +33,8 @@ import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
 public class StreamTask extends AbstractTask {
+
+	private static final Log log = LogFactory.getLog(StreamTask.class);
 
 	private List<RecordReader<StreamRecord>> inputs;
 	private List<RecordWriter<StreamRecord>> outputs;
@@ -61,7 +66,7 @@ public class StreamTask extends AbstractTask {
 			streamTaskHelper.setConfigOutputs(this, taskConfiguration, outputs,
 					partitioners);
 		} catch (StreamComponentException e) {
-			e.printStackTrace();
+			log.error("Cannot register inputs/outputs for " + getClass().getSimpleName(), e);
 		}
 
 		recordBuffer = new FaultToleranceBuffer(outputs, taskInstanceID,taskConfiguration.getInteger("numberOfOutputChannels", -1));
@@ -71,8 +76,12 @@ public class StreamTask extends AbstractTask {
 		streamTaskHelper.setFailListener(recordBuffer, taskInstanceID, outputs);
 	}
 
+	//TODO: log userfunction name
 	@Override
 	public void invoke() throws Exception {
+		log.debug("Task invoked with instance id " + taskInstanceID);
+		//log.debug("Task " + getClass().getSimpleName() + " " + streamTaskHelper.getUserFunction(getTaskConfiguration()).getClass().getSimpleName() + " invoked with id " + taskInstanceID);
+
 		boolean hasInput = true;
 		while (hasInput) {
 			hasInput = false;
@@ -87,11 +96,13 @@ public class StreamTask extends AbstractTask {
 						streamTaskHelper.threadSafePublish(new AckEvent(id), input);
 					} catch (Exception e) {
 						streamTaskHelper.threadSafePublish(new FailEvent(id), input);
-						e.printStackTrace();
+						log.warn("Invoking record " + id + " failed due to " + e.getMessage());
+						//TODO: consider logging stacktrace
 					}
 				}
 			}
 		}
+		log.debug("Task invoke finished with instance id " + taskInstanceID);
 	}
 
 }

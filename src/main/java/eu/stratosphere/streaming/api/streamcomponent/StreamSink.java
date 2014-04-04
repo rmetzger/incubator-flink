@@ -18,6 +18,9 @@ package eu.stratosphere.streaming.api.streamcomponent;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.io.RecordReader;
 import eu.stratosphere.nephele.template.AbstractOutputTask;
@@ -27,6 +30,8 @@ import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
 public class StreamSink extends AbstractOutputTask {
+
+	private static final Log log = LogFactory.getLog(StreamSink.class);
 
 	private List<RecordReader<StreamRecord>> inputs;
 	private UserSinkInvokable userFunction;
@@ -46,13 +51,14 @@ public class StreamSink extends AbstractOutputTask {
 		try {
 			streamSinkHelper.setConfigInputs(this, taskConfiguration, inputs);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Cannot register inputs", e);
 		}
 		userFunction = streamSinkHelper.getUserFunction(taskConfiguration);
 	}
 
 	@Override
 	public void invoke() throws Exception {
+		log.debug("Sink " + streamSinkHelper.getUserFunction(getTaskConfiguration()).getClass().getSimpleName() + " invoked");
 		boolean hasInput = true;
 		while (hasInput) {
 			hasInput = false;
@@ -66,11 +72,11 @@ public class StreamSink extends AbstractOutputTask {
 						streamSinkHelper.threadSafePublish(new AckEvent(id), input);
 					} catch (Exception e) {
 						streamSinkHelper.threadSafePublish(new FailEvent(id), input);
-
 					}
 				}
 
 			}
 		}
+		log.debug("Sink " + streamSinkHelper.getUserFunction(getTaskConfiguration()).getClass().getSimpleName() + " invoke finished");
 	}
 }
