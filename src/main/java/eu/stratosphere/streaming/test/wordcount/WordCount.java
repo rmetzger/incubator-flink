@@ -36,7 +36,7 @@ public class WordCount extends TestBase2 {
 				"%d{HH:mm:ss,SSS} %-5p %-60c %x - %m%n");
 		ConsoleAppender appender = new ConsoleAppender(layout, "System.err");
 		root.addAppender(appender);
-		root.setLevel(Level.ERROR);
+		root.setLevel(Level.DEBUG);
 
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
 		graphBuilder.setSource("WordCountSource", WordCountDummySource2.class);

@@ -77,14 +77,16 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 				inputs.add(new RecordReader<StreamRecord>((StreamSink) taskBase,
 						StreamRecord.class));
 			} else {
-				throw new StreamComponentException("Nonsupported object passed to setConfigInputs");
+				throw new StreamComponentException(
+						"Nonsupported object passed to setConfigInputs");
 			}
 		}
 	}
 
 	public void setConfigOutputs(T taskBase, Configuration taskConfiguration,
 			List<RecordWriter<StreamRecord>> outputs,
-			List<ChannelSelector<StreamRecord>> partitioners) throws StreamComponentException {
+			List<ChannelSelector<StreamRecord>> partitioners)
+			throws StreamComponentException {
 		int numberOfOutputs = taskConfiguration.getInteger("numberOfOutputs", 0);
 		for (int i = 1; i <= numberOfOutputs; i++) {
 			setPartitioner(taskConfiguration, i, partitioners);
@@ -97,7 +99,8 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 				outputs.add(new RecordWriter<StreamRecord>((StreamSource) taskBase,
 						StreamRecord.class, outputPartitioner));
 			} else {
-				throw new StreamComponentException("Nonsupported object passed to setConfigOutputs");
+				throw new StreamComponentException(
+						"Nonsupported object passed to setConfigOutputs");
 			}
 		}
 	}
@@ -112,13 +115,15 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 		try {
 			userFunction = userFunctionClass.newInstance();
 		} catch (Exception e) {
-			log.error("Cannot instanciate user function: " + userFunctionClass.getSimpleName());
+			log.error("Cannot instanciate user function: "
+					+ userFunctionClass.getSimpleName());
 		}
 		return userFunction;
 	}
 
-	public StreamInvokableComponent getUserFunction(Configuration taskConfiguration,
-			List<RecordWriter<StreamRecord>> outputs, String instanceID,
+	public StreamInvokableComponent getUserFunction(
+			Configuration taskConfiguration,
+			List<RecordWriter<StreamRecord>> outputs, String instanceID, String name,
 			FaultToleranceBuffer recordBuffer) {
 
 		// Default value is a TaskInvokable even if it was called from a source
@@ -129,11 +134,13 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 
 		try {
 			userFunction = userFunctionClass.newInstance();
-			userFunction.declareOutputs(outputs, instanceID, recordBuffer);
+			userFunction.declareOutputs(outputs, instanceID, name, recordBuffer);
 		} catch (InstantiationException e) {
-			log.error("Cannot instanciate user function: " + userFunctionClass.getSimpleName());
+			log.error("Cannot instanciate user function: "
+					+ userFunctionClass.getSimpleName());
 		} catch (Exception e) {
-			log.error("Cannot use user function: " + userFunctionClass.getSimpleName());
+			log.error("Cannot use user function: "
+					+ userFunctionClass.getSimpleName());
 		}
 		return userFunction;
 	}
@@ -173,9 +180,12 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 			} else {
 				partitioners.add(partitioner.newInstance());
 			}
-			log.debug("Partitioner set: " + partitioner.getSimpleName()+ " with " + nrOutput + " outputs");
+			log.debug("Partitioner set: " + partitioner.getSimpleName() + " with "
+					+ nrOutput + " outputs");
 		} catch (Exception e) {
-			log.error("Error while setting partitioner: " + partitioner.getSimpleName() + " with " + nrOutput + " outputs", e);
+			log.error(
+					"Error while setting partitioner: " + partitioner.getSimpleName()
+							+ " with " + nrOutput + " outputs", e);
 		}
 	}
 
