@@ -49,8 +49,8 @@ public class WordCountCluster {
 	private static JobGraph getJobGraph() throws Exception {
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
 		graphBuilder.setSource("WordCountSource", WordCountDummySource.class);
-		graphBuilder.setTask("WordCountSplitter", WordCountSplitter.class, 2);
-		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 2);
+		graphBuilder.setTask("WordCountSplitter", WordCountSplitter.class, 4);
+		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 4);
 		graphBuilder.setSink("WordCountSink", WordCountSink.class);
 
 		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter");
@@ -62,10 +62,11 @@ public class WordCountCluster {
 	}
 
 	public static void main(String[] args) {
-		
+
 		try {
 
-			File file = new File("target/stratosphere-streaming-0.5-SNAPSHOT.jar");
+			File file = new File(
+					"target/stratosphere-streaming-0.5-SNAPSHOT.jar");
 			JobWithJars.checkJarFile(file);
 
 			JobGraph jG = getJobGraph();
