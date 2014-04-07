@@ -79,7 +79,6 @@ public class StreamTask extends AbstractTask {
 		streamTaskHelper.setFailListener(recordBuffer, taskInstanceID, outputs);
 	}
 
-	// TODO: log userfunction name
 	@Override
 	public void invoke() throws Exception {
 		log.debug("Task " + name + " invoked with instance id " + taskInstanceID);
