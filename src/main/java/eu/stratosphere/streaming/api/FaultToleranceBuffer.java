@@ -94,15 +94,14 @@ public class FaultToleranceBuffer {
 		recordBuffer.put(id, streamRecord.copy());
 		ackCounter.put(id, numberOfChannels);
 
-		//TODO: remove comments for exactly once processing
-//		int[] ackCounts = new int[numberOfChannels + 1];
-//
-//		for (int i = 0; i < numberOfOutputChannels.length; i++) {
-//			ackCounts[i + 1] = numberOfOutputChannels[i];
-//		}
-//
-//		ackMap.put(id, ackCounts);
-
+		// TODO: remove comments for exactly once processing
+		// int[] ackCounts = new int[numberOfChannels + 1];
+		//
+		// for (int i = 0; i < numberOfOutputChannels.length; i++) {
+		// ackCounts[i + 1] = numberOfOutputChannels[i];
+		// }
+		//
+		// ackMap.put(id, ackCounts);
 		addTimestamp(id);
 		log.trace("Record added to buffer: " + id);
 	}
@@ -177,11 +176,17 @@ public class FaultToleranceBuffer {
 	 */
 	public StreamRecord removeRecord(String recordID) {
 		ackCounter.remove(recordID);
-		recordsByTime.get(recordTimestamps.remove(recordID)).remove(recordID);
+		try {
+			recordsByTime.get(recordTimestamps.remove(recordID)).remove(
+					recordID);
+		} catch (Exception e) {
+			
+		}
 		log.trace("Record removed from buffer: " + recordID);
 		return recordBuffer.remove(recordID);
 	}
-
+	
+	
 	/**
 	 * Acknowledges the record of the given ID, if all the outputs have sent
 	 * acknowledgments, removes it from the buffer

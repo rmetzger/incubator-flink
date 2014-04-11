@@ -34,8 +34,8 @@ public class WordCountRemote {
 	private static JobGraph getJobGraph() throws Exception {
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
 		graphBuilder.setSource("WordCountSource", WordCountDummySource2.class);
-		graphBuilder.setTask("WordCountSplitter", WordCountSplitter.class, 4);
-		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 1);
+		graphBuilder.setTask("WordCountSplitter", WordCountSplitter.class, 2);
+		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 2);
 		graphBuilder.setSink("WordCountSink", WordCountSink.class);
 
 		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter");

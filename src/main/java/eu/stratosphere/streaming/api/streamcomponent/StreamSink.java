@@ -27,6 +27,7 @@ import eu.stratosphere.nephele.template.AbstractOutputTask;
 import eu.stratosphere.streaming.api.AckEvent;
 import eu.stratosphere.streaming.api.FailEvent;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.streaming.api.streamrecord.RecordSizeMismatchException;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
 public class StreamSink extends AbstractOutputTask {
@@ -74,9 +75,11 @@ public class StreamSink extends AbstractOutputTask {
 						userFunction.invoke(rec);
 						streamSinkHelper.threadSafePublish(new AckEvent(id), input);
 						log.debug("ACK: " + id + " -- " + name);
+					} catch (RecordSizeMismatchException e) {
+						throw (e);
 					} catch (Exception e) {
 						streamSinkHelper.threadSafePublish(new FailEvent(id), input);
-						log.warn("INVOKE FAILED: " + id + " -- " + name + " -- due to " + e.getMessage());
+						log.warn("INVOKE FAILED: " + id + " -- " + name + " -- due to " + e.getClass().getSimpleName());
 					}
 				}
 

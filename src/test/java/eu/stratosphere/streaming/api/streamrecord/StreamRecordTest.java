@@ -99,6 +99,13 @@ public class StreamRecordTest {
 		} catch (RecordSizeMismatchException e) {
 		}
 
+		StreamRecord b = new StreamRecord();
+		try {
+			b.addRecord(new StringValue("Data"), new StringValue("Stratosphere"));
+			fail();
+		} catch (RecordSizeMismatchException e) {
+		}
+		
 		try {
 			a.getField(3);
 			fail();

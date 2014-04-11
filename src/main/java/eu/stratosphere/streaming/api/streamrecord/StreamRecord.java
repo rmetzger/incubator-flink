@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 import eu.stratosphere.core.io.IOReadableWritable;
 import eu.stratosphere.types.IntValue;
@@ -114,7 +115,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @return The StreamRecord object
 	 */
 	public StreamRecord setId(String channelID) {
-		uid.setValue(channelID + "-" + rnd.nextInt(1000000));
+		UUID uuid = UUID.randomUUID();
+		uid.setValue(channelID + "-" + uuid.toString());//rnd.nextInt(10));
 		return this;
 	}
 
