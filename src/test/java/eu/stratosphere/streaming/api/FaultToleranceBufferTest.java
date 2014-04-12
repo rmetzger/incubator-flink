@@ -150,13 +150,13 @@ public class FaultToleranceBufferTest {
 		
 		 List<String> addedRecords = new ArrayList<String>();
 		
-		for(int i=0;i<100000;i++){
+		for(int i=0;i<10000;i++){
 			StreamRecord record = (new StreamRecord(1)).setId(String.valueOf(i%5));
 			addedRecords.add(record.getId());
 			faultTolerancyBuffer.addRecord(record);
 		}
 	
-		for(int i=0;i<100000;i++){
+		for(int i=0;i<10000;i++){
 			String id=addedRecords.get(i);
 			assertFalse(faultTolerancyBuffer.getAckCounter().get(id)==null);
 			assertFalse(faultTolerancyBuffer.getRecordTimestamps().get(id)==null);
