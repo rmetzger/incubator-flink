@@ -82,10 +82,12 @@ public class ExactlyOnceFaultToleranceBuffer extends FaultToleranceBuffer {
 			acks[channel + 1] = 0;
 			acks[0]++;
 
+			StreamRecord newRecord = addToChannel(id, channel);
+			
 			if (acks[0] == numberOfEffectiveChannels.length) {
 				remove(id);
 			}
-			return addToChannel(id, channel);
+			return newRecord;
 		} else {
 			return null;
 		}
