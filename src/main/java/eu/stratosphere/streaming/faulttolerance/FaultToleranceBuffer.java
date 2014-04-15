@@ -24,8 +24,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import javax.mail.search.RecipientStringTerm;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -61,15 +59,16 @@ public abstract class FaultToleranceBuffer {
 		this.recordTimestamps = new HashMap<String, Long>();
 	}
 
-	public void add(StreamRecord streamRecord) {
+	public synchronized void add(StreamRecord streamRecord) {
 
 		StreamRecord record = streamRecord.copy();
-
 		String id = record.getId();
-		addTimestamp(id);
+		
 		recordBuffer.put(id, record);
 
+		addTimestamp(id);
 		addToAckCounter(id);
+
 
 		log.trace("Record added to buffer: " + id);
 	}
@@ -97,8 +96,7 @@ public abstract class FaultToleranceBuffer {
 		Long currentTime = System.currentTimeMillis();
 
 		recordTimestamps.put(id, currentTime);
-		log.trace("Record timestamp added to buffer: " + currentTime + " " + id);
-
+		
 		Set<String> recordSet = recordsByTime.get(currentTime);
 
 		if (recordSet == null) {
@@ -110,15 +108,12 @@ public abstract class FaultToleranceBuffer {
 
 	}
 
-	public StreamRecord remove(String id) {
+	public synchronized StreamRecord remove(String id) {
 
 		if (removeFromAckCounter(id)) {
-			try {
-				recordsByTime.get(recordTimestamps.remove(id)).remove(id);
-			} catch (Exception e) {
-
-				e.printStackTrace();
-			}
+			
+			recordsByTime.get(recordTimestamps.remove(id)).remove(id);
+			
 			log.trace("Record removed from buffer: " + id);
 			return recordBuffer.remove(id);
 		} else {
