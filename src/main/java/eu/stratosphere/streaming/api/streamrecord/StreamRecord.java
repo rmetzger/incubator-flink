@@ -72,33 +72,11 @@ public class StreamRecord<T extends Tuple> implements IOReadableWritable,
 	private int numOfRecords;
 	private Class<? extends Tuple> clazz = null;
 
-	private static final Class<?>[] CLASSES = new Class<?>[] { Tuple1.class,
-			Tuple2.class, Tuple3.class, Tuple4.class, Tuple5.class,
-			Tuple6.class, Tuple7.class, Tuple8.class, Tuple9.class,
-			Tuple10.class, Tuple11.class, Tuple12.class, Tuple13.class,
-			Tuple14.class, Tuple15.class, Tuple16.class, Tuple17.class,
-			Tuple18.class, Tuple19.class, Tuple20.class, Tuple21.class,
-			Tuple22.class };
-
 	// TODO implement equals, clone
 	/**
-	 * Creates a new empty batch of records and sets the field number to one
+	 * Creates a new empty instance for read
 	 */
 	public StreamRecord() {
-		this.numOfFields = 1;
-		recordBatch = new ArrayList<T>();
-	}
-
-	/**
-	 * Creates a new empty batch of records and sets the field number to the
-	 * given number
-	 * 
-	 * @param length
-	 *            Number of fields in the records
-	 */
-	public StreamRecord(int length) {
-		numOfFields = length;
-		recordBatch = new ArrayList<T>();
 	}
 
 	/**
@@ -328,16 +306,17 @@ public class StreamRecord<T extends Tuple> implements IOReadableWritable,
 	}
 
 	private void writeTuple(Tuple tuple, DataOutput out) {
-		// Class basicType = CLASSES[tuple.getArity()-1];
-		// TypeInformation<? extends Tuple> typeInfo =
-		// TupleTypeInfo.getBasicTupleTypeInfo(basicType);
-
 		Class[] basicTypes = new Class[tuple.getArity()];
+		StringBuilder basicTypeNames = new StringBuilder();
+
 		for (int i = 0; i < basicTypes.length; i++) {
 			basicTypes[i] = tuple.getField(i).getClass();
+			basicTypeNames.append(basicTypes[i].getName() + ",");
 		}
 		TypeInformation<? extends Tuple> typeInfo = TupleTypeInfo
 				.getBasicTupleTypeInfo(basicTypes);
+
+		StringValue typeVal = new StringValue(basicTypeNames.toString());
 
 		@SuppressWarnings("unchecked")
 		TupleSerializer<Tuple> tupleSerializer = (TupleSerializer<Tuple>) typeInfo
@@ -346,6 +325,7 @@ public class StreamRecord<T extends Tuple> implements IOReadableWritable,
 				tupleSerializer);
 		serializationDelegate.setInstance(tuple);
 		try {
+			typeVal.write(out);
 			serializationDelegate.write(out);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -353,7 +333,21 @@ public class StreamRecord<T extends Tuple> implements IOReadableWritable,
 		}
 	}
 
-	public Tuple readTuple(DataInput in, Class... basicTypes) throws IOException {
+	private Tuple readTuple(DataInput in) throws IOException {
+
+		StringValue typeVal = new StringValue();
+		typeVal.read(in);
+		// TODO: use Tokenizer
+		String[] types = typeVal.getValue().split(",");
+		Class[] basicTypes = new Class[types.length];
+		for (int i = 0; i < types.length; i++) {
+			try {
+				basicTypes[i] = Class.forName(types[i]);
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 
 		TypeInformation<? extends Tuple> typeInfo = TupleTypeInfo
 				.getBasicTupleTypeInfo(basicTypes);
@@ -400,9 +394,7 @@ public class StreamRecord<T extends Tuple> implements IOReadableWritable,
 		recordBatch = new ArrayList<T>();
 
 		for (int k = 0; k < numOfRecords; ++k) {
-			T tuple = null;
-			readTuple(tuple, in, numOfFields);
-			recordBatch.add(tuple);
+			recordBatch.add((T) readTuple(in));
 		}
 	}
 
