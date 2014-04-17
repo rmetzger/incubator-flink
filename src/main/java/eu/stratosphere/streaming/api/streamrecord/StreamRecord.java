@@ -62,15 +62,22 @@ import eu.stratosphere.types.Value;
  * objects in Stratosphere stream processing. The elements of the batch are
  * Value arrays.
  */
-public class StreamRecord<T extends Tuple> implements IOReadableWritable,
-		Serializable {
+public class StreamRecord implements IOReadableWritable, Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private List<T> recordBatch;
+	private List<? extends Tuple> recordBatch;
 	private StringValue uid = new StringValue("");
 	private int numOfFields;
 	private int numOfRecords;
 	private Class<? extends Tuple> clazz = null;
+
+	private static final Class<?>[] CLASSES = new Class<?>[] { Tuple1.class,
+			Tuple2.class, Tuple3.class, Tuple4.class, Tuple5.class,
+			Tuple6.class, Tuple7.class, Tuple8.class, Tuple9.class,
+			Tuple10.class, Tuple11.class, Tuple12.class, Tuple13.class,
+			Tuple14.class, Tuple15.class, Tuple16.class, Tuple17.class,
+			Tuple18.class, Tuple19.class, Tuple20.class, Tuple21.class,
+			Tuple22.class };
 
 	// TODO implement equals, clone
 	/**
@@ -89,9 +96,11 @@ public class StreamRecord<T extends Tuple> implements IOReadableWritable,
 	 * @param batchSize
 	 *            Number of records
 	 */
-	public StreamRecord(int length, int batchSize) {
-		numOfFields = length;
-		recordBatch = new ArrayList<T>(batchSize);
+	public StreamRecord(Tuple tuple, int batchSize) {
+		numOfFields = tuple.getArity();
+		Class<?> tupleClass = CLASSES[tuple.getArity()-1];
+		tuple = (tupleClass) tuple;
+		recordBatch = new ArrayList<>(batchSize);
 	}
 
 	/**
