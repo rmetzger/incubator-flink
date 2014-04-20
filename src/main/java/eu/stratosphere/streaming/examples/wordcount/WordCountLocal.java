@@ -39,12 +39,13 @@ public class WordCountLocal {
 		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter");
 		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0, StringValue.class);
 		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink");
-
+				
 		return graphBuilder.getJobGraph();
 	}
 
 	//TODO: arguments check
 	public static void main(String[] args) {
+				 
 		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
 
 		try {
