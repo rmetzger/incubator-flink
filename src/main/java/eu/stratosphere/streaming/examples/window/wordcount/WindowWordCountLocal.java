@@ -22,6 +22,7 @@ import org.apache.log4j.Level;
 import eu.stratosphere.client.minicluster.NepheleMiniCluster;
 import eu.stratosphere.client.program.Client;
 import eu.stratosphere.configuration.Configuration;
+import eu.stratosphere.nephele.io.channels.ChannelType;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.util.LogUtils;
@@ -36,9 +37,12 @@ public class WindowWordCountLocal {
 		graphBuilder.setTask("WindowWordCountCounter", WindowWordCountCounter.class, 1);
 		graphBuilder.setSink("WindowWordCountSink", WindowWordCountSink.class);
 
-		graphBuilder.broadcastConnect("WindowWordCountSource", "WindowWordCountSplitter");
-		graphBuilder.fieldsConnect("WindowWordCountSplitter", "WindowWordCountCounter", 0);
-		graphBuilder.broadcastConnect("WindowWordCountCounter", "WindowWordCountSink");
+		graphBuilder.shuffleConnect("WindowWordCountSource", "WindowWordCountSplitter",
+				ChannelType.INMEMORY);
+		graphBuilder.fieldsConnect("WindowWordCountSplitter", "WindowWordCountCounter", 0,
+				ChannelType.INMEMORY);
+		graphBuilder.shuffleConnect("WindowWordCountCounter", "WindowWordCountSink",
+				ChannelType.INMEMORY);
 
 		return graphBuilder.getJobGraph();
 	}

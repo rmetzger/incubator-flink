@@ -22,6 +22,7 @@ import org.apache.log4j.Level;
 import eu.stratosphere.client.minicluster.NepheleMiniCluster;
 import eu.stratosphere.client.program.Client;
 import eu.stratosphere.configuration.Configuration;
+import eu.stratosphere.nephele.io.channels.ChannelType;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.util.LogUtils;
@@ -35,9 +36,9 @@ public class CellInfoLocal {
 		graphBuilder.setTask("cellTask", CellTask.class, 3);
 		graphBuilder.setSink("sink", CellSink.class);
 
-		graphBuilder.fieldsConnect("infoSource", "cellTask", 0);
-		graphBuilder.fieldsConnect("querySource", "cellTask", 0);
-		graphBuilder.shuffleConnect("cellTask", "sink");
+		graphBuilder.fieldsConnect("infoSource", "cellTask", 0, ChannelType.INMEMORY);
+		graphBuilder.fieldsConnect("querySource", "cellTask", 0, ChannelType.INMEMORY);
+		graphBuilder.shuffleConnect("cellTask", "sink", ChannelType.INMEMORY);
 
 		return graphBuilder.getJobGraph();
 	}

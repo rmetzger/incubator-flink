@@ -24,6 +24,7 @@ import eu.stratosphere.client.program.Client;
 import eu.stratosphere.client.program.JobWithJars;
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.core.fs.Path;
+import eu.stratosphere.nephele.io.channels.ChannelType;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.util.LogUtils;
@@ -37,15 +38,17 @@ public class WordCountRemote {
 		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 2);
 		graphBuilder.setSink("WordCountSink", WordCountSink.class);
 
-		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter");
-		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0);
-		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink");
-
+		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter",ChannelType.INMEMORY);
+		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0,ChannelType.NETWORK);
+		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink",ChannelType.NETWORK);
+		
+		graphBuilder.setInstanceSharing("WordCountSource", "WordCountSplitter");
+		
 		return graphBuilder.getJobGraph();
 	}
 
 	public static void main(String[] args) {
-		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
+		LogUtils.initializeDefaultConsoleLogger(Level.ERROR, Level.INFO);
 
 		try {
 			File file = new File("target/stratosphere-streaming-0.5-SNAPSHOT.jar");
@@ -56,7 +59,7 @@ public class WordCountRemote {
 			jG.addJar(new Path(file.getAbsolutePath()));
 
 			Configuration configuration = jG.getJobConfiguration();
-			Client client = new Client(new InetSocketAddress("hadoop02.ilab.sztaki.hu", 6123), configuration);
+			Client client = new Client(new InetSocketAddress("hadoop00.ilab.sztaki.hu", 6123), configuration);
 			client.run(jG, true);
 		} catch (Exception e) {
 			System.out.println(e);

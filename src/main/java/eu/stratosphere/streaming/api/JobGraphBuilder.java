@@ -95,8 +95,7 @@ public class JobGraphBuilder {
 	 *            Number of task instances of this type to run in parallel
 	 */
 	public void setSource(String sourceName,
-			final Class<? extends UserSourceInvokable> InvokableClass,
-			int parallelism) {
+			final Class<? extends UserSourceInvokable> InvokableClass, int parallelism) {
 		final JobInputVertex source = new JobInputVertex(sourceName, jobGraph);
 		source.setInputClass(StreamSource.class);
 		setComponent(sourceName, InvokableClass, parallelism, source);
@@ -111,8 +110,7 @@ public class JobGraphBuilder {
 	 * @param InvokableClass
 	 *            User defined class describing the task
 	 */
-	public void setTask(String taskName,
-			final Class<? extends UserTaskInvokable> InvokableClass) {
+	public void setTask(String taskName, final Class<? extends UserTaskInvokable> InvokableClass) {
 		setTask(taskName, InvokableClass, 1);
 	}
 
@@ -126,8 +124,7 @@ public class JobGraphBuilder {
 	 * @param parallelism
 	 *            Number of task instances of this type to run in parallel
 	 */
-	public void setTask(String taskName,
-			final Class<? extends UserTaskInvokable> InvokableClass,
+	public void setTask(String taskName, final Class<? extends UserTaskInvokable> InvokableClass,
 			int parallelism) {
 		final JobTaskVertex task = new JobTaskVertex(taskName, jobGraph);
 		task.setTaskClass(StreamTask.class);
@@ -143,8 +140,7 @@ public class JobGraphBuilder {
 	 * @param InvokableClass
 	 *            User defined class describing the sink
 	 */
-	public void setSink(String sinkName,
-			final Class<? extends UserSinkInvokable> InvokableClass) {
+	public void setSink(String sinkName, final Class<? extends UserSinkInvokable> InvokableClass) {
 		setSink(sinkName, InvokableClass, 1);
 	}
 
@@ -158,8 +154,7 @@ public class JobGraphBuilder {
 	 * @param parallelism
 	 *            Number of task instances of this type to run in parallel
 	 */
-	public void setSink(String sinkName,
-			final Class<? extends UserSinkInvokable> InvokableClass,
+	public void setSink(String sinkName, final Class<? extends UserSinkInvokable> InvokableClass,
 			int parallelism) {
 		final JobOutputVertex sink = new JobOutputVertex(sinkName, jobGraph);
 		sink.setOutputClass(StreamSink.class);
@@ -168,13 +163,12 @@ public class JobGraphBuilder {
 	}
 
 	private void setComponent(String componentName,
-			final Class<? extends UserInvokable> InvokableClass,
-			int parallelism, AbstractJobVertex component) {
+			final Class<? extends UserInvokable> InvokableClass, int parallelism,
+			AbstractJobVertex component) {
 		component.setNumberOfSubtasks(parallelism);
 		component.setNumberOfSubtasksPerInstance(parallelism);
 
-		Configuration config = new TaskConfig(component.getConfiguration())
-				.getConfiguration();
+		Configuration config = new TaskConfig(component.getConfiguration()).getConfiguration();
 		config.setClass("userfunction", InvokableClass);
 		config.setString("componentName", componentName);
 		components.put(componentName, component);
@@ -195,34 +189,33 @@ public class JobGraphBuilder {
 	 * @param channelType
 	 *            Channel Type
 	 */
-	private void connect(String upStreamComponentName,
-			String downStreamComponentName,
-			Class<? extends ChannelSelector<StreamRecord>> PartitionerClass,
-			ChannelType channelType) {
+	private void connect(String upStreamComponentName, String downStreamComponentName,
+			Class<? extends ChannelSelector<StreamRecord>> PartitionerClass, ChannelType channelType) {
 
-		AbstractJobVertex upStreamComponent = components
-				.get(upStreamComponentName);
-		AbstractJobVertex downStreamComponent = components
-				.get(downStreamComponentName);
+		AbstractJobVertex upStreamComponent = components.get(upStreamComponentName);
+		AbstractJobVertex downStreamComponent = components.get(downStreamComponentName);
 
 		try {
 			upStreamComponent.connectTo(downStreamComponent, channelType);
-			Configuration config = new TaskConfig(
-					upStreamComponent.getConfiguration()).getConfiguration();
+			Configuration config = new TaskConfig(upStreamComponent.getConfiguration())
+					.getConfiguration();
 			config.setClass(
-					"partitionerClass_"
-							+ (upStreamComponent
-									.getNumberOfForwardConnections() - 1),
+					"partitionerClass_" + (upStreamComponent.getNumberOfForwardConnections() - 1),
 					PartitionerClass);
 			log.debug("CONNECTED: " + PartitionerClass.getSimpleName() + " - "
 					+ upStreamComponentName + " -> " + downStreamComponentName);
 		} catch (JobGraphDefinitionException e) {
-			log.error(
-					"Cannot connect components with "
-							+ PartitionerClass.getSimpleName() + " : "
-							+ upStreamComponentName + " -> "
-							+ downStreamComponentName, e);
+			log.error("Cannot connect components with " + PartitionerClass.getSimpleName() + " : "
+					+ upStreamComponentName + " -> " + downStreamComponentName, e);
 		}
+	}
+
+	public void setInstanceSharing(String ComponentName1, String ComponentName2) {
+		
+		AbstractJobVertex Component1 = components.get(ComponentName1);
+		AbstractJobVertex Component2 = components.get(ComponentName2);
+		
+		Component1.setVertexToShareInstancesWith(Component2);
 	}
 
 	/**
@@ -237,12 +230,10 @@ public class JobGraphBuilder {
 	 *            Name of the downstream component, that will receive the
 	 *            records
 	 */
-	public void broadcastConnect(String upStreamComponentName,
-			String downStreamComponentName) {
-		connect(upStreamComponentName, downStreamComponentName,
-				BroadcastPartitioner.class, ChannelType.INMEMORY);
-		addOutputChannels(upStreamComponentName,
-				numberOfInstances.get(downStreamComponentName));
+	public void broadcastConnect(String upStreamComponentName, String downStreamComponentName,
+			ChannelType chType) {
+		connect(upStreamComponentName, downStreamComponentName, BroadcastPartitioner.class, chType);
+		addOutputChannels(upStreamComponentName, numberOfInstances.get(downStreamComponentName));
 	}
 
 	/**
@@ -260,41 +251,32 @@ public class JobGraphBuilder {
 	 * @param keyPosition
 	 *            Position of key in the tuple
 	 */
-	public void fieldsConnect(String upStreamComponentName,
-			String downStreamComponentName, int keyPosition) {
+	public void fieldsConnect(String upStreamComponentName, String downStreamComponentName,
+			int keyPosition, ChannelType chType) {
 
-		AbstractJobVertex upStreamComponent = components
-				.get(upStreamComponentName);
-		AbstractJobVertex downStreamComponent = components
-				.get(downStreamComponentName);
+		AbstractJobVertex upStreamComponent = components.get(upStreamComponentName);
+		AbstractJobVertex downStreamComponent = components.get(downStreamComponentName);
 
 		try {
-			upStreamComponent.connectTo(downStreamComponent,
-					ChannelType.INMEMORY);
+			upStreamComponent.connectTo(downStreamComponent, chType);
 
-			Configuration config = new TaskConfig(
-					upStreamComponent.getConfiguration()).getConfiguration();
+			Configuration config = new TaskConfig(upStreamComponent.getConfiguration())
+					.getConfiguration();
 
 			config.setClass(
-					"partitionerClass_"
-							+ (upStreamComponent
-									.getNumberOfForwardConnections() - 1),
+					"partitionerClass_" + (upStreamComponent.getNumberOfForwardConnections() - 1),
 					FieldsPartitioner.class);
 
 			config.setInteger(
 					"partitionerIntParam_"
-							+ (upStreamComponent
-									.getNumberOfForwardConnections() - 1),
-					keyPosition);
+							+ (upStreamComponent.getNumberOfForwardConnections() - 1), keyPosition);
 
 			addOutputChannels(upStreamComponentName, 1);
-			log.debug("CONNECTED: FIELD PARTITIONING - "
-					+ upStreamComponentName + " -> " + downStreamComponentName
-					+ ", KEY: " + keyPosition);
+			log.debug("CONNECTED: FIELD PARTITIONING - " + upStreamComponentName + " -> "
+					+ downStreamComponentName + ", KEY: " + keyPosition);
 		} catch (JobGraphDefinitionException e) {
-			log.error("Cannot connect components by field: "
-					+ upStreamComponentName + " to " + downStreamComponentName,
-					e);
+			log.error("Cannot connect components by field: " + upStreamComponentName + " to "
+					+ downStreamComponentName, e);
 		}
 	}
 
@@ -310,10 +292,9 @@ public class JobGraphBuilder {
 	 *            Name of the downstream component, that will receive the
 	 *            records
 	 */
-	public void globalConnect(String upStreamComponentName,
-			String downStreamComponentName) {
-		connect(upStreamComponentName, downStreamComponentName,
-				GlobalPartitioner.class, ChannelType.INMEMORY);
+	public void globalConnect(String upStreamComponentName, String downStreamComponentName,
+			ChannelType chType) {
+		connect(upStreamComponentName, downStreamComponentName, GlobalPartitioner.class, chType);
 		addOutputChannels(upStreamComponentName, 1);
 	}
 
@@ -329,23 +310,18 @@ public class JobGraphBuilder {
 	 *            Name of the downstream component, that will receive the
 	 *            records
 	 */
-	public void shuffleConnect(String upStreamComponentName,
-			String downStreamComponentName) {
-		connect(upStreamComponentName, downStreamComponentName,
-				ShufflePartitioner.class, ChannelType.INMEMORY);
+	public void shuffleConnect(String upStreamComponentName, String downStreamComponentName,
+			ChannelType chType) {
+		connect(upStreamComponentName, downStreamComponentName, ShufflePartitioner.class, chType);
 		addOutputChannels(upStreamComponentName, 1);
 	}
 
-	private void addOutputChannels(String upStreamComponentName,
-			int numOfInstances) {
+	private void addOutputChannels(String upStreamComponentName, int numOfInstances) {
 		if (numberOfOutputChannels.containsKey(upStreamComponentName)) {
-			numberOfOutputChannels.get(upStreamComponentName).add(
-					numOfInstances);
+			numberOfOutputChannels.get(upStreamComponentName).add(numOfInstances);
 		} else {
-			numberOfOutputChannels.put(upStreamComponentName,
-					new ArrayList<Integer>());
-			numberOfOutputChannels.get(upStreamComponentName).add(
-					numOfInstances);
+			numberOfOutputChannels.put(upStreamComponentName, new ArrayList<Integer>());
+			numberOfOutputChannels.get(upStreamComponentName).add(numOfInstances);
 		}
 	}
 
@@ -364,8 +340,7 @@ public class JobGraphBuilder {
 
 		for (String component : numberOfOutputChannels.keySet()) {
 			Configuration config = components.get(component).getConfiguration();
-			List<Integer> channelNumList = numberOfOutputChannels
-					.get(component);
+			List<Integer> channelNumList = numberOfOutputChannels.get(component);
 			for (int i = 0; i < channelNumList.size(); i++) {
 				config.setInteger("channels_" + i, channelNumList.get(i));
 			}

@@ -34,6 +34,7 @@ import eu.stratosphere.api.java.tuple.Tuple2;
 import eu.stratosphere.client.minicluster.NepheleMiniCluster;
 import eu.stratosphere.client.program.Client;
 import eu.stratosphere.configuration.Configuration;
+import eu.stratosphere.nephele.io.channels.ChannelType;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
@@ -49,6 +50,7 @@ public class StreamComponentTest {
 	public static class MySource extends UserSourceInvokable {
 		public MySource() {
 		}
+
 		StreamRecord record = new StreamRecord(new Tuple1<Integer>());
 
 		@Override
@@ -101,8 +103,8 @@ public class StreamComponentTest {
 		graphBuilder.setTask("MyTask", MyTask.class, 2);
 		graphBuilder.setSink("MySink", MySink.class);
 
-		graphBuilder.shuffleConnect("MySource", "MyTask");
-		graphBuilder.shuffleConnect("MyTask", "MySink");
+		graphBuilder.shuffleConnect("MySource", "MyTask", ChannelType.INMEMORY);
+		graphBuilder.shuffleConnect("MyTask", "MySink", ChannelType.INMEMORY);
 
 		JobGraph jG = graphBuilder.getJobGraph();
 		Configuration configuration = jG.getJobConfiguration();
