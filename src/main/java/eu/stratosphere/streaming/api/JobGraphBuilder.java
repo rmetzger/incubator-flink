@@ -200,13 +200,13 @@ public class JobGraphBuilder {
 	 *            Channel Type
 	 */
 	private void connect(String upStreamComponentName, String downStreamComponentName,
-			Class<? extends ChannelSelector<StreamRecord>> PartitionerClass, ChannelType channelType) {
+			Class<? extends ChannelSelector<StreamRecord>> PartitionerClass) {
 
 		AbstractJobVertex upStreamComponent = components.get(upStreamComponentName);
 		AbstractJobVertex downStreamComponent = components.get(downStreamComponentName);
 
 		try {
-			upStreamComponent.connectTo(downStreamComponent, channelType);
+			upStreamComponent.connectTo(downStreamComponent, ChannelType.NETWORK);
 			Configuration config = new TaskConfig(upStreamComponent.getConfiguration())
 					.getConfiguration();
 			config.setClass(
@@ -244,9 +244,8 @@ public class JobGraphBuilder {
 	 *            Name of the downstream component, that will receive the
 	 *            records
 	 */
-	public void broadcastConnect(String upStreamComponentName, String downStreamComponentName,
-			ChannelType chType) {
-		connect(upStreamComponentName, downStreamComponentName, BroadcastPartitioner.class, chType);
+	public void broadcastConnect(String upStreamComponentName, String downStreamComponentName) {
+		connect(upStreamComponentName, downStreamComponentName, BroadcastPartitioner.class);
 		addOutputChannels(upStreamComponentName, numberOfInstances.get(downStreamComponentName));
 	}
 
@@ -266,13 +265,13 @@ public class JobGraphBuilder {
 	 *            Position of key in the tuple
 	 */
 	public void fieldsConnect(String upStreamComponentName, String downStreamComponentName,
-			int keyPosition, ChannelType chType) {
+			int keyPosition) {
 
 		AbstractJobVertex upStreamComponent = components.get(upStreamComponentName);
 		AbstractJobVertex downStreamComponent = components.get(downStreamComponentName);
 
 		try {
-			upStreamComponent.connectTo(downStreamComponent, chType);
+			upStreamComponent.connectTo(downStreamComponent, ChannelType.NETWORK);
 
 			Configuration config = new TaskConfig(upStreamComponent.getConfiguration())
 					.getConfiguration();
@@ -306,9 +305,8 @@ public class JobGraphBuilder {
 	 *            Name of the downstream component, that will receive the
 	 *            records
 	 */
-	public void globalConnect(String upStreamComponentName, String downStreamComponentName,
-			ChannelType chType) {
-		connect(upStreamComponentName, downStreamComponentName, GlobalPartitioner.class, chType);
+	public void globalConnect(String upStreamComponentName, String downStreamComponentName) {
+		connect(upStreamComponentName, downStreamComponentName, GlobalPartitioner.class);
 		addOutputChannels(upStreamComponentName, 1);
 	}
 
@@ -324,9 +322,8 @@ public class JobGraphBuilder {
 	 *            Name of the downstream component, that will receive the
 	 *            records
 	 */
-	public void shuffleConnect(String upStreamComponentName, String downStreamComponentName,
-			ChannelType chType) {
-		connect(upStreamComponentName, downStreamComponentName, ShufflePartitioner.class, chType);
+	public void shuffleConnect(String upStreamComponentName, String downStreamComponentName) {
+		connect(upStreamComponentName, downStreamComponentName, ShufflePartitioner.class);
 		addOutputChannels(upStreamComponentName, 1);
 	}
 

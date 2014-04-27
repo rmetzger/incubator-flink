@@ -22,7 +22,6 @@ import org.apache.log4j.Level;
 import eu.stratosphere.client.minicluster.NepheleMiniCluster;
 import eu.stratosphere.client.program.Client;
 import eu.stratosphere.configuration.Configuration;
-import eu.stratosphere.nephele.io.channels.ChannelType;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.util.LogUtils;
@@ -36,9 +35,9 @@ public class WordCountLocal {
 		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 2, 1);
 		graphBuilder.setSink("WordCountSink", WordCountSink.class);
 
-		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter", ChannelType.NETWORK);
-		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0, ChannelType.NETWORK);
-		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink", ChannelType.NETWORK);
+		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter");
+		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0);
+		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink");
 
 		return graphBuilder.getJobGraph();
 	}
