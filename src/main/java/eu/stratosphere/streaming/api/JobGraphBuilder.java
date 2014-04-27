@@ -56,6 +56,8 @@ public class JobGraphBuilder {
 	private Map<String, AbstractJobVertex> components;
 	private Map<String, Integer> numberOfInstances;
 	private Map<String, List<Integer>> numberOfOutputChannels;
+	private String maxParallelismVertexName;
+	private int maxParallelism;
 
 	/**
 	 * Creates a new JobGraph with the given name
@@ -68,6 +70,8 @@ public class JobGraphBuilder {
 		components = new HashMap<String, AbstractJobVertex>();
 		numberOfInstances = new HashMap<String, Integer>();
 		numberOfOutputChannels = new HashMap<String, List<Integer>>();
+		maxParallelismVertexName = "";
+		maxParallelism = 0;
 		log.debug("JobGraph created");
 	}
 
@@ -81,7 +85,7 @@ public class JobGraphBuilder {
 	 */
 	public void setSource(String sourceName,
 			final Class<? extends UserSourceInvokable> InvokableClass) {
-		setSource(sourceName, InvokableClass, 1);
+		setSource(sourceName, InvokableClass, 1, 1);
 	}
 
 	/**
@@ -95,10 +99,11 @@ public class JobGraphBuilder {
 	 *            Number of task instances of this type to run in parallel
 	 */
 	public void setSource(String sourceName,
-			final Class<? extends UserSourceInvokable> InvokableClass, int parallelism) {
+			final Class<? extends UserSourceInvokable> InvokableClass, int parallelism,
+			int subtasksPerInstance) {
 		final JobInputVertex source = new JobInputVertex(sourceName, jobGraph);
 		source.setInputClass(StreamSource.class);
-		setComponent(sourceName, InvokableClass, parallelism, source);
+		setComponent(sourceName, InvokableClass, parallelism, subtasksPerInstance, source);
 		log.debug("SOURCE: " + sourceName);
 	}
 
@@ -111,7 +116,7 @@ public class JobGraphBuilder {
 	 *            User defined class describing the task
 	 */
 	public void setTask(String taskName, final Class<? extends UserTaskInvokable> InvokableClass) {
-		setTask(taskName, InvokableClass, 1);
+		setTask(taskName, InvokableClass, 1, 1);
 	}
 
 	/**
@@ -125,10 +130,10 @@ public class JobGraphBuilder {
 	 *            Number of task instances of this type to run in parallel
 	 */
 	public void setTask(String taskName, final Class<? extends UserTaskInvokable> InvokableClass,
-			int parallelism) {
+			int parallelism, int subtasksPerInstance) {
 		final JobTaskVertex task = new JobTaskVertex(taskName, jobGraph);
 		task.setTaskClass(StreamTask.class);
-		setComponent(taskName, InvokableClass, parallelism, task);
+		setComponent(taskName, InvokableClass, parallelism, subtasksPerInstance, task);
 		log.debug("TASK: " + taskName);
 	}
 
@@ -141,7 +146,7 @@ public class JobGraphBuilder {
 	 *            User defined class describing the sink
 	 */
 	public void setSink(String sinkName, final Class<? extends UserSinkInvokable> InvokableClass) {
-		setSink(sinkName, InvokableClass, 1);
+		setSink(sinkName, InvokableClass, 1, 1);
 	}
 
 	/**
@@ -155,18 +160,23 @@ public class JobGraphBuilder {
 	 *            Number of task instances of this type to run in parallel
 	 */
 	public void setSink(String sinkName, final Class<? extends UserSinkInvokable> InvokableClass,
-			int parallelism) {
+			int parallelism, int subtasksPerInstance) {
 		final JobOutputVertex sink = new JobOutputVertex(sinkName, jobGraph);
 		sink.setOutputClass(StreamSink.class);
-		setComponent(sinkName, InvokableClass, parallelism, sink);
+		setComponent(sinkName, InvokableClass, parallelism, subtasksPerInstance, sink);
 		log.debug("SINK: " + sinkName);
 	}
 
 	private void setComponent(String componentName,
 			final Class<? extends UserInvokable> InvokableClass, int parallelism,
-			AbstractJobVertex component) {
+			int subtasksPerInstance, AbstractJobVertex component) {
 		component.setNumberOfSubtasks(parallelism);
-		component.setNumberOfSubtasksPerInstance(parallelism);
+		component.setNumberOfSubtasksPerInstance(subtasksPerInstance);
+
+		if (parallelism > maxParallelism) {
+			maxParallelism = parallelism;
+			maxParallelismVertexName = componentName;
+		}
 
 		Configuration config = new TaskConfig(component.getConfiguration()).getConfiguration();
 		config.setClass("userfunction", InvokableClass);
@@ -210,12 +220,16 @@ public class JobGraphBuilder {
 		}
 	}
 
-	public void setInstanceSharing(String ComponentName1, String ComponentName2) {
-		
-		AbstractJobVertex Component1 = components.get(ComponentName1);
-		AbstractJobVertex Component2 = components.get(ComponentName2);
-		
-		Component1.setVertexToShareInstancesWith(Component2);
+	public void setInstanceSharing() {
+
+		AbstractJobVertex maxParallelismVertex = components.get(maxParallelismVertexName);
+
+		for (String componentName : components.keySet()) {
+			if (componentName != maxParallelismVertexName) {
+				components.get(componentName).setVertexToShareInstancesWith(maxParallelismVertex);
+			}
+		}
+
 	}
 
 	/**
@@ -351,6 +365,7 @@ public class JobGraphBuilder {
 	 * @return The JobGraph object
 	 */
 	public JobGraph getJobGraph() {
+		setInstanceSharing();
 		setNumberOfJobInputs();
 		setNumberOfJobOutputs();
 		return jobGraph;

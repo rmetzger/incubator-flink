@@ -34,16 +34,14 @@ public class WordCountRemote {
 	private static JobGraph getJobGraph() throws Exception {
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
 		graphBuilder.setSource("WordCountSource", WordCountDummySource2.class);
-		graphBuilder.setTask("WordCountSplitter", WordCountSplitter.class, 2);
-		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 2);
+		graphBuilder.setTask("WordCountSplitter", WordCountSplitter.class, 2, 2);
+		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, 2, 1);
 		graphBuilder.setSink("WordCountSink", WordCountSink.class);
 
-		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter",ChannelType.INMEMORY);
-		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0,ChannelType.NETWORK);
-		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink",ChannelType.NETWORK);
-		
-		graphBuilder.setInstanceSharing("WordCountSource", "WordCountSplitter");
-		
+		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter", ChannelType.NETWORK);
+		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0, ChannelType.NETWORK);
+		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink", ChannelType.NETWORK);
+
 		return graphBuilder.getJobGraph();
 	}
 
@@ -59,7 +57,8 @@ public class WordCountRemote {
 			jG.addJar(new Path(file.getAbsolutePath()));
 
 			Configuration configuration = jG.getJobConfiguration();
-			Client client = new Client(new InetSocketAddress("hadoop00.ilab.sztaki.hu", 6123), configuration);
+			Client client = new Client(new InetSocketAddress("hadoop00.ilab.sztaki.hu", 6123),
+					configuration);
 			client.run(jG, true);
 		} catch (Exception e) {
 			System.out.println(e);

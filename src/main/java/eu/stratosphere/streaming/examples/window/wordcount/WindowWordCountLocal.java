@@ -33,8 +33,8 @@ public class WindowWordCountLocal {
 	public static JobGraph getJobGraph() {
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
 		graphBuilder.setSource("WindowWordCountSource", WindowWordCountSource.class);
-		graphBuilder.setTask("WindowWordCountSplitter", WindowWordCountSplitter.class, 1);
-		graphBuilder.setTask("WindowWordCountCounter", WindowWordCountCounter.class, 1);
+		graphBuilder.setTask("WindowWordCountSplitter", WindowWordCountSplitter.class, 1, 1);
+		graphBuilder.setTask("WindowWordCountCounter", WindowWordCountCounter.class, 1, 1);
 		graphBuilder.setSink("WindowWordCountSink", WindowWordCountSink.class);
 
 		graphBuilder.shuffleConnect("WindowWordCountSource", "WindowWordCountSplitter",

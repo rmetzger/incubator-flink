@@ -100,7 +100,7 @@ public class StreamComponentTest {
 
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
 		graphBuilder.setSource("MySource", MySource.class);
-		graphBuilder.setTask("MyTask", MyTask.class, 2);
+		graphBuilder.setTask("MyTask", MyTask.class, 2, 1);
 		graphBuilder.setSink("MySink", MySink.class);
 
 		graphBuilder.shuffleConnect("MySource", "MyTask", ChannelType.INMEMORY);
