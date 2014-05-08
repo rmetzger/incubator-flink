@@ -19,8 +19,8 @@ if [ -d "${toDir}" ] ; then
 		done
 	done
 	'
-	scp strato@dell150.ilab.sztaki.hu:stratosphere-distrib/log/counter/* $toDir/counter/
-	scp strato@dell150.ilab.sztaki.hu:stratosphere-distrib/log/timer/* $toDir/timer/
+	scp strato@dell150.ilab.sztaki.hu:stratosphere-distrib/log/all_tests/counter/* $toDir/counter/
+	scp strato@dell150.ilab.sztaki.hu:stratosphere-distrib/log/all_tests/timer/* $toDir/timer/
 else
 	echo "USAGE:"
 	echo "run <directory>"
