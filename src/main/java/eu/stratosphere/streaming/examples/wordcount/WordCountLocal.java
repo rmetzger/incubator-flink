@@ -33,19 +33,16 @@ public class WordCountLocal {
 			int counterSubtasksPerInstance, int sinkSubtasks, int sinkSubtasksPerInstance)
 			throws Exception {
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
-		graphBuilder.setSource("WordCountSource", WordCountSource.class, sourceSubtasks,
-				sourceSubtasksPerInstance);
-		graphBuilder.setTask("WordCountSplitter", WordCountSplitter.class, splitterSubtasks,
-				splitterSubtasksPerInstance);
+		graphBuilder.setSource("WordCountSourceSplitter", WordCountSourceSplitter.class,
+				sourceSubtasks, sourceSubtasksPerInstance);
 		graphBuilder.setTask("WordCountCounter", WordCountCounter.class, counterSubtasks,
 				counterSubtasksPerInstance);
 		graphBuilder.setSink("WordCountSink", WordCountSink.class, sinkSubtasks,
 				sinkSubtasksPerInstance);
 
-		graphBuilder.shuffleConnect("WordCountSource", "WordCountSplitter");
-		graphBuilder.fieldsConnect("WordCountSplitter", "WordCountCounter", 0);
+		graphBuilder.fieldsConnect("WordCountSourceSplitter", "WordCountCounter", 0);
 		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink");
-	
+
 		return graphBuilder.getJobGraph();
 	}
 
@@ -110,8 +107,8 @@ public class WordCountLocal {
 				} else if (args[0].equals("cluster")) {
 					System.out.println("Running in Cluster mode");
 
-					Client client = new Client(new InetSocketAddress("dell150",
-							6123), configuration);
+					Client client = new Client(new InetSocketAddress("dell150", 6123),
+							configuration);
 					client.run(jG, true);
 				}
 
