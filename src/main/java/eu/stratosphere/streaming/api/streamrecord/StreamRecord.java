@@ -240,24 +240,6 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		}
 	}
 
-<<<<<<< HEAD
-	//I haven't seen any difference between getField() and getFieldFast...
-//	public Object getFieldFast(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
-//		Tuple tuple;
-//		try {
-//			tuple = tupleBatch.get(tupleNumber);
-//		} catch (IndexOutOfBoundsException e) {
-//			throw (new NoSuchTupleException());
-//		}
-//		try {
-//			return tuple.getFieldFast(fieldNumber);
-//		} catch (IndexOutOfBoundsException e) {
-//			throw (new NoSuchFieldException());
-//		}
-//	}
-
-=======
->>>>>>> upstream/master
 	/**
 	 * Get a Boolean from the given field of the first Tuple of the batch
 	 * 

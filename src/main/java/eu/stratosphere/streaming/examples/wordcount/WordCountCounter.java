@@ -27,12 +27,6 @@ public class WordCountCounter extends UserTaskInvokable {
 	private String word = "";
 	private Integer count = 0;
 
-<<<<<<< HEAD
-	PerformanceCounter perf = new PerformanceCounter("CounterEmitCounter" + this.name, 1000, 1000,
-			"");
-
-=======
->>>>>>> upstream/master
 	private StreamRecord outRecord = new StreamRecord(new Tuple2<String, Integer>());
 
 	@Override
@@ -51,13 +45,8 @@ public class WordCountCounter extends UserTaskInvokable {
 		outRecord.setInteger(1, count);
 
 		emit(outRecord);
-<<<<<<< HEAD
-		perf.count();
-	}
-=======
 		performanceCounter.count();
 
 	}
 
->>>>>>> upstream/master
 }
