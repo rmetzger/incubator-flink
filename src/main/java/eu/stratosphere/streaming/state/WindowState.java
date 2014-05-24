@@ -65,7 +65,7 @@ public class WindowState<K> {
 
 	public void pushBack(StreamRecord record) {
 		if (initTimestamp == -1) {
-			initTimestamp = record.getTuple(0).getField(windowFieldId);
+			initTimestamp = (Integer) record.getTuple(0).getField(windowFieldId);
 			nextTimestamp = initTimestamp + computeGranularity;
 			tempRecord = new StreamRecord(record.getNumOfFields());
 		}
