@@ -29,21 +29,23 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.api.java.tuple.Tuple2;
-import eu.stratosphere.api.java.tuple.Tuple20;
-import eu.stratosphere.api.java.tuple.Tuple4;
+import eu.stratosphere.api.java.tuple.Tuple3;
 import eu.stratosphere.api.java.tuple.Tuple5;
 import eu.stratosphere.api.java.tuple.Tuple9;
-import eu.stratosphere.types.StringValue;
+import eu.stratosphere.api.java.typeutils.TupleTypeInfo;
+import eu.stratosphere.api.java.typeutils.TypeExtractor;
+import eu.stratosphere.api.java.typeutils.TypeInformation;
 
 public class StreamRecordTest {
 
 	@Test
 	public void singleRecordSetGetTest() {
 		StreamRecord record = new StreamRecord(
-				new Tuple9<String, Integer, Long, Boolean, Double, Byte, Character, Float, Short>("Stratosphere", 1,
-						2L, true, 3.5, (byte) 0xa, 'a', 0.1f, (short) 42));
+				new Tuple9<String, Integer, Long, Boolean, Double, Byte, Character, Float, Short>(
+						"Stratosphere", 1, 2L, true, 3.5, (byte) 0xa, 'a', 0.1f, (short) 42));
 
 		assertEquals(9, record.getNumOfFields());
 		assertEquals(1, record.getNumOfTuples());
@@ -121,7 +123,7 @@ public class StreamRecordTest {
 		Tuple5<String, Integer, Long, Boolean, Double> tuple = new Tuple5<String, Integer, Long, Boolean, Double>(
 				"Stratosphere", 1, 2L, true, 3.5);
 
-		record.addTuple(tuple);
+		record.addTuple(StreamRecord.copyTuple(tuple));
 
 		tuple.setField("", 0);
 		tuple.setField(0, 1);
@@ -162,7 +164,8 @@ public class StreamRecordTest {
 		assertEquals(false, record.getBoolean(0, 3));
 		assertEquals((Double) 0., record.getDouble(0, 4));
 
-		record.setTuple(1, new Tuple5<String, Integer, Long, Boolean, Double>("Stratosphere", 1, 2L, true, 3.5));
+		record.setTuple(1, new Tuple5<String, Integer, Long, Boolean, Double>("Stratosphere", 1,
+				2L, true, 3.5));
 
 		assertEquals("Stratosphere", record.getString(1, 0));
 		assertEquals((Integer) 1, record.getInteger(1, 1));
@@ -180,7 +183,8 @@ public class StreamRecordTest {
 		assertEquals(false, record.getBoolean(0, 3));
 		assertEquals((Double) 0., record.getDouble(0, 4));
 
-		record.addTuple(0, new Tuple5<String, Integer, Long, Boolean, Double>("Stratosphere", 1, 2L, true, 3.5));
+		record.addTuple(0, new Tuple5<String, Integer, Long, Boolean, Double>("Stratosphere", 1,
+				2L, true, 3.5));
 
 		assertEquals(2, record.getNumOfTuples());
 
@@ -193,7 +197,7 @@ public class StreamRecordTest {
 	}
 
 	@Test
-	public void copyTest() {
+	public void copyTest() throws IOException {
 		StreamRecord a = new StreamRecord(new Tuple1<String>("Big"));
 		a.setId(0);
 		StreamRecord b = a.copy();
@@ -224,6 +228,7 @@ public class StreamRecordTest {
 	}
 
 	@Test
+<<<<<<< HEAD
 	public void getFieldSpeedTest() {
 
 		final int ITERATION = 10000;
@@ -270,6 +275,8 @@ public class StreamRecordTest {
 	}
 
 	@Test
+=======
+>>>>>>> upstream/master
 	public void exceptionTest() {
 		StreamRecord a = new StreamRecord(new Tuple1<String>("Big"));
 		try {
@@ -305,7 +312,13 @@ public class StreamRecordTest {
 
 		int num = 42;
 		String str = "above clouds";
-		StreamRecord rec = new StreamRecord(new Tuple2<Integer, String>(num, str));
+		Integer[] intArray = new Integer[] { 1, 2 };
+		Tuple3<Integer, String, Integer[]> tuple1 = new Tuple3<Integer, String, Integer[]>(num,
+				str, intArray);
+		Tuple3<Integer, String, Integer[]> tuple2 = new Tuple3<Integer, String, Integer[]>(1, "",
+				new Integer[] { 1, 2 });
+		StreamRecord rec = new StreamRecord(tuple1);
+		rec.addTuple(tuple2);
 
 		try {
 			rec.write(out);
@@ -313,10 +326,24 @@ public class StreamRecordTest {
 
 			StreamRecord newRec = new StreamRecord();
 			newRec.read(in);
-			@SuppressWarnings("unchecked")
-			Tuple2<Integer, String> tupleOut = (Tuple2<Integer, String>) newRec.getTuple(0);
 
-			assertEquals(tupleOut.getField(0), 42);
+			assertEquals(2, newRec.getNumOfTuples());
+
+			@SuppressWarnings("unchecked")
+			Tuple3<Integer, String, Integer[]> tupleOut1 = (Tuple3<Integer, String, Integer[]>) newRec
+					.getTuple(0);
+
+			assertEquals(tupleOut1.getField(0), 42);
+			assertEquals(str, tupleOut1.getField(1));
+			assertArrayEquals(intArray, (Integer[]) tupleOut1.getField(2));
+			
+			@SuppressWarnings("unchecked")
+			Tuple3<Integer, String, Integer[]> tupleOut2 = (Tuple3<Integer, String, Integer[]>) newRec
+					.getTuple(1);
+			assertEquals(tupleOut2.getField(0), 1);
+			assertEquals("", tupleOut2.getField(1));
+			assertArrayEquals(new Integer[] { 1, 2 }, (Integer[]) tupleOut2.getField(2));
+
 		} catch (IOException e) {
 			fail();
 			e.printStackTrace();
@@ -326,82 +353,124 @@ public class StreamRecordTest {
 
 	@Test
 	public void tupleCopyTest() {
-		Tuple2<String, Integer> t1 = new Tuple2<String, Integer>("a", 1);
+		Tuple3<String, Integer, Double[]> t1 = new Tuple3<String, Integer, Double[]>("a", 1,
+				new Double[] { 4.2 });
 
 		@SuppressWarnings("rawtypes")
-		Tuple2 t2 = (Tuple2) StreamRecord.copyTuple(t1);
+		Tuple3 t2 = (Tuple3) StreamRecord.copyTuple(t1);
 
 		assertEquals("a", t2.getField(0));
 		assertEquals(1, t2.getField(1));
+		assertArrayEquals(new Double[] { 4.2 }, (Double[]) t2.getField(2));
 
 		t1.setField(2, 1);
 		assertEquals(1, t2.getField(1));
 		assertEquals(2, t1.getField(1));
 
+		t1.setField(new Double[] { 3.14 }, 2);
+		assertArrayEquals(new Double[] { 3.14 }, (Double[]) t1.getField(2));
+		assertArrayEquals(new Double[] { 4.2 }, (Double[]) t2.getField(2));
+
 		assertEquals(t1.getField(0).getClass(), t2.getField(0).getClass());
 		assertEquals(t1.getField(1).getClass(), t2.getField(1).getClass());
+	}
+
+	@Test
+	public void tupleArraySerializationTest() throws IOException {
+		Tuple9<Boolean[], Byte[], Character[], Double[], Float[], Integer[], Long[], Short[], String[]> t1 = new Tuple9<Boolean[], Byte[], Character[], Double[], Float[], Integer[], Long[], Short[], String[]>(
+				new Boolean[] { true }, new Byte[] { 12 }, new Character[] { 'a' },
+				new Double[] { 12.5 }, new Float[] { 13.5f }, new Integer[] { 1234 },
+				new Long[] { 12345678900l }, new Short[] { 12345 }, new String[] { "something" });
+
+		StreamRecord s1 = new StreamRecord(t1);
+		StreamRecord s2 = s1.copySerialized();
+
+		@SuppressWarnings("rawtypes")
+		Tuple9 t2 = (Tuple9) s2.getTuple();
+
+		assertArrayEquals(new Boolean[] { true }, (Boolean[]) t2.getField(0));
+		assertArrayEquals(new Byte[] { 12 }, (Byte[]) t2.getField(1));
+		assertArrayEquals(new Character[] { 'a' }, (Character[]) t2.getField(2));
+		assertArrayEquals(new Double[] { 12.5 }, (Double[]) t2.getField(3));
+		assertArrayEquals(new Float[] { 13.5f }, (Float[]) t2.getField(4));
+		assertArrayEquals(new Integer[] { 1234 }, (Integer[]) t2.getField(5));
+		assertArrayEquals(new Long[] { 12345678900l }, (Long[]) t2.getField(6));
+		assertArrayEquals(new Short[] { 12345 }, (Short[]) t2.getField(7));
+		assertArrayEquals(new String[] { "something" }, (String[]) t2.getField(8));
+
+		assertEquals(t1.getField(0).getClass(), t2.getField(0).getClass());
+		assertEquals(t1.getField(1).getClass(), t2.getField(1).getClass());
+		assertEquals(t1.getField(2).getClass(), t2.getField(2).getClass());
+		assertEquals(t1.getField(3).getClass(), t2.getField(3).getClass());
+		assertEquals(t1.getField(4).getClass(), t2.getField(4).getClass());
+		assertEquals(t1.getField(5).getClass(), t2.getField(5).getClass());
+		assertEquals(t1.getField(6).getClass(), t2.getField(6).getClass());
+		assertEquals(t1.getField(7).getClass(), t2.getField(7).getClass());
+		assertEquals(t1.getField(8).getClass(), t2.getField(8).getClass());
+	}
+
+	// TODO:measure performance of different serialization logics
+	@Test
+	public void typeCopyTest() throws NoSuchTupleException, IOException {
+		StreamRecord rec = new StreamRecord(
+				new Tuple9<Boolean, Byte, Character, Double, Float, Integer, Long, Short, String>(
+						(Boolean) true, (Byte) (byte) 12, (Character) 'a', (Double) 12.5,
+						(Float) (float) 13.5, (Integer) 1234, (Long) 12345678900l,
+						(Short) (short) 12345, "something"));
+
+		ByteArrayOutputStream buff3 = new ByteArrayOutputStream();
+		DataOutputStream out3 = new DataOutputStream(buff3);
+		for (int i = 0; i < 1000; i++) {
+			out3.write(rec.tupleTypesToByteArray(rec.getTuple()));
+		}
 
 	}
 
 	@Test
-	public void typeCopyTest() throws NoSuchTupleException, IOException {
+	public void typeArrayCopyTest() throws NoSuchTupleException, IOException {
 		StreamRecord rec = new StreamRecord(
-				new Tuple9<Boolean, Byte, Character, Double, Float, Integer, Long, Short, String>((Boolean) true,
-						(Byte) (byte) 12, (Character) 'a', (Double) 12.5, (Float) (float) 13.5, (Integer) 1234,
-						(Long) 12345678900l, (Short) (short) 12345, "something"));
-		@SuppressWarnings({ "rawtypes", "unused" })
-		Class[] types = new Class[9];
-		assertArrayEquals(new Class[] { Boolean.class, Byte.class, Character.class, Double.class, Float.class,
-				Integer.class, Long.class, Short.class, String.class },
-				rec.tupleBasicTypesFromLong(rec.tupleBasicTypesToLong(rec.getTuple()), 9));
-		assertArrayEquals(new Class[] { Boolean.class, Byte.class, Character.class, Double.class, Float.class,
-				Integer.class, Long.class, Short.class, String.class },
-				rec.tupleBasicTypesFromString(rec.tupleBasicTypesToString(rec.getTuple()), 9));
-		assertArrayEquals(new Class[] { Boolean.class, Byte.class, Character.class, Double.class, Float.class,
-				Integer.class, Long.class, Short.class, String.class },
-				rec.tupleBasicTypesFromByteArray(rec.tupleBasicTypesToByteArray(rec.getTuple()), 9));
+				new Tuple9<Boolean[], Byte[], Character[], Double[], Float[], Integer[], Long[], Short[], String[]>(
+						new Boolean[] { true }, new Byte[] { 12 }, new Character[] { 'a' },
+						new Double[] { 12.5 }, new Float[] { 13.5f }, new Integer[] { 1234 },
+						new Long[] { 12345678900l }, new Short[] { 12345 },
+						new String[] { "something" }));
 
 		ByteArrayOutputStream buff = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(buff);
-		long start = System.nanoTime();
-		for (int i = 0; i < 1000; i++) {
-			out.writeLong(rec.tupleBasicTypesToLong(rec.getTuple()));
+		for (int i = 0; i < 10000; i++) {
+			out.write(rec.tupleTypesToByteArray(rec.getTuple()));
 		}
 		DataInputStream in = new DataInputStream(new ByteArrayInputStream(buff.toByteArray()));
-		for (int i = 0; i < 1000; i++) {
-			rec.tupleBasicTypesFromLong(in.readLong(), 9);
-		}
-		System.out.println("Type copy with Long:\t\t" + (System.nanoTime() - start) + " ns");
-
-		ByteArrayOutputStream buff2 = new ByteArrayOutputStream();
-		DataOutputStream out2 = new DataOutputStream(buff2);
-		start = System.nanoTime();
-		for (int i = 0; i < 1000; i++) {
-			StringValue sv = new StringValue(rec.tupleBasicTypesToString(rec.getTuple()));
-			sv.write(out2);
-		}
-		DataInputStream in2 = new DataInputStream(new ByteArrayInputStream(buff2.toByteArray()));
-		for (int i = 0; i < 1000; i++) {
-			StringValue sv = new StringValue("");
-			sv.read(in2);
-			@SuppressWarnings({ "unused", "rawtypes" })
-			Class[] types2 = rec.tupleBasicTypesFromString(sv.getValue(), 9);
-		}
-		System.out.println("Type copy with String:\t\t" + (System.nanoTime() - start) + " ns");
-
-		ByteArrayOutputStream buff3 = new ByteArrayOutputStream();
-		DataOutputStream out3 = new DataOutputStream(buff3);
-		start = System.nanoTime();
-		for (int i = 0; i < 1000; i++) {
-			out3.write(rec.tupleBasicTypesToByteArray(rec.getTuple()));
-		}
-		DataInputStream in3 = new DataInputStream(new ByteArrayInputStream(buff3.toByteArray()));
-		for (int i = 0; i < 1000; i++) {
+		StreamRecord rec2 = new StreamRecord();
+		Long start = System.nanoTime();
+		for (int i = 0; i < 10000; i++) {
 			byte[] byteTypes = new byte[9];
-			in3.read(byteTypes);
-			@SuppressWarnings({ "unused", "rawtypes" })
-			Class[] types2 = rec.tupleBasicTypesFromByteArray(byteTypes, 9);
+			in.read(byteTypes);
+			TypeInformation<?>[] basicTypes = rec2.tupleTypesFromByteArray(byteTypes);
+			@SuppressWarnings("unused")
+			TupleTypeInfo<Tuple> typeInfo = new TupleTypeInfo<Tuple>(basicTypes);
 		}
-		System.out.println("Type copy with ByteArray:\t" + (System.nanoTime() - start) + " ns");	
+		System.out.println("Type copy with ByteArray:\t" + (System.nanoTime() - start) + " ns");
+
+		start = System.nanoTime();
+
+		byte[] byteTypes = rec.tupleTypesToByteArray(rec.getTuple());
+		Tuple t = rec.getTuple();
+
+		start = System.nanoTime();
+		for (int i = 0; i < 10000; i++) {
+			// rec2.tupleBasicTypesFromByteArray(byteTypes, 9);
+			TypeInformation<?>[] basicTypes = rec2.tupleTypesFromByteArray(byteTypes);
+			@SuppressWarnings("unused")
+			TupleTypeInfo<Tuple> typeInfo = new TupleTypeInfo<Tuple>(basicTypes);
+		}
+		System.out.println("Write with infoArray:\t\t" + (System.nanoTime() - start) + " ns");
+		start = System.nanoTime();
+		for (int i = 0; i < 10000; i++) {
+			@SuppressWarnings("unused")
+			TupleTypeInfo<Tuple> typeInfo = (TupleTypeInfo<Tuple>) TypeExtractor.getForObject(t);
+		}
+		System.out.println("Write with extract:\t\t" + (System.nanoTime() - start) + " ns");
 	}
+
 }

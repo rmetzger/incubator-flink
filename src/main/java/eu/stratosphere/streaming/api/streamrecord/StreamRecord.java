@@ -50,13 +50,14 @@ import eu.stratosphere.api.java.tuple.Tuple6;
 import eu.stratosphere.api.java.tuple.Tuple7;
 import eu.stratosphere.api.java.tuple.Tuple8;
 import eu.stratosphere.api.java.tuple.Tuple9;
+import eu.stratosphere.api.java.typeutils.BasicArrayTypeInfo;
+import eu.stratosphere.api.java.typeutils.BasicTypeInfo;
 import eu.stratosphere.api.java.typeutils.TupleTypeInfo;
 import eu.stratosphere.api.java.typeutils.TypeInformation;
 import eu.stratosphere.api.java.typeutils.runtime.TupleSerializer;
 import eu.stratosphere.core.io.IOReadableWritable;
 import eu.stratosphere.pact.runtime.plugable.DeserializationDelegate;
 import eu.stratosphere.pact.runtime.plugable.SerializationDelegate;
-import eu.stratosphere.types.IntValue;
 
 /**
  * Object for storing serializable records in batch (single records are
@@ -64,7 +65,6 @@ import eu.stratosphere.types.IntValue;
  * objects in Stratosphere stream processing. The elements of the batch are
  * Tuples.
  */
-// TODO: update documentation
 public class StreamRecord implements IOReadableWritable, Serializable {
 	private static final long serialVersionUID = 1L;
 
@@ -72,10 +72,12 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	private UID uid = new UID();
 	private int numOfFields;
 	private int numOfTuples;
+	private int batchSize;
 
-	private static final Class<?>[] CLASSES = new Class<?>[] { Tuple1.class, Tuple2.class, Tuple3.class, Tuple4.class,
-			Tuple5.class, Tuple6.class, Tuple7.class, Tuple8.class, Tuple9.class, Tuple10.class, Tuple11.class,
-			Tuple12.class, Tuple13.class, Tuple14.class, Tuple15.class, Tuple16.class, Tuple17.class, Tuple18.class,
+	private static final Class<?>[] CLASSES = new Class<?>[] { Tuple1.class, Tuple2.class,
+			Tuple3.class, Tuple4.class, Tuple5.class, Tuple6.class, Tuple7.class, Tuple8.class,
+			Tuple9.class, Tuple10.class, Tuple11.class, Tuple12.class, Tuple13.class,
+			Tuple14.class, Tuple15.class, Tuple16.class, Tuple17.class, Tuple18.class,
 			Tuple19.class, Tuple20.class, Tuple21.class, Tuple22.class };
 
 	/**
@@ -83,15 +85,30 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 */
 	public StreamRecord() {}
 
+	/**
+	 * Creates empty StreamRecord with number of fields set
+	 * 
+	 * @param numOfFields
+	 *            number of fields
+	 */
 	public StreamRecord(int numOfFields) {
 		this.numOfFields = numOfFields;
 		this.numOfTuples = 0;
 		tupleBatch = new ArrayList<Tuple>();
 	}
 
+	/**
+	 * Creates empty StreamRecord with number of fields and batch size set
+	 * 
+	 * @param numOfFields
+	 *            Number of fields in the tuples
+	 * @param batchSize
+	 *            Batch size
+	 */
 	public StreamRecord(int numOfFields, int batchSize) {
 		this.numOfFields = numOfFields;
 		this.numOfTuples = 0;
+		this.batchSize = batchSize;
 		tupleBatch = new ArrayList<Tuple>(batchSize);
 	}
 	
@@ -117,6 +134,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	public StreamRecord(Tuple tuple, int batchSize) {
 		numOfFields = tuple.getArity();
 		numOfTuples = 1;
+		this.batchSize = batchSize;
 		tupleBatch = new ArrayList<Tuple>(batchSize);
 		tupleBatch.add(tuple);
 
@@ -171,6 +189,17 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	}
 
 	/**
+	 * Initializes the record batch elemnts to null
+	 */
+	public void initRecords() {
+		tupleBatch.clear();
+		for (int i = 0; i < batchSize; i++) {
+			tupleBatch.add(null);
+		}
+		numOfTuples = batchSize;
+	}
+
+	/**
 	 * Returns the value of a field in the given position of the first tuple in
 	 * the batch as an object, cast needed to obtain a typed version
 	 * 
@@ -196,7 +225,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Object getField(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Object getField(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		Tuple tuple;
 		try {
 			tuple = tupleBatch.get(tupleNumber);
@@ -210,6 +240,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		}
 	}
 
+<<<<<<< HEAD
 	//I haven't seen any difference between getField() and getFieldFast...
 //	public Object getFieldFast(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
 //		Tuple tuple;
@@ -225,6 +256,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 //		}
 //	}
 
+=======
+>>>>>>> upstream/master
 	/**
 	 * Get a Boolean from the given field of the first Tuple of the batch
 	 * 
@@ -250,7 +283,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 *             , NoSuchFieldException
 	 */
 	// TODO: add exception for cast for all getters
-	public Boolean getBoolean(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Boolean getBoolean(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Boolean) getField(tupleNumber, fieldNumber);
 	}
 
@@ -278,7 +312,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Byte getByte(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Byte getByte(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Byte) getField(tupleNumber, fieldNumber);
 	}
 
@@ -291,7 +326,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Character getCharacter(int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Character getCharacter(int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return getCharacter(0, fieldNumber);
 	}
 
@@ -306,7 +342,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Character getCharacter(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Character getCharacter(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Character) getField(tupleNumber, fieldNumber);
 	}
 
@@ -334,7 +371,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Double getDouble(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Double getDouble(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Double) getField(tupleNumber, fieldNumber);
 	}
 
@@ -362,7 +400,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Float getFloat(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Float getFloat(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Float) getField(tupleNumber, fieldNumber);
 	}
 
@@ -390,7 +429,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Integer getInteger(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Integer getInteger(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Integer) getField(tupleNumber, fieldNumber);
 	}
 
@@ -418,7 +458,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Long getLong(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Long getLong(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Long) getField(tupleNumber, fieldNumber);
 	}
 
@@ -446,7 +487,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , NoSuchFieldException
 	 */
-	public Short getShort(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public Short getShort(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (Short) getField(tupleNumber, fieldNumber);
 	}
 
@@ -472,7 +514,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 *            Position of the field in the tuple
 	 * @return value of the field as String
 	 */
-	public String getString(int tupleNumber, int fieldNumber) throws NoSuchTupleException, NoSuchFieldException {
+	public String getString(int tupleNumber, int fieldNumber) throws NoSuchTupleException,
+			NoSuchFieldException {
 		return (String) getField(tupleNumber, fieldNumber);
 	}
 
@@ -593,7 +636,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 *            New value
 	 * @throws NoSuchFieldException
 	 */
-	public void setCharacter(int tupleNumber, int fieldNumber, Character c) throws NoSuchFieldException {
+	public void setCharacter(int tupleNumber, int fieldNumber, Character c)
+			throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, c);
 	}
 
@@ -816,7 +860,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , TupleSizeMismatchException
 	 */
-	public void getTupleInto(int tupleNumber, Tuple tuple) throws NoSuchTupleException, TupleSizeMismatchException {
+	public void getTupleInto(int tupleNumber, Tuple tuple) throws NoSuchTupleException,
+			TupleSizeMismatchException {
 
 		if (tuple.getArity() == numOfFields) {
 			try {
@@ -834,7 +879,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	}
 
 	/**
-	 * Sets the first tuple in the batch with a deep copy of the given tuple
+	 * Sets the first tuple in the batch with the given tuple
 	 * 
 	 * @param tuple
 	 *            Tuple to set
@@ -845,8 +890,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	}
 
 	/**
-	 * Sets a tuple at the given position in the batch with a deep copy of the
-	 * given tuple
+	 * Sets a tuple at the given position in the batch with the given tuple
 	 * 
 	 * @param tupleNumber
 	 *            Position of tuple in the batch
@@ -855,10 +899,11 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @throws NoSuchTupleException
 	 *             , TupleSizeMismatchException
 	 */
-	public void setTuple(int tupleNumber, Tuple tuple) throws NoSuchTupleException, TupleSizeMismatchException {
+	public void setTuple(int tupleNumber, Tuple tuple) throws NoSuchTupleException,
+			TupleSizeMismatchException {
 		if (tuple.getArity() == numOfFields) {
 			try {
-				tupleBatch.set(tupleNumber, copyTuple(tuple));
+				tupleBatch.set(tupleNumber, tuple);
 			} catch (IndexOutOfBoundsException e) {
 				throw (new NoSuchTupleException());
 			}
@@ -869,7 +914,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 
 	/**
 	 * Checks if the number of fields are equal to the batch field size then
-	 * adds the deep copy of Tuple to the end of the batch
+	 * adds the Tuple to the end of the batch
 	 * 
 	 * @param tuple
 	 *            Tuple to be added as the next record of the batch
@@ -880,7 +925,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 
 	/**
 	 * Checks if the number of fields are equal to the batch field size then
-	 * inserts the deep copy of Tuple to the given position into the recordbatch
+	 * inserts the Tuple to the given position into the recordbatch
 	 * 
 	 * @param index
 	 *            Position of the added tuple
@@ -889,7 +934,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 */
 	public void addTuple(int index, Tuple tuple) throws TupleSizeMismatchException {
 		if (tuple.getArity() == numOfFields) {
-			tupleBatch.add(index, copyTuple(tuple));
+			tupleBatch.add(index, tuple);
 			numOfTuples++;
 		} else {
 			throw new TupleSizeMismatchException();
@@ -942,19 +987,21 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		}
 	}	
 
-	public StreamRecord copySerialized() {
-
+	/**
+	 * Creates a copy of the StreamRecord object by Serializing and
+	 * deserializing it
+	 * 
+	 * @return copy of the StreamRecord
+	 * @throws IOException
+	 */
+	public StreamRecord copySerialized() throws IOException {
 		ByteArrayOutputStream buff = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(buff);
 		StreamRecord newRecord = new StreamRecord();
-		try {
-			this.write(out);
-			DataInputStream in = new DataInputStream(new ByteArrayInputStream(buff.toByteArray()));
+		this.write(out);
+		DataInputStream in = new DataInputStream(new ByteArrayInputStream(buff.toByteArray()));
 
-			newRecord.read(in);
-		} catch (Exception e) {
-		}
-
+		newRecord.read(in);
 		return newRecord;
 	}
 
@@ -982,20 +1029,59 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param tuple
 	 *            Tuple to copy
 	 * @return Copy of the tuple
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
 	 */
 	public static Tuple copyTuple(Tuple tuple) {
+		// TODO: implement deep copy for arrays
 		int numofFields = tuple.getArity();
 		Tuple newTuple = null;
 		try {
 			newTuple = (Tuple) CLASSES[numofFields - 1].newInstance();
-		} catch (Exception e) {
 
+			for (int i = 0; i < numofFields; i++) {
+				Class<? extends Object> type = tuple.getField(i).getClass();
+				if (type.isArray()) {
+					if (type.equals(Boolean[].class)) {
+						Boolean[] arr = (Boolean[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(Byte[].class)) {
+						Byte[] arr = (Byte[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(Character[].class)) {
+						Character[] arr = (Character[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(Double[].class)) {
+						Double[] arr = (Double[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(Float[].class)) {
+						Float[] arr = (Float[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(Integer[].class)) {
+						Integer[] arr = (Integer[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(Long[].class)) {
+						Long[] arr = (Long[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(Short[].class)) {
+						Short[] arr = (Short[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					} else if (type.equals(String[].class)) {
+						String[] arr = (String[]) tuple.getField(i);
+						newTuple.setField(Arrays.copyOf(arr, arr.length), i);
+					}
+					newTuple.setField(tuple.getField(i), i);
+				} else {
+					newTuple.setField(tuple.getField(i), i);
+				}
+			}
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
-		for (int i = 0; i < numofFields; i++) {
-			newTuple.setField(tuple.getField(i), i);
-		}
-
 		return newTuple;
 	}
 
@@ -1016,7 +1102,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param tuple
 	 * @return byte array representing types
 	 */
-	byte[] tupleBasicTypesToByteArray(Tuple tuple) {
+	byte[] tupleTypesToByteArray(Tuple tuple) {
 		byte[] typeNums = new byte[numOfFields];
 		for (int i = 0; i < typeNums.length; i++) {
 			Class<? extends Object> type = tuple.getField(i).getClass();
@@ -1038,6 +1124,24 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 				typeNums[i] = 7;
 			} else if (type.equals(String.class)) {
 				typeNums[i] = 8;
+			} else if (type.equals(Boolean[].class)) {
+				typeNums[i] = 9;
+			} else if (type.equals(Byte[].class)) {
+				typeNums[i] = 10;
+			} else if (type.equals(Character[].class)) {
+				typeNums[i] = 11;
+			} else if (type.equals(Double[].class)) {
+				typeNums[i] = 12;
+			} else if (type.equals(Float[].class)) {
+				typeNums[i] = 13;
+			} else if (type.equals(Integer[].class)) {
+				typeNums[i] = 14;
+			} else if (type.equals(Long[].class)) {
+				typeNums[i] = 15;
+			} else if (type.equals(Short[].class)) {
+				typeNums[i] = 16;
+			} else if (type.equals(String[].class)) {
+				typeNums[i] = 17;
 			}
 		}
 		return typeNums;
@@ -1048,221 +1152,73 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * 
 	 * @param byte array representing types
 	 * @param numberOfFields
-	 * @return Class array of field types
+	 * @return TypeInfo array of field types
 	 */
 	@SuppressWarnings("rawtypes")
-	Class[] tupleBasicTypesFromByteArray(byte[] representation, int numberOfFields) {
-		Class[] basicTypes = new Class[representation.length];
+	TypeInformation[] tupleTypesFromByteArray(byte[] representation) {
+		TypeInformation[] basicTypes = new TypeInformation[representation.length];
 		for (int i = 0; i < basicTypes.length; i++) {
 			switch (representation[i]) {
 			case 0:
-				basicTypes[i] = java.lang.Boolean.class;
+				basicTypes[i] = BasicTypeInfo.BOOLEAN_TYPE_INFO;
 				break;
 			case 1:
-				basicTypes[i] = java.lang.Byte.class;
+				basicTypes[i] = BasicTypeInfo.BYTE_TYPE_INFO;
 				break;
 			case 2:
-				basicTypes[i] = java.lang.Character.class;
+				basicTypes[i] = BasicTypeInfo.CHAR_TYPE_INFO;
 				break;
 			case 3:
-				basicTypes[i] = java.lang.Double.class;
+				basicTypes[i] = BasicTypeInfo.DOUBLE_TYPE_INFO;
 				break;
 			case 4:
-				basicTypes[i] = java.lang.Float.class;
+				basicTypes[i] = BasicTypeInfo.FLOAT_TYPE_INFO;
 				break;
 			case 5:
-				basicTypes[i] = java.lang.Integer.class;
+				basicTypes[i] = BasicTypeInfo.INT_TYPE_INFO;
 				break;
 			case 6:
-				basicTypes[i] = java.lang.Long.class;
+				basicTypes[i] = BasicTypeInfo.LONG_TYPE_INFO;
 				break;
 			case 7:
-				basicTypes[i] = java.lang.Short.class;
+				basicTypes[i] = BasicTypeInfo.SHORT_TYPE_INFO;
 				break;
 			case 8:
-				basicTypes[i] = java.lang.String.class;
+				basicTypes[i] = BasicTypeInfo.STRING_TYPE_INFO;
+				break;
+			case 9:
+				basicTypes[i] = BasicArrayTypeInfo.BOOLEAN_ARRAY_TYPE_INFO;
+				break;
+			case 10:
+				basicTypes[i] = BasicArrayTypeInfo.BYTE_ARRAY_TYPE_INFO;
+				break;
+			case 11:
+				basicTypes[i] = BasicArrayTypeInfo.CHAR_ARRAY_TYPE_INFO;
+				break;
+			case 12:
+				basicTypes[i] = BasicArrayTypeInfo.DOUBLE_ARRAY_TYPE_INFO;
+				break;
+			case 13:
+				basicTypes[i] = BasicArrayTypeInfo.FLOAT_ARRAY_TYPE_INFO;
+				break;
+			case 14:
+				basicTypes[i] = BasicArrayTypeInfo.INT_ARRAY_TYPE_INFO;
+				break;
+			case 15:
+				basicTypes[i] = BasicArrayTypeInfo.LONG_ARRAY_TYPE_INFO;
+				break;
+			case 16:
+				basicTypes[i] = BasicArrayTypeInfo.SHORT_ARRAY_TYPE_INFO;
+				break;
+			case 17:
+				basicTypes[i] = BasicArrayTypeInfo.STRING_ARRAY_TYPE_INFO;
 				break;
 			default:
-				basicTypes[i] = java.lang.String.class;
+				basicTypes[i] = BasicTypeInfo.STRING_TYPE_INFO;
 				break;
 			}
 		}
 		return basicTypes;
-	}
-
-	/**
-	 * Converts tuple field types to long
-	 * 
-	 * @param tuple
-	 *            Tuple to convert
-	 * @return long number representing all the tuple field types
-	 */
-	long tupleBasicTypesToLong(Tuple tuple) {
-		byte[] typeNums = tupleBasicTypesToByteArray(tuple);
-
-		long representation = 0;
-		long multiplyBy = 1;
-		for (int i = 0; i < typeNums.length; i++) {
-			representation += typeNums[i] * multiplyBy;
-			multiplyBy *= 9;
-		}
-
-		return representation;
-	}
-
-	/**
-	 * Converts long type representation to Class array
-	 * 
-	 * @param representation
-	 *            Long representation of types
-	 * @param numberOfFields
-	 *            The number of fields
-	 * @return array of field types
-	 */
-	@SuppressWarnings("rawtypes")
-	Class[] tupleBasicTypesFromLong(long representation, int numberOfFields) {
-		int[] typeNums = new int[numberOfFields];
-
-		for (int i = 0; i < typeNums.length; i++) {
-			typeNums[i] = (int) (representation % 9);
-			representation = representation / 9;
-		}
-
-		Class[] basicTypes = new Class[typeNums.length];
-		for (int i = 0; i < basicTypes.length; i++) {
-			switch (typeNums[i]) {
-			case 0:
-				basicTypes[i] = java.lang.Boolean.class;
-				break;
-			case 1:
-				basicTypes[i] = java.lang.Byte.class;
-				break;
-			case 2:
-				basicTypes[i] = java.lang.Character.class;
-				break;
-			case 3:
-				basicTypes[i] = java.lang.Double.class;
-				break;
-			case 4:
-				basicTypes[i] = java.lang.Float.class;
-				break;
-			case 5:
-				basicTypes[i] = java.lang.Integer.class;
-				break;
-			case 6:
-				basicTypes[i] = java.lang.Long.class;
-				break;
-			case 7:
-				basicTypes[i] = java.lang.Short.class;
-				break;
-			case 8:
-				basicTypes[i] = java.lang.String.class;
-				break;
-			default:
-				basicTypes[i] = java.lang.String.class;
-				break;
-			}
-		}
-		return basicTypes;
-	}
-
-	/**
-	 * Converts tuple field types to String
-	 * 
-	 * @param tuple
-	 * @return String representing all the tuple field types
-	 */
-	@SuppressWarnings("rawtypes")
-	String tupleBasicTypesToString(Tuple tuple) {
-		Class[] basicTypes = new Class[tuple.getArity()];
-
-		StringBuilder basicTypeNames = new StringBuilder();
-
-		// TODO: exception for empty record - no getField!
-		for (int i = 0; i < basicTypes.length; i++) {
-			basicTypes[i] = tuple.getField(i).getClass();
-			basicTypeNames.append(basicTypes[i].getName() + ",");
-		}
-
-		return basicTypeNames.toString();
-	}
-
-	/**
-	 * Converts tuple field types from String
-	 * 
-	 * @param String
-	 *            representation of types
-	 * @param numberOfFields
-	 * @return array of field types
-	 */
-	@SuppressWarnings("rawtypes")
-	Class[] tupleBasicTypesFromString(String representation, int numberOfFields) {
-		// TODO: use StringTokenizer
-		String[] types = representation.split(",");
-		Class[] basicTypes = new Class[types.length];
-		for (int i = 0; i < types.length; i++) {
-			try {
-				basicTypes[i] = Class.forName(types[i]);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		return basicTypes;
-	}
-
-	/**
-	 * Writes tuple to the specified DataOutput
-	 * 
-	 * @param tuple
-	 *            Tuple to be written
-	 * @param out
-	 *            Output chosen
-	 */
-	private void writeTuple(Tuple tuple, DataOutput out) {
-		@SuppressWarnings("rawtypes")
-		// TODO: exception for empty record - no getField
-		Class[] basicTypes = new Class[tuple.getArity()];
-		for (int i = 0; i < basicTypes.length; i++) {
-			basicTypes[i] = tuple.getField(i).getClass();
-		}
-
-		TypeInformation<? extends Tuple> typeInfo = TupleTypeInfo.getBasicTupleTypeInfo(basicTypes);
-		@SuppressWarnings("unchecked")
-		TupleSerializer<Tuple> tupleSerializer = (TupleSerializer<Tuple>) typeInfo.createSerializer();
-		SerializationDelegate<Tuple> serializationDelegate = new SerializationDelegate<Tuple>(tupleSerializer);
-		serializationDelegate.setInstance(tuple);
-		try {
-			out.writeInt(numOfFields);
-			out.write(tupleBasicTypesToByteArray(getTuple()));
-			serializationDelegate.write(out);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Reads a tuple from the specified DataInput
-	 * 
-	 * @param in
-	 *            Input chosen
-	 * @return Tuple read
-	 * @throws IOException
-	 */
-	private Tuple readTuple(DataInput in) throws IOException {
-
-		int numberOfFields = in.readInt();
-		byte[] typesInByte = new byte[numberOfFields];
-		in.readFully(typesInByte, 0, numberOfFields);
-		@SuppressWarnings("rawtypes")
-		Class[] basicTypes = tupleBasicTypesFromByteArray(typesInByte, numberOfFields);
-		TypeInformation<? extends Tuple> typeInfo = TupleTypeInfo.getBasicTupleTypeInfo(basicTypes);
-		@SuppressWarnings("unchecked")
-		TupleSerializer<Tuple> tupleSerializer = (TupleSerializer<Tuple>) typeInfo.createSerializer();
-
-		DeserializationDelegate<Tuple> dd = new DeserializationDelegate<Tuple>(tupleSerializer);
-		dd.setInstance(tupleSerializer.createInstance());
-		dd.read(in);
-		return dd.getInstance();
 	}
 
 	/**
@@ -1270,16 +1226,25 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 */
 	@Override
 	public void write(DataOutput out) throws IOException {
+
 		uid.write(out);
 
-		// Write the number of fields with an IntValue
-		(new IntValue(numOfFields)).write(out);
+		out.writeByte(numOfFields);
+		out.writeInt(numOfTuples);
 
-		// Write the number of records with an IntValue
-		(new IntValue(numOfTuples)).write(out);
+		byte[] typesInByte = tupleTypesToByteArray(getTuple());
+		out.write(typesInByte);
+
+		TupleTypeInfo<Tuple> typeInfo = new TupleTypeInfo<Tuple>(
+				tupleTypesFromByteArray(typesInByte));
+		TupleSerializer<Tuple> tupleSerializer = (TupleSerializer<Tuple>) typeInfo
+				.createSerializer();
+		SerializationDelegate<Tuple> serializationDelegate = new SerializationDelegate<Tuple>(
+				tupleSerializer);
 
 		for (Tuple tuple : tupleBatch) {
-			writeTuple(tuple, out);
+			serializationDelegate.setInstance(tuple);
+			serializationDelegate.write(out);
 		}
 	}
 
@@ -1291,21 +1256,24 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		uid = new UID();
 		uid.read(in);
 
-		// Get the number of fields
-		IntValue numOfFieldsValue = new IntValue(0);
-		numOfFieldsValue.read(in);
-		numOfFields = numOfFieldsValue.getValue();
+		numOfFields = in.readByte();
+		numOfTuples = in.readInt();
 
-		// Get the number of records
-		IntValue numOfRecordsValue = new IntValue(0);
-		numOfRecordsValue.read(in);
-		numOfTuples = numOfRecordsValue.getValue();
+		tupleBatch = new ArrayList<Tuple>(numOfTuples);
 
-		// Make sure the fields have numOfFields elements
-		tupleBatch = new ArrayList<Tuple>();
+		byte[] typesInByte = new byte[numOfFields];
+		in.readFully(typesInByte, 0, numOfFields);
+
+		TupleTypeInfo<Tuple> typeInfo = new TupleTypeInfo<Tuple>(
+				tupleTypesFromByteArray(typesInByte));
+		TupleSerializer<Tuple> tupleSerializer = typeInfo.createSerializer();
+
+		DeserializationDelegate<Tuple> dd = new DeserializationDelegate<Tuple>(tupleSerializer);
 
 		for (int k = 0; k < numOfTuples; ++k) {
-			tupleBatch.add(readTuple(in));
+			dd.setInstance(tupleSerializer.createInstance());
+			dd.read(in);
+			tupleBatch.add(dd.getInstance());
 		}
 	}
 
