@@ -75,7 +75,7 @@ public class WindowState<K> {
 				currentRecordCount += 1;
 				tempRecord = new StreamRecord(record.getNumOfFields());
 			}
-			tempRecord.addShadowTuple(record.getTuple(i));
+			tempRecord.addTuple(record.getTuple(i));
 		}
 	}
 
