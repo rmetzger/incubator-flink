@@ -83,7 +83,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	/**
 	 * Creates a new empty instance for read
 	 */
-	public StreamRecord() {}
+	public StreamRecord() {
+	}
 
 	/**
 	 * Creates empty StreamRecord with number of fields set
@@ -111,7 +112,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		this.batchSize = batchSize;
 		tupleBatch = new ArrayList<Tuple>(batchSize);
 	}
-	
+
 	public StreamRecord(StreamRecord record) {
 		this.numOfFields = record.getNumOfFields();
 		this.numOfTuples = 0;
@@ -150,10 +151,10 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		this(tuple, 1);
 	}
 
-	public boolean isEmpty(){
-		return (this.numOfTuples==0);
+	public boolean isEmpty() {
+		return (this.numOfTuples == 0);
 	}
-	
+
 	/**
 	 * @return Number of fields in the tuples
 	 */
@@ -508,6 +509,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param o
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setField(int fieldNumber, Object o) throws NoSuchFieldException {
 		setField(0, fieldNumber, o);
@@ -523,6 +525,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param o
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	// TODO: consider no such tuple exception and interaction with batch size
 	public void setField(int tupleNumber, int fieldNumber, Object o) throws NoSuchFieldException {
@@ -542,6 +545,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param b
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setBoolean(int fieldNumber, Boolean b) throws NoSuchFieldException {
 		setBoolean(0, fieldNumber, b);
@@ -558,6 +562,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param b
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setBoolean(int tupleNumber, int fieldNumber, Boolean b) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, b);
@@ -571,6 +576,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param b
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setByte(int fieldNumber, Byte b) throws NoSuchFieldException {
 		setByte(0, fieldNumber, b);
@@ -586,6 +592,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param b
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setByte(int tupleNumber, int fieldNumber, Byte b) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, b);
@@ -600,6 +607,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param c
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setCharacter(int fieldNumber, Character c) throws NoSuchFieldException {
 		setCharacter(0, fieldNumber, c);
@@ -616,6 +624,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param c
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setCharacter(int tupleNumber, int fieldNumber, Character c)
 			throws NoSuchFieldException {
@@ -630,6 +639,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param d
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setDouble(int fieldNumber, Double d) throws NoSuchFieldException {
 		setDouble(0, fieldNumber, d);
@@ -646,6 +656,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param d
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setDouble(int tupleNumber, int fieldNumber, Double d) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, d);
@@ -659,6 +670,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param f
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setFloat(int fieldNumber, Float f) throws NoSuchFieldException {
 		setFloat(0, fieldNumber, f);
@@ -675,6 +687,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param f
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setFloat(int tupleNumber, int fieldNumber, Float f) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, f);
@@ -689,6 +702,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param i
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setInteger(int fieldNumber, Integer i) throws NoSuchFieldException {
 		setInteger(0, fieldNumber, i);
@@ -705,6 +719,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param i
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setInteger(int tupleNumber, int fieldNumber, Integer i) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, i);
@@ -718,6 +733,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param l
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setLong(int fieldNumber, Long l) throws NoSuchFieldException {
 		setLong(0, fieldNumber, l);
@@ -733,6 +749,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param l
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setLong(int tupleNumber, int fieldNumber, Long l) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, l);
@@ -746,6 +763,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param s
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setShort(int fieldNumber, Short s) throws NoSuchFieldException {
 		setShort(0, fieldNumber, s);
@@ -761,6 +779,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param s
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setShort(int tupleNumber, int fieldNumber, Short s) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, s);
@@ -774,6 +793,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param str
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setString(int fieldNumber, String str) throws NoSuchFieldException {
 		setField(0, fieldNumber, str);
@@ -790,6 +810,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param str
 	 *            New value
 	 * @throws NoSuchFieldException
+	 *             the Tuple does not have this many fields
 	 */
 	public void setString(int tupleNumber, int fieldNumber, String str) throws NoSuchFieldException {
 		setField(tupleNumber, fieldNumber, str);
@@ -808,6 +829,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 *            Position of the record in the batch
 	 * @return Chosen tuple
 	 * @throws NoSuchTupleException
+	 *             the Tuple does not have this many fields
 	 */
 	public Tuple getTuple(int tupleNumber) throws NoSuchTupleException {
 		try {
@@ -864,7 +886,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * 
 	 * @param tuple
 	 *            Tuple to set
-	 * @throws TupleSizeMismatchException
+	 * @throws NoSuchTupleException
+	 *             , TupleSizeMismatchException
 	 */
 	public void setTuple(Tuple tuple) throws NoSuchTupleException, TupleSizeMismatchException {
 		setTuple(0, tuple);
@@ -899,6 +922,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * 
 	 * @param tuple
 	 *            Tuple to be added as the next record of the batch
+	 * @throws TupleSizeMismatchException
+	 *             Tuple specified has illegal size
 	 */
 	public void addTuple(Tuple tuple) throws TupleSizeMismatchException {
 		addTuple(numOfTuples, tuple);
@@ -912,6 +937,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 *            Position of the added tuple
 	 * @param tuple
 	 *            Tuple to be added as the next record of the batch
+	 * @throws TupleSizeMismatchException
+	 *             Tuple specified has illegal size
 	 */
 	public void addTuple(int index, Tuple tuple) throws TupleSizeMismatchException {
 		if (tuple.getArity() == numOfFields) {
@@ -929,6 +956,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 *            Index of tuple to remove
 	 * @return Removed tuple
 	 * @throws TupleSizeMismatchException
+	 *             Tuple specified has illegal size
 	 */
 	public Tuple removeTuple(int index) throws TupleSizeMismatchException {
 		if (index < numOfTuples) {
@@ -945,6 +973,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * 
 	 * @return copy of the StreamRecord
 	 * @throws IOException
+	 *             Write or read failed
 	 */
 	public StreamRecord copySerialized() throws IOException {
 		ByteArrayOutputStream buff = new ByteArrayOutputStream();
@@ -982,7 +1011,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 *            Tuple to copy
 	 * @return Copy of the tuple
 	 * @throws IllegalAccessException
-	 * @throws InstantiationException
+	 *             , InstantiationException
 	 */
 	public static Tuple copyTuple(Tuple tuple) {
 		// TODO: implement deep copy for arrays
@@ -1042,12 +1071,12 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * 
 	 * @param record
 	 */
-	public void appendRecord(StreamRecord record){
-		for(int i=0; i<record.getNumOfTuples(); ++i){
+	public void appendRecord(StreamRecord record) {
+		for (int i = 0; i < record.getNumOfTuples(); ++i) {
 			this.addTuple(record.getTuple(i));
 		}
 	}
-	
+
 	/**
 	 * Converts tuple field types to a byte array
 	 * 
