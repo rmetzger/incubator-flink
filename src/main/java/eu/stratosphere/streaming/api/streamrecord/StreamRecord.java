@@ -819,6 +819,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	/**
 	 * @return First tuple of the batch
 	 * @throws NoSuchTupleException
+	 *             the StreamRecord does not have this many tuples
 	 */
 	public Tuple getTuple() throws NoSuchTupleException {
 		return getTuple(0);
@@ -1010,8 +1011,6 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param tuple
 	 *            Tuple to copy
 	 * @return Copy of the tuple
-	 * @throws IllegalAccessException
-	 *             , InstantiationException
 	 */
 	public static Tuple copyTuple(Tuple tuple) {
 		// TODO: implement deep copy for arrays
@@ -1070,6 +1069,7 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * copy tuples from the given record and append them to the end.
 	 * 
 	 * @param record
+	 *            record to be appended
 	 */
 	public void appendRecord(StreamRecord record) {
 		for (int i = 0; i < record.getNumOfTuples(); ++i) {
