@@ -21,19 +21,14 @@ import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
 public class WindowSumMultiple extends UserTaskInvokable {
 
-	private StreamRecord outputRecord = new StreamRecord(new Tuple2<Integer, Integer>());
+	private StreamRecord outputRecord = new StreamRecord(new Tuple2<Integer, Long>());
 	
-	private Integer number = 0;
-	private Integer timestamp = 0;
-
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		number = record.getInteger(0);
-		timestamp = record.getInteger(1);
-		System.out.println("number=" + number + ", timestamp=" + timestamp);
-
-		outputRecord.setInteger(0, number);
-		outputRecord.setInteger(1, timestamp);
+		Integer number = record.getInteger(0);
+		Long timestamp = record.getLong(1);
+		outputRecord.setInteger(0, number+1);
+		outputRecord.setLong(1, timestamp);
 		emit(outputRecord);
 	}
 }

@@ -22,14 +22,14 @@ import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 public class WindowSumSource extends UserSourceInvokable {
 
 	private StreamRecord outRecord = new StreamRecord(
-			new Tuple2<Integer, Integer>());
-	private Integer timestamp = 0;
+			new Tuple2<Integer, Long>());
+	private Long timestamp = 0L;
 
 	@Override
 	public void invoke() throws Exception {
 		for (int i = 0; i < 1000; ++i) {
 			outRecord.setInteger(0, i);
-			outRecord.setInteger(1, timestamp);
+			outRecord.setLong(1, timestamp);
 			timestamp++;
 			emit(outRecord);
 		}

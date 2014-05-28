@@ -29,8 +29,6 @@ public class WindowWordCountSplitter extends UserTaskInvokable {
 		StreamRecord outputRecord = new StreamRecord(3);
 		words = record.getString(0).split(" ");
 		timestamp = record.getLong(1);
-		System.out.println("sentence=" + record.getString(0) + ", timestamp="
-				+ record.getLong(1));
 		for (String word : words) {
 			Tuple3<String, Integer, Long> tuple =new Tuple3<String, Integer, Long>(word, 1, timestamp);
 			outputRecord.addTuple(tuple);

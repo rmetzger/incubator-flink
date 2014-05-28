@@ -21,12 +21,12 @@ import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 public class WindowSumSink extends UserSinkInvokable {
 
 	private Integer sum = 0;
-	private Integer timestamp = 0;
+	private long timestamp = 0;
 
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		sum = record.getInteger(0, 0);
-		timestamp = record.getInteger(0, 1);
+		sum = record.getInteger(0);
+		timestamp = record.getLong(1);
 		System.out.println("============================================");
 		System.out.println(sum + " " + timestamp);
 		System.out.println("============================================");

@@ -23,25 +23,23 @@ import eu.stratosphere.streaming.state.WindowState;
 
 public class WindowSumAggregate extends UserTaskInvokable {
 
-	private int windowSize;
-	private int slidingStep;
-	private int computeGranularity;
-	private int windowFieldId;
+	private int windowSize = 100;
+	private int slidingStep = 20;
+	private int computeGranularity = 10;
+	private int windowFieldId = 1;
 
+	private StreamRecord tempRecord;
 	private WindowState<Integer> window;
 	private MutableTableState<String, Integer> sum;
+	private long initTimestamp = -1;
+	private long nextTimestamp = -1;
 
-	private Integer number = 0;
-	private Integer timestamp = 0;
-	private StreamRecord outRecord = new StreamRecord(new Tuple2<Integer, Integer>());
+	private StreamRecord outRecord = new StreamRecord(
+			new Tuple2<Integer, Long>());
 
 	public WindowSumAggregate() {
-		windowSize = 100;
-		slidingStep = 20;
-		computeGranularity = 10;
-		windowFieldId = 1;
 		window = new WindowState<Integer>(windowSize, slidingStep,
-				computeGranularity, windowFieldId);
+				computeGranularity);
 		sum = new MutableTableState<String, Integer>();
 		sum.put("sum", 0);
 	}
@@ -49,40 +47,57 @@ public class WindowSumAggregate extends UserTaskInvokable {
 	private void incrementCompute(StreamRecord record) {
 		int numTuple = record.getNumOfTuples();
 		for (int i = 0; i < numTuple; ++i) {
-			number = record.getInteger(i, 0);
-			sum.put("sum", sum.get("sum")+number);
+			int number = record.getInteger(i, 0);
+			sum.put("sum", sum.get("sum") + number);
 		}
 	}
 
 	private void decrementCompute(StreamRecord record) {
 		int numTuple = record.getNumOfTuples();
 		for (int i = 0; i < numTuple; ++i) {
-			number = record.getInteger(i, 0);
-			sum.put("sum", sum.get("sum")-number);
+			int number = record.getInteger(i, 0);
+			sum.put("sum", sum.get("sum") - number);
 		}
+	}
+	
+	private void produceRecord(long progress){
+		outRecord.setInteger(0, sum.get("sum"));
+		outRecord.setLong(1, progress);
+		emit(outRecord);
 	}
 
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		if (window.isFull()) {
-			StreamRecord expiredRecord = window.popFront();
-			incrementCompute(record);
-			decrementCompute(expiredRecord);
-			window.pushBack(record);
-			if (window.isComputable()) {
-				outRecord.setInteger(0, sum.get("sum"));
-				outRecord.setInteger(1, record.getInteger(1));
-				emit(outRecord);
-			}
-		} else {
-			incrementCompute(record);
-			window.pushBack(record);
-			if (window.isFull()) {
-				outRecord.setInteger(0, sum.get("sum"));
-				outRecord.setInteger(1, record.getInteger(1));
-				emit(outRecord);
+		int numTuple = record.getNumOfTuples();
+		for (int i = 0; i < numTuple; ++i) {
+			long progress = record.getLong(i, windowFieldId);
+			if (initTimestamp == -1) {
+				initTimestamp = progress;
+				nextTimestamp = initTimestamp + computeGranularity;
+				tempRecord = new StreamRecord(record.getNumOfFields());
+			} else {
+				if (progress > nextTimestamp) {
+					if (window.isFull()) {
+						StreamRecord expiredRecord = window.popFront();
+						incrementCompute(tempRecord);
+						decrementCompute(expiredRecord);
+						window.pushBack(tempRecord);
+						if (window.isEmittable()) {
+							produceRecord(progress);
+						}
+					} else {
+						incrementCompute(tempRecord);
+						window.pushBack(tempRecord);
+						if (window.isFull()) {
+							produceRecord(progress);
+						}
+					}
+					initTimestamp = nextTimestamp;
+					nextTimestamp = initTimestamp + computeGranularity;
+					tempRecord = new StreamRecord(record.getNumOfFields());
+				}
+				tempRecord.addTuple(record.getTuple(i));
 			}
 		}
-
 	}
 }

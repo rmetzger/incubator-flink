@@ -139,7 +139,6 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		this.batchSize = batchSize;
 		tupleBatch = new ArrayList<Tuple>(batchSize);
 		tupleBatch.add(tuple);
-		System.out.println("here, the tuple batch size is"+tupleBatch.size());
 	}
 
 	/**

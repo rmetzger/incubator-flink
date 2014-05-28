@@ -41,14 +41,13 @@ public class WindowWordCountSource extends UserSourceInvokable {
 
 	@Override
 	public void invoke() throws Exception {
-		for(int i=0; i<10; ++i) {
+		while(true){
 			line = br.readLine();
 			if(line==null){
 				break;
 			}
 			if (line != "") {
 				line=line.replaceAll("[\\-\\+\\.\\^:,]", "");
-				System.out.println("line="+line);
 				outRecord.setString(0, line);
 				outRecord.setLong(1, timestamp);
 				timestamp++;
