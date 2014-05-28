@@ -16,6 +16,7 @@ import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 
 public class RMQTopology {
 
@@ -59,7 +60,7 @@ public class RMQTopology {
 	}
 
 	private static JobGraph getJobGraph() throws Exception {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("RMQ");
+		JobGraphBuilder graphBuilder = new JobGraphBuilder("RMQ", FaultToleranceType.NONE);
 		graphBuilder.setSource("Source", RMQSource.class, 1, 1);
 		graphBuilder.setSink("Sink", Sink.class, 1, 1);
 
