@@ -23,9 +23,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
-import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,6 +38,7 @@ import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.streaming.util.LogUtils;
 
 public class StreamComponentTest {
 
@@ -47,10 +46,16 @@ public class StreamComponentTest {
 	private static boolean fPTest = true;
 
 	public static class MySource extends UserSourceInvokable {
+		private static final long serialVersionUID = 1L;
+		StreamRecord record = new StreamRecord(new Tuple1<Integer>());
+		String out;
+
 		public MySource() {
 		}
 
-		StreamRecord record = new StreamRecord(new Tuple1<Integer>());
+		public MySource(String string) {
+			out = string;
+		}
 
 		@Override
 		public void invoke() throws Exception {
@@ -59,10 +64,24 @@ public class StreamComponentTest {
 				emit(record);
 			}
 		}
+
+		@Override
+		public String getResult() {
+			return out;
+		}
+
 	}
 
 	public static class MyTask extends UserTaskInvokable {
+		private static final long serialVersionUID = 1L;
+		String out;
+
 		public MyTask() {
+
+		}
+
+		public MyTask(String string) {
+			out = string;
 		}
 
 		@Override
@@ -71,10 +90,21 @@ public class StreamComponentTest {
 			Integer i = record.getInteger(0);
 			emit(new StreamRecord(new Tuple2<Integer, Integer>(i, i + 1)));
 		}
+
+		@Override
+		public String getResult() {
+			return out;
+		}
 	}
 
 	public static class MySink extends UserSinkInvokable {
-		public MySink() {
+
+		private static final long serialVersionUID = 1L;
+		
+		String out;
+
+		public MySink(String out) {
+			this.out = out;
 		}
 
 		@Override
@@ -86,21 +116,18 @@ public class StreamComponentTest {
 
 		@Override
 		public String getResult() {
-			return "";
+			return out;
 		}
 	}
 
 	@BeforeClass
 	public static void runStream() {
-		Logger root = Logger.getRootLogger();
-		root.removeAllAppenders();
-		root.addAppender(new ConsoleAppender());
-		root.setLevel(Level.OFF);
+		LogUtils.initializeDefaultConsoleLogger(Level.OFF, Level.OFF);
 
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
-		graphBuilder.setSource("MySource", MySource.class);
-		graphBuilder.setTask("MyTask", MyTask.class, 2, 2);
-		graphBuilder.setSink("MySink", MySink.class);
+		graphBuilder.setSource("MySource", new MySource("source"), 1, 1);
+		graphBuilder.setTask("MyTask", new MyTask("task"), 2, 2);
+		graphBuilder.setSink("MySink", new MySink("sink"), 1, 1);
 
 		graphBuilder.shuffleConnect("MySource", "MyTask");
 		graphBuilder.shuffleConnect("MyTask", "MySink");
@@ -117,7 +144,6 @@ public class StreamComponentTest {
 
 			exec.stop();
 		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 

@@ -15,6 +15,7 @@
 
 package eu.stratosphere.streaming.api.streamcomponent;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -25,7 +26,9 @@ import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.streaming.faulttolerance.FaultToleranceUtil;
 import eu.stratosphere.streaming.util.PerformanceCounter;
 
-public abstract class StreamInvokableComponent {
+public abstract class StreamInvokableComponent implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private static final Log log = LogFactory.getLog(StreamInvokableComponent.class);
 
@@ -52,6 +55,7 @@ public abstract class StreamInvokableComponent {
 		try {
 			for (RecordWriter<StreamRecord> output : outputs) {
 				output.emit(record);
+				output.flush();
 				log.info("EMITTED: " + record.getId() + " -- " + name);
 			}
 		} catch (Exception e) {

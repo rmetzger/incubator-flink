@@ -49,7 +49,7 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 		partitioners = new LinkedList<ChannelSelector<StreamRecord>>();
 		userFunction = null;
 		streamSourceHelper = new StreamComponentHelper<StreamSource>();
-		numSources=StreamComponentHelper.newComponent();
+		numSources = StreamComponentHelper.newComponent();
 		sourceInstanceID = numSources;
 	}
 
@@ -69,20 +69,20 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 		name = taskConfiguration.getString("componentName", "MISSING_COMPONENT_NAME");
 
 		try {
-			streamSourceHelper.setConfigOutputs(this, taskConfiguration, outputs,
-					partitioners);
+			streamSourceHelper.setConfigOutputs(this, taskConfiguration, outputs, partitioners);
 		} catch (StreamComponentException e) {
 			log.error("Cannot register outputs", e);
 		}
-		
-		int[] numberOfOutputChannels= new int[outputs.size()];
-		for(int i=0; i<numberOfOutputChannels.length;i++ ){
-			numberOfOutputChannels[i]=taskConfiguration.getInteger("channels_"+i, 0);
+
+		int[] numberOfOutputChannels = new int[outputs.size()];
+		for (int i = 0; i < numberOfOutputChannels.length; i++) {
+			numberOfOutputChannels[i] = taskConfiguration.getInteger("channels_" + i, 0);
 		}
-		
-		recordBuffer = new FaultToleranceUtil(outputs, sourceInstanceID,name, numberOfOutputChannels);
-		userFunction = (UserSourceInvokable) streamSourceHelper.getUserFunction(
-				taskConfiguration, outputs, sourceInstanceID, name, recordBuffer);
+
+		recordBuffer = new FaultToleranceUtil(outputs, sourceInstanceID, name,
+				numberOfOutputChannels);
+		userFunction = (UserSourceInvokable) streamSourceHelper.getUserFunction(taskConfiguration,
+				outputs, sourceInstanceID, name, recordBuffer);
 		streamSourceHelper.setAckListener(recordBuffer, sourceInstanceID, outputs);
 		streamSourceHelper.setFailListener(recordBuffer, sourceInstanceID, outputs);
 	}
@@ -93,7 +93,7 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 		userFunction.invoke();
 		// TODO print to file
 		System.out.println(userFunction.getResult());
-		
+
 	}
 
 }

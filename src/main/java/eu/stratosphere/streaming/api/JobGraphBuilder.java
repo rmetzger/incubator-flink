@@ -15,6 +15,9 @@
 
 package eu.stratosphere.streaming.api;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -109,6 +112,14 @@ public class JobGraphBuilder {
 		log.debug("SOURCE: " + sourceName);
 	}
 
+	public void setSource(String sourceName, UserSourceInvokable InvokableObject, int parallelism,
+			int subtasksPerInstance) {
+		final JobInputVertex source = new JobInputVertex(sourceName, jobGraph);
+		source.setInputClass(StreamSource.class);
+		setComponent(sourceName, InvokableObject, parallelism, subtasksPerInstance, source);
+		log.debug("SOURCE: " + sourceName);
+	}
+
 	/**
 	 * Adds a task component to the JobGraph
 	 * 
@@ -138,6 +149,14 @@ public class JobGraphBuilder {
 		final JobTaskVertex task = new JobTaskVertex(taskName, jobGraph);
 		task.setTaskClass(StreamTask.class);
 		setComponent(taskName, InvokableClass, parallelism, subtasksPerInstance, task);
+		log.debug("TASK: " + taskName);
+	}
+
+	public void setTask(String taskName, UserTaskInvokable TaskInvokableObject, int parallelism,
+			int subtasksPerInstance) {
+		final JobTaskVertex task = new JobTaskVertex(taskName, jobGraph);
+		task.setTaskClass(StreamTask.class);
+		setComponent(taskName, TaskInvokableObject, parallelism, subtasksPerInstance, task);
 		log.debug("TASK: " + taskName);
 	}
 
@@ -173,6 +192,14 @@ public class JobGraphBuilder {
 		log.debug("SINK: " + sinkName);
 	}
 
+	public void setSink(String sinkName, UserSinkInvokable InvokableObject, int parallelism,
+			int subtasksPerInstance) {
+		final JobOutputVertex sink = new JobOutputVertex(sinkName, jobGraph);
+		sink.setOutputClass(StreamSink.class);
+		setComponent(sinkName, InvokableObject, parallelism, subtasksPerInstance, sink);
+		log.debug("SINK: " + sinkName);
+	}
+
 	private void setComponent(String componentName,
 			final Class<? extends UserInvokable> InvokableClass, int parallelism,
 			int subtasksPerInstance, AbstractJobVertex component) {
@@ -189,6 +216,51 @@ public class JobGraphBuilder {
 		config.setString("componentName", componentName);
 		components.put(componentName, component);
 		numberOfInstances.put(componentName, parallelism);
+	}
+
+	private void setComponent(String componentName, UserSourceInvokable InvokableObject,
+			int parallelism, int subtasksPerInstance, AbstractJobVertex component) {
+		setComponent(componentName, InvokableObject.getClass(), parallelism, subtasksPerInstance,
+				component);
+
+		addSerializedObject(InvokableObject, component);
+	}
+
+	private void setComponent(String componentName, UserTaskInvokable InvokableObject,
+			int parallelism, int subtasksPerInstance, AbstractJobVertex component) {
+		setComponent(componentName, InvokableObject.getClass(), parallelism, subtasksPerInstance,
+				component);
+
+		addSerializedObject(InvokableObject, component);
+	}
+
+	private void setComponent(String componentName, UserSinkInvokable InvokableObject,
+			int parallelism, int subtasksPerInstance, AbstractJobVertex component) {
+		setComponent(componentName, InvokableObject.getClass(), parallelism, subtasksPerInstance,
+				component);
+
+		addSerializedObject(InvokableObject, component);
+	}
+
+	private void addSerializedObject(Serializable InvokableObject, AbstractJobVertex component) {
+
+		Configuration config = component.getConfiguration();
+
+		ByteArrayOutputStream baos = null;
+		ObjectOutputStream oos = null;
+		try {
+			baos = new ByteArrayOutputStream();
+
+			oos = new ObjectOutputStream(baos);
+
+			oos.writeObject(InvokableObject);
+
+			config.setBytes("serializedudf", baos.toByteArray());
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Serialization error " + InvokableObject.getClass());
+		}
+
 	}
 
 	/**
