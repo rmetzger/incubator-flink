@@ -36,6 +36,7 @@ public class WindowWordCountCounter extends UserTaskInvokable {
 	private long initTimestamp=-1;
 	private long nextTimestamp=-1;
 	private Long timestamp = 0L;
+	private StreamRecord outRecord = new StreamRecord(3);
 
 	public WindowWordCountCounter() {
 		window = new WindowState<Integer>(windowSize, slidingStep,
@@ -70,7 +71,7 @@ public class WindowWordCountCounter extends UserTaskInvokable {
 	}
 
 	private void produceRecord(long progress){
-		StreamRecord outRecord = new StreamRecord(3);
+		outRecord.Clear();
 		MutableTableStateIterator<String, Integer> iterator = wordCounts
 				.getIterator();
 		while (iterator.hasNext()) {

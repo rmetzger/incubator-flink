@@ -13,26 +13,24 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.window.wordcount;
+package eu.stratosphere.streaming.state.manager;
 
-import eu.stratosphere.api.java.tuple.Tuple3;
-import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import java.util.LinkedList;
 
-public class WindowWordCountSplitter extends UserTaskInvokable {
-	private String[] words = new String[] {};
-	private Long timestamp = 0L;
-	private StreamRecord outputRecord = new StreamRecord(3);
+import eu.stratosphere.streaming.state.TableState;
 
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		outputRecord.Clear();
-		words = record.getString(0).split(" ");
-		timestamp = record.getLong(1);
-		for (String word : words) {
-			Tuple3<String, Integer, Long> tuple =new Tuple3<String, Integer, Long>(word, 1, timestamp);
-			outputRecord.addTuple(tuple);
-		}
-		emit(outputRecord);
+public class StateCheckpointer {
+
+	private LinkedList<TableState> stateList = new LinkedList<TableState>();
+	
+	public void RegisterState(TableState state){
+		stateList.add(state);
+	}
+	
+	public void CheckpointStates(){
+		for(TableState state: stateList){
+			//take snapshot of every registered state.
+			
+		}		
 	}
 }

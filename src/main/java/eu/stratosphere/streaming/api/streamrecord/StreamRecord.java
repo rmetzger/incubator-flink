@@ -167,6 +167,14 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	}
 
 	/**
+	 * Remove all the contents inside StreamRecord.
+	 */
+	public void Clear(){
+		this.numOfTuples = 0;
+		tupleBatch.clear();
+	}
+	
+	/**
 	 * Checks if the number of fields are equal to the batch field size then
 	 * adds the Tuple to the end of the batch
 	 * 
