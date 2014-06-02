@@ -35,6 +35,7 @@ public class BasicTopology {
 
 	public static class BasicSource extends UserSourceInvokable {
 
+		private static final long serialVersionUID = 1L;
 		StreamRecord record = new StreamRecord(new Tuple1<String>("streaming"));
 
 		@Override
@@ -50,6 +51,7 @@ public class BasicTopology {
 	}
 
 	public static class BasicTask extends UserTaskInvokable {
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void invoke(StreamRecord record) throws Exception {
@@ -61,6 +63,7 @@ public class BasicTopology {
 	}
 
 	public static class BasicSink extends UserSinkInvokable {
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void invoke(StreamRecord record) throws Exception {
