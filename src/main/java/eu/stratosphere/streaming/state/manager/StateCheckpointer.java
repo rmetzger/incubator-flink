@@ -13,28 +13,24 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.window.wordcount;
+package eu.stratosphere.streaming.state.manager;
 
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import java.util.LinkedList;
 
-public class WindowWordCountSink extends UserSinkInvokable {
-	private static final long serialVersionUID = 1L;
+import eu.stratosphere.streaming.state.TableState;
+
+public class StateCheckpointer {
+
+	private LinkedList<TableState> stateList = new LinkedList<TableState>();
 	
-	private String word = "";
-	private Integer count = 0;
-	private Long timestamp = 0L;
-
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		int numTuple = record.getNumOfTuples();
-		for (int i = 0; i < numTuple; ++i) {
-			word = record.getString(i, 0);
-			count = record.getInteger(i, 1);
-			timestamp = record.getLong(i, 2);
-			System.out.println("============================================");
-			System.out.println(word + " " + count + " " + timestamp);
-			System.out.println("============================================");
-		}
+	public void RegisterState(TableState state){
+		stateList.add(state);
+	}
+	
+	public void CheckpointStates(){
+		for(TableState state: stateList){
+			//take snapshot of every registered state.
+			
+		}		
 	}
 }
