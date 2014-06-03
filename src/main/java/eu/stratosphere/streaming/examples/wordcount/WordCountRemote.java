@@ -71,7 +71,8 @@ public class WordCountRemote {
 	}
 
 	public static class WordCountDebugSplitter extends UserTaskInvokable {
-
+		private static final long serialVersionUID = 1L;
+		
 		private PerformanceCounter perf = new PerformanceCounter("SplitterEmitCounter", 1000, 10000, "");
 
 		private String[] words = new String[] {};

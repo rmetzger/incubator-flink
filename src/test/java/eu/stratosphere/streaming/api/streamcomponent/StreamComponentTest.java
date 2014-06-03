@@ -116,7 +116,7 @@ public class StreamComponentTest {
 
 	@BeforeClass
 	public static void runStream() {
-		LogUtils.initializeDefaultConsoleLogger(Level.OFF, Level.OFF);
+		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
 
 		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph", FaultToleranceType.NONE);
 		graphBuilder.setSource("MySource", new MySource("source"));

@@ -62,7 +62,6 @@ public class IncrementalOLS {
 	}
 
 	public static class TrainingDataSource extends UserSourceInvokable {
-
 		private static final long serialVersionUID = 1L;
 
 		private final int BATCH_SIZE = 1000;
@@ -94,7 +93,6 @@ public class IncrementalOLS {
 	}
 
 	public static class PartialModelBuilder extends UserTaskInvokable {
-
 		private static final long serialVersionUID = 1L;
 
 		@Override
@@ -129,7 +127,6 @@ public class IncrementalOLS {
 	}
 
 	public static class Predictor extends UserTaskInvokable {
-
 		private static final long serialVersionUID = 1L;
 
 		// StreamRecord batchModel = null;
@@ -168,7 +165,6 @@ public class IncrementalOLS {
 	}
 
 	public static class Sink extends UserSinkInvokable {
-
 		private static final long serialVersionUID = 1L;
 
 		@Override
@@ -197,6 +193,7 @@ public class IncrementalOLS {
 	public static void main(String[] args) {
 
 		// set logging parameters for local run
+		
 		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
 
 		if (args.length == 0) {
@@ -208,7 +205,6 @@ public class IncrementalOLS {
 
 		} else if (args[0].equals("cluster")) {
 			ClusterUtil.runOnLocalCluster(getJobGraph(), "hadoop02.ilab.sztaki.hu", 6123);
-
 		}
 	}
 }

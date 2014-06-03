@@ -95,7 +95,8 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	public StreamRecord(int numOfFields) {
 		this.numOfFields = numOfFields;
 		this.numOfTuples = 0;
-		tupleBatch = new ArrayList<Tuple>();
+		this.batchSize = 1;
+		tupleBatch = new ArrayList<Tuple>(batchSize);
 	}
 
 	/**
@@ -147,7 +148,6 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 	 * @param tupleList
 	 *            Tuples to bes stored in the StreamRecord
 	 */
-
 	public StreamRecord(List<Tuple> tupleList) {
 		numOfFields = tupleList.get(0).getArity();
 		numOfTuples = tupleList.size();
@@ -166,8 +166,21 @@ public class StreamRecord implements IOReadableWritable, Serializable {
 		this(tuple, 1);
 	}
 
+	/**
+	 * Checks whether the record batch is empty
+	 * 
+	 * @return true if the batch is empty, false if it contains Tuples
+	 */
 	public boolean isEmpty() {
 		return (this.numOfTuples == 0);
+	}
+
+	/**
+	 * Remove all the contents inside StreamRecord.
+	 */
+	public void Clear() {
+		this.numOfTuples = 0;
+		tupleBatch.clear();
 	}
 
 	/**
