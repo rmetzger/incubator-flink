@@ -12,29 +12,10 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
+package eu.stratosphere.streaming.api.streamrecord;
 
-package eu.stratosphere.streaming.examples.window.wordcount;
-
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
-
-public class WindowWordCountSink extends UserSinkInvokable {
-	private static final long serialVersionUID = 1L;
+public class FieldTypeMismatchException extends StreamRecordException{
 	
-	private String word = "";
-	private Integer count = 0;
-	private Long timestamp = 0L;
+	private static final long serialVersionUID = 591915105653934643L;
 
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		int numTuple = record.getNumOfTuples();
-		for (int i = 0; i < numTuple; ++i) {
-			word = record.getString(i, 0);
-			count = record.getInteger(i, 1);
-			timestamp = record.getLong(i, 2);
-			System.out.println("============================================");
-			System.out.println(word + " " + count + " " + timestamp);
-			System.out.println("============================================");
-		}
-	}
 }

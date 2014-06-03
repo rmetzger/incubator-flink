@@ -13,28 +13,18 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.window.wordcount;
+package eu.stratosphere.streaming.faulttolerance;
 
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import static org.junit.Assert.*;
 
-public class WindowWordCountSink extends UserSinkInvokable {
-	private static final long serialVersionUID = 1L;
-	
-	private String word = "";
-	private Integer count = 0;
-	private Long timestamp = 0L;
+import org.junit.Test;
 
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		int numTuple = record.getNumOfTuples();
-		for (int i = 0; i < numTuple; ++i) {
-			word = record.getString(i, 0);
-			count = record.getInteger(i, 1);
-			timestamp = record.getLong(i, 2);
-			System.out.println("============================================");
-			System.out.println(word + " " + count + " " + timestamp);
-			System.out.println("============================================");
-		}
+public class FaultToleranceTypeTest {
+
+	@Test
+	public void test() {
+		assertEquals(FaultToleranceType.NONE, FaultToleranceType.from(0));
+		assertEquals(FaultToleranceType.AT_LEAST_ONCE, FaultToleranceType.from(1));
+		assertEquals(FaultToleranceType.EXACTLY_ONCE, FaultToleranceType.from(2));
 	}
 }

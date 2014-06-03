@@ -21,7 +21,8 @@ import eu.stratosphere.streaming.state.MutableTableState;
 import eu.stratosphere.streaming.state.WindowState;
 
 public class StreamWindowTask extends UserTaskInvokable {
-
+	private static final long serialVersionUID = 1L;
+	
 	private int computeGranularity;
 	private int windowFieldId = 1;
 

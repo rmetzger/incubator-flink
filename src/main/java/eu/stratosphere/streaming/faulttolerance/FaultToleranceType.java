@@ -13,28 +13,27 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.window.wordcount;
+package eu.stratosphere.streaming.faulttolerance;
 
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import java.util.HashMap;
+import java.util.Map;
 
-public class WindowWordCountSink extends UserSinkInvokable {
-	private static final long serialVersionUID = 1L;
-	
-	private String word = "";
-	private Integer count = 0;
-	private Long timestamp = 0L;
+public enum FaultToleranceType {
+	NONE(0), AT_LEAST_ONCE(1), EXACTLY_ONCE(2);
 
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		int numTuple = record.getNumOfTuples();
-		for (int i = 0; i < numTuple; ++i) {
-			word = record.getString(i, 0);
-			count = record.getInteger(i, 1);
-			timestamp = record.getLong(i, 2);
-			System.out.println("============================================");
-			System.out.println(word + " " + count + " " + timestamp);
-			System.out.println("============================================");
-		}
+	public final int id;
+
+	FaultToleranceType(int id) {
+		this.id = id;
+	}
+
+	private static final Map<Integer, FaultToleranceType> map = new HashMap<Integer, FaultToleranceType>();
+	static {
+		for (FaultToleranceType type : FaultToleranceType.values())
+			map.put(type.id, type);
+	}
+
+	public static FaultToleranceType from(int id) {
+		return map.get(id);
 	}
 }

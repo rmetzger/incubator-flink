@@ -12,78 +12,45 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
-package eu.stratosphere.streaming.examples.basictopology;
+
+package eu.stratosphere.streaming.rabbitmq;
 
 import org.apache.log4j.Level;
 
-import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
-import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 import eu.stratosphere.streaming.util.ClusterUtil;
 import eu.stratosphere.streaming.util.LogUtils;
 
-public class BasicTopology {
+public class RMQTopology {
 
-	public static class BasicSource extends UserSourceInvokable {
-
-		private static final long serialVersionUID = 1L;
-		StreamRecord record = new StreamRecord(new Tuple1<String>("streaming"));
-
-		@Override
-		public void invoke() throws Exception {
-
-			while (true) {
-				// continuously emit records
-				emit(record);
-				performanceCounter.count();
-			}
-
-		}
-	}
-
-	public static class BasicTask extends UserTaskInvokable {
+	public static class Sink extends UserSinkInvokable {
 		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void invoke(StreamRecord record) throws Exception {
-			// send record to sink without any modifications
-			emit(record);
-			performanceCounter.count();
-		}
-
-	}
-
-	public static class BasicSink extends UserSinkInvokable {
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public void invoke(StreamRecord record) throws Exception {
-			// do nothing
-			System.out.println(record.getField(0));
+			System.out.println(record.getString(0));
 		}
 	}
 
 	private static JobGraph getJobGraph() {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("BasicStreamingTopology");
-		graphBuilder.setSource("BasicSource", new BasicSource(), 1, 1);
-		graphBuilder.setTask("BasicTask", new BasicTask(), 1, 1);
-		graphBuilder.setSink("BasicSink", new BasicSink(), 1, 1);
 
-		graphBuilder.shuffleConnect("BasicSource", "BasicTask");
-		graphBuilder.shuffleConnect("BasicTask", "BasicSink");
+		JobGraphBuilder graphBuilder = new JobGraphBuilder("RMQ", FaultToleranceType.NONE);
+		graphBuilder.setSource("Source", new RMQSource("localhost", "hello"), 1, 1);
+		graphBuilder.setSink("Sink", new Sink(), 1, 1);
+
+		graphBuilder.shuffleConnect("Source", "Sink");
 
 		return graphBuilder.getJobGraph();
 	}
 
 	public static void main(String[] args) {
 
-		// set logging parameters for local run
-		LogUtils.initializeDefaultConsoleLogger(Level.INFO, Level.INFO);
-
+		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
 		ClusterUtil.runOnMiniCluster(getJobGraph());
+
 	}
 }

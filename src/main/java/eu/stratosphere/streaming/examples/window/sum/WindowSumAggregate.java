@@ -22,7 +22,8 @@ import eu.stratosphere.streaming.state.MutableTableState;
 import eu.stratosphere.streaming.state.WindowState;
 
 public class WindowSumAggregate extends UserTaskInvokable {
-
+	private static final long serialVersionUID = 1L;
+	
 	private int windowSize = 100;
 	private int slidingStep = 20;
 	private int computeGranularity = 10;

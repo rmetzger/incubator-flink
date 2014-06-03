@@ -24,7 +24,8 @@ import eu.stratosphere.streaming.state.MutableTableStateIterator;
 import eu.stratosphere.streaming.state.WindowState;
 
 public class WindowWordCountCounter extends UserTaskInvokable {
-
+	private static final long serialVersionUID = 1L;
+	
 	private int windowSize=10;
 	private int slidingStep=2;
 	private int computeGranularity=1;
