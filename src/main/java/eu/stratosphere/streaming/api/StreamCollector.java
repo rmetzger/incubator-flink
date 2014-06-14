@@ -1,19 +1,20 @@
 package eu.stratosphere.streaming.api;
 
 import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.streaming.api.streamrecord.ArrayStreamRecord;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.util.Collector;
 
 public class StreamCollector implements Collector<Tuple> {
 
-	protected StreamRecord streamRecord;
+	protected ArrayStreamRecord streamRecord;
 	protected int batchSize;
 	protected int counter = 0;
 	protected int channelID;
 
 	public StreamCollector(int batchSize, int channelID) {
 		this.batchSize = batchSize;
-		this.streamRecord = new StreamRecord(batchSize);
+		this.streamRecord = new ArrayStreamRecord(batchSize);
 		this.channelID = channelID;
 	}
 
@@ -28,7 +29,7 @@ public class StreamCollector implements Collector<Tuple> {
 		}
 	}
 
-	private void emit(StreamRecord streamRecord) {
+	private void emit(ArrayStreamRecord streamRecord) {
 		System.out.println(streamRecord);
 	}
 
