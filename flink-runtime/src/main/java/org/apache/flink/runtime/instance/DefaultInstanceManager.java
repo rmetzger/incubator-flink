@@ -381,7 +381,7 @@ public class DefaultInstanceManager implements InstanceManager {
 	}
 
 	@Override
-	public int getNumberOfTaskTrackers() {
+	public int getNumberOfTaskManagers() {
 		return this.registeredHosts.size();
 	}
 

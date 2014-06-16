@@ -26,7 +26,9 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,9 +46,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.flink.client.CliFrontend;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -74,6 +73,11 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+
+import eu.stratosphere.client.CliFrontend;
+import eu.stratosphere.configuration.ConfigConstants;
+import eu.stratosphere.configuration.GlobalConfiguration;
+import eu.stratosphere.yarn.rpc.YARNClientMasterProtocol.Message;
 
 /**
  * All classes in this package contain code taken from
@@ -120,12 +124,25 @@ public class Client {
 	public static final String ENV_CLIENT_HOME_DIR = "_CLIENT_HOME_DIR";
 	public static final String ENV_CLIENT_SHIP_FILES = "_CLIENT_SHIP_FILES";
 	public static final String ENV_CLIENT_USERNAME = "_CLIENT_USERNAME";
+	public static final String ENV_AM_PRC_PORT = "_AM_PRC_PORT";
 	
 	private static final String CONFIG_FILE_NAME = "flink-conf.yaml";
 
-	
-	
+	/**
+	 * Seconds to wait between each status query to the AM.
+	 */
+	private static final int CLIENT_POLLING_INTERVALL = 3;
+
 	private Configuration conf;
+	private YarnClient yarnClient;
+
+	private ClientMasterControl cmc;
+
+	private ApplicationId appId;
+
+	private File addrFile;
+	
+	private Path sessionFilesDir;
 
 	public void run(String[] args) throws Exception {
 		
@@ -377,7 +394,7 @@ public class Client {
 		if(hasLog4j) {
 			amCommand 	+= " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/jobmanager-log4j.log\" -Dlog4j.configuration=file:log4j.properties";
 		}
-		amCommand 	+= " org.apache.flink.yarn.ApplicationMaster" + " "
+		amCommand 	+= " org.apache.flink.yarn.appMaster.ApplicationMaster" + " "
 					+ " 1>"
 					+ ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/jobmanager-stdout.log"
 					+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/jobmanager-stderr.log";
@@ -419,15 +436,16 @@ public class Client {
 
 		paths[0] = remotePathJar;
 		paths[1] = remotePathConf;
-		paths[2] = new Path(fs.getHomeDirectory(), ".flink/" + appId.toString() + "/");
+		sessionFilesDir = new Path(fs.getHomeDirectory(), ".flink/" + appId.toString() + "/");
 		FsPermission permission = new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.ALL);
-		fs.setPermission(paths[2], permission); // set permission for path.
+		fs.setPermission(sessionFilesDir, permission); // set permission for path.
 		Utils.setTokensFor(amContainer, paths, this.conf);
 		
 		 
 		amContainer.setLocalResources(localResources);
 		fs.close();
 
+		int amRPCPort = GlobalConfiguration.getInteger(ConfigConstants.YARN_AM_PRC_PORT, ConfigConstants.DEFAULT_YARN_AM_RPC_PORT);
 		// Setup CLASSPATH for ApplicationMaster
 		Map<String, String> appMasterEnv = new HashMap<String, String>();
 		Utils.setupEnv(conf, appMasterEnv);
@@ -440,6 +458,7 @@ public class Client {
 		appMasterEnv.put(Client.ENV_CLIENT_HOME_DIR, fs.getHomeDirectory().toString());
 		appMasterEnv.put(Client.ENV_CLIENT_SHIP_FILES, envShipFileList.toString() );
 		appMasterEnv.put(Client.ENV_CLIENT_USERNAME, UserGroupInformation.getCurrentUser().getShortUserName());
+		appMasterEnv.put(Client.ENV_AM_PRC_PORT, String.valueOf(amRPCPort));
 		
 		amContainer.setEnvironment(appMasterEnv);
 		
@@ -454,30 +473,8 @@ public class Client {
 		appContext.setQueue(queue);
 		
 		// file that we write into the conf/ dir containing the jobManager address.
-		final File addrFile = new File(confDirPath + CliFrontend.JOBMANAGER_ADDRESS_FILE);
+		addrFile = new File(confDirPath + CliFrontend.JOBMANAGER_ADDRESS_FILE);
 		
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-		@Override
-		public void run() {
-			try {
-				LOG.info("Killing the Flink-YARN application.");
-				yarnClient.killApplication(appId);
-				LOG.info("Deleting files in "+paths[2]);
-				FileSystem shutFS = FileSystem.get(conf);
-				shutFS.delete(paths[2], true); // delete conf and jar file.
-				shutFS.close();
-			} catch (Exception e) {
-				LOG.warn("Exception while killing the YARN application", e);
-			}
-			try {
-				addrFile.delete();
-			} catch (Exception e) {
-				LOG.warn("Exception while deleting the jobmanager address file", e);
-			}
-			LOG.info("YARN Client is shutting down");
-			yarnClient.stop();
-		}
-		});
 		
 		LOG.info("Submitting application master " + appId);
 		yarnClient.submitApplication(appContext);
@@ -486,6 +483,10 @@ public class Client {
 		boolean told = false;
 		char[] el = { '/', '|', '\\', '-'};
 		int i = 0; 
+		int numTaskmanagers = 0;
+		
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		
 		while (appState != YarnApplicationState.FINISHED
 				&& appState != YarnApplicationState.KILLED
 				&& appState != YarnApplicationState.FAILED) {
@@ -493,11 +494,15 @@ public class Client {
 				System.err.println("Flink JobManager is now running on "+appReport.getHost()+":"+jmPort);
 				System.err.println("JobManager Web Interface: "+appReport.getTrackingUrl());
 				// write jobmanager connect information
-				
 				PrintWriter out = new PrintWriter(addrFile);
 				out.println(appReport.getHost()+":"+jmPort);
 				out.close();
 				addrFile.setReadable(true, false); // readable for all.
+				
+				// connect RPC service
+				cmc = new ClientMasterControl(new InetSocketAddress(appReport.getHost(), amRPCPort));
+				cmc.start();
+				Runtime.getRuntime().addShutdownHook(new ClientShutdownHook());
 				told = true;
 			}
 			if(!told) {
@@ -507,7 +512,26 @@ public class Client {
 				}
 				Thread.sleep(500); // wait for the application to switch to RUNNING
 			} else {
-				Thread.sleep(5000);
+				int newTmCount = cmc.getNumberOfTaskManagers();
+				if(numTaskmanagers != newTmCount) {
+					System.err.println("Number of connected TaskManagers changed to "+newTmCount+" slots available: "+cmc.getNumberOfAvailableSlots());
+					numTaskmanagers = newTmCount;
+				}
+				for(Message m: cmc.getMessages() ) {
+					System.err.println("Message: "+m.text);
+				}
+				
+				// wait until CLIENT_POLLING_INTERVALL is over or the user entered something.
+				long startTime = System.currentTimeMillis();
+				while ((System.currentTimeMillis() - startTime) < CLIENT_POLLING_INTERVALL * 1000
+				        && !in.ready()) {
+					Thread.sleep(200);
+				}
+				if (in.ready()) {
+					String command = in.readLine();
+					evalCommand(command);
+				}
+				
 			}
 			
 			appReport = yarnClient.getApplicationReport(appId);
@@ -515,16 +539,77 @@ public class Client {
 		}
 
 		LOG.info("Application " + appId + " finished with"
-				+ " state " + appState + " at " + appReport.getFinishTime());
+				+ " state " + appState + "and final state " + appReport.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
+
 		if(appState == YarnApplicationState.FAILED || appState == YarnApplicationState.KILLED ) {
 			LOG.warn("Application failed. Diagnostics "+appReport.getDiagnostics());
 		}
 		
 	}
+	
+	private void printHelp() {
+		System.err.println("Available commands:\n"
+				+ "\t stop : Stop the YARN session\n"
+				+ "\t add n : Add n TaskManagers to the YARN session\n"
+				+ "\t remove n : Remove n TaskManagers to the YARN session\n"
+				+ "\t allmsg : Show all messages\n");
+	}
+	private void evalCommand(String command) {
+		if(command.equals("help")) {
+			printHelp();
+		} else if(command.equals("stop") || command.equals("quit") || command.equals("exit")) {
+			stopSession();
+			System.exit(0);
+		} else if(command.equals("allmsg")) {
+			System.err.println("All messages from the ApplicationMaster:");
+			for(Message m: cmc.getMessages() ) {
+				System.err.println("Message: "+m.text);
+			}
+		} else if(command.startsWith("add")) {
+			String nStr = command.replace("add", "").trim();
+			int n = Integer.valueOf(nStr);
+			System.err.println("Adding "+n+" TaskManagers to the session");
+			cmc.addTaskManagers(n);
+		} else {
+			System.err.println("Unknown command '"+command+"'");
+			printHelp();
+		}
+	}
+
+	private void stopSession() {
+		try {
+			LOG.info("Sending shutdown request to the Application Master");
+			cmc.shutdownAM();
+			yarnClient.killApplication(appId);
+			LOG.info("Deleting files in "+sessionFilesDir );
+			FileSystem shutFS = FileSystem.get(conf);
+			shutFS.delete(sessionFilesDir, true); // delete conf and jar file.
+			shutFS.close();
+			cmc.close();
+		} catch (Exception e) {
+			LOG.warn("Exception while killing the YARN application", e);
+		}
+		try {
+			addrFile.delete();
+		} catch (Exception e) {
+			LOG.warn("Exception while deleting the JobManager address file", e);
+		}
+		LOG.info("YARN Client is shutting down");
+		yarnClient.stop();
+	}
+	
+	public class ClientShutdownHook extends Thread {
+		@Override
+		public void run() {
+			stopSession();
+		}
+	}
+
 	private static class ClusterResourceDescription {
 		public int totalFreeMemory;
 		public int containerLimit;
 	}
+	
 	private ClusterResourceDescription getCurrentFreeClusterResources(YarnClient yarnClient) throws YarnException, IOException {
 		ClusterResourceDescription crd = new ClusterResourceDescription();
 		crd.totalFreeMemory = 0;
@@ -630,4 +715,6 @@ public class Client {
 		Client c = new Client();
 		c.run(args);
 	}
+
+	
 }
