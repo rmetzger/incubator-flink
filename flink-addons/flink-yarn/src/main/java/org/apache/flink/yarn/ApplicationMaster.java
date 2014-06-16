@@ -30,15 +30,14 @@ import java.io.InputStreamReader;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.GlobalConfiguration;
-import org.apache.flink.runtime.jobmanager.JobManager;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -64,30 +63,62 @@ import org.apache.hadoop.yarn.util.Records;
 
 import com.google.common.base.Preconditions;
 
-public class ApplicationMaster {
+import eu.stratosphere.configuration.ConfigConstants;
+import eu.stratosphere.configuration.GlobalConfiguration;
+import eu.stratosphere.nephele.ipc.RPC;
+import eu.stratosphere.nephele.ipc.RPC.Server;
+import eu.stratosphere.nephele.jobmanager.JobManager;
+import eu.stratosphere.util.StringUtils;
+
+public class ApplicationMaster implements YARNClientMasterProtocol {
 
 	private static final Log LOG = LogFactory.getLog(ApplicationMaster.class);
 	
-	private void run() throws Exception  {
-		//Utils.logFilesInCurrentDirectory(LOG);
-		// Initialize clients to ResourceManager and NodeManagers
-		Configuration conf = Utils.initializeYarnConfiguration();
-		FileSystem fs = FileSystem.get(conf);
+	private FileSystem fs;
+	private final String currDir;
+	private final String logDirs;
+	private final String ownHostname;
+	private final String appId;
+	private final String clientHomeDir;
+	private final String applicationMasterHost;
+	private final String remoteStratosphereJarPath;
+	private final String shipListString;
+	private final String yarnClientUsername;
+	private final String rpcPort;
+	private final int taskManagerCount;
+	private final int memoryPerTaskManager;
+	private final int coresPerTaskManager;
+	private final String localWebInterfaceDir;
+	private final Configuration conf;
+	
+	private JobManager jobManager;
+	
+	private final Server amRpc;
+
+	private AMRMClient<ContainerRequest> rmClient;
+
+	private NMClient nmClient;
+
+	private List<Message> messages = new ArrayList<Message>();
+	
+	public ApplicationMaster(Configuration conf) throws IOException {
+		fs = FileSystem.get(conf);
 		Map<String, String> envs = System.getenv();
-		final String currDir = envs.get(Environment.PWD.key());
-		final String logDirs =  envs.get(Environment.LOG_DIRS.key());
-		final String ownHostname = envs.get(Environment.NM_HOST.key());
-		final String appId = envs.get(Client.ENV_APP_ID);
-		final String clientHomeDir = envs.get(Client.ENV_CLIENT_HOME_DIR);
-		final String applicationMasterHost = envs.get(Environment.NM_HOST.key());
-		final String remoteFlinkJarPath = envs.get(Client.FLINK_JAR_PATH);
-		final String shipListString = envs.get(Client.ENV_CLIENT_SHIP_FILES);
-		final String yarnClientUsername = envs.get(Client.ENV_CLIENT_USERNAME);
-		final int taskManagerCount = Integer.valueOf(envs.get(Client.ENV_TM_COUNT));
-		final int memoryPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_MEMORY));
-		final int coresPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_CORES));
-		
-		int heapLimit = Utils.calculateHeapSize(memoryPerTaskManager);
+		currDir = envs.get(Environment.PWD.key());
+		logDirs =  envs.get(Environment.LOG_DIRS.key());
+		ownHostname = envs.get(Environment.NM_HOST.key());
+		appId = envs.get(Client.ENV_APP_ID);
+		clientHomeDir = envs.get(Client.ENV_CLIENT_HOME_DIR);
+		applicationMasterHost = envs.get(Environment.NM_HOST.key());
+		remoteStratosphereJarPath = envs.get(Client.STRATOSPHERE_JAR_PATH);
+		shipListString = envs.get(Client.ENV_CLIENT_SHIP_FILES);
+		yarnClientUsername = envs.get(Client.ENV_CLIENT_USERNAME);
+		rpcPort = envs.get(Client.ENV_AM_PRC_PORT);
+		taskManagerCount = Integer.valueOf(envs.get(Client.ENV_TM_COUNT));
+		memoryPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_MEMORY));
+		coresPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_CORES));
+		localWebInterfaceDir = currDir+"/resources/"+ConfigConstants.DEFAULT_JOB_MANAGER_WEB_PATH_NAME;
+		this.conf = conf;
 		
 		if(currDir == null) {
 			throw new RuntimeException("Current directory unknown");
@@ -97,15 +128,19 @@ public class ApplicationMaster {
 		}
 		LOG.info("Working directory "+currDir);
 		
-		// load Flink configuration.
-		Utils.getFlinkConfiguration(currDir);
+		// load Stratosphere configuration.
+		Utils.getStratosphereConfiguration(currDir);
 		
-		final String localWebInterfaceDir = currDir+"/resources/"+ConfigConstants.DEFAULT_JOB_MANAGER_WEB_PATH_NAME;
-		
+		// start AM RPC service
+		amRpc = RPC.getServer(this, ownHostname, Integer.valueOf(rpcPort), 2);
+		amRpc.start();
+	}
+	
+	private void generateConfigurationFile() throws IOException {
 		// Update yaml conf -> set jobManager address to this machine's address.
-		FileInputStream fis = new FileInputStream(currDir+"/flink-conf.yaml");
+		FileInputStream fis = new FileInputStream(currDir+"/stratosphere-conf.yaml");
 		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-		Writer output = new BufferedWriter(new FileWriter(currDir+"/flink-conf-modified.yaml"));
+		Writer output = new BufferedWriter(new FileWriter(currDir+"/stratosphere-conf-modified.yaml"));
 		String line ;
 		while ( (line = br.readLine()) != null) {
 			if(line.contains(ConfigConstants.JOB_MANAGER_IPC_ADDRESS_KEY)) {
@@ -122,36 +157,41 @@ public class ApplicationMaster {
 		output.append(ConfigConstants.JOB_MANAGER_WEB_LOG_PATH_KEY+": "+logDirs+"\n");
 		output.close();
 		br.close();
-		File newConf = new File(currDir+"/flink-conf-modified.yaml");
+		File newConf = new File(currDir+"/stratosphere-conf-modified.yaml");
 		if(!newConf.exists()) {
 			LOG.warn("modified yaml does not exist!");
 		}
-		
+	}
+	
+	private void startJobManager() throws Exception {
 		Utils.copyJarContents("resources/"+ConfigConstants.DEFAULT_JOB_MANAGER_WEB_PATH_NAME, 
 				ApplicationMaster.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		
-		JobManager jm;
-		{
-			String pathToNepheleConfig = currDir+"/flink-conf-modified.yaml";
-			String[] args = {"-executionMode","cluster", "-configDir", pathToNepheleConfig};
-			
-			// start the job manager
-			jm = JobManager.initialize( args );
-			
-			// Start info server for jobmanager
-			jm.startInfoServer();
-		}
+		String pathToNepheleConfig = currDir+"/stratosphere-conf-modified.yaml";
+		String[] args = {"-executionMode","cluster", "-configDir", pathToNepheleConfig};
 		
-		AMRMClient<ContainerRequest> rmClient = AMRMClient.createAMRMClient();
-		rmClient.init(conf);
-		rmClient.start();
+		// start the job manager
+		jobManager = JobManager.initialize( args );
+		
+		// Start info server for jobmanager
+		jobManager.startInfoServer();
+	}
+	
+	private void setRMClient(AMRMClient<ContainerRequest> rmClient) {
+		this.rmClient = rmClient;
+	}
+	
+	private void run() throws Exception  {
+		
+		int heapLimit = Utils.calculateHeapSize(memoryPerTaskManager);
 
-		NMClient nmClient = NMClient.createNMClient();
+		nmClient = NMClient.createNMClient();
 		nmClient.init(conf);
 		nmClient.start();
+		nmClient.cleanupRunningContainersOnStop(true);
 
 		// Register with ResourceManager
-		LOG.info("registering ApplicationMaster");
+		LOG.info("Registering ApplicationMaster");
 		rmClient.registerApplicationMaster(applicationMasterHost, 0, "http://"+applicationMasterHost+":"+GlobalConfiguration.getString(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY, "undefined"));
 
 		// Priority for worker containers - priorities are intra-application
@@ -171,16 +211,16 @@ public class ApplicationMaster {
 			rmClient.addContainerRequest(containerAsk);
 		}
 		
-		LocalResource flinkJar = Records.newRecord(LocalResource.class);
-		LocalResource flinkConf = Records.newRecord(LocalResource.class);
+		LocalResource stratosphereJar = Records.newRecord(LocalResource.class);
+		LocalResource stratosphereConf = Records.newRecord(LocalResource.class);
 
-		// register Flink Jar with remote HDFS
-		final Path remoteJarPath = new Path(remoteFlinkJarPath);
-		Utils.registerLocalResource(fs, remoteJarPath, flinkJar);
+		// register Stratosphere Jar with remote HDFS
+		final Path remoteJarPath = new Path(remoteStratosphereJarPath);
+		Utils.registerLocalResource(fs, remoteJarPath, stratosphereJar);
 		
 		// register conf with local fs.
-		Path remoteConfPath = Utils.setupLocalResource(conf, fs, appId, new Path("file://"+currDir+"/flink-conf-modified.yaml"), flinkConf, new Path(clientHomeDir));
-		LOG.info("Prepared localresource for modified yaml: "+flinkConf);
+		Utils.setupLocalResource(conf, fs, appId, new Path("file://"+currDir+"/stratosphere-conf-modified.yaml"), stratosphereConf, new Path(clientHomeDir));
+		LOG.info("Prepared localresource for modified yaml: "+stratosphereConf);
 		
 		
 		boolean hasLog4j = new File(currDir+"/log4j.properties").exists();
@@ -204,11 +244,12 @@ public class ApplicationMaster {
 		}
 		
 		// respect custom JVM options in the YAML file
-		final String javaOpts = GlobalConfiguration.getString(ConfigConstants.FLINK_JVM_OPTIONS, "");
+		final String javaOpts = GlobalConfiguration.getString(ConfigConstants.STRATOSPHERE_JVM_OPTIONS, "");
 				
 		// Obtain allocated containers and launch
 		int allocatedContainers = 0;
 		int completedContainers = 0;
+		StringBuffer containerDiag = new StringBuffer(); // diagnostics log for the containers.
 		while (allocatedContainers < taskManagerCount) {
 			AllocateResponse response = rmClient.allocate(0);
 			for (Container container : response.getAllocatedContainers()) {
@@ -222,7 +263,7 @@ public class ApplicationMaster {
 				if(hasLog4j) {
 					tmCommand += " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/taskmanager-log4j.log\" -Dlog4j.configuration=file:log4j.properties";
 				}
-				tmCommand	+= " org.apache.flink.yarn.YarnTaskManagerRunner -configDir . "
+				tmCommand	+= " eu.stratosphere.yarn.YarnTaskManagerRunner -configDir . "
 						+ " 1>"
 						+ ApplicationConstants.LOG_DIR_EXPANSION_VAR
 						+ "/taskmanager-stdout.log" 
@@ -235,8 +276,8 @@ public class ApplicationMaster {
 				
 				// copy resources to the TaskManagers.
 				Map<String, LocalResource> localResources = new HashMap<String, LocalResource>(2);
-				localResources.put("flink.jar", flinkJar);
-				localResources.put("flink-conf.yaml", flinkConf);
+				localResources.put("stratosphere.jar", stratosphereJar);
+				localResources.put("stratosphere-conf.yaml", stratosphereConf);
 				
 				// add ship resources
 				if(!shipListString.isEmpty()) {
@@ -251,7 +292,7 @@ public class ApplicationMaster {
 				
 				// Setup CLASSPATH for Container (=TaskTracker)
 				Map<String, String> containerEnv = new HashMap<String, String>();
-				Utils.setupEnv(conf, containerEnv); //add flink.jar to class path.
+				Utils.setupEnv(conf, containerEnv); //add stratosphere.jar to class path.
 				containerEnv.put(Client.ENV_CLIENT_USERNAME, yarnClientUsername);
 				
 				ctx.setEnvironment(containerEnv);
@@ -265,23 +306,24 @@ public class ApplicationMaster {
 							0, dob.getLength());
 					ctx.setTokens(securityTokens);
 				} catch (IOException e) {
-					LOG.warn("Getting current user info failed when trying to launch the container"
-							+ e.getMessage());
+					LOG.warn("Getting current user info failed when trying to launch the container", e);
 				}
 				
 				LOG.info("Launching container " + allocatedContainers);
 				nmClient.startContainer(container, ctx);
+				messages.add(new Message("Launching new container"));
 			}
 			for (ContainerStatus status : response.getCompletedContainersStatuses()) {
 				++completedContainers;
 				LOG.info("Completed container (while allocating) "+status.getContainerId()+". Total Completed:" + completedContainers);
 				LOG.info("Diagnostics "+status.getDiagnostics());
+				// status.
+				logDeadContainer(status, containerDiag);
 			}
 			Thread.sleep(100);
 		}
 
 		// Now wait for containers to complete
-		
 		while (completedContainers < taskManagerCount) {
 			AllocateResponse response = rmClient.allocate(completedContainers
 					/ taskManagerCount);
@@ -289,21 +331,37 @@ public class ApplicationMaster {
 				++completedContainers;
 				LOG.info("Completed container "+status.getContainerId()+". Total Completed:" + completedContainers);
 				LOG.info("Diagnostics "+status.getDiagnostics());
+				logDeadContainer(status, containerDiag);
 			}
 			Thread.sleep(5000);
 		}
 		LOG.info("Shutting down JobManager");
-		jm.shutdown();
+		jobManager.shutdown();
 		
 		// Un-register with ResourceManager
-		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
-		
-		
+		final String diagnosticsMessage = "Application Master shut down after all "
+				+ "containers finished\n"+containerDiag.toString();
+		LOG.info("Diagnostics message: "+diagnosticsMessage);
+		rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, diagnosticsMessage, "");
+		nmClient.close();
+		rmClient.close();
+		LOG.info("Application Master shutdown completed.");
 	}
+	
+	private void logDeadContainer(ContainerStatus status,
+			StringBuffer containerDiag) {
+		String msg = "Diagnostics for containerId="+status.getContainerId()+
+				" in state="+status.getState()+"\n"+status.getDiagnostics();
+		messages.add(new Message(msg) );
+		containerDiag.append("\n\n");
+		containerDiag.append(msg);
+	}
+
 	public static void main(String[] args) throws Exception {
+		// execute Application Master using the client's user
 		final String yarnClientUsername = System.getenv(Client.ENV_CLIENT_USERNAME);
 		LOG.info("YARN daemon runs as '"+UserGroupInformation.getCurrentUser().getShortUserName()+"' setting"
-				+ " user to execute Flink ApplicationMaster/JobManager to '"+yarnClientUsername+"'");
+				+ " user to execute Stratosphere ApplicationMaster/JobManager to '"+yarnClientUsername+"'");
 		UserGroupInformation ugi = UserGroupInformation.createRemoteUser(yarnClientUsername);
 		for(Token<? extends TokenIdentifier> toks : UserGroupInformation.getCurrentUser().getTokens()) {
 			ugi.addToken(toks);
@@ -311,13 +369,61 @@ public class ApplicationMaster {
 		ugi.doAs(new PrivilegedAction<Object>() {
 			@Override
 			public Object run() {
+				AMRMClient<ContainerRequest> rmClient = null;
 				try {
-					new ApplicationMaster().run();
-				} catch (Exception e) {
-					e.printStackTrace();
+					Configuration conf = Utils.initializeYarnConfiguration();
+					rmClient = AMRMClient.createAMRMClient();
+					rmClient.init(conf);
+					rmClient.start();
+					
+					// run the actual Application Master
+					ApplicationMaster am = new ApplicationMaster(conf);
+					am.generateConfigurationFile();
+					am.startJobManager();
+					am.setRMClient(rmClient);
+					am.run();
+					
+				} catch (Throwable e) {
+					if(rmClient != null) {
+						try {
+							rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, "Stratosphere YARN Application master"
+									+ " stopped unexpectedly with an exception.\n"
+									+ StringUtils.stringifyException(e), "");
+						} catch (Exception e1) {
+							LOG.fatal("Unable to fail the application master", e1);
+						}
+					}
+					LOG.fatal("Error while running the application master", e);
 				}
 				return null;
 			}
 		});
+	}
+
+	@Override
+	public ApplicationMasterStatus getAppplicationMasterStatus() {
+		ApplicationMasterStatus amStatus;
+		if(jobManager == null) {
+			// JM not yet started
+			amStatus= new ApplicationMasterStatus(0, 0, messages.size() );
+		} else {
+			amStatus = new ApplicationMasterStatus(jobManager.getNumberOfTaskManagers(), 
+				jobManager.getAvailableSlots(), messages.size() );
+		}
+		return amStatus;
+	}
+
+	@Override
+	public boolean shutdownAM() throws Exception {
+		LOG.info("Client requested shutdown of AM");
+		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
+		nmClient.close();
+		rmClient.close();
+		return true;
+	}
+
+	@Override
+	public List<Message> getMessages() {
+		return messages;
 	}
 }
