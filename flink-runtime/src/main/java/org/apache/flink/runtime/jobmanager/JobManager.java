@@ -1179,8 +1179,8 @@ public class JobManager implements DeploymentManager, ExtendedManagementProtocol
 		return this.archive;
 	}
 
-	public int getNumberOfTaskTrackers() {
-		return this.instanceManager.getNumberOfTaskTrackers();
+	public int getNumberOfTaskManagers() {
+		return this.instanceManager.getNumberOfTaskManagers();
 	}
 	
 	public Map<InstanceConnectionInfo, Instance> getInstances() {

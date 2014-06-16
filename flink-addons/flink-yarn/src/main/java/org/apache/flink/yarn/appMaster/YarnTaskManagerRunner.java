@@ -16,9 +16,7 @@
  * limitations under the License.
  */
 
-
-
-package org.apache.flink.yarn;
+package org.apache.flink.yarn.appMaster;
 
 import java.io.IOException;
 import java.security.PrivilegedAction;
@@ -28,27 +26,29 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.flink.runtime.taskmanager.TaskManager;
+import org.apache.flink.yarn.Client;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
 
+
 public class YarnTaskManagerRunner {
-	
+
 	private static final Log LOG = LogFactory.getLog(YarnTaskManagerRunner.class);
-	
+
 	public static void main(final String[] args) throws IOException {
 		Map<String, String> envs = System.getenv();
 		final String yarnClientUsername = envs.get(Client.ENV_CLIENT_USERNAME);
 		final String localDirs = envs.get(Environment.LOCAL_DIRS.key());
-		
+
 		// configure local directory
 		final String[] newArgs = Arrays.copyOf(args, args.length + 2);
 		newArgs[newArgs.length-2] = "-"+TaskManager.ARG_CONF_DIR;
 		newArgs[newArgs.length-1] = localDirs;
 		LOG.info("Setting log path "+localDirs);
 		LOG.info("YARN daemon runs as '"+UserGroupInformation.getCurrentUser().getShortUserName()+"' setting"
-				+ " user to execute Flink TaskManager to '"+yarnClientUsername+"'");
+				+ " user to execute Stratosphere TaskManager to '"+yarnClientUsername+"'");
 		UserGroupInformation ugi = UserGroupInformation.createRemoteUser(yarnClientUsername);
 		for(Token<? extends TokenIdentifier> toks : UserGroupInformation.getCurrentUser().getTokens()) {
 			ugi.addToken(toks);
