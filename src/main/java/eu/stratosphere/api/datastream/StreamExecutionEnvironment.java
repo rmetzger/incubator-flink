@@ -1,10 +1,11 @@
 package eu.stratosphere.api.datastream;
 
-import eu.stratosphere.api.java.functions.MapFunction;
+import eu.stratosphere.api.java.functions.FlatMapFunction;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.api.java.typeutils.TypeExtractor;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
+import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
@@ -37,33 +38,57 @@ public class StreamExecutionEnvironment {
 		}
 	}		
 	
-	public <T, R> DataStream<R> addMapFunction(DataStream<T> inputStream, final MapFunction<T, R> mapper, TypeInformation<R> returnType) {
+	public <T extends Tuple, R extends Tuple> DataStream<R> addFlatMapFunction(DataStream<T> inputStream, final FlatMapFunction<T, R> flatMapper, TypeInformation<R> returnType) {
 		DataStream<R> returnStream = new DataStream<R>(this, returnType);
-		jobGraphBuilder.setTask(inputStream.getId(), new UserTaskInvokable() {
+		
+		jobGraphBuilder.setTask(inputStream.getId(), new UserTaskInvokable<T, R>() {
 			private static final long serialVersionUID = 1L;
-			private StreamRecord outRecord = new ArrayStreamRecord(BATCH_SIZE);
-			
+
 			@Override
-			public void invoke(StreamRecord record) throws Exception {
+			public void invoke(StreamRecord record, StreamCollector<R> collector) throws Exception {
 				int batchSize = record.getBatchSize();
 				for (int i = 0; i < batchSize; i++) {
 					T tuple = (T) record.getTuple(i);
-					R resultTuple = mapper.map(tuple);
-					outRecord.setTuple(i, (Tuple) resultTuple);
+					flatMapper.flatMap(tuple, collector);
+					// outRecord.setTuple(i, (Tuple) resultTuple);
 				}
 			}
 		});
 		
 		jobGraphBuilder.shuffleConnect(inputStream.getId(), returnStream.getId());
+
 		return returnStream;
 	}
+	
+//	public <T, R> DataStream<R> addMapFunction(DataStream<T> inputStream, final MapFunction<T, R> mapper, TypeInformation<R> returnType) {
+//		DataStream<R> returnStream = new DataStream<R>(this, returnType);
+//		
+//		jobGraphBuilder.setTask(inputStream.getId(), new UserTaskInvokable() {
+//			private static final long serialVersionUID = 1L;
+//			private StreamRecord outRecord = new ArrayStreamRecord(BATCH_SIZE);
+//			
+//			@Override
+//			public void invoke(StreamRecord record) throws Exception {
+//				int batchSize = record.getBatchSize();
+//				for (int i = 0; i < batchSize; i++) {
+//					T tuple = (T) record.getTuple(i);
+//					R resultTuple = mapper.map(tuple);
+//					outRecord.setTuple(i, (Tuple) resultTuple);
+//				}
+//			}
+//		});
+//		
+//		jobGraphBuilder.shuffleConnect(inputStream.getId(), returnStream.getId());
+//		return returnStream;
+//	}
 
 	
 	public void execute(String idToSink) {
 		jobGraphBuilder.setSink("sink", new UserSinkInvokable() {
+
 			@Override
-			public void invoke(StreamRecord record) throws Exception {
-				System.out.println("SINKED: " + record);
+			public void invoke(StreamRecord record, StreamCollector collector) throws Exception {
+				System.out.println("SINK: " + record);
 			}
 		});
 		jobGraphBuilder.shuffleConnect(idToSink, "sink");

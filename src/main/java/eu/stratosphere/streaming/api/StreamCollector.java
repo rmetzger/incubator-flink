@@ -21,7 +21,7 @@ import eu.stratosphere.streaming.api.streamrecord.ArrayStreamRecord;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.util.Collector;
 
-public class StreamCollector implements Collector<Tuple> {
+public class StreamCollector<T extends Tuple> implements Collector<T> {
 
 	protected StreamRecord streamRecord;
 	protected int batchSize;
@@ -37,7 +37,7 @@ public class StreamCollector implements Collector<Tuple> {
 	}
 
 	@Override
-	public void collect(Tuple tuple) {
+	public void collect(T tuple) {
 		streamRecord.setTuple(counter, StreamRecord.copyTuple(tuple));
 		counter++;
 		if (counter >= batchSize) {
