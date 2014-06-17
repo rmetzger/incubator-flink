@@ -21,10 +21,12 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.template.AbstractInputTask;
 import eu.stratosphere.runtime.io.api.ChannelSelector;
 import eu.stratosphere.runtime.io.api.RecordWriter;
+import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.streaming.examples.DummyIS;
@@ -97,7 +99,8 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 		if (log.isDebugEnabled()) {
 			log.debug("SOURCE " + name + " invoked with instance id " + sourceInstanceID);
 		}
-		userFunction.invoke();
+		StreamCollector<Tuple> collector = streamSourceHelper.collector;
+		userFunction.invoke(streamSourceHelper.collector);
 		// TODO print to file
 		System.out.println(userFunction.getResult());
 
