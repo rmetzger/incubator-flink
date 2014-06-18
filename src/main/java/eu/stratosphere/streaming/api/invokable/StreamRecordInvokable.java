@@ -19,6 +19,8 @@ import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public interface StreamRecordInvokable<IN extends Tuple, OUT extends Tuple> extends StreamInvokable {
-	public void invoke(StreamRecord record, StreamCollector<OUT> collector) throws Exception;
+public abstract class StreamRecordInvokable<IN extends Tuple, OUT extends Tuple> extends
+		StreamComponent {
+	public abstract void invoke(StreamRecord record, StreamCollector<OUT> collector)
+			throws Exception;
 }

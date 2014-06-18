@@ -23,17 +23,13 @@ import eu.stratosphere.api.java.functions.FlatMapFunction;
 import eu.stratosphere.api.java.functions.MapFunction;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.api.java.typeutils.TypeExtractor;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.api.StreamCollector;
-import eu.stratosphere.streaming.api.invokable.DefaultSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
-import eu.stratosphere.streaming.api.streamrecord.ArrayStreamRecord;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 import eu.stratosphere.streaming.util.ClusterUtil;
-import eu.stratosphere.types.TypeInformation;
 import eu.stratosphere.util.Collector;
 
 public class StreamExecutionEnvironment {
@@ -94,8 +90,8 @@ public class StreamExecutionEnvironment {
 			e.printStackTrace();
 		}
 
-		jobGraphBuilder.setTask(returnStream.getId(), new MapInvokable<T, R>(mapper),
-				"map", baos.toByteArray());
+		jobGraphBuilder.setTask(returnStream.getId(), new MapInvokable<T, R>(mapper), "map",
+				baos.toByteArray());
 
 		jobGraphBuilder.shuffleConnect(inputStream.getId(), returnStream.getId());
 

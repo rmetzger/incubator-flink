@@ -19,8 +19,8 @@ import java.io.Serializable;
 
 import eu.stratosphere.api.java.tuple.Tuple;
 
-public abstract class UserTaskInvokable<IN extends Tuple, OUT extends Tuple> implements
-		StreamRecordInvokable<IN, OUT>, Serializable {
+public abstract class UserTaskInvokable<IN extends Tuple, OUT extends Tuple> extends
+		StreamRecordInvokable<IN, OUT> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 }

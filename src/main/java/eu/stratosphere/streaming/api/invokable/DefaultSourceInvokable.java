@@ -22,9 +22,6 @@ public class DefaultSourceInvokable extends UserSourceInvokable<Tuple> {
 
 	private static final long serialVersionUID = 1L;
 
-	private String motto = "Stratosphere -- Big Data looks tiny from here";
-	private String[] mottoArray = motto.split(" ");
-
 	@Override
 	public void invoke(Collector<Tuple> collector) throws Exception {
 		// TODO Auto-generated method stub

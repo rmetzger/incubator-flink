@@ -20,7 +20,8 @@ import java.io.Serializable;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.util.Collector;
 
-public abstract class UserSourceInvokable<OUT extends Tuple> implements StreamInvokable, Serializable {
+public abstract class UserSourceInvokable<OUT extends Tuple> extends StreamComponent implements
+		Serializable {
 
 	private static final long serialVersionUID = 1L;
 

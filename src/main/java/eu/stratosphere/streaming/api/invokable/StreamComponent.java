@@ -15,8 +15,18 @@
 
 package eu.stratosphere.streaming.api.invokable;
 
-import eu.stratosphere.api.java.tuple.Tuple;
-import eu.stratosphere.util.Collector;
+import java.io.Serializable;
 
-public interface Invokable extends StreamInvokable {
+public abstract class StreamComponent implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private String componentName;
+	private int channelID;
+
+	public void setAttributes(String componentName, int channelID) {
+		this.componentName = componentName;
+		this.channelID = channelID;
+	}
+
 }
