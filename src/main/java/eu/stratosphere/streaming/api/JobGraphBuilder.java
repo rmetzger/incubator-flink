@@ -36,7 +36,7 @@ import eu.stratosphere.nephele.jobgraph.JobInputVertex;
 import eu.stratosphere.nephele.jobgraph.JobOutputVertex;
 import eu.stratosphere.nephele.jobgraph.JobTaskVertex;
 import eu.stratosphere.pact.runtime.task.util.TaskConfig;
-import eu.stratosphere.streaming.api.invokable.UserInvokable;
+import eu.stratosphere.streaming.api.invokable.StreamInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
@@ -234,7 +234,7 @@ public class JobGraphBuilder {
 	 */
 
 	private Configuration setComponent(String componentName,
-			final Class<? extends UserInvokable> InvokableClass, int parallelism,
+			final Class<? extends StreamInvokable> InvokableClass, int parallelism,
 			int subtasksPerInstance, AbstractJobVertex component) {
 		component.setNumberOfSubtasks(parallelism);
 		component.setNumberOfSubtasksPerInstance(subtasksPerInstance);

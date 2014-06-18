@@ -33,15 +33,13 @@ public class StreamExecutionEnvironment {
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public void invoke(Collector<Tuple> c) throws Exception {
-			// StreamRecord outRecord = new ArrayStreamRecord(1);
+		public void invoke(Collector<Tuple1<String>> collector) throws Exception {
 
 			for (int i = 0; i < 10; i++) {
-
-				c.collect(new Tuple1<String>("win"));
-				System.out.println("source");
+				collector.collect(new Tuple1<String>("source"));
 			}
 		}
+
 	}
 
 	public <T extends Tuple, R extends Tuple> DataStream<R> addFlatMapFunction(
@@ -94,8 +92,7 @@ public class StreamExecutionEnvironment {
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public void invoke(StreamRecord record, StreamCollector<Tuple1<String>> collector)
-				throws Exception {
+		public void invoke(StreamRecord record, StreamCollector<Tuple> collector) throws Exception {
 			for (Tuple tuple : record.getBatchIterable()) {
 				System.out.println(tuple);
 			}
@@ -115,7 +112,7 @@ public class StreamExecutionEnvironment {
 			e.printStackTrace();
 		}
 
-		jobGraphBuilder.setSink("sink", new DummySink(),"sink" ,baos.toByteArray());
+		jobGraphBuilder.setSink("sink", new DummySink(), "sink", baos.toByteArray());
 
 		jobGraphBuilder.shuffleConnect(inputStream.getId(), "sink");
 		return new DataStream<R>(this);
@@ -138,7 +135,8 @@ public class StreamExecutionEnvironment {
 			e.printStackTrace();
 		}
 
-		jobGraphBuilder.setSource(returnStream.getId(), new DummySource(), "source",baos.toByteArray());
+		jobGraphBuilder.setSource(returnStream.getId(), new DummySource(), "source",
+				baos.toByteArray());
 		return returnStream;
 	}
 

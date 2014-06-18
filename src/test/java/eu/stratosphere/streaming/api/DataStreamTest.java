@@ -21,11 +21,11 @@ import eu.stratosphere.nephele.jobgraph.JobOutputVertex;
 import eu.stratosphere.nephele.jobgraph.JobTaskVertex;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
+import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamcomponent.StreamInvokableComponent;
 import eu.stratosphere.util.Collector;
 
 public class DataStreamTest {
-
 
 	public static final class MyFlatMap extends FlatMapFunction<Tuple1<String>, Tuple1<String>> {
 		@Override
@@ -44,8 +44,9 @@ public class DataStreamTest {
 		// DataStream<Tuple1<String>> dataStream =
 		// context.setDummySource().map(new MyMap());
 
-		DataStream<Tuple1<String>> dataStream = context.setDummySource().flatMap(new MyFlatMap()).addDummySink();
-		
+		DataStream<Tuple1<String>> dataStream = context.setDummySource().flatMap(new MyFlatMap())
+				.addDummySink();
+
 		context.execute();
 
 		JobGraphBuilder jgb = context.jobGB();
@@ -56,7 +57,6 @@ public class DataStreamTest {
 				Configuration config = c.getConfiguration();
 				System.out.println(config.getString("componentName", "default"));
 				byte[] bytes = config.getBytes("operator", null);
-				
 
 				ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes));
 
@@ -75,7 +75,7 @@ public class DataStreamTest {
 
 				byte[] userFunctionSerialized = config.getBytes("serializedudf", null);
 				in = new ObjectInputStream(new ByteArrayInputStream(userFunctionSerialized));
-				StreamInvokableComponent userFunction = (StreamInvokableComponent) in.readObject();
+				UserTaskInvokable userFunction = (UserTaskInvokable) in.readObject();
 				System.out.println(userFunction.getClass());
 				assertTrue(true);
 				System.out.println("----------------");

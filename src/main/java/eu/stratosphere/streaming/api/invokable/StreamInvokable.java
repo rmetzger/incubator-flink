@@ -15,10 +15,5 @@
 
 package eu.stratosphere.streaming.api.invokable;
 
-import eu.stratosphere.api.java.tuple.Tuple;
-import eu.stratosphere.streaming.api.StreamCollector;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
-
-public interface RecordInvokable<OUT extends Tuple> extends UserInvokable {
-	public void invoke(StreamRecord record, StreamCollector<OUT> collector) throws Exception;
+public interface StreamInvokable {
 }

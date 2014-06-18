@@ -15,6 +15,7 @@
 
 package eu.stratosphere.streaming.api.invokable;
 
+import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
 public class DefaultTaskInvokable extends UserTaskInvokable {
@@ -22,7 +23,9 @@ public class DefaultTaskInvokable extends UserTaskInvokable {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		emit(record);
+	public void invoke(StreamRecord record, StreamCollector collector) throws Exception {
+		// TODO Auto-generated method stub
+		
 	}
+
 }
