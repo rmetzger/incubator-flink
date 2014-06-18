@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.configuration.Configuration;
+import eu.stratosphere.nephele.execution.Environment;
 import eu.stratosphere.nephele.template.AbstractInputTask;
 import eu.stratosphere.runtime.io.api.ChannelSelector;
 import eu.stratosphere.runtime.io.api.RecordWriter;
@@ -69,6 +70,7 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 
 	@Override
 	public void registerInputOutput() {
+		Environment env=this.getEnvironment();
 		Configuration taskConfiguration = getTaskConfiguration();
 		name = taskConfiguration.getString("componentName", "MISSING_COMPONENT_NAME");
 
@@ -87,7 +89,7 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 
 		streamSourceHelper.setFaultTolerance(recordBuffer, faultToleranceType, taskConfiguration,
 				outputs, sourceInstanceID, name, numberOfOutputChannels);
-
+		
 		userFunction = (UserSourceInvokable) streamSourceHelper.getUserFunction(taskConfiguration,
 				outputs, sourceInstanceID, name, recordBuffer);
 		streamSourceHelper.setAckListener(recordBuffer, sourceInstanceID, outputs);
