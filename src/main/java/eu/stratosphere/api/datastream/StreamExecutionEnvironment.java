@@ -35,8 +35,6 @@ import eu.stratosphere.util.Collector;
 public class StreamExecutionEnvironment {
 	JobGraphBuilder jobGraphBuilder;
 
-	private static final int BATCH_SIZE = 1;
-
 	public StreamExecutionEnvironment(int batchSize) {
 		if (batchSize < 1) {
 			throw new IllegalArgumentException("Batch size must be positive.");
@@ -57,9 +55,8 @@ public class StreamExecutionEnvironment {
 				collector.collect(new Tuple1<String>("source"));
 			}
 		}
-
 	}
-
+	
 	public static enum ConnectionType {
 		SHUFFLE, BROADCAST, FIELD
 	}
@@ -211,6 +208,10 @@ public class StreamExecutionEnvironment {
 		return returnStream;
 	}
 
+	public DataStream<Tuple1<String>> addFileSource(String path) {
+		return addSource(new FileSourceFunction(path));
+	} 
+	
 	public DataStream<Tuple1<String>> addDummySource() {
 		DataStream<Tuple1<String>> returnStream = new DataStream<Tuple1<String>>(this);
 
