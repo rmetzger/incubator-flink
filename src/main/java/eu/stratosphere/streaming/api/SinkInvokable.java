@@ -12,37 +12,29 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
-package eu.stratosphere.api.datastream;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+package eu.stratosphere.streaming.api;
 
-import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.util.Collector;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class FileSourceFunction extends SourceFunction<Tuple1<String>> {
+public class SinkInvokable<IN extends Tuple> extends UserSinkInvokable<IN> {
 	private static final long serialVersionUID = 1L;
-	
-	private final String path;
-	private Tuple1<String> outTuple = new Tuple1<String>();
-	
-	public FileSourceFunction(String path) {
-		this.path = path;
-	}
-	
-	@Override
-	public void invoke(Collector<Tuple1<String>> collector) throws IOException {
-		BufferedReader br = new BufferedReader(new FileReader(path));
-		String line = br.readLine();
-		while (line != null) {
-			if (line != "") {
-				outTuple.f0 = line;
-				collector.collect(outTuple);
-			}
-			line = br.readLine();
-		}
-		br.close();
+
+	private SinkFunction<IN> sinkFunction;
+
+	public SinkInvokable(SinkFunction<IN> sinkFunction) {
+		this.sinkFunction = sinkFunction;
 	}
 
+	@Override
+	public void invoke(StreamRecord record, StreamCollector<Tuple> collector) throws Exception {
+		int batchSize = record.getBatchSize();
+		for (int i = 0; i < batchSize; i++) {
+			@SuppressWarnings("unchecked")
+			IN tuple = (IN) record.getTuple(i);
+			sinkFunction.invoke(tuple);
+		}
+	}
 }

@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import eu.stratosphere.api.datastream.SinkFunction;
 import eu.stratosphere.api.java.functions.FlatMapFunction;
 import eu.stratosphere.api.java.functions.GroupReduceFunction;
 import eu.stratosphere.api.java.functions.MapFunction;
@@ -42,6 +41,7 @@ import eu.stratosphere.nephele.io.RecordWriter;
 import eu.stratosphere.nephele.template.AbstractInvokable;
 import eu.stratosphere.pact.runtime.plugable.DeserializationDelegate;
 import eu.stratosphere.pact.runtime.plugable.SerializationDelegate;
+import eu.stratosphere.streaming.api.SinkFunction;
 import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.invokable.DefaultSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.DefaultSourceInvokable;

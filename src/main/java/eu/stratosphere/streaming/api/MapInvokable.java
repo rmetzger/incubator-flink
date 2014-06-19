@@ -13,29 +13,28 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.api.datastream;
+package eu.stratosphere.streaming.api;
 
+import eu.stratosphere.api.java.functions.MapFunction;
 import eu.stratosphere.api.java.tuple.Tuple;
-import eu.stratosphere.streaming.api.StreamCollector;
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class SinkInvokable<IN extends Tuple> extends UserSinkInvokable<IN> {
+public class MapInvokable<T extends Tuple, R extends Tuple> extends UserTaskInvokable<T, R> {
 	private static final long serialVersionUID = 1L;
 
-	private SinkFunction<IN> sinkFunction;
-
-	public SinkInvokable(SinkFunction<IN> sinkFunction) {
-		this.sinkFunction = sinkFunction;
+	private MapFunction<T, R> mapper;
+	public MapInvokable(MapFunction<T, R> mapper) {
+		this.mapper = mapper;
 	}
-
+	
 	@Override
-	public void invoke(StreamRecord record, StreamCollector<Tuple> collector) throws Exception {
+	public void invoke(StreamRecord record, StreamCollector<R> collector) throws Exception {
 		int batchSize = record.getBatchSize();
 		for (int i = 0; i < batchSize; i++) {
 			@SuppressWarnings("unchecked")
-			IN tuple = (IN) record.getTuple(i);
-			sinkFunction.invoke(tuple);
+			T tuple = (T) record.getTuple(i);
+			collector.collect(mapper.map(tuple));
 		}
-	}
+	}		
 }

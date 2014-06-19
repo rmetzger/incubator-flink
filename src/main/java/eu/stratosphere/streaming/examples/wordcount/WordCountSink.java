@@ -15,8 +15,8 @@
 
 package eu.stratosphere.streaming.examples.wordcount;
 
-import eu.stratosphere.api.datastream.SinkFunction;
 import eu.stratosphere.api.java.tuple.Tuple2;
+import eu.stratosphere.streaming.api.SinkFunction;
 
 public class WordCountSink extends SinkFunction<Tuple2<String, Integer>> {
 	private static final long serialVersionUID = 1L;

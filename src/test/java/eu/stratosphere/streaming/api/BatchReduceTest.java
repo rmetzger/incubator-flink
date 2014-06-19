@@ -21,10 +21,6 @@ import java.util.Iterator;
 
 import org.junit.Test;
 
-import eu.stratosphere.api.datastream.DataStream;
-import eu.stratosphere.api.datastream.SinkFunction;
-import eu.stratosphere.api.datastream.SourceFunction;
-import eu.stratosphere.api.datastream.StreamExecutionEnvironment;
 import eu.stratosphere.api.java.functions.FlatMapFunction;
 import eu.stratosphere.api.java.functions.GroupReduceFunction;
 import eu.stratosphere.api.java.tuple.Tuple1;
