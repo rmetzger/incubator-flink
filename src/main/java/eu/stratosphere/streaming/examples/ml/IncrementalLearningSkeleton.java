@@ -14,33 +14,12 @@
  **********************************************************************************************************************/
 package eu.stratosphere.streaming.examples.ml;
 
-import java.net.InetSocketAddress;
-
-import org.apache.log4j.Level;
-
 import eu.stratosphere.api.java.functions.MapFunction;
-import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.api.java.tuple.Tuple2;
-import eu.stratosphere.client.minicluster.NepheleMiniCluster;
-import eu.stratosphere.client.program.Client;
-import eu.stratosphere.configuration.Configuration;
-import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.DataStream;
-import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.api.SinkFunction;
 import eu.stratosphere.streaming.api.SourceFunction;
 import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
-import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
-import eu.stratosphere.streaming.examples.ml.IncrementalOLS.IncOLSSink;
-import eu.stratosphere.streaming.examples.ml.IncrementalOLS.NewDataSource;
-import eu.stratosphere.streaming.examples.ml.IncrementalOLS.PartialModelBuilder;
-import eu.stratosphere.streaming.examples.ml.IncrementalOLS.Predictor;
-import eu.stratosphere.streaming.examples.ml.IncrementalOLS.TrainingDataSource;
-import eu.stratosphere.streaming.util.LogUtils;
 import eu.stratosphere.util.Collector;
 
 public class IncrementalLearningSkeleton {
