@@ -64,7 +64,6 @@ public class JobGraphBuilder {
 	protected String maxParallelismVertexName;
 	protected int maxParallelism;
 	protected FaultToleranceType faultToleranceType;
-	private int batchSize;
 
 	/**
 	 * Creates a new JobGraph with the given name
@@ -85,7 +84,6 @@ public class JobGraphBuilder {
 			log.debug("JobGraph created");
 		}
 		this.faultToleranceType = faultToleranceType;
-		batchSize = 1;
 	}
 
 	/**
@@ -101,7 +99,6 @@ public class JobGraphBuilder {
 
 	public JobGraphBuilder(String jobGraphName, FaultToleranceType faultToleranceType, int batchSize) {
 		this(jobGraphName, faultToleranceType);
-		this.batchSize = batchSize;
 	}
 
 	/**
@@ -262,7 +259,6 @@ public class JobGraphBuilder {
 		Configuration config = new TaskConfig(component.getConfiguration()).getConfiguration();
 		config.setClass("userfunction", InvokableClass);
 		config.setString("componentName", componentName);
-		config.setInteger("batchSize", batchSize);
 		// config.setBytes("operator", getSerializedFunction());
 
 		config.setInteger("faultToleranceType", faultToleranceType.id);
@@ -270,6 +266,12 @@ public class JobGraphBuilder {
 		components.put(componentName, component);
 		numberOfInstances.put(componentName, parallelism);
 		return config;
+	}
+
+	public void setBatchSize(String componentName, int batchSize) {
+		AbstractJobVertex component = components.get(componentName);
+		Configuration config = component.getConfiguration();
+		config.setInteger("batchSize", batchSize);
 	}
 
 	private Configuration setComponent(String componentName,

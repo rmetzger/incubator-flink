@@ -70,13 +70,7 @@ public class FlatMapTest {
 	@Test
 	public void test() throws Exception {
 
-		try {
-			StreamExecutionEnvironment context2 = new StreamExecutionEnvironment(0);
-			fail();
-		} catch (IllegalArgumentException e) {
-		}
-		
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment(2);
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
 		DataStream<Tuple1<String>> dataStream0 = context.addSource(new MySource());
 
 		DataStream<Tuple1<String>> dataStream1 = context.addDummySource().connectWith(dataStream0)
