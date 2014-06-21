@@ -90,6 +90,7 @@ public class DataStream<T extends Tuple> {
 		connectIDs.addAll(stream.connectIDs);
 		ctypes.addAll(stream.ctypes);
 		cparams.addAll(stream.cparams);
+		batchSizes.addAll(stream.batchSizes);
 		return this;
 	}
 
