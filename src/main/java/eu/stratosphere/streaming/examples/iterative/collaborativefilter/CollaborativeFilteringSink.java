@@ -13,23 +13,25 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.window.sum;
+package eu.stratosphere.streaming.examples.iterative.collaborativefilter;
 
-import eu.stratosphere.api.java.tuple.Tuple2;
-import eu.stratosphere.streaming.api.DataStream;
-import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
+import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class WindowSumLocal {
-	
-	public static void main(String[] args) {
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
-		@SuppressWarnings("unused")
-		DataStream<Tuple2<Integer, Long>> dataStream = context
-				.addSource(new WindowSumSource())
-				.map(new WindowSumMultiple())
-				.flatMap(new WindowSumAggregate())
-				.addSink(new WindowSumSink());
-		
-		context.execute();
+public class CollaborativeFilteringSink extends UserSinkInvokable {
+	private static final long serialVersionUID = 1L;
+
+	@Override
+	public void invoke(StreamRecord record) throws Exception {
+		// TODO Auto-generated method stub
+		System.out.println("received record...");
+		int tupleNum = record.getNumOfTuples();
+		System.out.println("============================================");
+		for (int i = 0; i < tupleNum; ++i) {
+			System.out.println("name=" + record.getField(i, 0) + ", grade="
+					+ record.getField(i, 1) + ", salary="
+					+ record.getField(i, 2));
+		}
+		System.out.println("============================================");		
 	}
 }

@@ -13,23 +13,20 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.window.sum;
+package eu.stratosphere.streaming.examples.iterative.kmeans;
 
-import eu.stratosphere.api.java.tuple.Tuple2;
-import eu.stratosphere.streaming.api.DataStream;
-import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
+import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class WindowSumLocal {
-	
-	public static void main(String[] args) {
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
-		@SuppressWarnings("unused")
-		DataStream<Tuple2<Integer, Long>> dataStream = context
-				.addSource(new WindowSumSource())
-				.map(new WindowSumMultiple())
-				.flatMap(new WindowSumAggregate())
-				.addSink(new WindowSumSink());
-		
-		context.execute();
+public class KMeansSink extends UserSinkInvokable {
+	private static final long serialVersionUID = 1L;
+
+	@Override
+	public void invoke(StreamRecord record) throws Exception {
+		// TODO Auto-generated method stub
+		//int tupleNum = record.getNumOfTuples();
+		System.out.println("============================================");
+		System.out.println("record=" + record.getString(0, 0));
+		System.out.println("============================================");		
 	}
 }
