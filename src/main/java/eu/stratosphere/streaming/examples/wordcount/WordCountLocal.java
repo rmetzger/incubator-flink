@@ -22,11 +22,6 @@ import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
 public class WordCountLocal {
 
 	public static void main(String[] args) {
-<<<<<<< HEAD
-
-		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
-		ClusterUtil.runOnMiniCluster(getJobGraph());
-=======
 		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
 
 		@SuppressWarnings("unused")
@@ -38,6 +33,5 @@ public class WordCountLocal {
 				.addSink(new WordCountSink());
 		
 		context.execute();
->>>>>>> upstream/master
 	}
 }

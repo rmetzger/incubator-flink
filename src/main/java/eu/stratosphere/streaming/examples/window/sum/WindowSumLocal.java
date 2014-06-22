@@ -15,33 +15,21 @@
 
 package eu.stratosphere.streaming.examples.window.sum;
 
-import org.apache.log4j.Level;
-
-import eu.stratosphere.nephele.jobgraph.JobGraph;
-import eu.stratosphere.streaming.api.JobGraphBuilder;
-import eu.stratosphere.streaming.util.ClusterUtil;
-import eu.stratosphere.streaming.util.LogUtils;
+import eu.stratosphere.api.java.tuple.Tuple2;
+import eu.stratosphere.streaming.api.DataStream;
+import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
 
 public class WindowSumLocal {
-
-	public static JobGraph getJobGraph() {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph");
-		graphBuilder.setSource("WindowSumSource", WindowSumSource.class);
-		graphBuilder.setTask("WindowSumMultiple", WindowSumMultiple.class, 1, 1);
-		graphBuilder.setTask("WindowSumAggregate", WindowSumAggregate.class, 1, 1);
-		graphBuilder.setSink("WindowSumSink", WindowSumSink.class);
-
-		graphBuilder.shuffleConnect("WindowSumSource", "WindowSumMultiple");
-		graphBuilder.shuffleConnect("WindowSumMultiple", "WindowSumAggregate");
-		graphBuilder.shuffleConnect("WindowSumAggregate", "WindowSumSink");
-
-		return graphBuilder.getJobGraph();
-	}
-
+	
 	public static void main(String[] args) {
-
-		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
-		ClusterUtil.runOnMiniCluster(getJobGraph());
-
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		@SuppressWarnings("unused")
+		DataStream<Tuple2<Integer, Long>> dataStream = context
+				.addSource(new WindowSumSource())
+				.map(new WindowSumMultiple())
+				.flatMap(new WindowSumAggregate())
+				.addSink(new WindowSumSink());
+		
+		context.execute();
 	}
 }

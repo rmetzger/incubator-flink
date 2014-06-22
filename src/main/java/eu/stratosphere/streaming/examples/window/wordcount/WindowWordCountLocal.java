@@ -15,34 +15,22 @@
 
 package eu.stratosphere.streaming.examples.window.wordcount;
 
-import org.apache.log4j.Level;
-
-import eu.stratosphere.nephele.jobgraph.JobGraph;
-import eu.stratosphere.streaming.api.JobGraphBuilder;
-import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
-import eu.stratosphere.streaming.util.ClusterUtil;
-import eu.stratosphere.streaming.util.LogUtils;
+import eu.stratosphere.api.java.tuple.Tuple3;
+import eu.stratosphere.streaming.api.DataStream;
+import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
 
 public class WindowWordCountLocal {
 
-	public static JobGraph getJobGraph() {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph", FaultToleranceType.NONE);
-		graphBuilder.setSource("WindowWordCountSource", WindowWordCountSource.class);
-		graphBuilder.setTask("WindowWordCountSplitter", WindowWordCountSplitter.class, 1, 1);
-		graphBuilder.setTask("WindowWordCountCounter", WindowWordCountCounter.class, 1, 1);
-		graphBuilder.setSink("WindowWordCountSink", WindowWordCountSink.class);
-
-		graphBuilder.shuffleConnect("WindowWordCountSource", "WindowWordCountSplitter");
-		graphBuilder.fieldsConnect("WindowWordCountSplitter", "WindowWordCountCounter", 0);
-		graphBuilder.shuffleConnect("WindowWordCountCounter", "WindowWordCountSink");
-
-		return graphBuilder.getJobGraph();
-	}
-
 	public static void main(String[] args) {
-
-		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
-		ClusterUtil.runOnMiniCluster(getJobGraph());
-
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		@SuppressWarnings("unused")
+		DataStream<Tuple3<String, Integer, Long>> dataStream = context
+				.addSource(new WindowWordCountSource())
+				.flatMap(new WindowWordCountSplitter())
+				.partitionBy(0)
+				.flatMap(new WindowWordCountCounter())
+				.addSink(new WindowWordCountSink());
+		
+		context.execute();
 	}
 }

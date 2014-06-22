@@ -17,16 +17,9 @@ package eu.stratosphere.streaming.examples.join;
 
 import org.apache.log4j.Level;
 
-<<<<<<< HEAD
-import eu.stratosphere.nephele.jobgraph.JobGraph;
-import eu.stratosphere.streaming.api.JobGraphBuilder;
-import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
-import eu.stratosphere.streaming.util.ClusterUtil;
-=======
 import eu.stratosphere.api.java.tuple.Tuple3;
 import eu.stratosphere.streaming.api.DataStream;
 import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
->>>>>>> upstream/master
 import eu.stratosphere.streaming.util.LogUtils;
 
 public class JoinLocal {
@@ -34,9 +27,6 @@ public class JoinLocal {
 	public static void main(String[] args) {
 
 		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
-<<<<<<< HEAD
-		ClusterUtil.runOnMiniCluster(getJobGraph());
-=======
 
 		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
 
@@ -49,7 +39,6 @@ public class JoinLocal {
 				.flatMap(new JoinTask()).addSink(new JoinSink());
 
 		context.execute();
->>>>>>> upstream/master
 
 	}
 
