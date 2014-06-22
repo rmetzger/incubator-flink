@@ -13,46 +13,28 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.cellinfo;
+package eu.stratosphere.streaming.api;
 
-import eu.stratosphere.api.java.tuple.Tuple1;
+import eu.stratosphere.api.java.functions.MapFunction;
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class CellTask extends UserTaskInvokable {
+public class MapInvokable<T extends Tuple, R extends Tuple> extends UserTaskInvokable<T, R> {
 	private static final long serialVersionUID = 1L;
-	
-	private WorkerEngineExact engine = new WorkerEngineExact(10, 500,
-			System.currentTimeMillis());
-	Integer cellID;
-	Long timeStamp;
-	Integer lastMillis;
 
-	StreamRecord outputRecord = new StreamRecord(new Tuple1<String>());
-
-	int numOfFields;
-
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-
-		cellID = record.getInteger(0);
-		timeStamp = record.getLong(1);
-		numOfFields = record.getNumOfFields();
-
-		// TODO: consider adding source to StreamRecord as a workaround
-		// INFO
-		if (numOfFields == 2) {
-			engine.put(cellID, timeStamp);
-			outputRecord.setString(0, cellID + " " + timeStamp);
-			emit(outputRecord);
-		}
-		// QUERY
-		else if (numOfFields == 3) {
-			lastMillis = record.getInteger(2);
-			outputRecord.setString(0,
-					String.valueOf(engine.get(timeStamp, lastMillis, cellID)));
-			emit(outputRecord);
-
-		}
+	private MapFunction<T, R> mapper;
+	public MapInvokable(MapFunction<T, R> mapper) {
+		this.mapper = mapper;
 	}
+	
+	@Override
+	public void invoke(StreamRecord record, StreamCollector<R> collector) throws Exception {
+		int batchSize = record.getBatchSize();
+		for (int i = 0; i < batchSize; i++) {
+			@SuppressWarnings("unchecked")
+			T tuple = (T) record.getTuple(i);
+			collector.collect(mapper.map(tuple));
+		}
+	}		
 }

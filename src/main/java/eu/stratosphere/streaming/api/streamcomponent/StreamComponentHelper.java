@@ -24,27 +24,40 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import eu.stratosphere.api.common.functions.AbstractFunction;
+import eu.stratosphere.api.java.functions.FilterFunction;
+import eu.stratosphere.api.java.functions.FlatMapFunction;
+import eu.stratosphere.api.java.functions.GroupReduceFunction;
+import eu.stratosphere.api.java.functions.MapFunction;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.api.java.typeutils.TupleTypeInfo;
+import eu.stratosphere.api.java.typeutils.TypeExtractor;
+import eu.stratosphere.api.java.typeutils.runtime.TupleSerializer;
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.event.task.AbstractTaskEvent;
 import eu.stratosphere.nephele.event.task.EventListener;
 import eu.stratosphere.nephele.io.AbstractRecordReader;
 import eu.stratosphere.nephele.io.ChannelSelector;
 import eu.stratosphere.nephele.io.MutableRecordReader;
-import eu.stratosphere.nephele.io.RecordReader;
 import eu.stratosphere.nephele.io.RecordWriter;
-import eu.stratosphere.nephele.io.UnionRecordReader;
 import eu.stratosphere.nephele.template.AbstractInvokable;
+import eu.stratosphere.pact.runtime.plugable.DeserializationDelegate;
+import eu.stratosphere.pact.runtime.plugable.SerializationDelegate;
+import eu.stratosphere.streaming.api.SinkFunction;
+import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.invokable.DefaultSinkInvokable;
+import eu.stratosphere.streaming.api.invokable.DefaultSourceInvokable;
 import eu.stratosphere.streaming.api.invokable.DefaultTaskInvokable;
-import eu.stratosphere.streaming.api.invokable.RecordInvokable;
+import eu.stratosphere.streaming.api.invokable.StreamRecordInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
+import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
+import eu.stratosphere.streaming.api.streamrecord.ArrayStreamRecord;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
-import eu.stratosphere.streaming.api.streamrecord.UID;
 import eu.stratosphere.streaming.faulttolerance.AckEvent;
 import eu.stratosphere.streaming.faulttolerance.AckEventListener;
 import eu.stratosphere.streaming.faulttolerance.FailEvent;
 import eu.stratosphere.streaming.faulttolerance.FailEventListener;
-import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 import eu.stratosphere.streaming.faulttolerance.FaultToleranceUtil;
 import eu.stratosphere.streaming.partitioner.DefaultPartitioner;
 import eu.stratosphere.streaming.partitioner.FieldsPartitioner;
@@ -53,40 +66,19 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 	private static final Log log = LogFactory.getLog(StreamComponentHelper.class);
 	private static int numComponents = 0;
 
+	private TupleTypeInfo<Tuple> inTupleTypeInfo = null;
+	private TupleSerializer<Tuple> inTupleSerializer = null;
+	private DeserializationDelegate<Tuple> inDeserializationDelegate = null;
+
+	private TupleTypeInfo<Tuple> outTupleTypeInfo = null;
+	private TupleSerializer<Tuple> outTupleSerializer = null;
+	private SerializationDelegate<Tuple> outSerializationDelegate = null;
+
+	public StreamCollector<Tuple> collector;
+
 	public static int newComponent() {
 		numComponents++;
 		return numComponents;
-	}
-
-	public RecordInvoker setFaultTolerance(FaultToleranceUtil util, FaultToleranceType type,
-			Configuration config, List<RecordWriter<StreamRecord>> outputs, int taskInstanceID,
-			String name, int[] numberOfOutputChannels) {
-		type = FaultToleranceType.from(config.getInteger("faultToleranceType", 0));
-
-		RecordInvoker invoker = getRecordInvoker(type);
-		switch (type) {
-		case AT_LEAST_ONCE:
-		case EXACTLY_ONCE:
-			util = new FaultToleranceUtil(type, outputs, taskInstanceID, name,
-					numberOfOutputChannels);
-			break;
-		case NONE:
-		default:
-			util = null;
-			break;
-		}
-		return invoker;
-	}
-
-	public RecordInvoker getRecordInvoker(FaultToleranceType type) {
-		switch (type) {
-		case AT_LEAST_ONCE:
-		case EXACTLY_ONCE:
-			return new InvokerWithFaultTolerance();
-		case NONE:
-		default:
-			return new Invoker();
-		}
 	}
 
 	public void setAckListener(FaultToleranceUtil recordBuffer, int sourceInstanceID,
@@ -113,15 +105,81 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 
 	}
 
+	public StreamCollector<Tuple> setCollector(Configuration taskConfiguration, int id,
+			List<RecordWriter<StreamRecord>> outputs) {
+
+		int batchSize = taskConfiguration.getInteger("batchSize", 1);
+		long batchTimeout = taskConfiguration.getLong("batchTimeout", 1000);
+		collector = new StreamCollector<Tuple>(batchSize, batchTimeout, id,
+				outSerializationDelegate, outputs);
+		return collector;
+	}
+
+	// TODO add type parameters to avoid redundant code
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void setSerializers(Configuration taskConfiguration) {
+		byte[] operatorBytes = taskConfiguration.getBytes("operator", null);
+		String operatorName = taskConfiguration.getString("operatorName", "");
+
+		try {
+			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(operatorBytes));
+			Object function = in.readObject();
+
+			if (operatorName.equals("flatMap")) {
+				setSerializer(function, FlatMapFunction.class);
+			} else if (operatorName.equals("map")) {
+				setSerializer(function, MapFunction.class);
+			} else if (operatorName.equals("batchReduce")) {
+				setSerializer(function, GroupReduceFunction.class);
+			} else if (operatorName.equals("filter")) {
+				setSerializer(function, FilterFunction.class);
+			} else if (operatorName.equals("sink")) {
+				inTupleTypeInfo = (TupleTypeInfo) TypeExtractor.createTypeInfo(SinkFunction.class,
+						function.getClass(), 0, null, null);
+
+				inTupleSerializer = inTupleTypeInfo.createSerializer();
+				inDeserializationDelegate = new DeserializationDelegate<Tuple>(inTupleSerializer);
+			} else if (operatorName.equals("source")) {
+				outTupleTypeInfo = (TupleTypeInfo) TypeExtractor.createTypeInfo(
+						UserSourceInvokable.class, function.getClass(), 0, null, null);
+
+				outTupleSerializer = outTupleTypeInfo.createSerializer();
+				outSerializationDelegate = new SerializationDelegate<Tuple>(outTupleSerializer);
+			} else {
+				throw new Exception("Wrong operator name!");
+			}
+
+		} catch (Exception e) {
+			throw new StreamComponentException("Nonsupported object passed as operator");
+
+		}
+	}
+
+	private void setSerializer(Object function, Class<? extends AbstractFunction> clazz) {
+		inTupleTypeInfo = (TupleTypeInfo) TypeExtractor.createTypeInfo(clazz, function.getClass(),
+				0, null, null);
+
+		inTupleSerializer = inTupleTypeInfo.createSerializer();
+		inDeserializationDelegate = new DeserializationDelegate<Tuple>(inTupleSerializer);
+
+		outTupleTypeInfo = (TupleTypeInfo) TypeExtractor.createTypeInfo(clazz, function.getClass(),
+				1, null, null);
+
+		outTupleSerializer = outTupleTypeInfo.createSerializer();
+		outSerializationDelegate = new SerializationDelegate<Tuple>(outTupleSerializer);
+	}
+
 	public AbstractRecordReader getConfigInputs(T taskBase, Configuration taskConfiguration)
 			throws StreamComponentException {
 		int numberOfInputs = taskConfiguration.getInteger("numberOfInputs", 0);
 
 		if (numberOfInputs < 2) {
 			if (taskBase instanceof StreamTask) {
-				return new RecordReader<StreamRecord>((StreamTask) taskBase, StreamRecord.class);
+				return new StreamRecordReader((StreamTask) taskBase, ArrayStreamRecord.class,
+						inDeserializationDelegate, inTupleSerializer);
 			} else if (taskBase instanceof StreamSink) {
-				return new RecordReader<StreamRecord>((StreamSink) taskBase, StreamRecord.class);
+				return new StreamRecordReader((StreamSink) taskBase, ArrayStreamRecord.class,
+						inDeserializationDelegate, inTupleSerializer);
 			} else {
 				throw new StreamComponentException("Nonsupported object passed to setConfigInputs");
 			}
@@ -140,13 +198,15 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 							"Nonsupported object passed to setConfigInputs");
 				}
 			}
-			return new UnionRecordReader<StreamRecord>(recordReaders, StreamRecord.class);
+			return new UnionStreamRecordReader(recordReaders, ArrayStreamRecord.class,
+					inDeserializationDelegate, inTupleSerializer);
 		}
 	}
 
 	public void setConfigOutputs(T taskBase, Configuration taskConfiguration,
 			List<RecordWriter<StreamRecord>> outputs,
 			List<ChannelSelector<StreamRecord>> partitioners) throws StreamComponentException {
+
 		int numberOfOutputs = taskConfiguration.getInteger("numberOfOutputs", 0);
 		for (int i = 0; i < numberOfOutputs; i++) {
 			setPartitioner(taskConfiguration, i, partitioners);
@@ -164,7 +224,7 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 		}
 	}
 
-	public UserSinkInvokable getUserFunction(Configuration taskConfiguration) {
+	public UserSinkInvokable getSinkInvokable(Configuration taskConfiguration) {
 
 		Class<? extends UserSinkInvokable> userFunctionClass = taskConfiguration.getClass(
 				"userfunction", DefaultSinkInvokable.class, UserSinkInvokable.class);
@@ -172,26 +232,13 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 
 		byte[] userFunctionSerialized = taskConfiguration.getBytes("serializedudf", null);
 
-		if (userFunctionSerialized != null) {
-			try {
-				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(
-						userFunctionSerialized));
-				userFunction = (UserSinkInvokable) ois.readObject();
-			} catch (Exception e) {
-				if (log.isErrorEnabled()) {
-					log.error("Cannot instanciate user function: "
-							+ userFunctionClass.getSimpleName());
-				}
-			}
-		} else {
-
-			try {
-				userFunction = userFunctionClass.newInstance();
-			} catch (Exception e) {
-				if (log.isErrorEnabled()) {
-					log.error("Cannot instanciate user function: "
-							+ userFunctionClass.getSimpleName());
-				}
+		try {
+			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(
+					userFunctionSerialized));
+			userFunction = (UserSinkInvokable) ois.readObject();
+		} catch (Exception e) {
+			if (log.isErrorEnabled()) {
+				log.error("Cannot instanciate user function: " + userFunctionClass.getSimpleName());
 			}
 		}
 
@@ -199,51 +246,56 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 	}
 
 	// TODO consider logging stack trace!
-	public StreamInvokableComponent getUserFunction(Configuration taskConfiguration,
-			List<RecordWriter<StreamRecord>> outputs, int instanceID, String name,
-			FaultToleranceUtil recordBuffer) {
+	@SuppressWarnings("unchecked")
+	public UserTaskInvokable getTaskInvokable(Configuration taskConfiguration) {
 
 		// Default value is a TaskInvokable even if it was called from a source
-		Class<? extends StreamInvokableComponent> userFunctionClass = taskConfiguration.getClass(
-				"userfunction", DefaultTaskInvokable.class, StreamInvokableComponent.class);
-		StreamInvokableComponent userFunction = null;
-		FaultToleranceType faultToleranceType = FaultToleranceType.from(taskConfiguration
-				.getInteger("faultToleranceBuffer", 0));
+		Class<? extends UserTaskInvokable> userFunctionClass = taskConfiguration.getClass(
+				"userfunction", DefaultTaskInvokable.class, UserTaskInvokable.class);
+		UserTaskInvokable userFunction = null;
 
 		byte[] userFunctionSerialized = taskConfiguration.getBytes("serializedudf", null);
 
-		if (userFunctionSerialized != null) {
-			try {
-				ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(
-						userFunctionSerialized));
-				userFunction = (StreamInvokableComponent) ois.readObject();
-				userFunction.declareOutputs(outputs, instanceID, name, recordBuffer,
-						faultToleranceType);
-			} catch (Exception e) {
-				if (log.isErrorEnabled()) {
+		try {
+			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(
+					userFunctionSerialized));
+			userFunction = (UserTaskInvokable) ois.readObject();
+			// userFunction.declareOutputs(outputs, instanceID, name,
+			// recordBuffer,
+			// faultToleranceType);
+		} catch (Exception e) {
+			if (log.isErrorEnabled()) {
 
-					log.error("Cannot instanciate user function: "
-							+ userFunctionClass.getSimpleName());
-				}
+				log.error("Cannot instanciate user function: " + userFunctionClass.getSimpleName());
 			}
-		} else {
-
-			try {
-				userFunction = userFunctionClass.newInstance();
-				userFunction.declareOutputs(outputs, instanceID, name, recordBuffer,
-						faultToleranceType);
-			} catch (InstantiationException e) {
-				if (log.isErrorEnabled()) {
-					log.error("Cannot instanciate user function: "
-							+ userFunctionClass.getSimpleName());
-				}
-			} catch (Exception e) {
-				if (log.isErrorEnabled()) {
-					log.error("Cannot use user function: " + userFunctionClass.getSimpleName());
-				}
-			}
-
 		}
+
+		return userFunction;
+	}
+
+	public UserSourceInvokable getSourceInvokable(Configuration taskConfiguration) {
+
+		// Default value is a TaskInvokable even if it was called from a source
+		Class<? extends UserSourceInvokable> userFunctionClass = taskConfiguration.getClass(
+				"userfunction", DefaultSourceInvokable.class, UserSourceInvokable.class);
+		UserSourceInvokable userFunction = null;
+
+		byte[] userFunctionSerialized = taskConfiguration.getBytes("serializedudf", null);
+
+		try {
+			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(
+					userFunctionSerialized));
+			userFunction = (UserSourceInvokable) ois.readObject();
+			// userFunction.declareOutputs(outputs, instanceID, name,
+			// recordBuffer,
+			// faultToleranceType);
+		} catch (Exception e) {
+			if (log.isErrorEnabled()) {
+
+				log.error("Cannot instanciate user function: " + userFunctionClass.getSimpleName());
+			}
+		}
+
 		return userFunction;
 	}
 
@@ -291,51 +343,22 @@ public final class StreamComponentHelper<T extends AbstractInvokable> {
 		}
 	}
 
-	public void invokeRecords(RecordInvoker invoker, RecordInvokable userFunction,
-			AbstractRecordReader inputs, String name) throws Exception {
-		if (inputs instanceof UnionRecordReader) {
-			@SuppressWarnings("unchecked")
-			UnionRecordReader<StreamRecord> recordReader = (UnionRecordReader<StreamRecord>) inputs;
+	public void invokeRecords(StreamRecordInvokable userFunction, AbstractRecordReader inputs)
+			throws Exception {
+		if (inputs instanceof UnionStreamRecordReader) {
+			UnionStreamRecordReader recordReader = (UnionStreamRecordReader) inputs;
 			while (recordReader.hasNext()) {
 				StreamRecord record = recordReader.next();
-				invoker.call(name, userFunction, recordReader, record);
+				userFunction.invoke(record, collector);
 			}
 
-		} else if (inputs instanceof RecordReader) {
-			@SuppressWarnings("unchecked")
-			RecordReader<StreamRecord> recordReader = (RecordReader<StreamRecord>) inputs;
+		} else if (inputs instanceof StreamRecordReader) {
+			StreamRecordReader recordReader = (StreamRecordReader) inputs;
 
 			while (recordReader.hasNext()) {
 				StreamRecord record = recordReader.next();
-				invoker.call(name, userFunction, recordReader, record);
+				userFunction.invoke(record, collector);
 			}
-		}
-	}
-
-	public static interface RecordInvoker {
-		void call(String name, RecordInvokable userFunction, AbstractRecordReader inputs,
-				StreamRecord record) throws Exception;
-	}
-
-	public class InvokerWithFaultTolerance implements RecordInvoker {
-
-		@Override
-		public void call(String name, RecordInvokable userFunction, AbstractRecordReader inputs,
-				StreamRecord record) throws Exception {
-			UID id = record.getId();
-			userFunction.invoke(record);
-			threadSafePublish(new AckEvent(id), inputs);
-			if (log.isDebugEnabled()) {
-				log.debug("ACK: " + id + " -- " + name);
-			}
-		}
-	}
-
-	public static class Invoker implements RecordInvoker {
-		@Override
-		public void call(String name, RecordInvokable userFunction, AbstractRecordReader inputs,
-				StreamRecord record) throws Exception {
-			userFunction.invoke(record);
 		}
 	}
 

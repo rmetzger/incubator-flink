@@ -21,10 +21,13 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.configuration.Configuration;
+import eu.stratosphere.nephele.execution.Environment;
 import eu.stratosphere.nephele.io.ChannelSelector;
 import eu.stratosphere.nephele.io.RecordWriter;
 import eu.stratosphere.nephele.template.AbstractInputTask;
+import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.streaming.examples.DummyIS;
@@ -71,7 +74,9 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 		name = taskConfiguration.getString("componentName", "MISSING_COMPONENT_NAME");
 
 		try {
+			streamSourceHelper.setSerializers(taskConfiguration);
 			streamSourceHelper.setConfigOutputs(this, taskConfiguration, outputs, partitioners);
+			streamSourceHelper.setCollector(taskConfiguration, sourceInstanceID, outputs);
 		} catch (StreamComponentException e) {
 			if (log.isErrorEnabled()) {
 				log.error("Cannot register outputs", e);
@@ -83,11 +88,8 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 			numberOfOutputChannels[i] = taskConfiguration.getInteger("channels_" + i, 0);
 		}
 
-		streamSourceHelper.setFaultTolerance(recordBuffer, faultToleranceType, taskConfiguration,
-				outputs, sourceInstanceID, name, numberOfOutputChannels);
-
-		userFunction = (UserSourceInvokable) streamSourceHelper.getUserFunction(taskConfiguration,
-				outputs, sourceInstanceID, name, recordBuffer);
+		userFunction = (UserSourceInvokable) streamSourceHelper
+				.getSourceInvokable(taskConfiguration);
 		streamSourceHelper.setAckListener(recordBuffer, sourceInstanceID, outputs);
 		streamSourceHelper.setFailListener(recordBuffer, sourceInstanceID, outputs);
 	}
@@ -97,10 +99,7 @@ public class StreamSource extends AbstractInputTask<DummyIS> {
 		if (log.isDebugEnabled()) {
 			log.debug("SOURCE " + name + " invoked with instance id " + sourceInstanceID);
 		}
-		userFunction.invoke();
-		// TODO print to file
-		System.out.println(userFunction.getResult());
-
+		userFunction.invoke(streamSourceHelper.collector);
 	}
 
 }

@@ -17,11 +17,11 @@ package eu.stratosphere.streaming.api.invokable;
 
 import java.io.Serializable;
 
-public abstract class UserSinkInvokable implements RecordInvokable, Serializable {
+import eu.stratosphere.api.java.tuple.Tuple;
 
+public abstract class UserSinkInvokable<IN extends Tuple> extends StreamRecordInvokable<IN, Tuple>
+		implements Serializable {
+
+	
 	private static final long serialVersionUID = 1L;
-
-	public String getResult() {
-		return "Override getResult() to pass your own results";
-	}
 }

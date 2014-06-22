@@ -12,45 +12,37 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
-
-package eu.stratosphere.streaming.examples.wordcount;
+package eu.stratosphere.streaming.api;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
 
 import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.util.Collector;
 
-public class WordCountSourceSplitter extends UserSourceInvokable {
+public class FileSourceFunction extends SourceFunction<Tuple1<String>> {
 	private static final long serialVersionUID = 1L;
 	
-	private BufferedReader br = null;
-	private String line = new String();
-	private StreamRecord outRecord = new StreamRecord(new Tuple1<String>());
-	private String fileName;
-
-	public WordCountSourceSplitter(String fileName) {
-		this.fileName = fileName;
+	private final String path;
+	private Tuple1<String> outTuple = new Tuple1<String>();
+	
+	public FileSourceFunction(String path) {
+		this.path = path;
 	}
-
+	
 	@Override
-	public void invoke() throws Exception {
-		br = new BufferedReader(new FileReader(fileName));
-		while (true) {
-			line = br.readLine();
-			if (line == null) {
-				break;
-			}
+	public void invoke(Collector<Tuple1<String>> collector) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(path));
+		String line = br.readLine();
+		while (line != null) {
 			if (line != "") {
-				line = line.replaceAll("[\\-\\+\\.\\^:,]", "");
-				for (String word : line.split(" ")) {
-					outRecord.setString(0, word);
-					System.out.println("word=" + word);
-					emit(outRecord);
-					performanceCounter.count();
-				}
+				outTuple.f0 = line;
+				collector.collect(outTuple);
 			}
+			line = br.readLine();
 		}
+		br.close();
 	}
+
 }

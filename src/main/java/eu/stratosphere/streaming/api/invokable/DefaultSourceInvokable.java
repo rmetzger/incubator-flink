@@ -15,21 +15,17 @@
 
 package eu.stratosphere.streaming.api.invokable;
 
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.util.Collector;
 
-public class DefaultSourceInvokable extends UserSourceInvokable {
+public class DefaultSourceInvokable extends UserSourceInvokable<Tuple> {
 
 	private static final long serialVersionUID = 1L;
 
-	private String motto = "Stratosphere -- Big Data looks tiny from here";
-	private String[] mottoArray = motto.split(" ");
-
 	@Override
-	public void invoke() throws Exception {
-		for (String word : mottoArray) {
-			emit(new StreamRecord(new Tuple1<String>(word)));
-		}
+	public void invoke(Collector<Tuple> collector) throws Exception {
+		collector.collect(new Tuple1<String>("hello flink!"));
 	}
 
 }

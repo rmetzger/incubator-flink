@@ -13,28 +13,20 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.batch.wordcount;
+package eu.stratosphere.streaming.api.invokable;
 
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import java.io.Serializable;
 
-public class BatchWordCountSink extends UserSinkInvokable {
+public abstract class StreamComponent implements Serializable {
+
 	private static final long serialVersionUID = 1L;
-	
-	private String word = "";
-	private Integer count = 0;
-	private Long timestamp = 0L;
 
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		int numTuple = record.getNumOfTuples();
-		for (int i = 0; i < numTuple; ++i) {
-			word = record.getString(i, 0);
-			count = record.getInteger(i, 1);
-			timestamp = record.getLong(i, 2);
-			System.out.println("============================================");
-			System.out.println(word + " " + count + " " + timestamp);
-			System.out.println("============================================");
-		}
+	private String componentName;
+	private int channelID;
+
+	public void setAttributes(String componentName, int channelID) {
+		this.componentName = componentName;
+		this.channelID = channelID;
 	}
+
 }

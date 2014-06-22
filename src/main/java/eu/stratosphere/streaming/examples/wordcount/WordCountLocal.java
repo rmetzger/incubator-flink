@@ -15,32 +15,29 @@
 
 package eu.stratosphere.streaming.examples.wordcount;
 
-import org.apache.log4j.Level;
-
-import eu.stratosphere.nephele.jobgraph.JobGraph;
-import eu.stratosphere.streaming.api.JobGraphBuilder;
-import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
-import eu.stratosphere.streaming.util.ClusterUtil;
-import eu.stratosphere.streaming.util.LogUtils;
+import eu.stratosphere.api.java.tuple.Tuple2;
+import eu.stratosphere.streaming.api.DataStream;
+import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
 
 public class WordCountLocal {
 
-	public static JobGraph getJobGraph() {
-
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph", FaultToleranceType.NONE);
-		graphBuilder.setSource("WordCountSourceSplitter", new WordCountSourceSplitter("src/test/resources/testdata/hamlet.txt"));
-		graphBuilder.setTask("WordCountCounter", new WordCountCounter());
-		graphBuilder.setSink("WordCountSink", new WordCountSink());
-
-		graphBuilder.fieldsConnect("WordCountSourceSplitter", "WordCountCounter", 0);
-		graphBuilder.shuffleConnect("WordCountCounter", "WordCountSink");
-
-		return graphBuilder.getJobGraph();
-	}
-
 	public static void main(String[] args) {
+<<<<<<< HEAD
 
 		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
 		ClusterUtil.runOnMiniCluster(getJobGraph());
+=======
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+
+		@SuppressWarnings("unused")
+		DataStream<Tuple2<String, Integer>> dataStream = context
+				.readTextFile("src/test/resources/testdata/hamlet.txt")
+				.flatMap(new WordCountSplitter())
+				.partitionBy(0)
+				.map(new WordCountCounter())
+				.addSink(new WordCountSink());
+		
+		context.execute();
+>>>>>>> upstream/master
 	}
 }

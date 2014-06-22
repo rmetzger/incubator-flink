@@ -12,25 +12,27 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
+package eu.stratosphere.streaming.api;
 
-package eu.stratosphere.streaming.examples.window.join;
-
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.api.java.functions.FilterFunction;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class WindowJoinSink extends UserSinkInvokable {
-	private static final long serialVersionUID = 1L;
-
+public class FilterInvokable<IN extends Tuple> extends UserTaskInvokable<IN, IN>  {
+	FilterFunction<IN> filterFunction;
+	
+	public FilterInvokable(FilterFunction<IN> filterFunction) {
+		this.filterFunction = filterFunction;
+	}
+	
 	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		System.out.println("received record...");
-		int tupleNum = record.getNumOfTuples();
-		System.out.println("============================================");
-		for (int i = 0; i < tupleNum; ++i) {
-			System.out.println("name=" + record.getField(i, 0) + ", grade="
-					+ record.getField(i, 1) + ", salary="
-					+ record.getField(i, 2));
+	public void invoke(StreamRecord record, StreamCollector<IN> collector) throws Exception {
+		for (int i = 0; i < record.getBatchSize(); i++) {
+			IN tuple = (IN) record.getTuple(i);
+			if (filterFunction.filter(tuple)) {
+				collector.collect(tuple);
+			}
 		}
-		System.out.println("============================================");
 	}
 }

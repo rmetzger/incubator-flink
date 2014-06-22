@@ -17,11 +17,14 @@ package eu.stratosphere.streaming.api.invokable;
 
 import java.io.Serializable;
 
-import eu.stratosphere.streaming.api.streamcomponent.StreamInvokableComponent;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.util.Collector;
 
-public abstract class UserSourceInvokable extends StreamInvokableComponent implements Invokable,
+public abstract class UserSourceInvokable<OUT extends Tuple> extends StreamComponent implements
 		Serializable {
 
 	private static final long serialVersionUID = 1L;
+
+	public abstract void invoke(Collector<OUT> collector) throws Exception;
 
 }

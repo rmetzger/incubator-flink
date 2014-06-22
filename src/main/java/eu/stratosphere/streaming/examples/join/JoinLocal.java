@@ -17,32 +17,40 @@ package eu.stratosphere.streaming.examples.join;
 
 import org.apache.log4j.Level;
 
+<<<<<<< HEAD
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 import eu.stratosphere.streaming.util.ClusterUtil;
+=======
+import eu.stratosphere.api.java.tuple.Tuple3;
+import eu.stratosphere.streaming.api.DataStream;
+import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
+>>>>>>> upstream/master
 import eu.stratosphere.streaming.util.LogUtils;
 
 public class JoinLocal {
 
-	public static JobGraph getJobGraph() {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph", FaultToleranceType.NONE);
-		graphBuilder.setSource("JoinSourceOne", JoinSourceOne.class);
-		graphBuilder.setSource("JoinSourceTwo", JoinSourceTwo.class);
-		graphBuilder.setTask("JoinTask", JoinTask.class, 1, 1);
-		graphBuilder.setSink("JoinSink", JoinSink.class);
-
-		graphBuilder.fieldsConnect("JoinSourceOne", "JoinTask", 1);
-		graphBuilder.fieldsConnect("JoinSourceTwo", "JoinTask", 1);
-		graphBuilder.shuffleConnect("JoinTask", "JoinSink");
-
-		return graphBuilder.getJobGraph();
-	}
-
 	public static void main(String[] args) {
 
 		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
+<<<<<<< HEAD
 		ClusterUtil.runOnMiniCluster(getJobGraph());
+=======
+
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+
+		DataStream<Tuple3<String, String, Integer>> source1 = context
+				.addSource(new JoinSourceOne());
+
+		@SuppressWarnings("unused")
+		DataStream<Tuple3<String, Integer, Integer>> source2 = context
+				.addSource(new JoinSourceTwo()).connectWith(source1).partitionBy(1)
+				.flatMap(new JoinTask()).addSink(new JoinSink());
+
+		context.execute();
+>>>>>>> upstream/master
 
 	}
+
 }

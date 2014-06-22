@@ -17,32 +17,41 @@ package eu.stratosphere.streaming.examples.window.join;
 
 import org.apache.log4j.Level;
 
+<<<<<<< HEAD
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
 import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 import eu.stratosphere.streaming.util.ClusterUtil;
+=======
+import eu.stratosphere.api.java.tuple.Tuple3;
+import eu.stratosphere.api.java.tuple.Tuple4;
+import eu.stratosphere.streaming.api.DataStream;
+import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
+import eu.stratosphere.streaming.examples.join.JoinSink;
+>>>>>>> upstream/master
 import eu.stratosphere.streaming.util.LogUtils;
 
 public class WindowJoinLocal {
 
-	public static JobGraph getJobGraph() {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph", FaultToleranceType.NONE);
-		graphBuilder.setSource("WindowJoinSourceOne", WindowJoinSourceOne.class);
-		graphBuilder.setSource("WindowJoinSourceTwo", WindowJoinSourceTwo.class);
-		graphBuilder.setTask("WindowJoinTask", WindowJoinTask.class, 1, 1);
-		graphBuilder.setSink("WindowJoinSink", WindowJoinSink.class);
-
-		graphBuilder.fieldsConnect("WindowJoinSourceOne", "WindowJoinTask", 1);
-		graphBuilder.fieldsConnect("WindowJoinSourceTwo", "WindowJoinTask", 1);
-		graphBuilder.shuffleConnect("WindowJoinTask", "WindowJoinSink");
-
-		return graphBuilder.getJobGraph();
-	}
-
 	public static void main(String[] args) {
 
 		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
+<<<<<<< HEAD
 		ClusterUtil.runOnMiniCluster(getJobGraph());
+=======
+
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+
+		DataStream<Tuple4<String, String, Integer, Long>> source1 = context
+				.addSource(new WindowJoinSourceOne());
+
+		@SuppressWarnings("unused")
+		DataStream<Tuple3<String, Integer, Integer>> source2 = context
+				.addSource(new WindowJoinSourceTwo()).connectWith(source1).partitionBy(1)
+				.flatMap(new WindowJoinTask()).addSink(new JoinSink());
+
+		context.execute();
+>>>>>>> upstream/master
 
 	}
 }

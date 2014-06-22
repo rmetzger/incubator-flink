@@ -12,31 +12,26 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
+package eu.stratosphere.streaming.api;
 
-package eu.stratosphere.streaming.examples.cellinfo;
+import java.util.Iterator;
 
-import java.util.Random;
-
-import eu.stratosphere.api.java.tuple.Tuple2;
-import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
+import eu.stratosphere.api.java.functions.GroupReduceFunction;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class InfoSource extends UserSourceInvokable {
+public class BatchReduceInvokable<IN extends Tuple, OUT extends Tuple> extends UserTaskInvokable<IN, OUT> {
 	private static final long serialVersionUID = 1L;
 	
-	Random rand = new Random();
-	private final static int CELL_COUNT = 10;
-
-	private StreamRecord record = new StreamRecord(new Tuple2<Integer, Long>());
-
-	@Override
-	public void invoke() throws Exception {
-		for (int i = 0; i < 50000; i++) {
-			record.setInteger(0, rand.nextInt(CELL_COUNT));
-			record.setLong(1, System.currentTimeMillis());
-
-			emit(record);
-		}
+	private GroupReduceFunction<IN, OUT> reducer;
+	public BatchReduceInvokable(GroupReduceFunction<IN, OUT> reduceFunction) {
+		this.reducer = reduceFunction; 
 	}
-
+	
+	@Override
+	public void invoke(StreamRecord record, StreamCollector<OUT> collector) throws Exception {
+		Iterator<IN> iterator = (Iterator<IN>) record.getBatchIterable().iterator();
+		reducer.reduce(iterator, collector);
+	}
 }

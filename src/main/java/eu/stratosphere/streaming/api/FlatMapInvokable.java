@@ -13,22 +13,28 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.iterative;
+package eu.stratosphere.streaming.api;
 
-
+import eu.stratosphere.api.java.functions.FlatMapFunction;
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class IterativeStateHolder extends UserTaskInvokable {
+public class FlatMapInvokable<T extends Tuple, R extends Tuple> extends UserTaskInvokable<T, R> {
+	private static final long serialVersionUID = 1L;
 
-	private static final long serialVersionUID = -3042489460184024483L;
-
-	public IterativeStateHolder() {
+	private FlatMapFunction<T, R> flatMapper;
+	public FlatMapInvokable(FlatMapFunction<T, R> flatMapper) {
+		this.flatMapper = flatMapper;
 	}
-
+	
 	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		// TODO Auto-generated method stub
-
-	}
+	public void invoke(StreamRecord record, StreamCollector<R> collector) throws Exception {
+		int batchSize = record.getBatchSize();
+		for (int i = 0; i < batchSize; i++) {
+			@SuppressWarnings("unchecked")
+			T tuple = (T) record.getTuple(i);
+			flatMapper.flatMap(tuple, collector);
+		}
+	}		
 }

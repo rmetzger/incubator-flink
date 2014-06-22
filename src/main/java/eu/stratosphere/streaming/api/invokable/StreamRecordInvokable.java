@@ -13,25 +13,14 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.iterative;
+package eu.stratosphere.streaming.api.invokable;
 
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.streaming.api.StreamCollector;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class IterativeSink extends UserSinkInvokable {
-
-	private static final long serialVersionUID = -1989637817643875304L;
-
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		System.out.println("received record...");
-		int tupleNum = record.getNumOfTuples();
-		System.out.println("============================================");
-		for (int i = 0; i < tupleNum; ++i) {
-			System.out.println("name=" + record.getField(i, 0) + ", grade="
-					+ record.getField(i, 1) + ", salary="
-					+ record.getField(i, 2));
-		}
-		System.out.println("============================================");
-	}
+public abstract class StreamRecordInvokable<IN extends Tuple, OUT extends Tuple> extends
+		StreamComponent {
+	public abstract void invoke(StreamRecord record, StreamCollector<OUT> collector)
+			throws Exception;
 }

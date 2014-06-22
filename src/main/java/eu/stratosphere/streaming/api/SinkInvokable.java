@@ -13,30 +13,28 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.batch.wordcount;
+package eu.stratosphere.streaming.api;
 
-import eu.stratosphere.api.java.tuple.Tuple3;
-import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class BatchWordCountSplitter extends UserTaskInvokable {
+public class SinkInvokable<IN extends Tuple> extends UserSinkInvokable<IN> {
 	private static final long serialVersionUID = 1L;
-	
-	private String[] words = new String[] {};
-	private StreamRecord outputRecord = new StreamRecord(3);
 
-	private Long timestamp = 0L;
+	private SinkFunction<IN> sinkFunction;
+
+	public SinkInvokable(SinkFunction<IN> sinkFunction) {
+		this.sinkFunction = sinkFunction;
+	}
 
 	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		words = record.getString(0).split(" ");
-		timestamp = record.getLong(1);
-		System.out.println("sentence=" + record.getString(0) + ", timestamp="
-				+ record.getLong(1));
-		for (String word : words) {
-			Tuple3<String, Integer, Long> tuple =new Tuple3<String, Integer, Long>(word, 1, timestamp);
-			outputRecord.addTuple(tuple);
+	public void invoke(StreamRecord record, StreamCollector<Tuple> collector) throws Exception {
+		int batchSize = record.getBatchSize();
+		for (int i = 0; i < batchSize; i++) {
+			@SuppressWarnings("unchecked")
+			IN tuple = (IN) record.getTuple(i);
+			sinkFunction.invoke(tuple);
 		}
-		emit(outputRecord);
 	}
 }

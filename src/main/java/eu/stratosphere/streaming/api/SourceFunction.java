@@ -13,20 +13,13 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.rabbitmq;
+package eu.stratosphere.streaming.api;
 
-import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.streaming.api.DataStream;
-import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
+import eu.stratosphere.api.java.tuple.Tuple;
+import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 
-public class RMQTopology {
-	
-	public static void main(String[] args) {
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
-		
-		DataStream<Tuple1<String>> stream = context.addSource(new RMQSource("localhost", "hello"))
-				.addDummySink();
-		
-		context.execute();
-	}
+public abstract class SourceFunction<OUT extends Tuple> extends UserSourceInvokable<OUT> {
+
+	private static final long serialVersionUID = 1L;
+
 }
