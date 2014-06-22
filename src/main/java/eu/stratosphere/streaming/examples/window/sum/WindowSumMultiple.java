@@ -25,7 +25,6 @@ public class WindowSumMultiple extends MapFunction<Tuple2<Integer, Long>, Tuple2
 
 	@Override
 	public Tuple2<Integer, Long> map(Tuple2<Integer, Long> inTuple) throws Exception {
-		// TODO Auto-generated method stub
 		outTuple.f0 = inTuple.f0 * 2;
 		outTuple.f1 = inTuple.f1;
 		return outTuple;

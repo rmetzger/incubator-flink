@@ -30,7 +30,7 @@ public class StreamWindowTask extends FlatMapFunction<Tuple, Tuple> {
 	private int windowFieldId = 1;
 
 	private ArrayList tempArrayList;
-	private SlidingWindowState<Integer> window;
+	private SlidingWindowState window;
 	private MutableTableState<String, Integer> sum;
 	private long initTimestamp = -1;
 	private long nextTimestamp = -1;
@@ -39,7 +39,7 @@ public class StreamWindowTask extends FlatMapFunction<Tuple, Tuple> {
 			int computeGranularity, int windowFieldId) {
 		this.computeGranularity = computeGranularity;
 		this.windowFieldId = windowFieldId;
-		window = new SlidingWindowState<Integer>(windowSize, slidingStep,
+		window = new SlidingWindowState(windowSize, slidingStep,
 				computeGranularity);
 		sum = new MutableTableState<String, Integer>();
 		sum.put("sum", 0);
@@ -53,7 +53,6 @@ public class StreamWindowTask extends FlatMapFunction<Tuple, Tuple> {
 
 	@Override
 	public void flatMap(Tuple value, Collector<Tuple> out) throws Exception {
-		// TODO Auto-generated method stub
 		long progress = value.getField(windowFieldId);
 		if (initTimestamp == -1) {
 			initTimestamp = progress;

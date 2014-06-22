@@ -13,30 +13,35 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.iterative.kmeans;
+package eu.stratosphere.streaming.state;
 
-import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class KMeansTask extends UserTaskInvokable {
+public class GraphState {
+	public Map<Integer, Set<Integer>> vertices = null;
 
-	private static final long serialVersionUID = 1L;
-	private StreamRecord outRecord = new StreamRecord(new Tuple1<String>());
-	private double[] point=null;
-	public KMeansTask(int dimension){
-		point = new double[dimension];
+	public GraphState() {
+		vertices = new HashMap<Integer, Set<Integer>>();
+	}
+
+	public void insertDirectedEdge(int sourceNode, int targetNode) {
+		if (!vertices.containsKey(sourceNode)) {
+			vertices.put(sourceNode, new HashSet<Integer>());
+		}
+		vertices.get(sourceNode).add(targetNode);
 	}
 	
-	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		// TODO Auto-generated method stub
-		String[] pointStr = record.getString(0, 0).split(" ");
-		for(int i=0; i<pointStr.length; ++i){
-			point[i]=Double.valueOf(pointStr[i]);
+	public void insertUndirectedEdge(int sourceNode, int targetNode){
+		if(!vertices.containsKey(sourceNode)){
+			vertices.put(sourceNode, new HashSet<Integer>());
 		}
-		outRecord.setString(0, record.getString(0, 0));
-		emit(outRecord);
+		if(!vertices.containsKey(targetNode)){
+			vertices.put(targetNode, new HashSet<Integer>());
+		}
+		vertices.get(sourceNode).add(targetNode);
+		vertices.get(targetNode).add(sourceNode);
 	}
-
 }

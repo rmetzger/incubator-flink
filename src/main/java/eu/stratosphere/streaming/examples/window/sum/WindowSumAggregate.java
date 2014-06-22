@@ -68,7 +68,6 @@ public class WindowSumAggregate extends
 	@Override
 	public void flatMap(Tuple2<Integer, Long> value,
 			Collector<Tuple2<Integer, Long>> out) throws Exception {
-		// TODO Auto-generated method stub
 		long progress = value.f1;
 		if (initTimestamp == -1) {
 			initTimestamp = progress;

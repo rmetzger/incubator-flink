@@ -18,21 +18,22 @@ package eu.stratosphere.streaming.examples.iterative.collaborativefilter;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-import eu.stratosphere.api.java.tuple.Tuple3;
-import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.api.java.tuple.Tuple4;
+import eu.stratosphere.streaming.api.SourceFunction;
+import eu.stratosphere.util.Collector;
 
-public class CollaborativeFilteringSource extends UserSourceInvokable {
+public class CollaborativeFilteringSource extends SourceFunction<Tuple4<Integer, Integer, Integer, Long>> {
 	private static final long serialVersionUID = 1L;
 	
-	private BufferedReader br = null;
-	private String line = new String();
-	private StreamRecord outRecord = new StreamRecord(new Tuple3<Integer, Integer, Integer>());
+	private String line = "";
+	private Tuple4<Integer, Integer, Integer, Long> outRecord = new Tuple4<Integer, Integer, Integer, Long>();
+	private Long timestamp = 0L;
 	
 	@Override
-	public void invoke() throws Exception {
-		// TODO Auto-generated method stub
-		br = new BufferedReader(new FileReader(
+	public void invoke(
+			Collector<Tuple4<Integer, Integer, Integer, Long>> collector)
+			throws Exception {
+		BufferedReader br = new BufferedReader(new FileReader(
 				"src/test/resources/testdata/MovieLens100k.data"));
 		while (true) {
 			line = br.readLine();
@@ -41,13 +42,13 @@ public class CollaborativeFilteringSource extends UserSourceInvokable {
 			}
 			if (line != "") {
 				String[] items=line.split("\t");
-				outRecord.setInteger(0, Integer.valueOf(items[0]));
-				outRecord.setInteger(1, Integer.valueOf(items[1]));
-				outRecord.setInteger(2, Integer.valueOf(items[2]));
-				emit(outRecord);
-				performanceCounter.count();
+				outRecord.f0 = Integer.valueOf(items[0]);
+				outRecord.f1 = Integer.valueOf(items[1]);
+				outRecord.f2 = Integer.valueOf(items[2]);
+				outRecord.f3 = timestamp;
+				collector.collect(outRecord);
+				timestamp++;
 			}
-			line = br.readLine();
 		}		
 	}
 

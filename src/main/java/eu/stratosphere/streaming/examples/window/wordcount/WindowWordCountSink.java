@@ -23,7 +23,6 @@ public class WindowWordCountSink extends SinkFunction<Tuple3<String, Integer, Lo
 	
 	@Override
 	public void invoke(Tuple3<String, Integer, Long> inTuple) {
-		// TODO Auto-generated method stubs
 		System.out.println(inTuple);
 	}
 }

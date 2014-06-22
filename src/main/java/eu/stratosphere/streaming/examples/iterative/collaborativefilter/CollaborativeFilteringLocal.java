@@ -24,23 +24,7 @@ import eu.stratosphere.streaming.util.ClusterUtil;
 import eu.stratosphere.streaming.util.LogUtils;
 
 public class CollaborativeFilteringLocal {
-	
-	public static JobGraph getJobGraph() {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph", FaultToleranceType.NONE);
-		graphBuilder.setSource("Source", new CollaborativeFilteringSource());
-		graphBuilder.setTask("Task", new CollaborativeFilteringTask(), 1, 1);
-		graphBuilder.setSink("Sink", new CollaborativeFilteringSink());
-
-		graphBuilder.fieldsConnect("Source", "Task", 0);
-		graphBuilder.shuffleConnect("Task", "Sink");
-
-		return graphBuilder.getJobGraph();
-	}
-
 	public static void main(String[] args) {
-
-		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
-		ClusterUtil.runOnMiniCluster(getJobGraph());
 
 	}
 }

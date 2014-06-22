@@ -13,21 +13,21 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.iterative.pagerank;
+package eu.stratosphere.streaming.examples.iterative.sssp;
 
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.streaming.state.GraphState;
 
-public class PageRankTask extends UserTaskInvokable {
+public class SSSPReduce extends UserTaskInvokable {
 
 	private static final long serialVersionUID = 1L;
 	private StreamRecord outRecord = new StreamRecord(new Tuple1<String>());
-	private Graph linkGraph = new Graph();
+	private GraphState linkGraph = new GraphState();
 	
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		// TODO Auto-generated method stub
 		Integer sourceNode = record.getInteger(0, 0);
 		Integer targetNode = record.getInteger(0, 1);
 		// set the input graph.

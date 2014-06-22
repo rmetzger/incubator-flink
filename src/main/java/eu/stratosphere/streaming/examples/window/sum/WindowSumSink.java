@@ -23,7 +23,6 @@ public class WindowSumSink extends SinkFunction<Tuple2<Integer, Long>> {
 	
 	@Override
 	public void invoke(Tuple2<Integer, Long> inTuple) {
-		// TODO Auto-generated method stub
 		System.out.println(inTuple);
 	}
 }
