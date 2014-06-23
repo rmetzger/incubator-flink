@@ -8,15 +8,18 @@ import java.io.IOException;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class TestDataUtil {
-	
+
+	private static final Log log = LogFactory.getLog(TestDataUtil.class);
 	public static final String testDataDir = "src/test/resources/testdata/";
 	public static final String testRepoUrl = "info.ilab.sztaki.hu/~mbalassi/flink-streaming/testdata/";
 	public static final String testChekSumDir = "src/test/resources/testdata_checksum/";
-	
+
 	public static void downloadIfNotExists(String fileName) {
-		
+
 		File file = new File(testDataDir + fileName);
 		File checkFile = new File(testChekSumDir + fileName + ".md5");
 		String checkSumDesired = new String();
@@ -31,13 +34,15 @@ public class TestDataUtil {
 		} catch (FileNotFoundException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
-		} catch (IOException e1) {
+		} catch (IOException e2) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			e2.printStackTrace();
 		}
 
 		if (file.exists()) {
-			System.out.println(fileName + " already exists");
+			if (log.isInfoEnabled()) {
+				log.info(fileName + " already exists.");
+			}
 			try {
 				checkSumActaul = DigestUtils.md5Hex(FileUtils.readFileToByteArray(file));
 			} catch (IOException e) {
@@ -45,10 +50,17 @@ public class TestDataUtil {
 				e.printStackTrace();
 			}
 			if (!checkSumActaul.equals(checkSumDesired)) {
+				if (log.isInfoEnabled()) {
+					log.info("Checksum is incorrect.");
+					log.info("Downloading file.");
+				}
 				download(fileName);
 			}
-
 		} else {
+			if (log.isInfoEnabled()) {
+				log.info("File does not exist.");
+				log.info("Downloading file.");
+			}
 			download(fileName);
 		}
 
