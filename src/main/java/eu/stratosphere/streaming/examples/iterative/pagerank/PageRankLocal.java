@@ -29,14 +29,14 @@ import eu.stratosphere.streaming.util.LogUtils;
 public class PageRankLocal {
 
 	public static void main(String[] args) {
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
-		@SuppressWarnings("unused")
-		DataStream<Tuple2<String, Integer>> dataStream = context
-				.addSource(new PageRankSource())
-				.map(new Counter())
-				.addSink(new PageRankSink());
+//		@SuppressWarnings("unused")
+//		DataStream<Tuple2<String, Integer>> dataStream = env
+//				.addSource(new PageRankSource())
+//				.map(new Counter())
+//				.addSink(new PageRankSink());
 		
-		context.execute();
+		env.execute();
 	}
 }

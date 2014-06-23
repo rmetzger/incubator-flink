@@ -22,14 +22,15 @@ import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
 public class WindowSumLocal {
 	
 	public static void main(String[] args) {
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
+		
 		@SuppressWarnings("unused")
-		DataStream<Tuple2<Integer, Long>> dataStream = context
+		DataStream<Tuple2<Integer, Long>> dataStream = env
 				.addSource(new WindowSumSource())
 				.map(new WindowSumMultiple())
 				.flatMap(new WindowSumAggregate())
 				.addSink(new WindowSumSink());
 		
-		context.execute();
+		env.execute();
 	}
 }

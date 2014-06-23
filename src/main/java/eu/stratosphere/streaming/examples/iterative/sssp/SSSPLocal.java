@@ -29,14 +29,14 @@ import eu.stratosphere.streaming.util.LogUtils;
 public class SSSPLocal {
 
 	public static void main(String[] args) {
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
-		@SuppressWarnings("unused")
-		DataStream<Tuple2<String, Integer>> dataStream = context
-				.addSource(new SSSPSource())
-				.flatMap(new SSSPCounter())
-				.addSink(new SSSPSink());
+//		@SuppressWarnings("unused")
+//		DataStream<Tuple2<String, Integer>> dataStream = context
+//				.addSource(new SSSPSource())
+//				.flatMap(new SSSPCounter())
+//				.addSink(new SSSPSink());
 		
-		context.execute();
+		env.execute();
 	}
 }

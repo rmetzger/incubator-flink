@@ -29,14 +29,14 @@ import eu.stratosphere.streaming.util.LogUtils;
 public class KMeansLocal {
 
 	public static void main(String[] args) {
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
-		@SuppressWarnings("unused")
-		DataStream<Tuple2<String, Integer>> dataStream = context
-				.addSource(new KMeansSource(2, 2, 1, 5))
-				.addFixPoint(new KMeansMap(), new KMeansReduce(), 20)
-				.addSink(new KMeansSink());
+//		@SuppressWarnings("unused")
+//		DataStream<Tuple2<String, Integer>> dataStream = env
+//				.addSource(new KMeansSource(2, 2, 1, 5))
+//				.addFixPoint(new KMeansMap(), new KMeansReduce(), 20)
+//				.addSink(new KMeansSink());
 		
-		context.execute();
+		env.execute();
 	}
 }
