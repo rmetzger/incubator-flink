@@ -13,27 +13,29 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.iterative.sssp;
+package eu.stratosphere.streaming.examples.iterative.kmeans;
 
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class SSSPTask extends UserTaskInvokable {
+public class KMeansReduce extends UserTaskInvokable {
 
 	private static final long serialVersionUID = 1L;
 	private StreamRecord outRecord = new StreamRecord(new Tuple1<String>());
-	private Graph linkGraph = new Graph();
+	private double[] point=null;
+	public KMeansReduce(int dimension){
+		point = new double[dimension];
+	}
 	
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		// TODO Auto-generated method stub
-		Integer sourceNode = record.getInteger(0, 0);
-		Integer targetNode = record.getInteger(0, 1);
-		// set the input graph.
-		linkGraph.insertDirectedEdge(sourceNode, targetNode);
-		
-		//outRecord.setString(0, line);
+		String[] pointStr = record.getString(0, 0).split(" ");
+		for(int i=0; i<pointStr.length; ++i){
+			point[i]=Double.valueOf(pointStr[i]);
+		}
+		outRecord.setString(0, record.getString(0, 0));
+		emit(outRecord);
 	}
 
 }

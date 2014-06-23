@@ -17,30 +17,26 @@ package eu.stratosphere.streaming.examples.iterative.pagerank;
 
 import org.apache.log4j.Level;
 
+import eu.stratosphere.api.java.tuple.Tuple2;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
+import eu.stratosphere.streaming.api.DataStream;
 import eu.stratosphere.streaming.api.JobGraphBuilder;
+import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
 import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 import eu.stratosphere.streaming.util.ClusterUtil;
 import eu.stratosphere.streaming.util.LogUtils;
 
 public class PageRankLocal {
-	
-	public static JobGraph getJobGraph() {
-		JobGraphBuilder graphBuilder = new JobGraphBuilder("testGraph", FaultToleranceType.NONE);
-		graphBuilder.setSource("Source", new PageRankSource());
-		graphBuilder.setTask("Task", new PageRankTask(), 1, 1);
-		graphBuilder.setSink("Sink", new PageRankSink());
-
-		graphBuilder.fieldsConnect("Source", "Task", 0);
-		graphBuilder.shuffleConnect("Task", "Sink");
-
-		return graphBuilder.getJobGraph();
-	}
 
 	public static void main(String[] args) {
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
 
-		LogUtils.initializeDefaultConsoleLogger(Level.DEBUG, Level.INFO);
-		ClusterUtil.runOnMiniCluster(getJobGraph());
-
+		@SuppressWarnings("unused")
+		DataStream<Tuple2<String, Integer>> dataStream = context
+				.addSource(new PageRankSource())
+				.map(new Counter())
+				.addSink(new PageRankSink());
+		
+		context.execute();
 	}
 }

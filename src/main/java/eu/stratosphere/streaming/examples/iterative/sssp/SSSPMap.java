@@ -13,38 +13,25 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.examples.iterative.collaborativefilter;
-
-
-import java.util.HashMap;
-
-import org.jblas.DoubleMatrix;
+package eu.stratosphere.streaming.examples.iterative.sssp;
 
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.streaming.state.GraphState;
 
-public class CollaborativeFilteringTask extends UserTaskInvokable {
+public class SSSPMap extends UserTaskInvokable {
 
 	private static final long serialVersionUID = 1L;
 	private StreamRecord outRecord = new StreamRecord(new Tuple1<String>());
-	HashMap<Integer, Integer> rowIndex=new HashMap<Integer, Integer>();
-	HashMap<Integer, Integer> columnIndex=new HashMap<Integer, Integer>();
-	DoubleMatrix userItem=new DoubleMatrix(1000, 2000);
-	DoubleMatrix coOccurence=new DoubleMatrix(2000, 2000);
+	private GraphState linkGraph = new GraphState();
+	
 	@Override
 	public void invoke(StreamRecord record) throws Exception {
-		// TODO Auto-generated method stub
-		int userId = record.getInteger(0, 0);
-		int itemId = record.getInteger(0, 1);
-		int rating = record.getInteger(0, 2);
-		if(!rowIndex.containsKey(userId)){
-			rowIndex.put(userId, rowIndex.size());
-		}
-		if(!columnIndex.containsKey(itemId)){
-			columnIndex.put(itemId, columnIndex.size());
-		}
-		userItem.put(rowIndex.get(userId), columnIndex.get(itemId), rating);
+		Integer sourceNode = record.getInteger(0, 0);
+		Integer targetNode = record.getInteger(0, 1);
+		// set the input graph.
+		linkGraph.insertDirectedEdge(sourceNode, targetNode);
 		
 		//outRecord.setString(0, line);
 	}

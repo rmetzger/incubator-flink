@@ -15,33 +15,24 @@
 
 package eu.stratosphere.streaming.examples.iterative.pagerank;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import eu.stratosphere.api.java.tuple.Tuple1;
+import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
+import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 
-public class Graph {
-	public Map<Integer, Set<Integer>> _vertices = null;
+public class PageRankReduce extends UserTaskInvokable {
 
-	public Graph() {
-		_vertices = new HashMap<Integer, Set<Integer>>();
-	}
-
-	public void insertDirectedEdge(int sourceNode, int targetNode) {
-		if (!_vertices.containsKey(sourceNode)) {
-			_vertices.put(sourceNode, new HashSet<Integer>());
-		}
-		_vertices.get(sourceNode).add(targetNode);
-	}
+	private static final long serialVersionUID = 1L;
+	private StreamRecord outRecord = new StreamRecord(new Tuple1<String>());
+	private Graph linkGraph = new Graph();
 	
-	public void insertUndirectedEdge(int sourceNode, int targetNode){
-		if(!_vertices.containsKey(sourceNode)){
-			_vertices.put(sourceNode, new HashSet<Integer>());
-		}
-		if(!_vertices.containsKey(targetNode)){
-			_vertices.put(targetNode, new HashSet<Integer>());
-		}
-		_vertices.get(sourceNode).add(targetNode);
-		_vertices.get(targetNode).add(sourceNode);
+	@Override
+	public void invoke(StreamRecord record) throws Exception {
+		Integer sourceNode = record.getInteger(0, 0);
+		Integer targetNode = record.getInteger(0, 1);
+		// set the input graph.
+		linkGraph.insertDirectedEdge(sourceNode, targetNode);
+		
+		//outRecord.setString(0, line);
 	}
+
 }

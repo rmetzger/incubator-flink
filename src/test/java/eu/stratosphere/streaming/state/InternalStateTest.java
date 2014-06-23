@@ -54,7 +54,7 @@ public class InternalStateTest {
 	
 	@Test
 	public void WindowStateTest(){
-		SlidingWindowState<String> state=new SlidingWindowState<String>(100, 20, 10);
+		SlidingWindowState state=new SlidingWindowState(100, 20, 10);
 		
 	}
 }

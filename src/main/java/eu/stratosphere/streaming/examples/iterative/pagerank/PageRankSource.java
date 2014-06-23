@@ -18,20 +18,20 @@ package eu.stratosphere.streaming.examples.iterative.pagerank;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-import eu.stratosphere.api.java.tuple.Tuple2;
-import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.api.java.tuple.Tuple3;
+import eu.stratosphere.streaming.api.SourceFunction;
+import eu.stratosphere.util.Collector;
 
-public class PageRankSource extends UserSourceInvokable {
+public class PageRankSource extends SourceFunction<Tuple3<Integer, Integer, Long>> {
 	private static final long serialVersionUID = 1L;
 	
-	private BufferedReader br = null;
-	private StreamRecord outRecord = new StreamRecord(new Tuple2<Integer, Integer>());
-	
+	private Tuple3<Integer, Integer, Long> outRecord = new Tuple3<Integer, Integer, Long>();
+	private Long timestamp = 0L;
+
 	@Override
-	public void invoke() throws Exception {
-		// TODO Auto-generated method stub
-		br = new BufferedReader(new FileReader(
+	public void invoke(Collector<Tuple3<Integer, Integer, Long>> collector)
+			throws Exception {
+		BufferedReader br = new BufferedReader(new FileReader(
 				"src/test/resources/testdata/ASTopology.data"));
 		while (true) {
 			String line = br.readLine();
@@ -40,13 +40,12 @@ public class PageRankSource extends UserSourceInvokable {
 			}
 			if (line != "") {
 				String[] link=line.split(":");
-				outRecord.setInteger(0, Integer.valueOf(link[0]));
-				outRecord.setInteger(0, Integer.valueOf(link[1]));
-				emit(outRecord);
-				performanceCounter.count();
+				outRecord.f0 = Integer.valueOf(link[0]);
+				outRecord.f1 = Integer.valueOf(link[1]);
+				outRecord.f2 = timestamp;
+				collector.collect(outRecord);
+				timestamp += 1;
 			}
-			line = br.readLine();
 		}
 	}
-
 }

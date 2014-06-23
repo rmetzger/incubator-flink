@@ -31,7 +31,6 @@ public class WindowWordCountSource extends SourceFunction<Tuple2<String, Long>> 
 
 	@Override
 	public void invoke(Collector<Tuple2<String, Long>> collector) throws Exception {
-		// TODO Auto-generated method stub
 		BufferedReader br = new BufferedReader(new FileReader("src/test/resources/testdata/hamlet.txt"));
 		while(true){
 			line = br.readLine();

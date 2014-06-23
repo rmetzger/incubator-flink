@@ -15,18 +15,14 @@
 
 package eu.stratosphere.streaming.examples.iterative.kmeans;
 
-import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
+import eu.stratosphere.api.java.tuple.Tuple3;
+import eu.stratosphere.streaming.api.SinkFunction;
 
-public class KMeansSink extends UserSinkInvokable {
+public class KMeansSink extends SinkFunction<Tuple3<Integer, Integer, Long>> {
 	private static final long serialVersionUID = 1L;
-
+	
 	@Override
-	public void invoke(StreamRecord record) throws Exception {
-		// TODO Auto-generated method stub
-		//int tupleNum = record.getNumOfTuples();
-		System.out.println("============================================");
-		System.out.println("record=" + record.getString(0, 0));
-		System.out.println("============================================");		
+	public void invoke(Tuple3<Integer, Integer, Long> tuple) {
+		System.out.println(tuple);
 	}
 }

@@ -85,7 +85,6 @@ public class WindowWordCountCounter extends
 	@Override
 	public void flatMap(Tuple2<String, Long> value,
 			Collector<Tuple3<String, Integer, Long>> out) throws Exception {
-		// TODO Auto-generated method stub
 		timestamp = value.f1;
 		if (initTimestamp == -1) {
 			initTimestamp = timestamp;
