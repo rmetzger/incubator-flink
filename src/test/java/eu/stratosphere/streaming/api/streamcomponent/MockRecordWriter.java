@@ -35,6 +35,6 @@ public class MockRecordWriter extends RecordWriter<StreamRecord> {
 	
 	@Override
 	public void emit(StreamRecord record) {
-		emittedRecords.add(record);
+		emittedRecords.add(record.copy());
 	}
 }
