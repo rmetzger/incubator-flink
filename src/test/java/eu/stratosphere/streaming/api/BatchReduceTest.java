@@ -30,6 +30,7 @@ public class BatchReduceTest {
 
 	private static ArrayList<Double> avgs = new ArrayList<Double>();
 	private static final int BATCH_SIZE = 4;
+	private static final int PARALELISM = 2;
 
 	public static final class MyBatchReduce extends
 			GroupReduceFunction<Tuple1<Double>, Tuple1<Double>> {
@@ -76,8 +77,8 @@ public class BatchReduceTest {
 	@Test
 	public void test() throws Exception {
 		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
-		DataStream<Tuple1<Double>> dataStream0 = context.addSource(new MySource())
-				.batch(BATCH_SIZE).batchReduce(new MyBatchReduce()).addSink(new MySink());
+		DataStream<Tuple1<Double>> dataStream0 = context.addSource(new MySource(),1)
+				.batchReduce(new MyBatchReduce(), BATCH_SIZE, PARALELISM).addSink(new MySink());
 
 		context.execute();
 
