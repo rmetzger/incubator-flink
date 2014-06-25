@@ -476,7 +476,7 @@ public class Client {
 		int i = 0; 
 		int numTaskmanagers = 0;
 		ClientMasterControl cmc = null;
-		Runtime.getRuntime().addShutdownHook(new ClientShutdownHook(appId, yarnClient, cmc, addrFile, paths, conf));
+		
 		
 		while (appState != YarnApplicationState.FINISHED
 				&& appState != YarnApplicationState.KILLED
@@ -493,7 +493,7 @@ public class Client {
 				// connect RPC service
 				cmc = new ClientMasterControl(new InetSocketAddress(appReport.getHost(), amRPCPort));
 				cmc.start();
-				
+				Runtime.getRuntime().addShutdownHook(new ClientShutdownHook(appId, yarnClient, cmc, addrFile, paths, conf));
 				told = true;
 			}
 			if(!told) {

@@ -68,12 +68,18 @@ public class ClientMasterControl extends Thread {
 
 	public int getNumberOfTaskManagers() {
 		synchronized (lock) {
+			if(appMasterStatus == null) {
+				return 0;
+			}
 			return appMasterStatus.getNumberOfTaskManagers();
 		}
 	}
 	
 	public int getNumberOfAvailableSlots() {
 		synchronized (lock) {
+			if(appMasterStatus == null) {
+				return 0;
+			}
 			return appMasterStatus.getNumberOfAvailableSlots();
 		}
 	}
