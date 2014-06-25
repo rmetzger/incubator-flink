@@ -55,14 +55,14 @@ public class MapTest {
 	public void test() throws Exception {
 		Tuple1<String> tup = new Tuple1<String>("asd");
 
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
-		DataStream<Tuple1<String>> dataStream = context.addDummySource().map(new MyMap(), PARALELISM)
+		DataStream<Tuple1<String>> dataStream = env.addDummySource().map(new MyMap(), PARALELISM)
 				.addDummySink();
 
-		context.execute();
+		env.execute();
 
-		JobGraphBuilder jgb = context.jobGB();
+		JobGraphBuilder jgb = env.jobGB();
 
 		for (AbstractJobVertex c : jgb.components.values()) {
 			if (c instanceof JobTaskVertex) {

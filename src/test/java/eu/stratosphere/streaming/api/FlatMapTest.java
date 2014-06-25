@@ -75,25 +75,25 @@ public class FlatMapTest {
 	public void test() throws Exception {
 
 		try {
-			StreamExecutionEnvironment context2 = new StreamExecutionEnvironment(0, 1000);
+			StreamExecutionEnvironment env2 = new StreamExecutionEnvironment(0, 1000);
 			fail();
 		} catch (IllegalArgumentException e) {
 			try {
-				StreamExecutionEnvironment context2 = new StreamExecutionEnvironment(1, 0);
+				StreamExecutionEnvironment env2 = new StreamExecutionEnvironment(1, 0);
 				fail();
 			} catch (IllegalArgumentException e2) {	
 			}
 		}
 		
-		StreamExecutionEnvironment context = new StreamExecutionEnvironment(2, 1000);
-		DataStream<Tuple1<String>> dataStream0 = context.addSource(new MySource(),1);
+		StreamExecutionEnvironment env = new StreamExecutionEnvironment(2, 1000);
+		DataStream<Tuple1<String>> dataStream0 = env.addSource(new MySource(),1);
 
-		DataStream<Tuple1<String>> dataStream1 = context.addDummySource().connectWith(dataStream0)
+		DataStream<Tuple1<String>> dataStream1 = env.addDummySource().connectWith(dataStream0)
 				.partitionBy(0).flatMap(new MyFlatMap(), PARALELISM).broadcast().addSink(new MySink());
 
-		context.execute();
+		env.execute();
 
-		JobGraphBuilder jgb = context.jobGB();
+		JobGraphBuilder jgb = env.jobGB();
 
 		for (AbstractJobVertex c : jgb.components.values()) {
 			if (c instanceof JobTaskVertex) {
