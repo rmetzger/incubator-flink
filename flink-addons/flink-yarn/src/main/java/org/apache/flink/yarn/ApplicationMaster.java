@@ -30,7 +30,6 @@ import java.io.InputStreamReader;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +67,7 @@ import eu.stratosphere.configuration.GlobalConfiguration;
 import eu.stratosphere.nephele.ipc.RPC;
 import eu.stratosphere.nephele.ipc.RPC.Server;
 import eu.stratosphere.nephele.jobmanager.JobManager;
+import eu.stratosphere.nephele.util.SerializableArrayList;
 import eu.stratosphere.util.StringUtils;
 
 public class ApplicationMaster implements YARNClientMasterProtocol {
@@ -99,7 +99,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 
 	private NMClient nmClient;
 
-	private List<Message> messages = new ArrayList<Message>();
+	private List<Message> messages = new SerializableArrayList<Message>();
 	
 	public ApplicationMaster(Configuration conf) throws IOException {
 		fs = FileSystem.get(conf);

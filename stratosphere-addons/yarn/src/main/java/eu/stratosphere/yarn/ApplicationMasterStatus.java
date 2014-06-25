@@ -13,8 +13,14 @@
 
 package eu.stratosphere.yarn;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
-public class ApplicationMasterStatus {
+import eu.stratosphere.core.io.IOReadableWritable;
+
+
+public class ApplicationMasterStatus implements IOReadableWritable {
 	private int numTaskManagers = 0;
 	private int numSlots = 0;
 	private int messageCount = 0;
@@ -38,5 +44,19 @@ public class ApplicationMasterStatus {
 	
 	public int getMessageCount() {
 		return messageCount;
+	}
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+		out.writeInt(numTaskManagers);
+		out.writeInt(numSlots);
+		out.writeInt(messageCount);
+	}
+
+	@Override
+	public void read(DataInput in) throws IOException {
+		numTaskManagers = in.readInt();
+		numSlots = in.readInt();
+		messageCount = in.readInt();
 	}
 }

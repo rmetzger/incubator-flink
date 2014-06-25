@@ -13,18 +13,32 @@
 
 package eu.stratosphere.yarn;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.List;
 
+import eu.stratosphere.core.io.IOReadableWritable;
 import eu.stratosphere.core.protocols.VersionedProtocol;
 import eu.stratosphere.yarn.ApplicationMasterStatus;
 
 public interface YARNClientMasterProtocol extends VersionedProtocol {
 	
-	public static class Message {
+	public static class Message implements IOReadableWritable {
 		public String text;
 		
 		public Message(String msg) {
 			this.text = msg;
+		}
+
+		@Override
+		public void write(DataOutput out) throws IOException {
+			out.writeUTF(text);
+		}
+
+		@Override
+		public void read(DataInput in) throws IOException {
+			text = in.readUTF();
 		}
 	}
 
