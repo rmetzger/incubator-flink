@@ -548,7 +548,7 @@ public class Client {
 		@Override
 		public void run() {
 			try {
-				LOG.info("The applicationMaster");
+				LOG.info("Sending shutdown request to the Application Master");
 				cmc.shutdownAM();
 				yarnClient.killApplication(appId);
 				LOG.info("Deleting files in "+paths[2]);

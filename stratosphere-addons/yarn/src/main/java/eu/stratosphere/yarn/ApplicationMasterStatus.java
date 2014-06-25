@@ -26,6 +26,9 @@ public class ApplicationMasterStatus implements IOReadableWritable {
 	private int messageCount = 0;
 	
 	
+	public ApplicationMasterStatus() {
+		// for instantiation
+	}
 	
 	public ApplicationMasterStatus(int numTaskManagers, int numSlots,
 			int messageCount) {
