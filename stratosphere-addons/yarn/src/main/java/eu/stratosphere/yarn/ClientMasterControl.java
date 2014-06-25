@@ -16,6 +16,7 @@ package eu.stratosphere.yarn;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -94,6 +95,9 @@ public class ClientMasterControl extends Thread {
 	}
 
 	public List<Message> getMessages() {
+		if(this.messages == null) {
+			return new ArrayList<Message>();
+		}
 		return this.messages;
 	}
 
