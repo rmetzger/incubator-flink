@@ -15,16 +15,16 @@
 
 package eu.stratosphere.streaming.api;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jblas.util.Random;
 import org.junit.Test;
 
 import eu.stratosphere.api.java.functions.MapFunction;
 import eu.stratosphere.api.java.tuple.Tuple1;
-
 import eu.stratosphere.util.Collector;
 
 public class MapTest {
@@ -40,6 +40,17 @@ public class MapTest {
 		}
 	}
 	
+	public static final class MyFieldsSource extends SourceFunction<Tuple1<Integer>> {
+
+		@Override
+		public void invoke(Collector<Tuple1<Integer>> collector)
+				throws Exception {
+			for(int i=0; i<MAXSOURCE; i++){
+				collector.collect(new Tuple1<Integer>(5));
+			}
+		}
+	}
+	
 	public static final class MyMap extends MapFunction<Tuple1<Integer>,Tuple1<Integer>> {
 
 		@Override
@@ -49,23 +60,59 @@ public class MapTest {
 		}
 	}
 	
+	public static final class MyFieldsMap extends MapFunction<Tuple1<Integer>,Tuple1<Integer>> {
+
+		
+		private int counter=0;
+
+		@Override
+		public Tuple1<Integer> map(Tuple1<Integer> value) throws Exception {
+			// TODO Auto-generated method stub
+			counter++;
+			
+			if(counter==MAXSOURCE) allInOne=true;
+			return new Tuple1<Integer>(value.f0*value.f0);
+		}
+	}
+	
 	public static final class MySink extends SinkFunction<Tuple1<Integer>> {
 
 		@Override
 		public void invoke(Tuple1<Integer> tuple) {
 			result.add(tuple.f0);
-			System.out.println("result " + tuple.f0);
+			//System.out.println("result " + tuple.f0);
+		}
+	}
+	
+	public static final class MyBroadcastSink extends SinkFunction<Tuple1<Integer>> {
+
+		@Override
+		public void invoke(Tuple1<Integer> tuple) {
+			broadcastResult++;
+		}
+	}
+	
+	public static final class MyFieldsSink extends SinkFunction<Tuple1<Integer>> {
+
+		@Override
+		public void invoke(Tuple1<Integer> tuple) {
+			fieldsResult++;
 		}
 	}
 
 	private static List<Integer> expected = new ArrayList<Integer>();
 	private static List<Integer> result = new ArrayList<Integer>();
+	private static int broadcastResult = 0;
+	private static int fieldsResult = 0;
+	private static int fieldsCounter = 0;
 	private static final int PARALELISM = 1;
+	private static final int MAXSOURCE = 10;
+	private static boolean allInOne=false;
 
 	private static void fillExpectedList(){
 		for(int i=0;i<10;i++){
 			expected.add(i*i);
-			System.out.println("expected " + i*i);
+			//System.out.println("expected " + i*i);
 		}
 	}
 	
@@ -84,5 +131,47 @@ public class MapTest {
 		fillExpectedList();
 
 		assertTrue(expected.equals(result));
+	}
+	
+	@Test
+	public void broadcastTest() throws Exception {
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		DataStream<Tuple1<Integer>> dataStream = context
+				.addSource(new MySource(), 1)
+				.broadcast()
+				.map(new MyMap(), 3)
+				.addSink(new MyBroadcastSink());
+		
+		context.execute();
+		assertEquals(30, broadcastResult);
+		
+	}
+	
+	@Test
+	public void fieldsSinkTest() throws Exception {
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		DataStream<Tuple1<Integer>> dataStream = context
+				.addSource(new MySource(), 1)
+				.partitionBy(0)
+				.map(new MyMap(), 3)
+				.addSink(new MyFieldsSink());
+		
+		context.execute();
+		assertEquals(10, fieldsResult);
+		
+	}
+	
+	@Test
+	public void fieldsMapTest() throws Exception {
+		StreamExecutionEnvironment context = new StreamExecutionEnvironment();
+		DataStream<Tuple1<Integer>> dataStream = context
+				.addSource(new MyFieldsSource(), 1)
+				.partitionBy(0)
+				.map(new MyFieldsMap(), 3)
+				.addSink(new MyFieldsSink());
+		
+		context.execute();
+		assertTrue(allInOne);
+		
 	}
 }
