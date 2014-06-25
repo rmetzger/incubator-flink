@@ -49,7 +49,8 @@ public class ClientMasterControl extends Thread {
 			while(true) {
 				synchronized (lock) {
 					appMasterStatus = cmp.getAppplicationMasterStatus();
-					if(messages.size() != appMasterStatus.getMessageCount()) {
+					if(messages != null && appMasterStatus != null &&
+							messages.size() != appMasterStatus.getMessageCount()) {
 						messages = cmp.getMessages();
 					}
 				}
