@@ -114,20 +114,5 @@ public class TestDataUtil {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		// try {
-		// URL website = new URL(testRepoUrl + fileName );
-		// ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-		// FileOutputStream fos = new FileOutputStream(testDataDir + fileName);
-		// fos.getChannel().transferFrom(rbc,0,Long.MAX_VALUE);
-
-		//// String myCommand = "wget -O " + testDataDir + fileName + " " +
-		//// testRepoUrl + fileName;
-		//// System.out.println(myCommand);
-		//// Runtime.getRuntime().exec(myCommand);
-		// } catch (IOException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
 	}
 }
