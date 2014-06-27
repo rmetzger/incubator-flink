@@ -115,8 +115,8 @@ public class CellInfoLocal {
 				new QuerySource(), SOURCE_PARALELISM);
 
 		DataStream<Tuple1<String>> stream = env.addSource(new InfoSource(), SOURCE_PARALELISM)
-				.connectWith(querySource).partitionBy(1).flatMap(new CellTask(), PARALELISM)
-				.print();
+				.connectWith(querySource).partitionBy(1).flatMap(new CellTask(), PARALELISM);
+		stream.print();
 
 		env.execute();
 	}

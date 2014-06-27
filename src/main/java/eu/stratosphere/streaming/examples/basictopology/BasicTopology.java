@@ -55,7 +55,9 @@ public class BasicTopology {
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
 		DataStream<Tuple1<String>> stream = env.addSource(new BasicSource(), SOURCE_PARALELISM)
-				.map(new BasicMap(), PARALELISM).print();
+				.map(new BasicMap(), PARALELISM);
+		
+		stream.print();
 
 		env.execute();
 	}

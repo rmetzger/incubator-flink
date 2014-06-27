@@ -27,13 +27,13 @@ public class WordCountLocal {
 		TestDataUtil.downloadIfNotExists("hamlet.txt");
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
-		@SuppressWarnings("unused")
 		DataStream<Tuple2<String, Integer>> dataStream = env
 				.readTextFile("src/test/resources/testdata/hamlet.txt")
 				.flatMap(new WordCountSplitter(), 1)
 				.partitionBy(0)
-				.map(new WordCountCounter(), 1)
-				.print();
+				.map(new WordCountCounter(), 1);
+		
+		dataStream.print();
 
 		env.execute();
 	}
