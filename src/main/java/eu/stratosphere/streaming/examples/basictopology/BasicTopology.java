@@ -30,7 +30,7 @@ public class BasicTopology {
 
 		@Override
 		public void invoke(Collector<Tuple1<String>> collector) throws Exception {
-			// emit continuously a tuple
+			//  continuously emit a tuple
 			while (true) {
 				collector.collect(tuple);
 			}

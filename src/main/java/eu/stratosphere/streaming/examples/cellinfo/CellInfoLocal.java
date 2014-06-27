@@ -85,6 +85,7 @@ public class CellInfoLocal {
 
 		Tuple1<String> outTuple = new Tuple1<String>();
 
+		// write information to String tuple based on the input tuple 
 		@Override
 		public void flatMap(Tuple4<Boolean, Integer, Long, Integer> value,
 				Collector<Tuple1<String>> out) throws Exception {
@@ -106,6 +107,7 @@ public class CellInfoLocal {
 		}
 	}
 
+	//In this example two different source then connect the two stream and apply a function for the connected stream
 	// TODO add arguments
 	public static void main(String[] args) {
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
@@ -113,8 +115,12 @@ public class CellInfoLocal {
 		DataStream<Tuple4<Boolean, Integer, Long, Integer>> querySource = env
 				.addSource(new QuerySource(), SOURCE_PARALELISM);
 
-		DataStream<Tuple1<String>> stream = env.addSource(new InfoSource(), SOURCE_PARALELISM)
-				.connectWith(querySource).partitionBy(1).flatMap(new CellTask(), PARALELISM).addDummySink();
+		DataStream<Tuple1<String>> stream = env
+				.addSource(new InfoSource(), SOURCE_PARALELISM)
+				.connectWith(querySource)
+				.partitionBy(1)
+				.flatMap(new CellTask(), PARALELISM)
+				.addDummySink();
 
 		env.execute();
 	}
