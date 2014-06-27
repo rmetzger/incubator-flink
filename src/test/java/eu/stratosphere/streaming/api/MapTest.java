@@ -248,41 +248,24 @@ public class MapTest {
 
 	}
 
-	
-<<<<<<< HEAD
-	@Test
-	public void graphTest() throws Exception {
-		for(int i=0; i<1000; i++){
-			System.out.println(i);
-			StreamExecutionEnvironment env = new StreamExecutionEnvironment();
-			DataStream<Tuple1<Integer>> dataStream = env
-					.addSource(new MySource(), 2)
-					.partitionBy(0)
-					.map(new MyMap(), 3)
-					.broadcast()
-					.addSink(new MyGraphSink(),2);
-	
-			env.execute();
-			assertEquals(40, graphResult);
-			graphResult=0;
-			map=0;
-		}
-		
-	}
-=======
 //	@Test
 //	public void graphTest() throws Exception {
-//		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
-//		DataStream<Tuple1<Integer>> dataStream = env
-//				.addSource(new MySource(), 2)
-//				.partitionBy(0)
-//				.map(new MyMap(), 3)
-//				.broadcast()
-//				.addSink(new MyGraphSink(),2);
-//
-//		env.execute();
-//		assertEquals(40, graphResult);
+//		for(int i=0; i<1000; i++){
+//			System.out.println(i);
+//			StreamExecutionEnvironment env = new StreamExecutionEnvironment();
+//			DataStream<Tuple1<Integer>> dataStream = env
+//					.addSource(new MySource(), 2)
+//					.partitionBy(0)
+//					.map(new MyMap(), 3)
+//					.broadcast()
+//					.addSink(new MyGraphSink(),2);
+//	
+//			env.execute();
+//			assertEquals(40, graphResult);
+//			graphResult=0;
+//			map=0;
+//		}
 //		
 //	}
->>>>>>> f40ac7fffa9606e75ab2b70fe4516aa5f2e6f542
+
 }
