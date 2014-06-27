@@ -24,7 +24,9 @@ import org.apache.commons.logging.LogFactory;
 
 import eu.stratosphere.nephele.ipc.RPC;
 import eu.stratosphere.nephele.net.NetUtils;
-import eu.stratosphere.yarn.YARNClientMasterProtocol.Message;
+import eu.stratosphere.yarn.rpc.ApplicationMasterStatus;
+import eu.stratosphere.yarn.rpc.YARNClientMasterProtocol;
+import eu.stratosphere.yarn.rpc.YARNClientMasterProtocol.Message;
 
 public class ClientMasterControl extends Thread {
 	private static final Log LOG = LogFactory.getLog(ClientMasterControl.class);
@@ -35,6 +37,7 @@ public class ClientMasterControl extends Thread {
 	private YARNClientMasterProtocol cmp;
 	private Object lock = new Object();
 	private List<Message> messages;
+	private boolean running = true;
 
 	public ClientMasterControl(InetSocketAddress applicationMasterAddress) {
 		super();
@@ -46,7 +49,7 @@ public class ClientMasterControl extends Thread {
 		try {
 			cmp = RPC.getProxy(YARNClientMasterProtocol.class, applicationMasterAddress, NetUtils.getSocketFactory());
 			
-			while(true) {
+			while(running) {
 				synchronized (lock) {
 					appMasterStatus = cmp.getAppplicationMasterStatus();
 					if(messages != null && appMasterStatus != null &&
@@ -61,7 +64,7 @@ public class ClientMasterControl extends Thread {
 					LOG.warn("Error while getting application status", e);
 				}
 			}
-			
+			RPC.stopProxy(cmp);
 		} catch (IOException e) {
 			LOG.warn("Error while running RPC service", e);
 		}
@@ -88,7 +91,7 @@ public class ClientMasterControl extends Thread {
 
 	public boolean shutdownAM() {
 		try {
-			return cmp.shutdownAM();
+			return cmp.shutdownAM().getValue();
 		} catch(Throwable e) {
 			LOG.warn("Error shutting down the application master", e);
 			return false;
@@ -102,4 +105,11 @@ public class ClientMasterControl extends Thread {
 		return this.messages;
 	}
 
+	public void close() {
+		running = false;
+	}
+
+	public void addTaskManagers(int n) {
+		cmp.addTaskManagers(n);
+	}
 }

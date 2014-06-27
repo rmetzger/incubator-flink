@@ -11,55 +11,47 @@
  * specific language governing permissions and limitations under the License.
  **********************************************************************************************************************/
 
-package eu.stratosphere.yarn;
+package eu.stratosphere.yarn.rpc;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.List;
 
 import eu.stratosphere.core.io.IOReadableWritable;
+import eu.stratosphere.core.protocols.VersionedProtocol;
+import eu.stratosphere.types.BooleanValue;
 
-
-public class ApplicationMasterStatus implements IOReadableWritable {
-	private int numTaskManagers = 0;
-	private int numSlots = 0;
-	private int messageCount = 0;
+/**
+ * Interface describing the methods offered by the RPC service between
+ * the Client and Application Master
+ */
+public interface YARNClientMasterProtocol extends VersionedProtocol {
 	
+	public static class Message implements IOReadableWritable {
+		public String text;
+		
+		public Message(String msg) {
+			this.text = msg;
+		}
+
+		@Override
+		public void write(DataOutput out) throws IOException {
+			out.writeUTF(text);
+		}
+
+		@Override
+		public void read(DataInput in) throws IOException {
+			text = in.readUTF();
+		}
+	}
+
+	ApplicationMasterStatus getAppplicationMasterStatus();
+
+	BooleanValue shutdownAM() throws Exception;
 	
-	public ApplicationMasterStatus() {
-		// for instantiation
-	}
-	
-	public ApplicationMasterStatus(int numTaskManagers, int numSlots,
-			int messageCount) {
-		this.numTaskManagers = numTaskManagers;
-		this.numSlots = numSlots;
-		this.messageCount = messageCount;
-	}
+	List<Message> getMessages();
 
-	public int getNumberOfTaskManagers() {
-		return numTaskManagers;
-	}
+	void addTaskManagers(int n);
 
-	public int getNumberOfAvailableSlots() {
-		return numSlots;
-	}
-	
-	public int getMessageCount() {
-		return messageCount;
-	}
-
-	@Override
-	public void write(DataOutput out) throws IOException {
-		out.writeInt(numTaskManagers);
-		out.writeInt(numSlots);
-		out.writeInt(messageCount);
-	}
-
-	@Override
-	public void read(DataInput in) throws IOException {
-		numTaskManagers = in.readInt();
-		numSlots = in.readInt();
-		messageCount = in.readInt();
-	}
 }
