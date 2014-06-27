@@ -191,6 +191,10 @@ public class StreamExecutionEnvironment {
 	public DataStream<Tuple1<String>> readTextFile(String path) {
 		return addSource(new FileSourceFunction(path),1);
 	}
+	
+	public DataStream<Tuple1<String>> readTextStream(String path) {
+		return addSource(new FileStreamFunction(path),1);
+	}
 
 	public DataStream<Tuple1<String>> addDummySource() {
 		DataStream<Tuple1<String>> returnStream = new DataStream<Tuple1<String>>(this);

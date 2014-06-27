@@ -23,6 +23,6 @@ public class WordCountSink extends SinkFunction<Tuple2<String, Integer>> {
 
 	@Override
 	public void invoke(Tuple2<String, Integer> inTuple) {
-		System.out.println(inTuple);
+		//System.out.println(inTuple);
 	}
 }
