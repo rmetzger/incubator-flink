@@ -115,16 +115,6 @@ public class FlatMapTest {
 
 	}
 
-	public static final class MySource extends SourceFunction<Tuple1<Integer>> {
-
-		@Override
-		public void invoke(Collector<Tuple1<Integer>> collector) throws Exception {
-			for (int i = 0; i < 10; i++) {
-				collector.collect(new Tuple1<Integer>(i));
-			}
-		}
-	}
-
 	private static void fillExpectedList() {
 		for (int i = 0; i < 10; i++) {
 			expected.add(i * i);
@@ -150,8 +140,10 @@ public class FlatMapTest {
 	}
 
 	private static void fillFromCollectionSet() {
-		for (int i = 0; i < 10; i++) {
-			fromCollectionSet.add(i);
+		if(fromCollectionSet.isEmpty()){
+			for (int i = 0; i < 10; i++) {
+				fromCollectionSet.add(i);
+			}
 		}
 	}
 
@@ -169,9 +161,11 @@ public class FlatMapTest {
 
 	@Test
 	public void test() throws Exception {
-
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment(2, 1000);
-		DataStream<Tuple1<Integer>> dataStream = env.addSource(new MySource(), 1)
+		
+		fillFromCollectionSet();
+		
+		DataStream<Tuple1<Integer>> dataStream = env.fromCollection(fromCollectionSet)
 				.flatMap(new MyFlatMap(), PARALELISM).addSink(new MySink());
 
 		env.execute();
@@ -185,7 +179,10 @@ public class FlatMapTest {
 	@Test
 	public void parallelShuffleconnectTest() throws Exception {
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
-		DataStream<Tuple1<Integer>> source = env.addSource(new MySource(), 1);
+		
+		fillFromCollectionSet();
+		
+		DataStream<Tuple1<Integer>> source = env.fromCollection(fromCollectionSet);
 		DataStream<Tuple1<Integer>> map = source.flatMap(new ParallelFlatMap(), 1).addSink(
 				new MySink());
 		DataStream<Tuple1<Integer>> map2 = source.flatMap(new ParallelFlatMap(), 1).addSink(
@@ -194,6 +191,8 @@ public class FlatMapTest {
 		env.execute();
 
 		assertEquals(20, numberOfElements);
+		numberOfElements=0;
+		
 
 	}
 
