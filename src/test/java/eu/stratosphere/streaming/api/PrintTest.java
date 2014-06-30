@@ -54,18 +54,15 @@ public class PrintTest {
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 		DataStream<Tuple2<Integer, String>> source = env.addSource(new MySource(), 1);
 		DataStream<Tuple2<Integer, String>> map = source.flatMap(new MyFlatMap(), 1).print();
-<<<<<<< HEAD
-		DataStream<Tuple2<Integer, String>> map2 = source.flatMap(new MyFlatMap(), 1).print();
-
-=======
 		env.fromElements(2, 3, 4).print();
 		Set<Integer> a = new HashSet<Integer>();
 		a.add(-2);
 		a.add(-100);
 		env.fromCollection(a).print();
->>>>>>> 31faec8abc1d71c4d4dd1d81cf36defb58a42b33
 		source.print();
 		env.execute();
 
 	}
+	
+	
 }
