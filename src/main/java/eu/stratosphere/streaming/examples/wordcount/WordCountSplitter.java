@@ -24,9 +24,10 @@ public class WordCountSplitter extends FlatMapFunction<Tuple1<String>, Tuple1<St
 
 	private Tuple1<String> outTuple = new Tuple1<String>();
 
+	// Splits the lines according on spaces
 	@Override
 	public void flatMap(Tuple1<String> inTuple, Collector<Tuple1<String>> out) throws Exception {
-
+		
 		for (String word : inTuple.f0.split(" ")) {
 			outTuple.f0 = word;
 			out.collect(outTuple);
