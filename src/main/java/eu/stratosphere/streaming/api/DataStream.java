@@ -29,7 +29,7 @@ import eu.stratosphere.types.TypeInformation;
 
 public class DataStream<T extends Tuple> {
 
-	private final StreamExecutionEnvironment context;
+	private final StreamExecutionEnvironment environment;
 	private TypeInformation<T> type;
 	private final Random random = new Random();
 	private String id;
@@ -43,7 +43,7 @@ public class DataStream<T extends Tuple> {
 	 */
 	protected DataStream() {
 		// TODO implement
-		context = new StreamExecutionEnvironment();
+		environment = new StreamExecutionEnvironment();
 		id = "source";
 		initConnections();
 	}
@@ -52,14 +52,14 @@ public class DataStream<T extends Tuple> {
 	 * Constructor
 	 * @param context
 	 */
-	protected DataStream(StreamExecutionEnvironment context) {
-		if (context == null) {
+	protected DataStream(StreamExecutionEnvironment environment) {
+		if (environment == null) {
 			throw new NullPointerException("context is null");
 		}
 
 		// TODO add name based on component number an preferable sequential id
 		this.id = Long.toHexString(random.nextLong()) + Long.toHexString(random.nextLong());
-		this.context = context;
+		this.environment = environment;
 		initConnections();
 
 	}
@@ -69,8 +69,8 @@ public class DataStream<T extends Tuple> {
 	 * @param context
 	 * @param id
 	 */
-	private DataStream(StreamExecutionEnvironment context, String id) {
-		this(context);
+	private DataStream(StreamExecutionEnvironment environment, String id) {
+		this(environment);
 		this.id = id;
 	}
 	
@@ -97,7 +97,7 @@ public class DataStream<T extends Tuple> {
 	 * The identical datastream.
 	 */
 	public DataStream<T> copy() {
-		DataStream<T> copiedStream = new DataStream<T>(context, getId());
+		DataStream<T> copiedStream = new DataStream<T>(environment, getId());
 		copiedStream.type = this.type;
 		
 		copiedStream.connectIDs = new ArrayList<String>(this.connectIDs);
@@ -195,7 +195,7 @@ public class DataStream<T extends Tuple> {
 	 * The modified datastream.
 	 */
 	public <R extends Tuple> DataStream<R> flatMap(FlatMapFunction<T, R> flatMapper, int paralelism) {
-		return context.addFunction("flatMap", this.copy(), flatMapper, new FlatMapInvokable<T, R>(
+		return environment.addFunction("flatMap", this.copy(), flatMapper, new FlatMapInvokable<T, R>(
 				flatMapper), paralelism);
 	}
 
@@ -209,7 +209,7 @@ public class DataStream<T extends Tuple> {
 	 * The modified datastream.
 	 */
 	public <R extends Tuple> DataStream<R> map(MapFunction<T, R> mapper, int paralelism) {
-		return context.addFunction("map", this.copy(), mapper, new MapInvokable<T, R>(mapper), paralelism);
+		return environment.addFunction("map", this.copy(), mapper, new MapInvokable<T, R>(mapper), paralelism);
 	}
 
 	/**
@@ -224,7 +224,7 @@ public class DataStream<T extends Tuple> {
 	 * The modified datastream.
 	 */
 	public <R extends Tuple> DataStream<R> batchReduce(GroupReduceFunction<T, R> reducer, int batchSize, int paralelism) {
-		return context.addFunction("batchReduce", batch(batchSize).copy(), reducer, new BatchReduceInvokable<T, R>(
+		return environment.addFunction("batchReduce", batch(batchSize).copy(), reducer, new BatchReduceInvokable<T, R>(
 				reducer), paralelism);
 	}
 
@@ -238,7 +238,7 @@ public class DataStream<T extends Tuple> {
 	 * The modified datastream.
 	 */
 	public DataStream<T> filter(FilterFunction<T> filter, int paralelism) {
-		return context.addFunction("filter", this.copy(), filter, new FilterInvokable<T>(filter), paralelism);
+		return environment.addFunction("filter", this.copy(), filter, new FilterInvokable<T>(filter), paralelism);
 	}
 
 	/**
@@ -251,7 +251,7 @@ public class DataStream<T extends Tuple> {
 	 * The modified datastream.
 	 */
 	public DataStream<T> addSink(SinkFunction<T> sinkFunction, int paralelism) {
-		return context.addSink(this.copy(), sinkFunction, paralelism);
+		return environment.addSink(this.copy(), sinkFunction, paralelism);
 	}
 	
 	/**
@@ -262,7 +262,7 @@ public class DataStream<T extends Tuple> {
 	 * The modified datastream.
 	 */
 	public DataStream<T> addSink(SinkFunction<T> sinkFunction) {
-		return context.addSink(this.copy(), sinkFunction);
+		return environment.addSink(this.copy(), sinkFunction);
 	}
 
 	/**
@@ -271,7 +271,7 @@ public class DataStream<T extends Tuple> {
 	 * The original stream.
 	 */
 	public DataStream<T> print() {
-		return context.print(this.copy());
+		return environment.print(this.copy());
 	}
 
 	/**
