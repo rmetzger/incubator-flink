@@ -15,8 +15,7 @@
 
 package eu.stratosphere.streaming.api;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
@@ -30,6 +29,7 @@ import org.junit.Test;
 import eu.stratosphere.api.java.functions.FlatMapFunction;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
+import eu.stratosphere.api.java.tuple.Tuple2;
 import eu.stratosphere.api.java.typeutils.TupleTypeInfo;
 import eu.stratosphere.api.java.typeutils.TypeExtractor;
 import eu.stratosphere.configuration.Configuration;
@@ -39,6 +39,7 @@ import eu.stratosphere.nephele.jobgraph.JobOutputVertex;
 import eu.stratosphere.nephele.jobgraph.JobTaskVertex;
 import eu.stratosphere.streaming.api.MapTest.MyMap;
 import eu.stratosphere.streaming.api.MapTest.MySink;
+import eu.stratosphere.streaming.api.PrintTest.MyFlatMap;
 import eu.stratosphere.streaming.api.invokable.UserSinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserSourceInvokable;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
@@ -56,13 +57,23 @@ public class FlatMapTest {
 		}
 		
 	}
+	
+	public static final class ParallelFlatMap extends FlatMapFunction<Tuple1<Integer>, Tuple1<Integer>> {
+
+		@Override
+		public void flatMap(Tuple1<Integer> value,
+				Collector<Tuple1<Integer>> out) throws Exception {
+			numberOfElements++;
+			
+		}
+		
+	}
 
 	public static final class MySink extends SinkFunction<Tuple1<Integer>> {
 		
 		@Override
 		public void invoke(Tuple1<Integer> tuple) {
 			result.add(tuple.f0);
-			System.out.println("result " + tuple.f0);
 		}
 
 	}
@@ -85,6 +96,7 @@ public class FlatMapTest {
 	}
 
 	private static final int PARALELISM = 1;
+	private static int numberOfElements = 0;
 	private static Set<Integer> expected = new HashSet<Integer>();
 	private static Set<Integer> result = new HashSet<Integer>();
 
@@ -100,6 +112,20 @@ public class FlatMapTest {
 		fillExpectedList();
 		
 		assertTrue(expected.equals(result));
+		
+	}
+	
+	@Test
+	public void parallelShuffleconnectTest() throws Exception {
+		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
+		DataStream<Tuple1<Integer>> source = env.addSource(new MySource(),1);
+		DataStream<Tuple1<Integer>> map = source.flatMap(new ParallelFlatMap(), 1).addSink(new MySink());
+		DataStream<Tuple1<Integer>> map2 = source.flatMap(new ParallelFlatMap(), 1).addSink(new MySink());
+		
+		env.execute();
+		
+		assertEquals(10, numberOfElements);
+		
 		
 	}
 }
