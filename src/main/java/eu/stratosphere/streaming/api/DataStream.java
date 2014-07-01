@@ -136,7 +136,7 @@ public class DataStream<T extends Tuple> {
 		}
 		return returnStream;
 	}
-
+	
 	/**
 	 * Connecting streams to each other.
 	 * @param stream
@@ -144,28 +144,20 @@ public class DataStream<T extends Tuple> {
 	 * @return
 	 * The new already connected datastream.
 	 */
-	public DataStream<T> connectWith(DataStream<T> stream) {
-		DataStream<T> returnStream = copy();
-
-		addConnection(returnStream, stream.connectIDs, stream.ctypes, stream.cparams, stream.batchSizes);
-		
-		return returnStream;
-	}
-	
 	public DataStream<T> connectWith(DataStream<T>... streams) {
 		DataStream<T> returnStream = copy();
 		
 		for(DataStream<T> stream:streams){
-			addConnection(returnStream, stream.connectIDs, stream.ctypes, stream.cparams, stream.batchSizes);
+			addConnection(returnStream, stream);
 		}
 		return returnStream;
 	}
 	
-	public DataStream<T> addConnection(DataStream<T> returnStream, List<String> connectIDs, List<ConnectionType> ctypes, List<Integer> cparams, List<Integer> batchSizes){
-		returnStream.connectIDs.addAll(connectIDs);
-		returnStream.ctypes.addAll(ctypes);
-		returnStream.cparams.addAll(cparams);
-		returnStream.batchSizes.addAll(batchSizes);
+	public DataStream<T> addConnection(DataStream<T> returnStream, DataStream<T> stream){
+		returnStream.connectIDs.addAll(stream.connectIDs);
+		returnStream.ctypes.addAll(stream.ctypes);
+		returnStream.cparams.addAll(stream.cparams);
+		returnStream.batchSizes.addAll(stream.batchSizes);
 		
 		return returnStream;
 	}
