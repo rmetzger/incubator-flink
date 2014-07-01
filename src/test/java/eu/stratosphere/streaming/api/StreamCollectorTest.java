@@ -16,18 +16,11 @@
 package eu.stratosphere.streaming.api;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
-
-import java.util.ArrayList;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.nephele.io.RecordWriter;
 import eu.stratosphere.streaming.api.streamcomponent.MockRecordWriter;
-import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.streaming.util.MockRecordWriterFactory;
 
 public class StreamCollectorTest {
