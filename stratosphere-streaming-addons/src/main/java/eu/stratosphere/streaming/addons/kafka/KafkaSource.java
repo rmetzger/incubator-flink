@@ -13,7 +13,7 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.kafka;
+package eu.stratosphere.streaming.addons.kafka;
 
 import java.util.HashMap;
 import java.util.List;

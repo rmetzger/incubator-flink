@@ -12,36 +12,28 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
-package eu.stratosphere.streaming.api.streamrecord;
 
-import static org.junit.Assert.*;
+package eu.stratosphere.streaming.api.streamcomponent;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
-import org.junit.Test;
+import eu.stratosphere.core.io.InputSplit;
 
-public class UUIDTest {
+public class DummyIS implements InputSplit {
 
-	@Test
-	public void test() throws IOException {
-		ByteArrayOutputStream buff = new ByteArrayOutputStream();
-		DataOutputStream out = new DataOutputStream(buff);
-		
-		UID id = new UID(3);
-		id.write(out);
-		
-		DataInputStream in = new DataInputStream(new ByteArrayInputStream(buff.toByteArray()));
-		
-		UID id2 = new UID();
-		id2.read(in);
+  @Override
+  public void write(DataOutput out) throws IOException {
+  }
 
-		assertEquals(id.getChannelId(), id2.getChannelId());
-		assertArrayEquals(id.getGeneratedId(), id2.getGeneratedId());
-		assertArrayEquals(id.getId(), id2.getId());
-	}
+  @Override
+  public void read(DataInput in) throws IOException {
+  }
 
+  @Override
+  public int getSplitNumber() {
+    return 0;
+  }
+  
 }

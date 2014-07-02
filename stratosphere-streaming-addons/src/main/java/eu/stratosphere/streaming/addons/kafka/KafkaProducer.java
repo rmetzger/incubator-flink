@@ -13,7 +13,7 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.kafka;
+package eu.stratosphere.streaming.addons.kafka;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -22,6 +22,9 @@ import java.util.Properties;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 
+/**
+ * Producer for Kafka jobs.
+ */
 public class KafkaProducer {
 	static kafka.javaapi.producer.Producer<Integer, String> producer;
 	static Properties props = new Properties();

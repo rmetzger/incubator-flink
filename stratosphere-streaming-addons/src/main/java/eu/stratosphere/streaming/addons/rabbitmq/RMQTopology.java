@@ -13,7 +13,7 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.rabbitmq;
+package eu.stratosphere.streaming.addons.rabbitmq;
 
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.DataStream;

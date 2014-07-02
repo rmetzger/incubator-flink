@@ -13,7 +13,7 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.performance;
+package eu.stratosphere.streaming.addons.performance;
 
 import eu.stratosphere.api.java.tuple.Tuple2;
 import eu.stratosphere.streaming.api.DataStream;
