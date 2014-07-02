@@ -138,7 +138,7 @@ public class DataStream<T extends Tuple> {
 	 * using this operator will be transformed simultaneously. It creates a
 	 * joint output of the connected streams.
 	 * 
-	 * @param stream
+	 * @param streams
 	 *            The DataStream to connect output with.
 	 * @return The connected DataStream.
 	 */
@@ -203,6 +203,9 @@ public class DataStream<T extends Tuple> {
 	 *            DataStream
 	 * @param parallelism
 	 *            The number of threads the function runs on.
+	 * 
+	 * @param <R>
+	 *            output type
 	 * @return The transformed DataStream.
 	 */
 	public <R extends Tuple> DataStream<R> flatMap(FlatMapFunction<T, R> flatMapper, int parallelism) {
@@ -220,6 +223,8 @@ public class DataStream<T extends Tuple> {
 	 *            DataStream.
 	 * @param parallelism
 	 *            The number of threads the function runs on.
+	 * @param <R>
+	 *            output type
 	 * @return The transformed DataStream.
 	 */
 	public <R extends Tuple> DataStream<R> map(MapFunction<T, R> mapper, int parallelism) {
@@ -240,6 +245,8 @@ public class DataStream<T extends Tuple> {
 	 *            The number of tuples grouped together in the batch.
 	 * @param parallelism
 	 *            The number of threads the function runs on.
+	 * @param <R>
+	 *            output type
 	 * @return The modified datastream.
 	 */
 	public <R extends Tuple> DataStream<R> batchReduce(GroupReduceFunction<T, R> reducer,
