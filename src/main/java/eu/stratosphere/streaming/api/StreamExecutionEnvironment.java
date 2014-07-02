@@ -72,6 +72,7 @@ public class StreamExecutionEnvironment {
 	 * task parallelism.
 	 * 
 	 * @param clusterSize
+	 *            cluster size
 	 * @return environment
 	 */
 	public StreamExecutionEnvironment setClusterSize(int clusterSize) {
@@ -321,8 +322,6 @@ public class StreamExecutionEnvironment {
 	 *            input data stream
 	 * @param sinkFunction
 	 *            the user defined function
-	 * @param parallelism
-	 *            number of parallel instances of the function
 	 * @param <T>
 	 *            type of the returned stream
 	 * @return the data stream constructed
@@ -472,7 +471,7 @@ public class StreamExecutionEnvironment {
 	/**
 	 * Getter of the JobGraphBuilder of the streaming job.
 	 * 
-	 * @return
+	 * @return jobgraph
 	 */
 	public JobGraphBuilder jobGB() {
 		return jobGraphBuilder;
