@@ -42,6 +42,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
 
+    <!--
 	<repositories>
 		<repository>
 			<id>dms-repo</id>
@@ -50,7 +51,7 @@
 			<snapshots><enabled>true</enabled></snapshots>
 		</repository>
 	</repositories>
-
+    -->
 	<dependencies>
 		<dependency>
 			<groupId>eu.stratosphere</groupId>
