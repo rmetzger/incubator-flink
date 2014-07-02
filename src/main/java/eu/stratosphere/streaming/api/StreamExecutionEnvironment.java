@@ -47,7 +47,8 @@ public class StreamExecutionEnvironment {
 	 * @param defaultBatchSize
 	 *            number of tuples in a batch
 	 * @param defaultBatchTimeoutMillis
-	 *            timeout boundary in milliseconds
+	 *            timeout boundary in milliseconds, functionality is yet to be
+	 *            implemented
 	 */
 	public StreamExecutionEnvironment(int defaultBatchSize, long defaultBatchTimeoutMillis) {
 		if (defaultBatchSize < 1) {
@@ -61,7 +62,7 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
-	 * Constructor for transmitting tuples individually with a 1 second timeout.
+	 * Constructor for transmitting tuples individually
 	 */
 	public StreamExecutionEnvironment() {
 		this(1, 1000);
