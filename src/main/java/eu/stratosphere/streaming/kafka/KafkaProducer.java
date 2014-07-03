@@ -42,6 +42,7 @@ public class KafkaProducer {
 	public static void ProducerPrepare(String brokerAddr) {
 		props.put("serializer.class", "kafka.serializer.StringEncoder");
 		props.put("metadata.broker.list", brokerAddr);
+
 		producer = new kafka.javaapi.producer.Producer<Integer, String>(
 				new ProducerConfig(props));
 	}
