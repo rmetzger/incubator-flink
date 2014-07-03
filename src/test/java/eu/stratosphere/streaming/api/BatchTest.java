@@ -83,7 +83,7 @@ public class BatchTest {
 
 	@Test
 	public void test() throws Exception {
-		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
 
 		DataStream<Tuple1<String>> dataStream1 = env
@@ -102,7 +102,7 @@ public class BatchTest {
 				.partitionBy(0)
 				.addSink(new MyPartitionSink(), SINK_PARALELISM);
 
-		env.execute(SINK_PARALELISM);
+		env.execute();
 		
 		assertEquals(20, count);
 		assertTrue(partitionCorrect);

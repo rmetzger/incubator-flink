@@ -266,7 +266,7 @@ public class MapTest {
 	public void mapTest() throws Exception {
 		
 		//mapTest
-		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
 		fillFromCollectionSet();
 		
@@ -344,7 +344,7 @@ public class MapTest {
 				.map(new MyMultipleJoinMap(), 1)
 				.addSink(new JoinSink());
 
-		env.execute(3);
+		env.execute();
 		
 		fillMultipleJoinSet();
 		

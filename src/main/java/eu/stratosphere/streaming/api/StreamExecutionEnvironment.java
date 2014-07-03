@@ -35,35 +35,34 @@ import eu.stratosphere.util.Collector;
  * construct streaming topologies.
  * 
  */
-public class StreamExecutionEnvironment {
-	JobGraphBuilder jobGraphBuilder;
+public abstract class StreamExecutionEnvironment {
+	protected JobGraphBuilder jobGraphBuilder;
+
+	private static int defaultLocalDop = Runtime.getRuntime().availableProcessors();
+
+	private int degreeOfParallelism = -1;
 
 	/**
-	 * General constructor specifying the batch size in which the tuples are
-	 * transmitted and their timeout boundary.
-	 * 
-	 * @param defaultBatchSize
-	 *            number of tuples in a batch
-	 * @param defaultBatchTimeoutMillis
-	 *            timeout boundary in milliseconds, functionality is yet to be
-	 *            implemented
+	 * Constructor for creating StreamExecutionEnvironment
 	 */
-	public StreamExecutionEnvironment(int defaultBatchSize, long defaultBatchTimeoutMillis) {
-		if (defaultBatchSize < 1) {
-			throw new IllegalArgumentException("Batch size must be positive.");
-		}
-		if (defaultBatchTimeoutMillis < 1) {
-			throw new IllegalArgumentException("Batch timeout must be positive.");
-		}
-		jobGraphBuilder = new JobGraphBuilder("jobGraph", FaultToleranceType.NONE,
-				defaultBatchSize, defaultBatchTimeoutMillis);
+	protected StreamExecutionEnvironment() {
+		jobGraphBuilder = new JobGraphBuilder("jobGraph", FaultToleranceType.NONE);
 	}
 
-	/**
-	 * Constructor for transmitting tuples individually
-	 */
-	public StreamExecutionEnvironment() {
-		this(1, 1000);
+	public void setDefaultBatchSize(int batchSize) {
+		if (batchSize < 1) {
+			throw new IllegalArgumentException("Batch size must be positive.");
+		} else {
+			jobGraphBuilder.setDefaultBatchSize(batchSize);
+		}
+	}
+
+	public void setBatchTimeout(int timeout) {
+		if (timeout < 1) {
+			throw new IllegalArgumentException("Batch timeout must be positive.");
+		} else {
+			jobGraphBuilder.setBatchTimeout(timeout);
+		}
 	}
 
 	/**
@@ -71,6 +70,27 @@ public class StreamExecutionEnvironment {
 	 */
 	public static enum ConnectionType {
 		SHUFFLE, BROADCAST, FIELD
+	}
+
+	public int getDegreeOfParallelism() {
+		return degreeOfParallelism;
+	}
+
+	public void setDegreeOfParallelism(int degreeOfParallelism) {
+		if (degreeOfParallelism < 1)
+			throw new IllegalArgumentException("Degree of parallelism must be at least one.");
+
+		this.degreeOfParallelism = degreeOfParallelism;
+	}
+
+	public static LocalStreamEnvironment createLocalEnvironment() {
+		return createLocalEnvironment(defaultLocalDop);
+	}
+
+	public static LocalStreamEnvironment createLocalEnvironment(int degreeOfParallelism) {
+		LocalStreamEnvironment lee = new LocalStreamEnvironment();
+		lee.setDegreeOfParallelism(degreeOfParallelism);
+		return lee;
 	}
 
 	/**
@@ -198,33 +218,6 @@ public class StreamExecutionEnvironment {
 	}
 
 	/**
-	 * Source Function used to generate the number sequence
-	 * 
-	 */
-	private static final class SequenceSource extends SourceFunction<Tuple1<Long>> {
-
-		private static final long serialVersionUID = 1L;
-
-		long from;
-		long to;
-		Tuple1<Long> outTuple = new Tuple1<Long>();
-
-		public SequenceSource(long from, long to) {
-			this.from = from;
-			this.to = to;
-		}
-
-		@Override
-		public void invoke(Collector<Tuple1<Long>> collector) throws Exception {
-			for (long i = from; i <= to; i++) {
-				outTuple.f0 = i;
-				collector.collect(outTuple);
-			}
-		}
-
-	}
-
-	/**
 	 * Creates a new DataStream that contains the given elements. The elements
 	 * must all be of the same type, for example, all of the String or Integer.
 	 * The sequence of elements must not be empty. Furthermore, the elements
@@ -265,37 +258,6 @@ public class StreamExecutionEnvironment {
 				"elements", serializeToByteArray(data.toArray()[0]), 1);
 
 		return returnStream.copy();
-	}
-
-	/**
-	 * SourceFunction created to use with fromElements and fromCollection
-	 * 
-	 * @param <T>
-	 *            type of the returned stream
-	 */
-	private static class FromElementsSource<T> extends SourceFunction<Tuple1<T>> {
-
-		private static final long serialVersionUID = 1L;
-
-		Iterable<T> iterable;
-		Tuple1<T> outTuple = new Tuple1<T>();
-
-		public FromElementsSource(T... elements) {
-			this.iterable = (Iterable<T>) Arrays.asList(elements);
-		}
-
-		public FromElementsSource(Collection<T> elements) {
-			this.iterable = (Iterable<T>) elements;
-		}
-
-		@Override
-		public void invoke(Collector<Tuple1<T>> collector) throws Exception {
-			for (T element : iterable) {
-				outTuple.f0 = element;
-				collector.collect(outTuple);
-			}
-		}
-
 	}
 
 	/**
@@ -350,23 +312,10 @@ public class StreamExecutionEnvironment {
 		return returnStream;
 	}
 
-	// TODO: Link to JobGraph and ClusterUtil
 	/**
-	 * Executes the JobGraph of the on a mini cluster of CLusterUtil.
-	 * 
-	 * @param parallelism
-	 *            Number of parallel cores utilized.
-	 */
-	public void execute(int parallelism) {
-		ClusterUtil.runOnMiniCluster(jobGraphBuilder.getJobGraph(), parallelism);
-	}
-
-	/**
-	 * Executes the JobGraph of the on a mini cluster of CLusterUtil.
+	 * Executes the JobGraph.
 	 **/
-	public void execute() {
-		execute(1);
-	}
+	public abstract void execute();
 
 	public void executeCluster() {
 		ClusterUtil.runOnLocalCluster(jobGraphBuilder.getJobGraph(), "10.1.3.150", 6123);

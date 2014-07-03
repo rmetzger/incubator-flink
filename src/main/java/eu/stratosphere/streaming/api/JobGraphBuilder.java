@@ -63,8 +63,8 @@ public class JobGraphBuilder {
 	protected String maxParallelismVertexName;
 	protected int maxParallelism;
 	protected FaultToleranceType faultToleranceType;
-	private int batchSize;
-	private long batchTimeout;
+	private int batchSize = 1;
+	private long batchTimeout = 1000;
 
 	/**
 	 * Creates a new JobGraph with the given name
@@ -87,24 +87,12 @@ public class JobGraphBuilder {
 		this.faultToleranceType = faultToleranceType;
 	}
 
-	/**
-	 * Creates a new JobGraph with the given parameters
-	 * 
-	 * @param jobGraphName
-	 *            Name of the JobGraph
-	 * @param faultToleranceType
-	 *            Type of fault tolerance
-	 * @param defaultBatchSize
-	 *            Default number of records to send at one emit
-	 * @param defaultBatchTimeoutMillis
-	 *            defaultBatchTimeoutMillis
-	 */
+	public void setDefaultBatchSize(int batchSize) {
+		this.batchSize = batchSize;
+	}
 
-	public JobGraphBuilder(String jobGraphName, FaultToleranceType faultToleranceType,
-			int defaultBatchSize, long defaultBatchTimeoutMillis) {
-		this(jobGraphName, faultToleranceType);
-		this.batchSize = defaultBatchSize;
-		this.batchTimeout = defaultBatchTimeoutMillis;
+	public void setBatchTimeout(int timeout) {
+		this.batchTimeout = timeout;
 	}
 
 	/**
