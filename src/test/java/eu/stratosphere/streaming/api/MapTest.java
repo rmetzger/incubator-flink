@@ -341,11 +341,6 @@ public class MapTest {
 		assertEquals(singleJoinSetExpected, singleJoinSetResult);
 		assertEquals(multipleJoinSetExpected, multipleJoinSetResult);
 		
-		
-		
-		
-		
-		
 	}
 	
 //	@Test

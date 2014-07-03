@@ -76,7 +76,8 @@ public class BatchTest {
 	public void test() throws Exception {
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
-		DataStream<Tuple1<String>> dataStream = env
+		//batchTest
+		DataStream<Tuple1<String>> dataStream1 = env
 				.addSource(new MySource(), SOURCE_PARALELISM)
 				.flatMap(new MyMap(), PARALLELISM).batch(4)
 				.flatMap(new MyMap(), PARALLELISM).batch(2)
@@ -84,16 +85,9 @@ public class BatchTest {
 				.flatMap(new MyMap(), PARALLELISM).batch(4)
 				.addSink(new MySink());
 
-		env.execute();
 		
-		assertEquals(20, count);
-	}
-	
-	@Test
-	public void partitionTest() throws Exception {
-		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
-
-		DataStream<Tuple1<String>> dataStream = env
+		//partitionTest
+		DataStream<Tuple1<String>> dataStream2 = env
 				.addSource(new MySource(), SOURCE_PARALELISM)
 				.flatMap(new MyMap(), PARALLELISM).batch(4)
 				.partitionBy(0)
@@ -101,6 +95,7 @@ public class BatchTest {
 
 		env.execute();
 		
+		assertEquals(20, count);
 		assertTrue(partitionCorrect);
 	}
 }
