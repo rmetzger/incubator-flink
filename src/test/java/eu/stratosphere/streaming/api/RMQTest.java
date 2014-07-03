@@ -33,6 +33,7 @@ import eu.stratosphere.util.Collector;
 public class RMQTest {
 	
 	public static final class MySink extends SinkFunction<Tuple1<String>> {
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void invoke(Tuple1<String> tuple) {
