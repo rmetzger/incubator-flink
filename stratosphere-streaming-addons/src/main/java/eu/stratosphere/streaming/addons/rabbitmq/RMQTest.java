@@ -13,7 +13,7 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.api;
+package eu.stratosphere.streaming.addons.rabbitmq;
 
 
 import static org.junit.Assert.*;
@@ -25,8 +25,7 @@ import org.junit.Test;
 
 import eu.stratosphere.api.java.functions.MapFunction;
 import eu.stratosphere.api.java.tuple.Tuple1;
-import eu.stratosphere.streaming.rabbitmq.RMQSink;
-import eu.stratosphere.streaming.rabbitmq.RMQSource;
+import eu.stratosphere.streaming.api.SinkFunction;
 import eu.stratosphere.util.Collector;
 
 
