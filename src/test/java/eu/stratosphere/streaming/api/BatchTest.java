@@ -32,6 +32,7 @@ public class BatchTest {
 	private static boolean partitionCorrect = true;
 
 	private static final class MySource extends SourceFunction<Tuple1<String>> {
+		private static final long serialVersionUID = 1L;
 
 		private Tuple1<String> outTuple = new Tuple1<String>();
 
@@ -45,6 +46,7 @@ public class BatchTest {
 	}
 
 	private static final class MyMap extends FlatMapFunction<Tuple1<String>, Tuple1<String>> {
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void flatMap(Tuple1<String> value, Collector<Tuple1<String>> out) throws Exception {
@@ -53,6 +55,8 @@ public class BatchTest {
 	}
 
 	private static final class MySink extends SinkFunction<Tuple1<String>> {
+
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void invoke(Tuple1<String> tuple) {
@@ -63,6 +67,8 @@ public class BatchTest {
 	private static final class MyPartitionSink extends SinkFunction<Tuple1<String>> {
 
 		int hash = -1000;
+
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void invoke(Tuple1<String> tuple) {
@@ -79,26 +85,26 @@ public class BatchTest {
 	public void test() throws Exception {
 		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
 
-		DataStream<Tuple1<String>> dataStream = env.addSource(new MySource(), SOURCE_PARALELISM)
-				.flatMap(new MyMap(), PARALLELISM).batch(4).flatMap(new MyMap(), PARALLELISM)
-				.batch(2).flatMap(new MyMap(), PARALLELISM).batch(5)
-				.flatMap(new MyMap(), PARALLELISM).batch(4).addSink(new MySink());
 
-		env.execute();
+		DataStream<Tuple1<String>> dataStream1 = env
+				.addSource(new MySource(), SOURCE_PARALELISM)
+				.flatMap(new MyMap(), PARALLELISM).batch(4)
+				.flatMap(new MyMap(), PARALLELISM).batch(2)
+				.flatMap(new MyMap(), PARALLELISM).batch(5)
+				.flatMap(new MyMap(), PARALLELISM).batch(4)
+				.addSink(new MySink());
 
-		assertEquals(20, count);
-	}
-
-	@Test
-	public void partitionTest() throws Exception {
-		StreamExecutionEnvironment env = new StreamExecutionEnvironment();
-
-		DataStream<Tuple1<String>> dataStream = env.addSource(new MySource(), SOURCE_PARALELISM)
-				.flatMap(new MyMap(), PARALLELISM).batch(4).partitionBy(0)
+		
+		//partitionTest
+		DataStream<Tuple1<String>> dataStream2 = env
+				.addSource(new MySource(), SOURCE_PARALELISM)
+				.flatMap(new MyMap(), PARALLELISM).batch(4)
+				.partitionBy(0)
 				.addSink(new MyPartitionSink(), SINK_PARALELISM);
 
 		env.execute(SINK_PARALELISM);
-
+		
+		assertEquals(20, count);
 		assertTrue(partitionCorrect);
 	}
 }
