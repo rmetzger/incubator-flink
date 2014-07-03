@@ -38,8 +38,6 @@ import eu.stratosphere.util.Collector;
 public class StreamExecutionEnvironment {
 	JobGraphBuilder jobGraphBuilder;
 
-	private float clusterSize = 1;
-
 	/**
 	 * General constructor specifying the batch size in which the tuples are
 	 * transmitted and their timeout boundary.
@@ -66,19 +64,6 @@ public class StreamExecutionEnvironment {
 	 */
 	public StreamExecutionEnvironment() {
 		this(1, 1000);
-	}
-
-	/**
-	 * Set the number of machines in the executing cluster. Used for setting
-	 * task parallelism.
-	 * 
-	 * @param clusterSize
-	 *            cluster size
-	 * @return environment
-	 */
-	public StreamExecutionEnvironment setClusterSize(int clusterSize) {
-		this.clusterSize = clusterSize;
-		return this;
 	}
 
 	/**
@@ -167,8 +152,7 @@ public class StreamExecutionEnvironment {
 		DataStream<R> returnStream = new DataStream<R>(this, functionName);
 
 		jobGraphBuilder.setTask(returnStream.getId(), functionInvokable, functionName,
-				serializeToByteArray(function), parallelism,
-				(int) Math.ceil(parallelism / clusterSize));
+				serializeToByteArray(function), parallelism);
 
 		connectGraph(inputStream, returnStream.getId());
 
@@ -193,8 +177,7 @@ public class StreamExecutionEnvironment {
 		DataStream<T> returnStream = new DataStream<T>(this, "sink");
 
 		jobGraphBuilder.setSink(returnStream.getId(), new SinkInvokable<T>(sinkFunction), "sink",
-				serializeToByteArray(sinkFunction), parallelism,
-				(int) Math.ceil(parallelism / clusterSize));
+				serializeToByteArray(sinkFunction), parallelism);
 
 		connectGraph(inputStream, returnStream.getId());
 
@@ -258,7 +241,7 @@ public class StreamExecutionEnvironment {
 		DataStream<Tuple1<X>> returnStream = new DataStream<Tuple1<X>>(this, "elements");
 
 		jobGraphBuilder.setSource(returnStream.getId(), new FromElementsSource<X>(data),
-				"elements", serializeToByteArray(data[0]), 1, 1);
+				"elements", serializeToByteArray(data[0]), 1);
 
 		return returnStream.copy();
 	}
@@ -279,7 +262,7 @@ public class StreamExecutionEnvironment {
 		DataStream<Tuple1<X>> returnStream = new DataStream<Tuple1<X>>(this, "elements");
 
 		jobGraphBuilder.setSource(returnStream.getId(), new FromElementsSource<X>(data),
-				"elements", serializeToByteArray(data.toArray()[0]), 1, 1);
+				"elements", serializeToByteArray(data.toArray()[0]), 1);
 
 		return returnStream.copy();
 	}
@@ -406,8 +389,7 @@ public class StreamExecutionEnvironment {
 		DataStream<T> returnStream = new DataStream<T>(this, "source");
 
 		jobGraphBuilder.setSource(returnStream.getId(), sourceFunction, "source",
-				serializeToByteArray(sourceFunction), parallelism,
-				(int) Math.ceil(parallelism / clusterSize));
+				serializeToByteArray(sourceFunction), parallelism);
 
 		return returnStream.copy();
 	}

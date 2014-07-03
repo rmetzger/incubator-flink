@@ -124,14 +124,14 @@ public class JobGraphBuilder {
 	 *            Number of parallel instances on one task manager
 	 */
 	public void setSource(String sourceName, UserSourceInvokable<? extends Tuple> InvokableObject,
-			String operatorName, byte[] serializedFunction, int parallelism, int subtasksPerInstance) {
+			String operatorName, byte[] serializedFunction, int parallelism) {
 
 		final JobInputVertex source = new JobInputVertex(sourceName, jobGraph);
 
 		source.setInvokableClass(StreamSource.class);
 
 		setComponent(sourceName, source, InvokableObject, operatorName, serializedFunction,
-				parallelism, subtasksPerInstance);
+				parallelism);
 
 		if (log.isDebugEnabled()) {
 			log.debug("SOURCE: " + sourceName);
@@ -156,12 +156,12 @@ public class JobGraphBuilder {
 	 */
 	public void setTask(String taskName,
 			UserTaskInvokable<? extends Tuple, ? extends Tuple> TaskInvokableObject,
-			String operatorName, byte[] serializedFunction, int parallelism, int subtasksPerInstance) {
+			String operatorName, byte[] serializedFunction, int parallelism) {
 
 		final JobTaskVertex task = new JobTaskVertex(taskName, jobGraph);
 		task.setInvokableClass(StreamTask.class);
 		setComponent(taskName, task, TaskInvokableObject, operatorName, serializedFunction,
-				parallelism, subtasksPerInstance);
+				parallelism);
 
 		if (log.isDebugEnabled()) {
 			log.debug("TASK: " + taskName);
@@ -185,12 +185,11 @@ public class JobGraphBuilder {
 	 *            Number of parallel instances on one task manager
 	 */
 	public void setSink(String sinkName, UserSinkInvokable<? extends Tuple> InvokableObject,
-			String operatorName, byte[] serializedFunction, int parallelism, int subtasksPerInstance) {
+			String operatorName, byte[] serializedFunction, int parallelism) {
 
 		final JobOutputVertex sink = new JobOutputVertex(sinkName, jobGraph);
 		sink.setInvokableClass(StreamSink.class);
-		setComponent(sinkName, sink, InvokableObject, operatorName, serializedFunction,
-				parallelism, subtasksPerInstance);
+		setComponent(sinkName, sink, InvokableObject, operatorName, serializedFunction, parallelism);
 
 		if (log.isDebugEnabled()) {
 			log.debug("SINK: " + sinkName);
@@ -218,11 +217,11 @@ public class JobGraphBuilder {
 	 */
 	private void setComponent(String componentName, AbstractJobVertex component,
 			Serializable InvokableObject, String operatorName, byte[] serializedFunction,
-			int parallelism, int subtasksPerInstance) {
+			int parallelism) {
 
 		component.setNumberOfSubtasks(parallelism);
 		// TODO remove all NumberOfSubtasks setting
-//		component.setNumberOfSubtasksPerInstance(subtasksPerInstance);
+		// component.setNumberOfSubtasksPerInstance(subtasksPerInstance);
 
 		if (parallelism > maxParallelism) {
 			maxParallelism = parallelism;

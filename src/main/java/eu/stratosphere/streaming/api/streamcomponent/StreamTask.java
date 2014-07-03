@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.nephele.template.AbstractInvokable;
 import eu.stratosphere.runtime.io.api.AbstractRecordReader;
@@ -28,8 +29,6 @@ import eu.stratosphere.runtime.io.api.ChannelSelector;
 import eu.stratosphere.runtime.io.api.RecordWriter;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
 import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
-import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
-import eu.stratosphere.streaming.faulttolerance.FaultToleranceUtil;
 
 public class StreamTask extends AbstractInvokable {
 
@@ -38,15 +37,15 @@ public class StreamTask extends AbstractInvokable {
 	private AbstractRecordReader inputs;
 	private List<RecordWriter<StreamRecord>> outputs;
 	private List<ChannelSelector<StreamRecord>> partitioners;
-	private UserTaskInvokable userFunction;
+	private UserTaskInvokable<Tuple, Tuple> userFunction;
 	private static int numTasks;
 	private int taskInstanceID;
 	private String name;
-	private StreamComponentHelper<StreamTask> streamTaskHelper;
-	private FaultToleranceType faultToleranceType;
+	private StreamComponentHelper streamTaskHelper;
+//	private FaultToleranceType faultToleranceType;
 	Configuration taskConfiguration;
 
-	private FaultToleranceUtil recordBuffer;
+//	private FaultToleranceUtil recordBuffer;
 
 	public StreamTask() {
 		// TODO: Make configuration file visible and call setClassInputs() here
@@ -55,7 +54,7 @@ public class StreamTask extends AbstractInvokable {
 		userFunction = null;
 		numTasks = StreamComponentHelper.newComponent();
 		taskInstanceID = numTasks;
-		streamTaskHelper = new StreamComponentHelper<StreamTask>();
+		streamTaskHelper = new StreamComponentHelper();
 	}
 
 	@Override
@@ -79,10 +78,11 @@ public class StreamTask extends AbstractInvokable {
 			numberOfOutputChannels[i] = taskConfiguration.getInteger("channels_" + i, 0);
 		}
 
-		userFunction = (UserTaskInvokable) streamTaskHelper.getTaskInvokable(taskConfiguration);
+		userFunction = (UserTaskInvokable<Tuple, Tuple>) streamTaskHelper
+				.getTaskInvokable(taskConfiguration);
 
-		streamTaskHelper.setAckListener(recordBuffer, taskInstanceID, outputs);
-		streamTaskHelper.setFailListener(recordBuffer, taskInstanceID, outputs);
+//		streamTaskHelper.setAckListener(recordBuffer, taskInstanceID, outputs);
+//		streamTaskHelper.setFailListener(recordBuffer, taskInstanceID, outputs);
 	}
 
 	@Override
