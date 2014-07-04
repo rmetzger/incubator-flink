@@ -17,6 +17,8 @@ package eu.stratosphere.streaming.rabbitmq;
 
 import java.io.IOException;
 
+import org.apache.commons.lang.SerializationUtils;
+
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -86,8 +88,8 @@ public class RMQSource extends SourceFunction<Tuple1<String>> {
 				e.printStackTrace();
 			}
 
-			message = new String(delivery.getBody());
-
+			//message = new String(delivery.getBody());
+			message = (String) SerializationUtils.deserialize(delivery.getBody());
 			if (message.equals("q")) {
 				break;
 			}

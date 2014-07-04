@@ -17,6 +17,9 @@ package eu.stratosphere.streaming.rabbitmq;
 
 import java.io.IOException;
 
+import org.apache.commons.lang3.SerializationUtils;
+
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.SinkFunction;
 
@@ -29,7 +32,7 @@ import com.rabbitmq.client.Channel;
  * support string messages. Other types will be added soon.
  * 
  */
-public class RMQSink extends SinkFunction<Tuple1<String>>{
+public abstract class RMQSink<IN extends Tuple> extends SinkFunction<IN>{
 	private static final long serialVersionUID = 1L;
 	
 	private String QUEUE_NAME;
@@ -38,7 +41,7 @@ public class RMQSink extends SinkFunction<Tuple1<String>>{
 	private transient Connection connection;
 	private transient Channel channel;
 	
-	
+	//TODO Should the user implement the constructor?
 	public RMQSink(String HOST_NAME, String QUEUE_NAME) {
 		this.HOST_NAME = HOST_NAME;
 		this.QUEUE_NAME = QUEUE_NAME;
@@ -60,7 +63,7 @@ public class RMQSink extends SinkFunction<Tuple1<String>>{
 		
 		
 	}
-	@Override
+	/*@Override
 	public void invoke(Tuple1<String> tuple) {
 		
 		initializeConnection();
@@ -68,7 +71,9 @@ public class RMQSink extends SinkFunction<Tuple1<String>>{
 		try {
 			channel.queueDeclare(QUEUE_NAME, false, false, false, null);
 			String message = tuple.f0;
-		    channel.basicPublish("", QUEUE_NAME, null, message.getBytes());
+			byte[] msg = SerializationUtils.serialize(tuple.f0);
+		    //channel.basicPublish("", QUEUE_NAME, null, message.getBytes());
+			channel.basicPublish("", QUEUE_NAME, null, msg);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -84,6 +89,34 @@ public class RMQSink extends SinkFunction<Tuple1<String>>{
 		}
 	    
 		
+	}*/
+
+	@Override
+	public void invoke(IN tuple) {
+		// TODO Auto-generated method stub
+		initializeConnection();
+		
+		try {
+			channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+			//String message = tuple.f0;
+			byte[] msg = serialize(tuple);
+		    //channel.basicPublish("", QUEUE_NAME, null, message.getBytes());
+			channel.basicPublish("", QUEUE_NAME, null, msg);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	    
+		
+		try {
+			channel.close();
+			connection.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
+	
+	public abstract byte[] serialize(Tuple t);
 
 }
