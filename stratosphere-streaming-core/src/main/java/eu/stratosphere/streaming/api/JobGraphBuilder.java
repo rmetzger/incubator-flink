@@ -202,8 +202,6 @@ public class JobGraphBuilder {
 			int parallelism) {
 
 		component.setNumberOfSubtasks(parallelism);
-		// TODO remove all NumberOfSubtasks setting
-		// component.setNumberOfSubtasksPerInstance(subtasksPerInstance);
 
 		if (parallelism > maxParallelism) {
 			maxParallelism = parallelism;
@@ -234,22 +232,22 @@ public class JobGraphBuilder {
 	 *            be added
 	 */
 	private void addSerializedObject(Serializable InvokableObject, Configuration config) {
-	
+
 		ByteArrayOutputStream baos = null;
 		ObjectOutputStream oos = null;
 		try {
 			baos = new ByteArrayOutputStream();
-	
+
 			oos = new ObjectOutputStream(baos);
-	
+
 			oos.writeObject(InvokableObject);
-	
+
 			config.setBytes("serializedudf", baos.toByteArray());
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.out.println("Serialization error " + InvokableObject.getClass());
 		}
-	
+
 	}
 
 	/**
@@ -264,6 +262,24 @@ public class JobGraphBuilder {
 		Configuration config = components.get(componentName).getConfiguration();
 		config.setInteger("batchSize_"
 				+ (components.get(componentName).getNumberOfForwardConnections() - 1), batchSize);
+	}
+
+	/**
+	 * Sets the number of parallel instances created for the given component.
+	 * 
+	 * @param componentName
+	 *            Name of the component
+	 * @param parallelism
+	 *            Number of parallel instances created
+	 */
+	public void setParallelism(String componentName, int parallelism) {
+		components.get(componentName).setNumberOfSubtasks(parallelism);
+		numberOfInstances.put(componentName, parallelism);
+
+		if (parallelism > maxParallelism) {
+			maxParallelism = parallelism;
+			maxParallelismVertexName = componentName;
+		}
 	}
 
 	/**
@@ -301,28 +317,28 @@ public class JobGraphBuilder {
 	 */
 	public void fieldsConnect(String upStreamComponentName, String downStreamComponentName,
 			int keyPosition) {
-	
+
 		AbstractJobVertex upStreamComponent = components.get(upStreamComponentName);
 		AbstractJobVertex downStreamComponent = components.get(downStreamComponentName);
-	
+
 		try {
 			upStreamComponent.connectTo(downStreamComponent, ChannelType.NETWORK);
-	
+
 			Configuration config = new TaskConfig(upStreamComponent.getConfiguration())
 					.getConfiguration();
-	
+
 			config.setClass(
 					"partitionerClass_" + (upStreamComponent.getNumberOfForwardConnections() - 1),
 					FieldsPartitioner.class);
-	
+
 			config.setInteger(
 					"partitionerIntParam_"
 							+ (upStreamComponent.getNumberOfForwardConnections() - 1), keyPosition);
-	
+
 			config.setInteger("numOfOutputs_"
 					+ (upStreamComponent.getNumberOfForwardConnections() - 1),
 					numberOfInstances.get(downStreamComponentName));
-	
+
 			addOutputChannels(upStreamComponentName, 1);
 			if (log.isDebugEnabled()) {
 				log.debug("CONNECTED: FIELD PARTITIONING - " + upStreamComponentName + " -> "
@@ -336,7 +352,7 @@ public class JobGraphBuilder {
 		}
 		log.info("Fieldsconnected " + upStreamComponentName + " to " + downStreamComponentName
 				+ " on " + keyPosition);
-	
+
 	}
 
 	/**
@@ -354,7 +370,7 @@ public class JobGraphBuilder {
 		connect(upStreamComponentName, downStreamComponentName, GlobalPartitioner.class);
 		addOutputChannels(upStreamComponentName, 1);
 		log.info("Globalconnected: " + upStreamComponentName + " to " + downStreamComponentName);
-	
+
 	}
 
 	/**
@@ -387,10 +403,10 @@ public class JobGraphBuilder {
 	 */
 	private void connect(String upStreamComponentName, String downStreamComponentName,
 			Class<? extends ChannelSelector<StreamRecord>> PartitionerClass) {
-	
+
 		AbstractJobVertex upStreamComponent = components.get(upStreamComponentName);
 		AbstractJobVertex downStreamComponent = components.get(downStreamComponentName);
-	
+
 		try {
 			upStreamComponent.connectTo(downStreamComponent, ChannelType.NETWORK);
 			Configuration config = new TaskConfig(upStreamComponent.getConfiguration())

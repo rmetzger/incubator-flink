@@ -21,7 +21,9 @@ import java.io.ObjectOutputStream;
 import java.util.Collection;
 
 import eu.stratosphere.api.common.functions.AbstractFunction;
+import eu.stratosphere.api.java.DataSet;
 import eu.stratosphere.api.java.ExecutionEnvironment;
+import eu.stratosphere.api.java.LocalEnvironment;
 import eu.stratosphere.api.java.RemoteEnvironment;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
@@ -43,6 +45,16 @@ import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
  * 
  */
 public abstract class StreamExecutionEnvironment {
+
+	/**
+	 * The environment of the context (local by default, cluster if invoked
+	 * through command line)
+	 */
+	private static StreamExecutionEnvironment contextEnvironment;
+
+	/** flag to disable local executor when using the ContextEnvironment */
+	private static boolean allowLocalExecution = true;
+
 	private static int defaultLocalDop = Runtime.getRuntime().availableProcessors();
 
 	private int degreeOfParallelism = -1;
@@ -216,7 +228,6 @@ public abstract class StreamExecutionEnvironment {
 	// Data stream operators and sinks
 	// --------------------------------------------------------------------------------------------
 
-	// TODO: link to JobGraph, JobVertex
 	/**
 	 * Internal function for passing the user defined functions to the JobGraph
 	 * of the job.
@@ -237,7 +248,7 @@ public abstract class StreamExecutionEnvironment {
 	 *            type of the return stream
 	 * @return the data stream constructed
 	 */
-	<T extends Tuple, R extends Tuple> DataStream<R> addFunction(String functionName,
+	protected <T extends Tuple, R extends Tuple> DataStream<R> addFunction(String functionName,
 			DataStream<T> inputStream, final AbstractFunction function,
 			UserTaskInvokable<T, R> functionInvokable, int parallelism) {
 		DataStream<R> returnStream = new DataStream<R>(this, functionName);
@@ -251,7 +262,8 @@ public abstract class StreamExecutionEnvironment {
 	}
 
 	/**
-	 * Ads a sink to the data stream closing it.
+	 * Adds the given sink to this environment. Only streams with sinks added
+	 * will be executed once the {@link #execute()} method is called.
 	 * 
 	 * @param inputStream
 	 *            input data stream
@@ -263,7 +275,7 @@ public abstract class StreamExecutionEnvironment {
 	 *            type of the returned stream
 	 * @return the data stream constructed
 	 */
-	public <T extends Tuple> DataStream<T> addSink(DataStream<T> inputStream,
+	protected <T extends Tuple> DataStream<T> addSink(DataStream<T> inputStream,
 			SinkFunction<T> sinkFunction, int parallelism) {
 		DataStream<T> returnStream = new DataStream<T>(this, "sink");
 
@@ -276,24 +288,9 @@ public abstract class StreamExecutionEnvironment {
 	}
 
 	/**
-	 * Ads a sink to the data stream closing it. To parallelism is defaulted to
-	 * 1.
-	 * 
-	 * @param inputStream
-	 *            input data stream
-	 * @param sinkFunction
-	 *            the user defined function
-	 * @param <T>
-	 *            type of the returned stream
-	 * @return the data stream constructed
-	 */
-	public <T extends Tuple> DataStream<T> addSink(DataStream<T> inputStream,
-			SinkFunction<T> sinkFunction) {
-		return addSink(inputStream, sinkFunction, 1);
-	}
-
-	/**
-	 * Prints the tuples of the data stream to the standard output.
+	 * Writes a DataStream to the standard output stream (stdout).<br/>
+	 * For each element of the DataStream the result of
+	 * {@link Object#toString()} is written.
 	 * 
 	 * @param inputStream
 	 *            the input data stream
@@ -302,17 +299,19 @@ public abstract class StreamExecutionEnvironment {
 	 *            type of the returned stream
 	 * @return the data stream constructed
 	 */
-	public <T extends Tuple> DataStream<T> print(DataStream<T> inputStream) {
-		DataStream<T> returnStream = addSink(inputStream, new PrintSinkFunction<T>());
-	
+	protected <T extends Tuple> DataStream<T> print(DataStream<T> inputStream) {
+		DataStream<T> returnStream = addSink(inputStream, new PrintSinkFunction<T>(), 1);
+
 		jobGraphBuilder.setBytesFrom(inputStream.getId(), returnStream.getId());
-	
+
 		return returnStream;
 	}
 
-	// TODO: Link to JobGraph & JobGraphBuilder
 	/**
-	 * Internal function for assembling the underlying JobGraph of the job.
+	 * Internal function for assembling the underlying
+	 * {@link eu.stratosphere.nephele.jobgraph.JobGraph} of the job. Connects
+	 * the outputs of the given input stream to the specified output stream
+	 * given by the outputID.
 	 * 
 	 * @param inputStream
 	 *            input data stream
@@ -354,12 +353,22 @@ public abstract class StreamExecutionEnvironment {
 	 * @param <T>
 	 *            type of the input stream
 	 */
-	public <T extends Tuple> void setBatchSize(DataStream<T> inputStream) {
+	protected <T extends Tuple> void setBatchSize(DataStream<T> inputStream) {
 
 		for (int i = 0; i < inputStream.connectIDs.size(); i++) {
 			jobGraphBuilder.setBatchSize(inputStream.connectIDs.get(i),
 					inputStream.batchSizes.get(i));
 		}
+	}
+
+	/**
+	 * Sets the proper parallelism for the given operator in the JobGraph
+	 * 
+	 * @param inputStream
+	 *            DataStream corresponding to the operator
+	 */
+	protected <T extends Tuple> void setOperatorParallelism(DataStream<T> inputStream) {
+		jobGraphBuilder.setParallelism(inputStream.getId(), inputStream.dop);
 	}
 
 	/**
@@ -369,7 +378,7 @@ public abstract class StreamExecutionEnvironment {
 	 *            Object to be serialized
 	 * @return Serialized object
 	 */
-	private byte[] serializeToByteArray(Object object) {
+	private static byte[] serializeToByteArray(Object object) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ObjectOutputStream oos;
 		try {
@@ -382,27 +391,100 @@ public abstract class StreamExecutionEnvironment {
 		return baos.toByteArray();
 	}
 
-	
-
 	// --------------------------------------------------------------------------------------------
 	// Instantiation of Execution Contexts
 	// --------------------------------------------------------------------------------------------
 
+	/**
+	 * Creates an execution environment that represents the context in which the
+	 * program is currently executed. If the program is invoked standalone, this
+	 * method returns a local execution environment, as returned by
+	 * {@link #createLocalEnvironment()}.
+	 * 
+	 * @return The execution environment of the context in which the program is
+	 *         executed.
+	 */
+	public static StreamExecutionEnvironment getExecutionEnvironment() {
+		return contextEnvironment == null ? createLocalEnvironment() : contextEnvironment;
+	}
+
+	/**
+	 * Creates a {@link LocalStreamEnvironment}. The local execution environment
+	 * will run the program in a multi-threaded fashion in the same JVM as the
+	 * environment was created in. The default degree of parallelism of the
+	 * local environment is the number of hardware contexts (CPU cores /
+	 * threads), unless it was specified differently by
+	 * {@link #setDegreeOfParallelism(int)}.
+	 * 
+	 * @return A local execution environment.
+	 */
 	public static LocalStreamEnvironment createLocalEnvironment() {
 		return createLocalEnvironment(defaultLocalDop);
 	}
 
+	/**
+	 * Creates a {@link LocalStreamEnvironment}. The local execution environment
+	 * will run the program in a multi-threaded fashion in the same JVM as the
+	 * environment was created in. It will use the degree of parallelism
+	 * specified in the parameter.
+	 * 
+	 * @param degreeOfParallelism
+	 *            The degree of parallelism for the local environment.
+	 * @return A local execution environment with the specified degree of
+	 *         parallelism.
+	 */
 	public static LocalStreamEnvironment createLocalEnvironment(int degreeOfParallelism) {
 		LocalStreamEnvironment lee = new LocalStreamEnvironment();
 		lee.setDegreeOfParallelism(degreeOfParallelism);
 		return lee;
 	}
 
+	/**
+	 * Creates a {@link RemoteStreamEnvironment}. The remote environment sends
+	 * (parts of) the program to a cluster for execution. Note that all file
+	 * paths used in the program must be accessible from the cluster. The
+	 * execution will use the cluster's default degree of parallelism, unless
+	 * the parallelism is set explicitly via {@link #setDegreeOfParallelism}.
+	 * 
+	 * @param host
+	 *            The host name or address of the master (JobManager), where the
+	 *            program should be executed.
+	 * @param port
+	 *            The port of the master (JobManager), where the program should
+	 *            be executed.
+	 * @param jarFiles
+	 *            The JAR files with code that needs to be shipped to the
+	 *            cluster. If the program uses user-defined functions,
+	 *            user-defined input formats, or any libraries, those must be
+	 *            provided in the JAR files.
+	 * @return A remote environment that executes the program on a cluster.
+	 */
 	public static ExecutionEnvironment createRemoteEnvironment(String host, int port,
 			String... jarFiles) {
 		return new RemoteEnvironment(host, port, jarFiles);
 	}
 
+	/**
+	 * Creates a {@link RemoteStreamEnvironment}. The remote environment sends
+	 * (parts of) the program to a cluster for execution. Note that all file
+	 * paths used in the program must be accessible from the cluster. The
+	 * execution will use the specified degree of parallelism.
+	 * 
+	 * @param host
+	 *            The host name or address of the master (JobManager), where the
+	 *            program should be executed.
+	 * @param port
+	 *            The port of the master (JobManager), where the program should
+	 *            be executed.
+	 * @param degreeOfParallelism
+	 *            The degree of parallelism to use during the execution.
+	 * @param jarFiles
+	 *            The JAR files with code that needs to be shipped to the
+	 *            cluster. If the program uses user-defined functions,
+	 *            user-defined input formats, or any libraries, those must be
+	 *            provided in the JAR files.
+	 * @return A remote environment that executes the program on a cluster.
+	 */
 	public static StreamExecutionEnvironment createRemoteEnvironment(String host, int port,
 			int degreeOfParallelism, String... jarFiles) {
 		RemoteStreamEnvironment rec = new RemoteStreamEnvironment(host, port, jarFiles);
@@ -410,14 +492,39 @@ public abstract class StreamExecutionEnvironment {
 		return rec;
 	}
 
+	// --------------------------------------------------------------------------------------------
+	// Methods to control the context and local environments for execution from
+	// packaged programs
+	// --------------------------------------------------------------------------------------------
+
+	protected static void initializeContextEnvironment(StreamExecutionEnvironment ctx) {
+		contextEnvironment = ctx;
+	}
+
+	protected static boolean isContextEnvironmentSet() {
+		return contextEnvironment != null;
+	}
+
+	protected static void disableLocalExecution() {
+		allowLocalExecution = false;
+	}
+
+	public static boolean localExecutionIsAllowed() {
+		return allowLocalExecution;
+	}
+
 	/**
-	 * Executes the JobGraph.
+	 * Triggers the program execution. The environment will execute all parts of
+	 * the program that have resulted in a "sink" operation. Sink operations are
+	 * for example printing results or forwarding them to a message queue.
+	 * <p>
+	 * The program execution will be logged and displayed with a generated
+	 * default name.
 	 **/
 	public abstract void execute();
 
-	// TODO: Add link to JobGraphBuilder
 	/**
-	 * Getter of the JobGraphBuilder of the streaming job.
+	 * Getter of the {@link JobGraphBuilder} of the streaming job.
 	 * 
 	 * @return jobgraph
 	 */
