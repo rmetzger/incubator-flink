@@ -18,6 +18,7 @@ package eu.stratosphere.streaming.api;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.mockito.cglib.core.Local;
 
 import eu.stratosphere.api.java.functions.FlatMapFunction;
 import eu.stratosphere.api.java.tuple.Tuple1;
@@ -26,6 +27,7 @@ import eu.stratosphere.util.Collector;
 public class BatchTest {
 
 	private static final int PARALLELISM = 1;
+	private static final long MEMORYSIZE = 32;
 	private static final int SOURCE_PARALELISM = 1;
 	private static final int SINK_PARALELISM = 3;
 	private static int count = 0;
@@ -83,7 +85,7 @@ public class BatchTest {
 
 	@Test
 	public void test() throws Exception {
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
+		LocalStreamEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
 
 		DataStream<Tuple1<String>> dataStream1 = env
@@ -102,7 +104,8 @@ public class BatchTest {
 				.partitionBy(0)
 				.addSink(new MyPartitionSink(), SINK_PARALELISM);
 
-		env.execute();
+		env.setDegreeOfParallelism(SINK_PARALELISM);
+		env.executeTest(MEMORYSIZE);
 		
 		assertEquals(20, count);
 		assertTrue(partitionCorrect);

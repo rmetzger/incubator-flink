@@ -207,6 +207,7 @@ public class MapTest {
 	private static int graphResult = 0;
 	private static int map = 0;
 	private static final int PARALELISM = 1;
+	private static final long MEMORYSIZE = 32;
 	private static final int MAXSOURCE = 10;
 	private static boolean allInOne = false;
 	private static boolean threeInAll = true;
@@ -266,7 +267,7 @@ public class MapTest {
 	public void mapTest() throws Exception {
 		
 		//mapTest
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
+		LocalStreamEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
 		fillFromCollectionSet();
 		
@@ -344,7 +345,8 @@ public class MapTest {
 				.map(new MyMultipleJoinMap(), 1)
 				.addSink(new JoinSink());
 
-		env.execute();
+		env.setDegreeOfParallelism(3);
+		env.executeTest(MEMORYSIZE);		
 		
 		fillMultipleJoinSet();
 		

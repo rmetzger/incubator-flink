@@ -27,6 +27,7 @@ import eu.stratosphere.api.java.functions.MapFunction;
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.api.java.tuple.Tuple2;
 import eu.stratosphere.streaming.api.DataStream;
+import eu.stratosphere.streaming.api.LocalStreamEnvironment;
 import eu.stratosphere.streaming.api.SinkFunction;
 import eu.stratosphere.streaming.api.SourceFunction;
 import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
@@ -36,7 +37,9 @@ public class StreamComponentTest {
 
 	private static final int PARALELISM = 1;
 	private static final int SOURCE_PARALELISM = 1;
-	
+	private static final long MEMORYSIZE = 32;
+
+
 	public static Map<Integer, Integer> data = new HashMap<Integer, Integer>();
 
 	public static class MySource extends SourceFunction<Tuple1<Integer>> {
@@ -49,7 +52,6 @@ public class StreamComponentTest {
 			for (int i = 0; i < 10; i++) {
 				tuple.f0 = i;
 				collector.collect(tuple);
-				System.out.println("collecting " + tuple);
 			}
 		}
 	}
@@ -60,11 +62,10 @@ public class StreamComponentTest {
 		@Override
 		public Tuple2<Integer, Integer> map(Tuple1<Integer> value) throws Exception {
 			Integer i = value.f0;
-			System.out.println("mapping " + i);
 			return new Tuple2<Integer, Integer>(i, i + 1);
 		}
 	}
-	
+
 	// TODO test multiple tasks
 	// public static class MyOtherTask extends MapFunction<Tuple1<Integer>,
 	// Tuple2<Integer, Integer>> {
@@ -91,12 +92,14 @@ public class StreamComponentTest {
 
 	@BeforeClass
 	public static void runStream() {
-		StreamExecutionEnvironment context = StreamExecutionEnvironment.createLocalEnvironment();
+		LocalStreamEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
-		DataStream<Tuple2<Integer, Integer>> oneTask = context.addSource(new MySource(), SOURCE_PARALELISM)
-				.map(new MyTask(), PARALELISM).addSink(new MySink());
+		DataStream<Tuple2<Integer, Integer>> oneTask = env
+				.addSource(new MySource(), SOURCE_PARALELISM).map(new MyTask(), PARALELISM)
+				.addSink(new MySink());
 
-		context.execute();
+		env.setDegreeOfParallelism(PARALELISM);
+		env.executeTest(MEMORYSIZE);
 	}
 
 	@Test

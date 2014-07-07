@@ -40,18 +40,21 @@ public class PrintTest {
 
 	}
 
+	private static final long MEMORYSIZE = 32;
+
 	@Test
 	public void test() throws Exception {
 
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
+		LocalStreamEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 		env.fromElements(2, 3, 4).print();
 		env.generateSequence(1, 10).print();
 		Set<Integer> a = new HashSet<Integer>();
 		a.add(-2);
 		a.add(-100);
 		env.fromCollection(a).print();
-		env.execute();
 
+		env.setDegreeOfParallelism(1);
+		env.executeTest(MEMORYSIZE);
 	}
 
 }

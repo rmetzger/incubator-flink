@@ -29,12 +29,18 @@ public class ClusterUtil {
 	 * Executes the given JobGraph locally, on a NepheleMiniCluster
 	 * 
 	 * @param jobGraph
+	 *            jobGraph
+	 * @param numberOfTaskTrackers
+	 *            numberOfTaskTrackers
+	 * @param memorySize
+	 *            memorySize
 	 */
-	public static void runOnMiniCluster(JobGraph jobGraph, int numberOfTaskTrackers) {
+	public static void runOnMiniCluster(JobGraph jobGraph, int numberOfTaskTrackers, long memorySize) {
 
 		Configuration configuration = jobGraph.getJobConfiguration();
 
 		NepheleMiniCluster exec = new NepheleMiniCluster();
+		exec.setMemorySize(memorySize);
 		exec.setNumTaskTracker(numberOfTaskTrackers);
 		Client client = new Client(new InetSocketAddress("localhost", 6498), configuration);
 		System.out.println("Running on mini cluster");
@@ -48,6 +54,10 @@ public class ClusterUtil {
 
 			e.printStackTrace();
 		}
+	}
+
+	public static void runOnMiniCluster(JobGraph jobGraph, int numberOfTaskTrackers) {
+		runOnMiniCluster(jobGraph, numberOfTaskTrackers, -1);
 	}
 
 	public static void runOnLocalCluster(JobGraph jobGraph, String IP, int port) {

@@ -138,6 +138,8 @@ public class FlatMapTest {
 	}
 
 	private static final int PARALELISM = 1;
+	private static final long MEMORYSIZE = 32;
+
 	private static int numberOfElements = 0;
 	private static Set<Integer> expected = new HashSet<Integer>();
 	private static Set<Integer> result = new HashSet<Integer>();
@@ -151,7 +153,7 @@ public class FlatMapTest {
 
 	@Test
 	public void test() throws Exception {
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
+		LocalStreamEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
 		// flatmapTest
 
@@ -196,7 +198,8 @@ public class FlatMapTest {
 
 		fillLongSequenceSet();
 
-		env.execute();
+		env.setDegreeOfParallelism(PARALELISM);
+		env.executeTest(MEMORYSIZE);
 
 		assertTrue(expected.equals(result));
 		assertEquals(20, numberOfElements);
