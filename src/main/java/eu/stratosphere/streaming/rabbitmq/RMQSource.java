@@ -17,8 +17,6 @@ package eu.stratosphere.streaming.rabbitmq;
 
 import java.io.IOException;
 
-import org.apache.commons.lang.SerializationUtils;
-
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -27,7 +25,6 @@ import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownSignalException;
 
 import eu.stratosphere.api.java.tuple.Tuple;
-import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.SourceFunction;
 import eu.stratosphere.util.Collector;
 
@@ -37,7 +34,6 @@ import eu.stratosphere.util.Collector;
  * 
  */
 
-//TODO abstract source class, user implements own source and extends to this
 public abstract class RMQSource<IN extends Tuple> extends SourceFunction<IN> {
 	private static final long serialVersionUID = 1L;
 

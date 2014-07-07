@@ -16,19 +16,22 @@
 package eu.stratosphere.streaming.kafka;
 
 import java.util.*;
-import eu.stratosphere.api.java.tuple.Tuple1;
+
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.streaming.api.SinkFunction;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 
-public class KafkaSink extends SinkFunction<Tuple1<String>>{
+public abstract class KafkaSink<IN extends Tuple, OUT> extends SinkFunction<IN>{
 	private static final long serialVersionUID = 1L;
 	
-	static kafka.javaapi.producer.Producer<Integer, String> producer;
+	private kafka.javaapi.producer.Producer<Integer, OUT> producer;
 	static Properties props;
 	private String topicId;
 	private String brokerAddr;
+	private boolean close = false;
+	private boolean initDone = false;
 	
 	public KafkaSink(String topicId, String brokerAddr){
 		this.topicId=topicId;
@@ -44,18 +47,28 @@ public class KafkaSink extends SinkFunction<Tuple1<String>>{
 		props.put("request.required.acks", "1");
 		 
 		ProducerConfig config = new ProducerConfig(props);
-		producer = new Producer<Integer, String>(config);
+		producer = new Producer<Integer, OUT>(config);
+		initDone = true;
 	}
 	
 	//TODO should there be an end character, or open and close the producer for every message (because the end character might get to the sink sooner than the others because of the parallelism)
 	@Override
-	public void invoke(Tuple1<String> tuple) {
-		initialize();
+	public void invoke(IN tuple) {
+		if(!initDone) initialize();
 		
-		KeyedMessage<Integer, String> data = new KeyedMessage<Integer, String>(topicId, tuple.f0);
+		OUT out=serialize(tuple);
+		KeyedMessage<Integer, OUT> data = new KeyedMessage<Integer, OUT>(topicId, out);
         producer.send(data);
-        producer.close();
+        if(close){
+        	producer.close();
+        }
         
+	}
+	
+	public abstract OUT serialize(IN tuple);
+	
+	public void close(){
+		close=true;
 	}
 
 }

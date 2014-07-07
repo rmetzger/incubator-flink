@@ -17,10 +17,7 @@ package eu.stratosphere.streaming.rabbitmq;
 
 import java.io.IOException;
 
-import org.apache.commons.lang3.SerializationUtils;
-
 import eu.stratosphere.api.java.tuple.Tuple;
-import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.SinkFunction;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -34,12 +31,14 @@ import com.rabbitmq.client.Channel;
  */
 public abstract class RMQSink<IN extends Tuple> extends SinkFunction<IN>{
 	private static final long serialVersionUID = 1L;
+	private boolean close=false;
 	
 	private String QUEUE_NAME;
 	private String HOST_NAME;
 	private transient ConnectionFactory factory;
 	private transient Connection connection;
 	private transient Channel channel;
+	private boolean initDone=false;
 	
 	public RMQSink(String HOST_NAME, String QUEUE_NAME) {
 		this.HOST_NAME = HOST_NAME;
@@ -60,12 +59,12 @@ public abstract class RMQSink<IN extends Tuple> extends SinkFunction<IN>{
 			e.printStackTrace();
 		}
 		
-		
+		initDone=true;
 	}
 
 	@Override
 	public void invoke(IN tuple) {
-		initializeConnection();
+		if(!initDone) initializeConnection();
 		
 		try {
 			channel.queueDeclare(QUEUE_NAME, false, false, false, null);
@@ -76,16 +75,21 @@ public abstract class RMQSink<IN extends Tuple> extends SinkFunction<IN>{
 			e1.printStackTrace();
 		}
 	    
-		
-		try {
-			channel.close();
-			connection.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if(close){
+			try {
+				channel.close();
+				connection.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	
 	public abstract byte[] serialize(Tuple t);
+	
+	public void close(){
+		close=true;
+	}
 
 }

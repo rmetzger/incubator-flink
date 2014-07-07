@@ -23,21 +23,9 @@ import org.apache.commons.lang.SerializationUtils;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.DataStream;
-import eu.stratosphere.streaming.api.SinkFunction;
 import eu.stratosphere.streaming.api.StreamExecutionEnvironment;
 
 public class RMQTopology {
-
-	public static final class MySink extends SinkFunction<Tuple1<String>> {
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public void invoke(Tuple1<String> tuple) {
-			result.add(tuple.f0);
-		}
-
-		
-	}
 	
 	public static final class MyRMQSink extends RMQSink<Tuple1<String>> {
 		public MyRMQSink(String HOST_NAME, String QUEUE_NAME) {
@@ -50,6 +38,7 @@ public class RMQTopology {
 		@Override
 		public byte[] serialize(Tuple t) {
 			// TODO Auto-generated method stub
+			if(t.getField(0).equals("q")) close();
 			return SerializationUtils.serialize((String)t.getField(0));
 		}
 
@@ -87,7 +76,7 @@ public class RMQTopology {
 
 		DataStream<Tuple1<String>> dataStream1 = env
 				.addSource(new MyRMQSource("localhost", "hello"), 1)
-				.addSink(new MySink());
+				.print();
 		
 		DataStream<Tuple1<String>> dataStream2 = env
 				.fromElements("one", "two", "three", "four", "five", "q")
