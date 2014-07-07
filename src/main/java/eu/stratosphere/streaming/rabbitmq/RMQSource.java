@@ -26,6 +26,7 @@ import com.rabbitmq.client.ConsumerCancelledException;
 import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownSignalException;
 
+import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.streaming.api.SourceFunction;
 import eu.stratosphere.util.Collector;
@@ -35,11 +36,14 @@ import eu.stratosphere.util.Collector;
  * support string messages. Other types will be added soon.
  * 
  */
-public class RMQSource extends SourceFunction<Tuple1<String>> {
+
+//TODO abstract source class, user implements own source and extends to this
+public abstract class RMQSource<IN extends Tuple> extends SourceFunction<IN> {
 	private static final long serialVersionUID = 1L;
 
 	private final String QUEUE_NAME;
 	private final String HOST_NAME;
+	private boolean close=false;
 
 	private transient ConnectionFactory factory;
 	private transient Connection connection;
@@ -47,9 +51,7 @@ public class RMQSource extends SourceFunction<Tuple1<String>> {
 	private transient QueueingConsumer consumer;
 	private transient QueueingConsumer.Delivery delivery;
 
-	private transient String message;
-
-	Tuple1<String> outTuple = new Tuple1<String>();
+	IN outTuple;
 	
 	public RMQSource(String HOST_NAME, String QUEUE_NAME) {
 		this.HOST_NAME = HOST_NAME;
@@ -68,41 +70,41 @@ public class RMQSource extends SourceFunction<Tuple1<String>> {
 		} catch (IOException e) {
 		}
 	}
-
+	
 	@Override
-	public void invoke(Collector<Tuple1<String>> collector) throws Exception {
-
+	public void invoke(Collector<IN> collector) throws Exception {
 		initializeConnection();
-
-		while (true) {
-
-			try {
-				delivery = consumer.nextDelivery();
-			} catch (ShutdownSignalException e) {
-				e.printStackTrace();
-				break;
-			} catch (ConsumerCancelledException e) {
-				e.printStackTrace();
-				break;
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-
-			//message = new String(delivery.getBody());
-			message = (String) SerializationUtils.deserialize(delivery.getBody());
-			if (message.equals("q")) {
-				break;
-			}
-			
-			outTuple.f0 = message;
-			collector.collect(outTuple);
-		}
-
-		try {
-			connection.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		
+				while (!close) {
+		
+					try {
+						delivery = consumer.nextDelivery();
+					} catch (ShutdownSignalException e) {
+						e.printStackTrace();
+						break;
+					} catch (ConsumerCancelledException e) {
+						e.printStackTrace();
+						break;
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+		
+					outTuple=deserialize(delivery.getBody());
+					if(!close)
+						collector.collect(outTuple);
+				}
+		
+				try {
+					connection.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+		
+	}
+	
+	public abstract IN deserialize(byte[] t);
+	public void close(){
+		close=true;
 	}
 
 }
