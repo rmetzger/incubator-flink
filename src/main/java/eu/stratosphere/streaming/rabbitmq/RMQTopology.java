@@ -94,6 +94,5 @@ public class RMQTopology {
 				.addSink(new MyRMQSink("localhost", "hello"));
 
 		env.execute();
-		
 	}
 }

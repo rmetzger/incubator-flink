@@ -41,7 +41,6 @@ public abstract class RMQSink<IN extends Tuple> extends SinkFunction<IN>{
 	private transient Connection connection;
 	private transient Channel channel;
 	
-	//TODO Should the user implement the constructor?
 	public RMQSink(String HOST_NAME, String QUEUE_NAME) {
 		this.HOST_NAME = HOST_NAME;
 		this.QUEUE_NAME = QUEUE_NAME;
@@ -63,44 +62,14 @@ public abstract class RMQSink<IN extends Tuple> extends SinkFunction<IN>{
 		
 		
 	}
-	/*@Override
-	public void invoke(Tuple1<String> tuple) {
-		
-		initializeConnection();
-		
-		try {
-			channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-			String message = tuple.f0;
-			byte[] msg = SerializationUtils.serialize(tuple.f0);
-		    //channel.basicPublish("", QUEUE_NAME, null, message.getBytes());
-			channel.basicPublish("", QUEUE_NAME, null, msg);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-	    
-		
-		try {
-			channel.close();
-			connection.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	    
-		
-	}*/
 
 	@Override
 	public void invoke(IN tuple) {
-		// TODO Auto-generated method stub
 		initializeConnection();
 		
 		try {
 			channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-			//String message = tuple.f0;
 			byte[] msg = serialize(tuple);
-		    //channel.basicPublish("", QUEUE_NAME, null, message.getBytes());
 			channel.basicPublish("", QUEUE_NAME, null, msg);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
