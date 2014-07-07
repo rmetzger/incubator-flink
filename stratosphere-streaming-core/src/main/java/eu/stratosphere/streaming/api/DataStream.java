@@ -377,15 +377,15 @@ public class DataStream<T extends Tuple> {
 	 * Writes a DataStream to the standard output stream (stdout).<br/>
 	 * For each element of the DataStream the result of
 	 * {@link Object#toString()} is written.
-	 * 
+	 *
 	 * @return The closed DataStream.
 	 */
 	public DataStream<T> print() {
 		return environment.print(this.copy());
 	}
-
+	
 	/**
-	 * Set the type parameter for this DataStream.
+	 * Set the type parameter.
 	 * 
 	 * @param type
 	 *            The type parameter.
