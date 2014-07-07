@@ -377,63 +377,11 @@ public class DataStream<T extends Tuple> {
 	 * Writes a DataStream to the standard output stream (stdout).<br/>
 	 * For each element of the DataStream the result of
 	 * {@link Object#toString()} is written.
-	 * Sets the given sink function with stream id.
-	 * 
-	 * @param streamId
-	 *            The stream id that identifies the stream.
-	 * @param sinkFunction
-	 *            The object containing the sink's invoke function.
-	 * @param parallelism
-	 *            The number of threads the function runs on.
-	 * @return The modified datastream.
-	 */
-	public DataStream<T> addSink(String streamId, SinkFunction<T> sinkFunction, int parallelism) {
-		return environment.addSink(streamId, this.copy(), sinkFunction, parallelism);
-	}
-	
-	/**
-	 * Sets the given sink function with stream id.
-	 * 
-	 * @param streamId
-	 *            The stream id that identifies the stream.
-	 * @param sinkFunction
-	 *            The object containing the sink's invoke function.
-	 * @return The closed datastream.
-	 */
-	public DataStream<T> addSink(String streamId, SinkFunction<T> sinkFunction) {
-		return environment.addSink(streamId, this.copy(), sinkFunction);
-	}
-	
-	/**
-	 * Prints the tuples from the DataStream.
-	 * 
+	 *
 	 * @return The closed DataStream.
 	 */
 	public DataStream<T> print() {
 		return environment.print(this.copy());
-	}
-
-	/**
-	 * Dump the tuples from the DataStream to disk.
-	 * @param filename
-	 *            the name of the output file
-	 * @param streamId
-	 *            The stream id that identifies the stream.
-	 * @return The closed datastream.
-	 */	
-	public DataStream<T> dumpDisk(String filename) {
-		return environment.dumpDisk(this.copy(), filename);
-	}
-
-	/**
-	 * Dump the tuples from the DataStream to disk.
-	 * 
-	 * @param streamId
-	 *            The stream id that identifies the stream.
-	 * @return The closed datastream.
-	 */	
-	public DataStream<T> dumpDisk(String streamId, String filename) {
-		return environment.dumpDisk(this.copy(), filename);
 	}
 	
 	/**
