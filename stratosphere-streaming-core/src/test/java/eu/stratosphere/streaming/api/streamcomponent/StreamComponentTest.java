@@ -86,7 +86,6 @@ public class StreamComponentTest {
 			Integer k = tuple.getField(0);
 			Integer v = tuple.getField(1);
 			data.put(k, v);
-			System.out.println(tuple);
 		}
 	}
 
