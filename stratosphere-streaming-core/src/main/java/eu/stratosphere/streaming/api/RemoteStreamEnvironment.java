@@ -29,19 +29,6 @@ import eu.stratosphere.configuration.Configuration;
 import eu.stratosphere.core.fs.Path;
 import eu.stratosphere.nephele.jobgraph.JobGraph;
 
-/**
- * An {@link StreamExecutionEnvironment} that sends programs 
- * to a cluster for execution. Note that all file paths used in the program must be accessible from the
- * cluster. The execution will use the cluster's default degree of parallelism, unless the parallelism is
- * set explicitly via {@link ExecutionEnvironment#setDegreeOfParallelism(int)}.
- * 
- * @param host The host name or address of the master (JobManager), where the program should be executed.
- * @param port The port of the master (JobManager), where the program should be executed. 
- * @param jarFiles The JAR files with code that needs to be shipped to the cluster. If the program uses
- *                 user-defined functions, user-defined input formats, or any libraries, those must be
- *                 provided in the JAR files.
- * @return A remote environment that executes the program on a cluster.
- */
 public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 	private static final Log log = LogFactory.getLog(RemoteStreamEnvironment.class);
 
@@ -49,6 +36,16 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 	private int port;
 	private String[] jarFiles;
 
+	/**
+	 * Creates a new RemoteStreamEnvironment that points to the master (JobManager) described by the
+	 * given host name and port.
+	 * 
+	 * @param host The host name or address of the master (JobManager), where the program should be executed.
+	 * @param port The port of the master (JobManager), where the program should be executed. 
+	 * @param jarFiles The JAR files with code that needs to be shipped to the cluster. If the program uses
+	 *                 user-defined functions, user-defined input formats, or any libraries, those must be
+	 *                 provided in the JAR files.
+	 */	
 	public RemoteStreamEnvironment(String host, int port, String... jarFiles) {
 		if (host == null) {
 			throw new NullPointerException("Host must not be null.");
