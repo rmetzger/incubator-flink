@@ -502,9 +502,9 @@ public abstract class StreamExecutionEnvironment {
 	 *            provided in the JAR files.
 	 * @return A remote environment that executes the program on a cluster.
 	 */
-	public static ExecutionEnvironment createRemoteEnvironment(String host, int port,
+	public static StreamExecutionEnvironment createRemoteEnvironment(String host, int port,
 			String... jarFiles) {
-		return new RemoteEnvironment(host, port, jarFiles);
+		return new RemoteStreamEnvironment(host, port, jarFiles);
 	}
 
 	/**
