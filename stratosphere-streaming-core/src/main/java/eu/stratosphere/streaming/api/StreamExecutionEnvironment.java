@@ -369,12 +369,13 @@ public abstract class StreamExecutionEnvironment {
 		jobGraphBuilder.iterationStart = true;
 	}
 
-	protected <T extends Tuple> DataStream<T> closeIteration(DataStream<T> inputStream){
+	protected <T extends Tuple> DataStream<T> closeIteration(
+			DataStream<T> inputStream) {
 		connectGraph(inputStream, jobGraphBuilder.iterationStartPoints.pop());
-		
+
 		return inputStream;
 	}
-	
+
 	/**
 	 * Internal function for assembling the underlying
 	 * {@link eu.stratosphere.nephele.jobgraph.JobGraph} of the job. Connects
