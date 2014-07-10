@@ -20,7 +20,7 @@ import eu.stratosphere.api.java.tuple.Tuple;
 public class IterativeDataStream<T extends Tuple> extends DataStream<T> {
 
 	public IterativeDataStream(DataStream<T> dataStream) {
-		super(dataStream.getEnvironment(), "iteration", dataStream.getId());
+		super(dataStream.environment, "iteration", dataStream.id);
 	}
 
 	public DataStream<T> closeWith(DataStream<T> iterationResult) {

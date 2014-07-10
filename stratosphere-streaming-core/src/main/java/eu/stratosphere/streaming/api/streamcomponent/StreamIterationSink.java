@@ -28,7 +28,9 @@ public class StreamIterationSink extends AbstractStreamComponent {
 	private static final Log log = LogFactory.getLog(StreamIterationSink.class);
 
 	private AbstractRecordReader inputs;
-	BlockingQueue<StreamRecord> dataChannel;
+	private String iterationId;
+	private BlockingQueue<StreamRecord> dataChannel;
+	
 
 	public StreamIterationSink() {
 	}
@@ -41,7 +43,8 @@ public class StreamIterationSink extends AbstractStreamComponent {
 			setSerializers();
 			setSinkSerializer();
 			inputs = getConfigInputs();
-			dataChannel = BlockingQueueBroker.instance().getAndRemove("dc");
+			iterationId = configuration.getString("iteration-id", "iteration-0");
+			dataChannel = BlockingQueueBroker.instance().getAndRemove(iterationId);
 		} catch (Exception e) {
 			if (log.isErrorEnabled()) {
 				log.error("Cannot register inputs", e);

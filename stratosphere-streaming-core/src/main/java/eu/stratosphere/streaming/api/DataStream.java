@@ -126,10 +126,6 @@ public class DataStream<T extends Tuple> {
 		copiedStream.dop = this.dop;
 		return copiedStream;
 	}
-
-	StreamExecutionEnvironment getEnvironment(){
-		return environment;
-	}
 	
 	/**
 	 * Returns the ID of the {@link DataStream}.

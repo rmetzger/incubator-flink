@@ -141,6 +141,9 @@ public class JobGraphBuilder {
 		setComponent(sourceName, source, null, null, null, parallelism);
 
 		setBytesFrom(iterationHead, sourceName);
+		
+		//TODO: get iteration-id from IterativeDataSet
+		components.get(sourceName).getConfiguration().setString("iteration-id", "iteration-0");
 
 		if (log.isDebugEnabled()) {
 			log.debug("Iteration head source: " + sourceName);
@@ -213,6 +216,9 @@ public class JobGraphBuilder {
 		if (log.isDebugEnabled()) {
 			log.debug("Iteration tail sink: " + sinkName);
 		}
+		
+		//TODO: get iteration-id from IterativeDataSet
+		components.get(sinkName).getConfiguration().setString("iteration-id", "iteration-0");
 
 	}
 
