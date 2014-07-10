@@ -47,16 +47,19 @@ import eu.stratosphere.types.TypeInformation;
  */
 public class DataStream<T extends Tuple> {
 
-	private static Integer counter = 0;
-	private final StreamExecutionEnvironment environment;
-	private TypeInformation<T> type;
-	private String id;
-	int dop;
-	List<String> connectIDs;
-	List<ConnectionType> ctypes;
-	List<Integer> cparams;
-	List<Integer> batchSizes;
+	protected static Integer counter = 0;
+	protected final StreamExecutionEnvironment environment;
+	protected TypeInformation<T> type;
+	protected String id;
+	protected int degreeOfParallelism;
+	protected String userDefinedName;
+	protected OutputSelector<T> outputSelector;
+	protected List<String> connectIDs;
+	protected List<ConnectionType> ctypes;
+	protected List<Integer> cparams;
+	protected List<Integer> batchSizes;
 
+	
 	/**
 	 * Create a new {@link DataStream} in the given execution environment
 	 * 
@@ -87,9 +90,10 @@ public class DataStream<T extends Tuple> {
 	 * @param id
 	 *            The id of the DataStream
 	 */
-	private DataStream(StreamExecutionEnvironment environment, String operatorType, String id) {
+	protected DataStream(StreamExecutionEnvironment environment, String operatorType, String id) {
 		this.environment = environment;
 		this.id = id;
+		initConnections();
 	}
 
 	/**
@@ -122,10 +126,10 @@ public class DataStream<T extends Tuple> {
 		copiedStream.ctypes = new ArrayList<StreamExecutionEnvironment.ConnectionType>(this.ctypes);
 		copiedStream.cparams = new ArrayList<Integer>(this.cparams);
 		copiedStream.batchSizes = new ArrayList<Integer>(this.batchSizes);
-		copiedStream.dop = this.dop;
+		copiedStream.degreeOfParallelism = this.degreeOfParallelism;
 		return copiedStream;
 	}
-
+	
 	/**
 	 * Returns the ID of the {@link DataStream}.
 	 * 
@@ -147,7 +151,7 @@ public class DataStream<T extends Tuple> {
 		if (dop < 1) {
 			throw new IllegalArgumentException("The parallelism of an operator must be at least 1.");
 		}
-		this.dop = dop;
+		this.degreeOfParallelism = dop;
 
 		environment.setOperatorParallelism(this);
 
@@ -161,7 +165,7 @@ public class DataStream<T extends Tuple> {
 	 * @return The parallelism set for this operator.
 	 */
 	public int getParallelism() {
-		return this.dop;
+		return this.degreeOfParallelism;
 	}
 
 	/**
@@ -184,6 +188,25 @@ public class DataStream<T extends Tuple> {
 			returnStream.batchSizes.set(i, batchSize);
 		}
 		return returnStream;
+	}
+
+	/**
+	 * Gives the data transformation a user defined name in order to use at
+	 * directed outputs
+	 * 
+	 * @param name
+	 *            The name to set
+	 * @return The named DataStream.
+	 */
+	public DataStream<T> name(String name) {
+		// copy?
+		if (name == "") {
+			throw new IllegalArgumentException("User defined name must not be empty string");
+		}
+		
+		userDefinedName = name;
+		environment.setName(this, name);
+		return this;
 	}
 
 	/**
@@ -214,6 +237,13 @@ public class DataStream<T extends Tuple> {
 		return returnStream;
 	}
 
+	
+	public DataStream<T> directTo(OutputSelector<T> outputSelector) {
+		this.outputSelector = outputSelector;
+		environment.addDirectedEmit(id, outputSelector);
+		return this;
+	}
+	
 	/**
 	 * Sets the partitioning of the {@link DataStream} so that the output tuples
 	 * are partitioned by their hashcode and are sent to only one component.
@@ -334,16 +364,31 @@ public class DataStream<T extends Tuple> {
 	}
 
 	/**
-	 * Writes a DataStream to the standard output stream (stdout).
-	 * For each element of the DataStream the result of
-	 * {@link Object#toString()} is written.
-	 *
+	 * Writes a DataStream to the standard output stream (stdout). For each
+	 * element of the DataStream the result of {@link Object#toString()} is
+	 * written.
+	 * 
 	 * @return The closed DataStream.
 	 */
 	public DataStream<T> print() {
 		return environment.print(this.copy());
 	}
-	
+
+	public DataStream<T> addIterationSource() {
+		environment.addIterationSource(this);
+		return this.copy();
+	}
+
+	public DataStream<T> addIterationSink() {
+		environment.addIterationSink(this);
+		return this;
+	}
+
+	public IterativeDataStream<T> iterate() {
+		addIterationSource();
+		return new IterativeDataStream<T>(this);
+	}
+
 	/**
 	 * Set the type parameter.
 	 * 
