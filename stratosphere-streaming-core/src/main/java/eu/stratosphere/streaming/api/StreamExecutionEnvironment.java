@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import eu.stratosphere.api.common.functions.AbstractFunction;
 import eu.stratosphere.api.java.ExecutionEnvironment;
-import eu.stratosphere.api.java.LocalEnvironment;
 import eu.stratosphere.api.java.RemoteEnvironment;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
@@ -304,7 +303,7 @@ public abstract class StreamExecutionEnvironment {
 	}
 
 	protected <T extends Tuple, R extends Tuple> void addIterationSource(DataStream<T> inputStream) {
-		DataStream<R> returnStream = new DataStream<R>(this, "");
+		DataStream<R> returnStream = new DataStream<R>(this, "iterationHead");
 
 		jobGraphBuilder.setIterationSource(returnStream.getId(), inputStream.getId(),
 				degreeOfParallelism);
@@ -313,7 +312,7 @@ public abstract class StreamExecutionEnvironment {
 	}
 
 	protected <T extends Tuple, R extends Tuple> void addIterationSink(DataStream<T> inputStream) {
-		DataStream<R> returnStream = new DataStream<R>(this, "");
+		DataStream<R> returnStream = new DataStream<R>(this, "iterationTail");
 
 		jobGraphBuilder.setIterationSink(returnStream.getId(), inputStream.getId(),
 				degreeOfParallelism);
