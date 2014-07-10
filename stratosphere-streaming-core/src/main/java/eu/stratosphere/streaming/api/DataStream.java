@@ -52,6 +52,7 @@ public class DataStream<T extends Tuple> {
 	private TypeInformation<T> type;
 	private String id;
 	private String userDefinedName;
+	private OutputSelector<T> outputSelector;
 	int dop;
 	List<String> connectIDs;
 	List<ConnectionType> ctypes;
@@ -234,6 +235,13 @@ public class DataStream<T extends Tuple> {
 		return returnStream;
 	}
 
+	
+	public DataStream<T> directTo(OutputSelector<T> outputSelector) {
+		this.outputSelector = outputSelector;
+		environment.addDirectedEmit(id, outputSelector);
+		return this;
+	}
+	
 	/**
 	 * Sets the partitioning of the {@link DataStream} so that the output tuples
 	 * are partitioned by their hashcode and are sent to only one component.

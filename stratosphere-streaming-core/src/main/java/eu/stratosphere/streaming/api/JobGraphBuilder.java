@@ -317,11 +317,12 @@ public class JobGraphBuilder {
 		userDefinedNames.put(componentName, userDefinedName);
 		Configuration config = components.get(componentName).getConfiguration();
 		config.setString("userDefinedName", userDefinedName);
-		
+
 		setOutputNameOfAlreadyConnected(componentName, userDefinedName);
 	}
 
-	private void setOutputNameOfAlreadyConnected(String outComponentName, String userDefinedNameOfOutput) {
+	private void setOutputNameOfAlreadyConnected(String outComponentName,
+			String userDefinedNameOfOutput) {
 		for (String componentName : edgeList.keySet()) {
 			List<String> outEdge = edgeList.get(componentName);
 			int index = outEdge.indexOf(outComponentName);
@@ -397,13 +398,19 @@ public class JobGraphBuilder {
 			Configuration config = new TaskConfig(upStreamComponent.getConfiguration())
 					.getConfiguration();
 
+			int outputIndex = upStreamComponent.getNumberOfForwardConnections() - 1;
+			
+			config.setBoolean("isPartitionedOutput_" + outputIndex, true);
+			
+			putOutputNameToConfig(upStreamComponentName, downStreamComponentName, outputIndex);
+			
 			config.setClass(
-					"partitionerClass_" + (upStreamComponent.getNumberOfForwardConnections() - 1),
+					"partitionerClass_" + outputIndex,
 					FieldsPartitioner.class);
 
 			config.setInteger(
 					"partitionerIntParam_"
-							+ (upStreamComponent.getNumberOfForwardConnections() - 1), keyPosition);
+							+ outputIndex, keyPosition);
 
 			if (log.isDebugEnabled()) {
 				log.debug("CONNECTED: FIELD PARTITIONING - " + upStreamComponentName + " -> "
@@ -494,12 +501,8 @@ public class JobGraphBuilder {
 			config.setClass(
 					"partitionerClass_" + (upStreamComponent.getNumberOfForwardConnections() - 1),
 					PartitionerClass);
-			
-			String outputName = userDefinedNames.get(downStreamComponentName);
-			if (outputName == null) {
-				outputName = "";
-			}
-			config.setString("outputName_" + (upStreamComponent.getNumberOfForwardConnections() - 1), outputName);
+
+			putOutputNameToConfig(upStreamComponentName, downStreamComponentName, upStreamComponent.getNumberOfForwardConnections() - 1);
 			
 			if (log.isDebugEnabled()) {
 				log.debug("CONNECTED: " + PartitionerClass.getSimpleName() + " - "
@@ -512,8 +515,25 @@ public class JobGraphBuilder {
 			}
 		}
 	}
-
 	
+	private void putOutputNameToConfig(String upStreamComponentName, String downStreamComponentName, int index) {
+		Configuration config = new TaskConfig(components.get(upStreamComponentName).getConfiguration())
+		.getConfiguration();
+		String outputName = userDefinedNames.get(downStreamComponentName);
+		if (outputName == null) {
+			outputName = "";
+		}
+		
+		config.setString("outputName_"
+				+ (index), outputName);
+	}
+	
+	<T extends Tuple> void setOutputSelector(String id, byte[] serializedOutputSelector) {
+		Configuration config = components.get(id).getConfiguration();
+		config.setBoolean("directedEmit", true);
+		config.setBytes("outputSelector", serializedOutputSelector);
+	}
+
 	/**
 	 * Sets udf operator from one component to another, used with some sinks.
 	 * 

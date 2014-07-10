@@ -14,37 +14,76 @@
  **********************************************************************************************************************/
 package eu.stratosphere.streaming.api;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 import eu.stratosphere.api.java.functions.MapFunction;
 import eu.stratosphere.api.java.tuple.Tuple1;
 import eu.stratosphere.configuration.Configuration;
+import eu.stratosphere.streaming.api.function.SinkFunction;
 
 public class DirectedOutputTest {
 
-	private static class PlusOne extends MapFunction<Tuple1<Long>, Tuple1<Long>> {
+	static HashSet<Long> evenSet = new HashSet<Long>();
+	static HashSet<Long> oddSet = new HashSet<Long>();
+	
+	private static class PlusTwo extends MapFunction<Tuple1<Long>, Tuple1<Long>> {
 		@Override
 		public Tuple1<Long> map(Tuple1<Long> arg0) throws Exception {
-			arg0.f0++;
+			arg0.f0 += 2;
 			return arg0;
 		}
 	}
 
+	private static class EvenSink extends SinkFunction<Tuple1<Long>> {
+		@Override
+		public void invoke(Tuple1<Long> tuple) {
+			evenSet.add(tuple.f0);
+		}
+	}
+	
+	private static class OddSink extends SinkFunction<Tuple1<Long>> {
+		@Override
+		public void invoke(Tuple1<Long> tuple) {
+			oddSet.add(tuple.f0);
+		}
+	}
+	
+	
+	private static class MySelector extends OutputSelector<Tuple1<Long>> {
+		
+		@Override
+		public List<String> select(Tuple1<Long> tuple) {
+			List<String> outputList = new ArrayList<String>();
+			int mod = (int) (tuple.f0 % 2);
+			switch (mod) {
+				case 0:
+					outputList.add("ds1");
+					break;
+				case 1:
+					outputList.add("ds2");
+					break;
+			}
+			return outputList;
+		}
+	}
+	
 	@Test
 	public void namingTest() {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
 		DataStream<Tuple1<Long>> s1 = env.generateSequence(1, 10);
 
-		DataStream<Tuple1<Long>> ds1 = s1.map(new PlusOne()).name("ds1");
-		DataStream<Tuple1<Long>> ds2 = s1.map(new PlusOne());
-		DataStream<Tuple1<Long>> ds3 = s1.map(new PlusOne()).name("ds3");
-		;
-
-		System.out.println(env.jobGraphBuilder.edgeList);
-		System.out.println(env.jobGraphBuilder.userDefinedNames);
+		DataStream<Tuple1<Long>> ds1 = s1.map(new PlusTwo()).name("ds1");
+		DataStream<Tuple1<Long>> ds2 = s1.map(new PlusTwo());
+		DataStream<Tuple1<Long>> ds3 = s1.map(new PlusTwo()).name("ds3");
 
 		Configuration configS1 = env.jobGraphBuilder.components.get(s1.getId()).getConfiguration();
 
@@ -58,8 +97,8 @@ public class DirectedOutputTest {
 		DataStream<Tuple1<Long>> s2 = env.generateSequence(11, 20);
 		Configuration configS2 = env.jobGraphBuilder.components.get(s2.getId()).getConfiguration();
 
-		DataStream<Tuple1<Long>> ds4 = s1.connectWith(s2).map(new PlusOne());
-		DataStream<Tuple1<Long>> ds5 = s1.connectWith(s2).map(new PlusOne()).name("ds5");
+		DataStream<Tuple1<Long>> ds4 = s1.connectWith(s2).map(new PlusTwo());
+		DataStream<Tuple1<Long>> ds5 = s1.connectWith(s2).map(new PlusTwo()).name("ds5");
 		;
 
 		assertEquals("", configS2.getString("outputName_0", ""));
@@ -67,5 +106,40 @@ public class DirectedOutputTest {
 
 		ds4.name("ds4");
 		assertEquals("ds4", configS2.getString("outputName_0", ""));
+	}
+	
+	@Ignore
+	@Test
+	public void directOutputTest() {
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
+		DataStream<Tuple1<Long>> s = env.generateSequence(1, 6).directTo(new MySelector());
+		DataStream<Tuple1<Long>> ds1 = s.map(new PlusTwo()).name("ds1").addSink(new EvenSink());
+		DataStream<Tuple1<Long>> ds2 = s.map(new PlusTwo()).name("ds2").addSink(new OddSink());
+		DataStream<Tuple1<Long>> ds3 = s.map(new PlusTwo()).addSink(new OddSink());
+
+		env.execute();
+		
+		HashSet<Long> expectedEven = new HashSet<Long>(Arrays.asList(4L, 6L, 8L));
+		HashSet<Long> expectedOdd = new HashSet<Long>(Arrays.asList(3L, 5L, 7L));
+		
+		assertEquals(expectedEven, evenSet);
+		assertEquals(expectedOdd, oddSet);
+	}
+	
+	@Test
+	public void directOutputPartitionedTest() {
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(4);
+		DataStream<Tuple1<Long>> s = env.generateSequence(1, 6).directTo(new MySelector());
+		DataStream<Tuple1<Long>> ds1 = s.map(new PlusTwo()).name("ds1").partitionBy(0).addSink(new EvenSink());
+		DataStream<Tuple1<Long>> ds2 = s.map(new PlusTwo()).name("ds2").addSink(new OddSink());
+		DataStream<Tuple1<Long>> ds3 = s.map(new PlusTwo()).name("ds3").addSink(new OddSink());
+
+		env.execute();
+		
+		HashSet<Long> expectedEven = new HashSet<Long>(Arrays.asList(4L, 6L, 8L));
+		HashSet<Long> expectedOdd = new HashSet<Long>(Arrays.asList(3L, 5L, 7L));
+		
+		assertEquals(expectedEven, evenSet);
+		assertEquals(expectedOdd, oddSet);
 	}
 }

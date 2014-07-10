@@ -345,6 +345,10 @@ public abstract class StreamExecutionEnvironment {
 		return returnStream;
 	}
 
+	<T extends Tuple> void addDirectedEmit(String id, OutputSelector<T> outputSelector) {
+		jobGraphBuilder.setOutputSelector(id, serializeToByteArray(outputSelector));
+	}
+	
 	/**
 	 * Writes a DataStream to the standard output stream (stdout). For each
 	 * element of the DataStream the result of {@link Object#toString()} is
