@@ -17,16 +17,15 @@ package eu.stratosphere.streaming.api;
 
 import eu.stratosphere.api.java.tuple.Tuple;
 
-public class IterativeDataStream<T extends Tuple> {
-	
-	private final StreamExecutionEnvironment environment;
+public class IterativeDataStream<T extends Tuple> extends DataStream<T> {
 
-	public IterativeDataStream(StreamExecutionEnvironment environment){
-		this.environment = environment;
+	public IterativeDataStream(DataStream<T> dataStream) {
+		super(dataStream.getEnvironment(), "iteration", dataStream.getId());
 	}
-	
+
 	public DataStream<T> closeWith(DataStream<T> iterationResult) {
-		return environment.closeIteration(iterationResult.copy());
+		environment.addIterationSink(iterationResult);
+		return iterationResult;
 	}
-	
+
 }

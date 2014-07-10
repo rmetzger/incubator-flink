@@ -47,10 +47,10 @@ import eu.stratosphere.types.TypeInformation;
  */
 public class DataStream<T extends Tuple> {
 
-	private static Integer counter = 0;
-	private final StreamExecutionEnvironment environment;
-	private TypeInformation<T> type;
-	private String id;
+	protected static Integer counter = 0;
+	protected final StreamExecutionEnvironment environment;
+	protected TypeInformation<T> type;
+	protected String id;
 	int dop;
 	List<String> connectIDs;
 	List<ConnectionType> ctypes;
@@ -87,9 +87,10 @@ public class DataStream<T extends Tuple> {
 	 * @param id
 	 *            The id of the DataStream
 	 */
-	private DataStream(StreamExecutionEnvironment environment, String operatorType, String id) {
+	protected DataStream(StreamExecutionEnvironment environment, String operatorType, String id) {
 		this.environment = environment;
 		this.id = id;
+		initConnections();
 	}
 
 	/**
@@ -126,6 +127,10 @@ public class DataStream<T extends Tuple> {
 		return copiedStream;
 	}
 
+	StreamExecutionEnvironment getEnvironment(){
+		return environment;
+	}
+	
 	/**
 	 * Returns the ID of the {@link DataStream}.
 	 * 
@@ -355,8 +360,8 @@ public class DataStream<T extends Tuple> {
 	}
 
 	public IterativeDataStream<T> iterate() {
-		environment.iterate();
-		return new IterativeDataStream<T>(environment);
+		addIterationSource();
+		return new IterativeDataStream<T>(this);
 	}
 
 	/**
