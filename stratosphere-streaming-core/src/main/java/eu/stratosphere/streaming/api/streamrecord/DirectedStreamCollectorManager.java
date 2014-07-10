@@ -21,13 +21,13 @@ import java.util.List;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.pact.runtime.plugable.SerializationDelegate;
 import eu.stratosphere.runtime.io.api.RecordWriter;
+import eu.stratosphere.streaming.api.streamcomponent.AbstractCollector;
 import eu.stratosphere.util.Collector;
 
 public class DirectedStreamCollectorManager<T extends Tuple> extends StreamCollectorManager<T> {
 
 	OutputSelector<T> outputSelector;
-	HashMap<String, StreamCollector<Tuple>> notPartitionedOutputNameMap;
-	HashMap<String, StreamCollector<Tuple>[]> partitionedOutputNameMap;
+	HashMap<String, AbstractCollector<Tuple>> outputNameMap;
 
 	public DirectedStreamCollectorManager(List<Integer> batchSizesOfNotPartitioned,
 			List<Integer> batchSizesOfPartitioned, List<Integer> parallelismOfOutput,
@@ -40,14 +40,11 @@ public class DirectedStreamCollectorManager<T extends Tuple> extends StreamColle
 		super(batchSizesOfNotPartitioned, batchSizesOfPartitioned, parallelismOfOutput,
 				keyPosition, batchTimeout, channelID, serializationDelegate, partitionedOutputs,
 				notPartitionedOutputs);
-		
+
 		this.outputSelector = outputSelector;
-		this.notPartitionedOutputNameMap = new HashMap<String, StreamCollector<Tuple>>();
-		this.partitionedOutputNameMap = new HashMap<String, StreamCollector<Tuple>[]>();
-		
+		this.outputNameMap = new HashMap<String, AbstractCollector<Tuple>>();
+
 		// TODO init outputNameMap
-		partitionedCollectors = new HashSet<StreamCollector<Tuple>[]>(
-				batchSizesOfPartitioned.size());
 		for (int i = 0; i < batchSizesOfPartitioned.size(); i++) {
 			@SuppressWarnings("unchecked")
 			StreamCollector<Tuple>[] collectors = new StreamCollector[parallelismOfOutput.get(i)];
@@ -55,43 +52,23 @@ public class DirectedStreamCollectorManager<T extends Tuple> extends StreamColle
 				collectors[j] = new StreamCollector<Tuple>(batchSizesOfPartitioned.get(i),
 						batchTimeout, channelID, serializationDelegate, partitionedOutputs.get(i));
 			}
-			partitionedOutputNameMap.put(partitionedOutputNames.get(i), collectors);
-			partitionedCollectors.add(collectors);
+			addPartitionedCollector(collectors, partitionedOutputNames.get(i));
 		}
-		
-		notPartitionedCollectors = new HashSet<StreamCollector<Tuple>>(
-				batchSizesOfNotPartitioned.size());
+
 		for (int i = 0; i < batchSizesOfNotPartitioned.size(); i++) {
-			StreamCollector<Tuple> collector = new StreamCollector<Tuple>(batchSizesOfNotPartitioned
-					.get(i), batchTimeout, channelID, serializationDelegate, notPartitionedOutputs
-					.get(i));
-			notPartitionedCollectors.add(collector);
-			notPartitionedOutputNameMap
-			.put(
-					notPartitionedOutputNames
-					.get(i),
-					collector);
+			StreamCollector<Tuple> collector = new StreamCollector<Tuple>(
+					batchSizesOfNotPartitioned.get(i), batchTimeout, channelID,
+					serializationDelegate, notPartitionedOutputs.get(i));
+			addNotPartitionedCollector(collector, notPartitionedOutputNames.get(i));
 		}
 	}
 
-	@Override
-	protected void setPartitionedCollectors(List<Integer> batchSizesOfNotPartitioned,
-			List<Integer> batchSizesOfPartitioned, List<Integer> parallelismOfOutput,
-			int keyPosition, long batchTimeout, int channelID,
-			SerializationDelegate<Tuple> serializationDelegate,
-			List<RecordWriter<StreamRecord>> partitionedOutputs,
-			List<RecordWriter<StreamRecord>> notPartitionedOutputs) {
-
+	protected void addPartitionedCollector(StreamCollector<Tuple>[] collector, String outputName) {
+		outputNameMap.put(outputName, addPartitionedCollector(collector));
 	}
-	
-	@Override
-	protected void setNotPartitionedCollectors(List<Integer> batchSizesOfNotPartitioned,
-			List<Integer> batchSizesOfPartitioned, List<Integer> parallelismOfOutput,
-			int keyPosition, long batchTimeout, int channelID,
-			SerializationDelegate<Tuple> serializationDelegate,
-			List<RecordWriter<StreamRecord>> partitionedOutputs,
-			List<RecordWriter<StreamRecord>> notPartitionedOutputs) {
 
+	protected void addNotPartitionedCollector(StreamCollector<Tuple> collector, String outputName) {
+		outputNameMap.put(outputName, addNotPartitionedCollector(collector));
 	}
 
 	// TODO make this method faster
@@ -100,18 +77,18 @@ public class DirectedStreamCollectorManager<T extends Tuple> extends StreamColle
 		T copiedTuple = StreamRecord.copyTuple(tuple);
 
 		List<String> outputs = (List<String>) outputSelector.getOutputs(tuple);
-		
-		int partitionHash = Math.abs(copiedTuple.getField(keyPostition).hashCode());
+
+		int partitionHash = Math.abs(copiedTuple.getField(keyPosition).hashCode());
 
 		for (String outputName : outputs) {
-			Collector<Tuple> notPartitionedCollector = notPartitionedOutputNameMap.get(outputName);
-			Collector<Tuple>[] partitionedCollector = partitionedOutputNameMap.get(outputName);
-
-			if (notPartitionedCollector != null) {
-				notPartitionedCollector.collect(copiedTuple);
-			} else if (partitionedCollector != null) {
-				partitionedCollector[partitionHash % partitionedCollector.length]
-						.collect(copiedTuple);
+			AbstractCollector<Tuple> output = outputNameMap.get(outputName);
+			if (output != null) {
+				output.collect(copiedTuple, partitionHash);
+			} else {
+				if (log.isErrorEnabled()) {
+					log.error("Undefined output name given by OutputSelector (" + outputName
+							+ "), collecting is omitted.");
+				}
 			}
 		}
 
