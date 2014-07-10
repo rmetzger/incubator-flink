@@ -35,6 +35,9 @@ public class DirectedOutputTest {
 	static HashSet<Long> oddSet = new HashSet<Long>();
 	
 	private static class PlusTwo extends MapFunction<Tuple1<Long>, Tuple1<Long>> {
+	
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public Tuple1<Long> map(Tuple1<Long> arg0) throws Exception {
 			arg0.f0 += 2;
@@ -43,6 +46,9 @@ public class DirectedOutputTest {
 	}
 
 	private static class EvenSink extends SinkFunction<Tuple1<Long>> {
+
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public void invoke(Tuple1<Long> tuple) {
 			evenSet.add(tuple.f0);
@@ -50,6 +56,9 @@ public class DirectedOutputTest {
 	}
 	
 	private static class OddSink extends SinkFunction<Tuple1<Long>> {
+
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public void invoke(Tuple1<Long> tuple) {
 			oddSet.add(tuple.f0);
@@ -59,6 +68,8 @@ public class DirectedOutputTest {
 	
 	private static class MySelector extends OutputSelector<Tuple1<Long>> {
 		
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public List<String> select(Tuple1<Long> tuple) {
 			List<String> outputList = new ArrayList<String>();
@@ -75,6 +86,7 @@ public class DirectedOutputTest {
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	@Test
 	public void namingTest() {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
@@ -108,6 +120,7 @@ public class DirectedOutputTest {
 		assertEquals("ds4", configS2.getString("outputName_0", ""));
 	}
 	
+	@SuppressWarnings("unused")
 	@Ignore
 	@Test
 	public void directOutputTest() {
@@ -126,6 +139,7 @@ public class DirectedOutputTest {
 		assertEquals(expectedOdd, oddSet);
 	}
 	
+	@SuppressWarnings("unused")
 	@Test
 	public void directOutputPartitionedTest() {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(4);
