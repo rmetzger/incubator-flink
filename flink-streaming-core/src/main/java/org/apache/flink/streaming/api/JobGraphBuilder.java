@@ -66,22 +66,22 @@ public class JobGraphBuilder {
 	private final JobGraph jobGraph;
 
 	// Graph attributes
-	protected Map<String, AbstractJobVertex> components;
-	protected Map<String, Integer> componentParallelism;
-	protected Map<String, List<String>> edgeList;
-	protected Map<String, List<Class<? extends ChannelSelector<StreamRecord>>>> connectionTypes;
-	protected Map<String, List<Integer>> connectionParams;
-	protected Map<String, String> userDefinedNames;
-	protected Map<String, String> operatorNames;
-	protected Map<String, StreamComponentInvokable> invokableObjects;
-	protected Map<String, byte[]> serializedFunctions;
-	protected Map<String, byte[]> outputSelectors;
-	protected Map<String, Class<? extends AbstractInvokable>> componentClasses;
-	protected Map<String, List<Integer>> batchSizes;
+	private Map<String, AbstractJobVertex> components;
+	private Map<String, Integer> componentParallelism;
+	private Map<String, List<String>> edgeList;
+	private Map<String, List<Class<? extends ChannelSelector<StreamRecord>>>> connectionTypes;
+	private Map<String, List<Integer>> connectionParams;
+	private Map<String, String> userDefinedNames;
+	private Map<String, String> operatorNames;
+	private Map<String, StreamComponentInvokable> invokableObjects;
+	private Map<String, byte[]> serializedFunctions;
+	private Map<String, byte[]> outputSelectors;
+	private Map<String, Class<? extends AbstractInvokable>> componentClasses;
+	private Map<String, List<Integer>> batchSizes;
 
-	protected String maxParallelismVertexName;
-	protected int maxParallelism;
-	protected FaultToleranceType faultToleranceType;
+	private String maxParallelismVertexName;
+	private int maxParallelism;
+	private FaultToleranceType faultToleranceType;
 	private long batchTimeout = 1000;
 
 	/**
@@ -228,8 +228,8 @@ public class JobGraphBuilder {
 	 * 
 	 * @param componentName
 	 *            Name of the component
-	 * @param component
-	 *            The component vertex
+	 * @param componentClass
+	 *            The class of the vertex
 	 * @param InvokableObject
 	 *            The user defined invokable object
 	 * @param operatorName
@@ -238,8 +238,6 @@ public class JobGraphBuilder {
 	 *            Serialized operator
 	 * @param parallelism
 	 *            Number of parallel instances created
-	 * @param subtasksPerInstance
-	 *            Number of parallel instances on one task manager
 	 */
 	private void setComponent(String componentName,
 			Class<? extends AbstractInvokable> componentClass,
@@ -313,7 +311,6 @@ public class JobGraphBuilder {
 			config.setString("iteration-id", "iteration-0");
 		}
 
-		System.out.println(component);
 		components.put(componentName, component);
 
 		if (parallelism > maxParallelism) {
@@ -473,6 +470,8 @@ public class JobGraphBuilder {
 	 *            Name of the downstream component, that will receive the tuples
 	 * @param PartitionerClass
 	 *            Class of the partitioner
+	 * @param partitionerParam
+	 *            Parameter of the partitioner
 	 */
 	private void connect(String upStreamComponentName, String downStreamComponentName,
 			Class<? extends ChannelSelector<StreamRecord>> PartitionerClass, int partitionerParam) {
@@ -509,11 +508,13 @@ public class JobGraphBuilder {
 		config.setClass("partitionerClass_" + outputIndex, PartitionerClass);
 
 		config.setInteger("partitionerIntParam_" + outputIndex, partitionerParam);
-		
-		config.setInteger("numOfOutputs_" +outputIndex, componentParallelism.get(downStreamComponentName));
+
+		config.setInteger("numOfOutputs_" + outputIndex,
+				componentParallelism.get(downStreamComponentName));
 
 		if (batchSizes.get(upStreamComponentName).get(outputIndex) != null) {
-			config.setInteger("batchSize_" + outputIndex, batchSizes.get(upStreamComponentName).get(outputIndex));
+			config.setInteger("batchSize_" + outputIndex, batchSizes.get(upStreamComponentName)
+					.get(outputIndex));
 
 		}
 
@@ -624,7 +625,7 @@ public class JobGraphBuilder {
 	}
 
 	/**
-	 * Returns the JobGraph
+	 * Builds and returns the JobGraph
 	 * 
 	 * @return JobGraph object
 	 */
