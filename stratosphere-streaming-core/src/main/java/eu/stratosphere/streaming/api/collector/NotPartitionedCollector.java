@@ -12,21 +12,20 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
-package eu.stratosphere.streaming.api.streamcomponent;
+package eu.stratosphere.streaming.api.collector;
 
 import eu.stratosphere.api.java.tuple.Tuple;
-import eu.stratosphere.streaming.api.streamrecord.StreamCollector;
+import eu.stratosphere.streaming.api.streamcomponent.AbstractCollector;
 
-public class PartitionedCollector<T extends Tuple> implements AbstractCollector<T> {
-
-	StreamCollector<Tuple>[] collectors;
-
-	public PartitionedCollector(StreamCollector<Tuple>[] collector) {
-		this.collectors = collector;
+public class NotPartitionedCollector<T extends Tuple> implements AbstractCollector<T> {
+	StreamCollector<Tuple> collector;
+	
+	public NotPartitionedCollector(StreamCollector<Tuple> collector) {
+		this.collector = collector;
 	}
-
+	
 	@Override
-	public void collect(Tuple tuple, int partitionHash) {
-		collectors[partitionHash % collectors.length].collect(tuple);
+	public void collect(T tuple) {
+		collector.collect(tuple);
 	}
 }

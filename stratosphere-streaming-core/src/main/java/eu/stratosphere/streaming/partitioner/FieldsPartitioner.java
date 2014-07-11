@@ -22,15 +22,16 @@ import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 public class FieldsPartitioner implements ChannelSelector<StreamRecord> {
 
 	private int keyPosition;
+	private int[] returnArray;
 
 	public FieldsPartitioner(int keyPosition) {
 		this.keyPosition = keyPosition;
+		this.returnArray = new int[1];
 	}
 
 	@Override
 	public int[] selectChannels(StreamRecord record, int numberOfOutputChannels) {
-		//TODO:Better hashing?
-
-		return new int[] { Math.abs(record.getTuple(0).getField(keyPosition).hashCode()) % numberOfOutputChannels };
+		returnArray[0] = record.hashPartition;
+		return returnArray;
 	}
 }

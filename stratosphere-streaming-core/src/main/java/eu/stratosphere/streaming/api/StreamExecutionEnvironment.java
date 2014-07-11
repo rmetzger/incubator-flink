@@ -25,6 +25,7 @@ import eu.stratosphere.api.java.ExecutionEnvironment;
 import eu.stratosphere.api.java.RemoteEnvironment;
 import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.api.java.tuple.Tuple1;
+import eu.stratosphere.streaming.api.collector.OutputSelector;
 import eu.stratosphere.streaming.api.function.FileSourceFunction;
 import eu.stratosphere.streaming.api.function.FileStreamFunction;
 import eu.stratosphere.streaming.api.function.FromElementsFunction;
@@ -34,7 +35,6 @@ import eu.stratosphere.streaming.api.function.SinkFunction;
 import eu.stratosphere.streaming.api.function.SourceFunction;
 import eu.stratosphere.streaming.api.invokable.SinkInvokable;
 import eu.stratosphere.streaming.api.invokable.UserTaskInvokable;
-import eu.stratosphere.streaming.api.streamrecord.OutputSelector;
 import eu.stratosphere.streaming.faulttolerance.FaultToleranceType;
 
 //TODO:add link to ExecutionEnvironment

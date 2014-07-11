@@ -13,11 +13,10 @@
  *
  **********************************************************************************************************************/
 
-package eu.stratosphere.streaming.api.streamrecord;
+package eu.stratosphere.streaming.api.collector;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,9 +25,7 @@ import eu.stratosphere.api.java.tuple.Tuple;
 import eu.stratosphere.pact.runtime.plugable.SerializationDelegate;
 import eu.stratosphere.runtime.io.api.RecordWriter;
 import eu.stratosphere.streaming.api.streamcomponent.AbstractCollector;
-import eu.stratosphere.streaming.api.streamcomponent.NotPartitionedCollector;
-import eu.stratosphere.streaming.api.streamcomponent.PartitionedCollector;
-import eu.stratosphere.streaming.util.LogUtils;
+import eu.stratosphere.streaming.api.streamrecord.StreamRecord;
 import eu.stratosphere.util.Collector;
 
 public class StreamCollectorManager<T extends Tuple> implements Collector<T> {
@@ -48,82 +45,49 @@ public class StreamCollectorManager<T extends Tuple> implements Collector<T> {
 		this.batchTimeout = batchTimeout;
 	}
 
-	// TODO consider channelID
-	public StreamCollectorManager(List<Integer> batchSizesOfNotPartitioned,
-			List<Integer> batchSizesOfPartitioned, List<Integer> parallelismOfOutput,
-			int keyPosition, long batchTimeout, int channelID,
-			SerializationDelegate<Tuple> serializationDelegate,
-			List<RecordWriter<StreamRecord>> partitionedOutputs,
-			List<RecordWriter<StreamRecord>> notPartitionedOutputs) {
-
-		this.keyPosition = keyPosition;
-
-		collectors = new HashSet<AbstractCollector<Tuple>>();
-
-		for (int i = 0; i < batchSizesOfPartitioned.size(); i++) {
-			@SuppressWarnings("unchecked")
-			StreamCollector<Tuple>[] collector = new StreamCollector[parallelismOfOutput.get(i)];
-			for (int j = 0; j < collector.length; j++) {
-				collector[j] = new StreamCollector<Tuple>(batchSizesOfPartitioned.get(i),
-						batchTimeout, channelID, serializationDelegate, partitionedOutputs.get(i));
-			}
-			addPartitionedCollector(collector);
-		}
-
-		for (int i = 0; i < batchSizesOfNotPartitioned.size(); i++) {
-			addNotPartitionedCollector(new StreamCollector<Tuple>(
-					batchSizesOfNotPartitioned.get(i), batchTimeout, channelID,
-					serializationDelegate, notPartitionedOutputs.get(i)));
-		}
-	}
-
-	public void setKeyPosition(int keyPosition) {
-		this.keyPosition = keyPosition;
-	}
-
-	public void addPartitionedCollector(RecordWriter<StreamRecord> output, int outputParallelism,
-			int batchSize) {
+	protected PartitionedCollector<Tuple> addPartitionedCollector(
+			RecordWriter<StreamRecord> output, int outputParallelism, int keyPosition, int batchSize) {
 		@SuppressWarnings("unchecked")
 		StreamCollector<Tuple>[] collector = new StreamCollector[outputParallelism];
 
 		for (int j = 0; j < outputParallelism; j++) {
 			collector[j] = new StreamCollector<Tuple>(batchSize, batchTimeout, channelID,
-					serializationDelegate, output);
+					serializationDelegate, output, j);
 		}
 
-		collectors.add(new PartitionedCollector<Tuple>(collector));
-	}
-
-	public void addNotPartitionedCollector(RecordWriter<StreamRecord> output, int batchSize) {
-
-		StreamCollector<Tuple> collector = new StreamCollector<Tuple>(batchSize, batchTimeout,
-				channelID, serializationDelegate, output);
-		collectors.add(new NotPartitionedCollector<Tuple>(collector));
-	}
-
-	public PartitionedCollector<Tuple> addPartitionedCollector(StreamCollector<Tuple>[] collector) {
 		PartitionedCollector<Tuple> partitionedCollector = new PartitionedCollector<Tuple>(
-				collector);
+				collector, keyPosition);
 		collectors.add(partitionedCollector);
 		return partitionedCollector;
 	}
 
-	public NotPartitionedCollector<Tuple> addNotPartitionedCollector(
-			StreamCollector<Tuple> collector) {
+	protected NotPartitionedCollector<Tuple> addNotPartitionedCollector(
+			RecordWriter<StreamRecord> output, int batchSize) {
+
+		StreamCollector<Tuple> collector = new StreamCollector<Tuple>(batchSize, batchTimeout,
+				channelID, serializationDelegate, output, 0);
 		NotPartitionedCollector<Tuple> notPartitionedCollector = new NotPartitionedCollector<Tuple>(
 				collector);
-		collectors.add(new NotPartitionedCollector<Tuple>(collector));
+		collectors.add(notPartitionedCollector);
 		return notPartitionedCollector;
+	}
+
+	public void addPartitionedCollector(RecordWriter<StreamRecord> output, int parallelism,
+			int keyPosition, int batchSize, String outputName) {
+		addPartitionedCollector(output, parallelism, keyPosition, batchSize);
+	}
+
+	public void addNotPartitionedCollector(RecordWriter<StreamRecord> output, int batchSize,
+			String outputName) {
+		addNotPartitionedCollector(output, batchSize);
 	}
 
 	@Override
 	public void collect(T tuple) {
 		T copiedTuple = StreamRecord.copyTuple(tuple);
 
-		int partitionHash = Math.abs(copiedTuple.getField(keyPosition).hashCode());
-
 		for (AbstractCollector<Tuple> collector : collectors) {
-			collector.collect(copiedTuple, partitionHash);
+			collector.collect(copiedTuple);
 		}
 	}
 

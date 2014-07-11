@@ -20,5 +20,5 @@ import eu.stratosphere.api.java.tuple.Tuple;
  * Class that encapsulates PartitionedCollector and NotPartitionedCollector
  */
 public interface AbstractCollector<T extends Tuple> {
-	void collect(T tuple, int partitionHash);
+	void collect(T tuple);
 }

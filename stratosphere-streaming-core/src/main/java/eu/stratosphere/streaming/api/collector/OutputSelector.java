@@ -12,20 +12,32 @@
  * specific language governing permissions and limitations under the License.
  *
  **********************************************************************************************************************/
-package eu.stratosphere.streaming.api.streamcomponent;
+package eu.stratosphere.streaming.api.collector;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import eu.stratosphere.api.java.tuple.Tuple;
-import eu.stratosphere.streaming.api.streamrecord.StreamCollector;
 
-public class NotPartitionedCollector<T extends Tuple> implements AbstractCollector<T> {
-	StreamCollector<Tuple> collector;
+public abstract class OutputSelector<T extends Tuple> implements Serializable {
+	private static final long serialVersionUID = 1L;
+
+	private Collection<String> outputs;
 	
-	public NotPartitionedCollector(StreamCollector<Tuple> collector) {
-		this.collector = collector;
+	public OutputSelector() {
+		outputs = new ArrayList<String>();
 	}
 	
-	@Override
-	public void collect(T tuple, int partitionHash) {
-		collector.collect(tuple);
+	void clearList() {
+		outputs.clear();
 	}
+	
+	Collection<String> getOutputs(T tuple) {
+		select(tuple, outputs);
+		return outputs;
+	}
+	
+	public abstract void select(T tuple, Collection<String> outputs);
 }
