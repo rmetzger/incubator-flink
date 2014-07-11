@@ -109,8 +109,8 @@ public class StreamTask extends AbstractStreamComponent {
 			log.debug("TASK " + name + " invoke finished with instance id " + instanceID);
 		}
 		
-//		for (RecordWriter<StreamRecord> output : outputs){
-//			output.flush();
-//		}
+		for (RecordWriter<StreamRecord> output : outputs){
+			output.flush();
+		}
 	}
 }

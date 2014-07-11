@@ -81,7 +81,7 @@ public class StreamCollector<T extends Tuple> implements Collector<T> {
 
 		try {
 			output.emit(streamRecord);
-			output.flush();
+			//output.flush();
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.out.println("emit fail");

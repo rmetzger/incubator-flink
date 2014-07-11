@@ -97,9 +97,9 @@ public class StreamIterationSource extends AbstractStreamComponent {
 			}
 		}
 		
-//		for (RecordWriter<StreamRecord> output : outputs){
-//			output.flush();
-//		}
+		for (RecordWriter<StreamRecord> output : outputs){
+			output.flush();
+		}
 
 	}
 
