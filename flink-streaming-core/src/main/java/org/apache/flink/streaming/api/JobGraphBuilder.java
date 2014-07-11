@@ -82,7 +82,6 @@ public class JobGraphBuilder {
 	protected String maxParallelismVertexName;
 	protected int maxParallelism;
 	protected FaultToleranceType faultToleranceType;
-	private int defaultBatchSize = 1;
 	private long batchTimeout = 1000;
 
 	/**
@@ -116,10 +115,6 @@ public class JobGraphBuilder {
 			log.debug("JobGraph created");
 		}
 		this.faultToleranceType = faultToleranceType;
-	}
-
-	public void setDefaultBatchSize(int batchSize) {
-		this.defaultBatchSize = batchSize;
 	}
 
 	public void setBatchTimeout(int timeout) {
@@ -221,12 +216,10 @@ public class JobGraphBuilder {
 		setComponent(componentName, StreamIterationSink.class, null, null, null, parallelism);
 
 		setBytesFrom(iterationTail, componentName);
-		// setEdge(iterationTail, componentName, ShufflePartitioner.class, 0);
 
 		if (log.isDebugEnabled()) {
 			log.debug("Iteration tail sink: " + componentName);
 		}
-		setBatchSize(iterationTail, 1);
 
 	}
 
