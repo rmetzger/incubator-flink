@@ -36,22 +36,22 @@ import org.apache.flink.util.StringUtils;
 import com.google.common.base.Preconditions;
 
 public class LogfileInfoServlet extends HttpServlet {
-	
+
 	private static final long serialVersionUID = 1L;
 
 	/**
 	 * The log for this class.
 	 */
 	private static final Log LOG = LogFactory.getLog(LogfileInfoServlet.class);
-	
+
 	private File[] logDirs;
-	
-	
+
+
 	public LogfileInfoServlet(File[] logDirs) {
 		Preconditions.checkNotNull(logDirs, "The given log files are null.");
 		this.logDirs = logDirs;
 	}
-	
+
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
@@ -72,7 +72,7 @@ public class LogfileInfoServlet extends HttpServlet {
 			}
 		}
 	}
-	
+
 	private void sendFile(String fileName, HttpServletResponse resp) throws IOException {
 		for(File logDir: logDirs) {
 			for(File f : logDir.listFiles()) {
@@ -80,7 +80,7 @@ public class LogfileInfoServlet extends HttpServlet {
 				if( f.getName().equals(fileName) /*||
 						(f.getName().indexOf("jobmanager") != -1 && f.getName().indexOf(".log") != -1 && ! Character.isDigit(f.getName().charAt(f.getName().length() - 1) )) */
 						) {
-					
+
 					resp.setStatus(HttpServletResponse.SC_OK);
 					resp.setContentType("text/plain");
 					writeFile(resp.getOutputStream(), f);
@@ -90,7 +90,7 @@ public class LogfileInfoServlet extends HttpServlet {
 	}
 	private static void writeFile(OutputStream out, File file) throws IOException {
 		byte[] buf = new byte[4 * 1024]; // 4K buffer
-		
+
 		FileInputStream  is = null;
 		try {
 			is = new FileInputStream(file);
@@ -105,5 +105,5 @@ public class LogfileInfoServlet extends HttpServlet {
 			}
 		}
 	}
-	
+
 }
