@@ -18,7 +18,7 @@
 
 
 
-package org.apache.flink.yarn;
+package org.apache.flink.yarn.appMaster;
 
 import java.io.IOException;
 import java.security.PrivilegedAction;
@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.flink.runtime.taskmanager.TaskManager;
+import org.apache.flink.yarn.Client;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
