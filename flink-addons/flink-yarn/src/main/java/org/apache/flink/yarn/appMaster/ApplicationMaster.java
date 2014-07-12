@@ -48,7 +48,6 @@ import org.apache.flink.yarn.Client;
 import org.apache.flink.yarn.Utils;
 import org.apache.flink.yarn.rpc.ApplicationMasterStatus;
 import org.apache.flink.yarn.rpc.YARNClientMasterProtocol;
-import org.apache.flink.yarn.rpc.YARNClientMasterProtocol.Message;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -79,14 +78,13 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 
 	private static final Log LOG = LogFactory.getLog(ApplicationMaster.class);
 
-	private FileSystem fs;
 	private final String currDir;
 	private final String logDirs;
 	private final String ownHostname;
 	private final String appId;
 	private final String clientHomeDir;
 	private final String applicationMasterHost;
-	private final String remoteStratosphereJarPath;
+	private final String remoteFlinkJarPath;
 	private final String shipListString;
 	private final String yarnClientUsername;
 	private final String rpcPort;
@@ -96,18 +94,65 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	private final String localWebInterfaceDir;
 	private final Configuration conf;
 
+	/**
+	 * File system for interacting with Flink's files such as the jar
+	 * and the configuration.
+	 */
+	private FileSystem fs;
+	
+	/**
+	 * The JobManager that is running in the same JVM as this Application Master.
+	 */
 	private JobManager jobManager;
 
-	private final Server amRpc;
+	/**
+	 * RPC server for letting the YARN client connect to this AM.
+	 * This RPC connection is handling application specific requests.
+	 */
+	private final Server amRpcServer;
 
+	/**
+	 * RPC connecton of the AppMaster to the Resource Manager (YARN master)
+	 */
 	private AMRMClient<ContainerRequest> rmClient;
 
+	/**
+	 * RPC connection to the Node Manager.
+	 */
 	private NMClient nmClient;
 
+	/**
+	 * Messages of the AM that the YARN client is showing the user in the YARN session
+	 */
 	private List<Message> messages = new SerializableArrayList<Message>();
 
-	protected boolean hasLog4j;
+	/**
+	 * Indicates if a log4j config file is being shipped.
+	 */
+	private boolean hasLog4j;
+	
+	/**
+	 * Heap size of TaskManager containers in MB.
+	 */
+	private int heapLimit;
 
+	/**
+	 * Number of containers that stopped running
+	 */
+	private int completedContainers = 0;
+
+	/**
+	 * Local resources used by all Task Manager containers.
+	 */
+	Map<String, LocalResource> taskManagerLocalResources;
+
+	/**
+	 * Flag indicating if the YARN session has failed.
+	 * A session failed if all containers stopped or an error occurred.
+	 * The ApplicationMaster will not close the RPC connection if it has failed (so
+	 * that the client can still retrieve the messages and then shut it down)
+	 */
+	private boolean isFailed = false;
 
 	public ApplicationMaster(Configuration conf) throws IOException {
 		fs = FileSystem.get(conf);
@@ -118,7 +163,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		appId = envs.get(Client.ENV_APP_ID);
 		clientHomeDir = envs.get(Client.ENV_CLIENT_HOME_DIR);
 		applicationMasterHost = envs.get(Environment.NM_HOST.key());
-		remoteStratosphereJarPath = envs.get(Client.FLINK_JAR_PATH);
+		remoteFlinkJarPath = envs.get(Client.FLINK_JAR_PATH);
 		shipListString = envs.get(Client.ENV_CLIENT_SHIP_FILES);
 		yarnClientUsername = envs.get(Client.ENV_CLIENT_USERNAME);
 		rpcPort = envs.get(Client.ENV_AM_PRC_PORT);
@@ -140,15 +185,19 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		Utils.getFlinkConfiguration(currDir);
 
 		// start AM RPC service
-		amRpc = RPC.getServer(this, ownHostname, Integer.valueOf(rpcPort), 2);
-		amRpc.start();
+		amRpcServer = RPC.getServer(this, ownHostname, Integer.valueOf(rpcPort), 2);
+		amRpcServer.start();
+	}
+	
+	private void setFailed(boolean failed) {
+		this.isFailed = failed;
 	}
 
 	private void generateConfigurationFile() throws IOException {
 		// Update yaml conf -> set jobManager address to this machine's address.
-		FileInputStream fis = new FileInputStream(currDir+"/stratosphere-conf.yaml");
+		FileInputStream fis = new FileInputStream(currDir+"/flink-conf.yaml");
 		BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-		Writer output = new BufferedWriter(new FileWriter(currDir+"/stratosphere-conf-modified.yaml"));
+		Writer output = new BufferedWriter(new FileWriter(currDir+"/flink-conf-modified.yaml"));
 		String line ;
 		while ( (line = br.readLine()) != null) {
 			if(line.contains(ConfigConstants.JOB_MANAGER_IPC_ADDRESS_KEY)) {
@@ -165,7 +214,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		output.append(ConfigConstants.JOB_MANAGER_WEB_LOG_PATH_KEY+": "+logDirs+"\n");
 		output.close();
 		br.close();
-		File newConf = new File(currDir+"/stratosphere-conf-modified.yaml");
+		File newConf = new File(currDir+"/flink-conf-modified.yaml");
 		if(!newConf.exists()) {
 			LOG.warn("modified yaml does not exist!");
 		}
@@ -175,7 +224,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		Utils.copyJarContents("resources/"+ConfigConstants.DEFAULT_JOB_MANAGER_WEB_PATH_NAME,
 				ApplicationMaster.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
-		String pathToNepheleConfig = currDir+"/stratosphere-conf-modified.yaml";
+		String pathToNepheleConfig = currDir+"/flink-conf-modified.yaml";
 		String[] args = {"-executionMode","cluster", "-configDir", pathToNepheleConfig};
 
 		// start the job manager
@@ -190,8 +239,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	}
 
 	private void run() throws Exception  {
-
-		int heapLimit = Utils.calculateHeapSize(memoryPerTaskManager);
+		heapLimit = Utils.calculateHeapSize(memoryPerTaskManager);
 
 		nmClient = NMClient.createNMClient();
 		nmClient.init(conf);
@@ -219,16 +267,16 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 			rmClient.addContainerRequest(containerAsk);
 		}
 
-		LocalResource stratosphereJar = Records.newRecord(LocalResource.class);
-		LocalResource stratosphereConf = Records.newRecord(LocalResource.class);
+		LocalResource flinkJar = Records.newRecord(LocalResource.class);
+		LocalResource flinkConf = Records.newRecord(LocalResource.class);
 
-		// register Stratosphere Jar with remote HDFS
-		final Path remoteJarPath = new Path(remoteStratosphereJarPath);
-		Utils.registerLocalResource(fs, remoteJarPath, stratosphereJar);
+		// register Flink Jar with remote HDFS
+		final Path remoteJarPath = new Path(remoteFlinkJarPath);
+		Utils.registerLocalResource(fs, remoteJarPath, flinkJar);
 
 		// register conf with local fs.
-		Utils.setupLocalResource(conf, fs, appId, new Path("file://"+currDir+"/stratosphere-conf-modified.yaml"), stratosphereConf, new Path(clientHomeDir));
-		LOG.info("Prepared localresource for modified yaml: "+stratosphereConf);
+		Utils.setupLocalResource(conf, fs, appId, new Path("file://"+currDir+"/flink-conf-modified.yaml"), flinkConf, new Path(clientHomeDir));
+		LOG.info("Prepared local resource for modified yaml: "+flinkConf);
 
 
 		hasLog4j = new File(currDir+"/log4j.properties").exists();
@@ -250,11 +298,23 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 				}
 			}
 		}
+		// copy resources to the TaskManagers.
+		taskManagerLocalResources = new HashMap<String, LocalResource>(2);
+		taskManagerLocalResources.put("flink.jar", flinkJar);
+		taskManagerLocalResources.put("flink-conf.yaml", flinkConf);
 
+		// add ship resources
+		if(!shipListString.isEmpty()) {
+			Preconditions.checkNotNull(remoteShipRsc);
+			for( int i = 0; i < remoteShipPaths.length; i++) {
+				taskManagerLocalResources.put(new Path(remoteShipPaths[i]).getName(), remoteShipRsc[i]);
+			}
+		}
+		completedContainers = 0;
+		
 		// Obtain allocated containers and launch
-		int completedContainers = 0;
-		allocateOutstandingContainer();
-
+		StringBuffer containerDiag = new StringBuffer(); // diagnostics log for the containers.
+		allocateOutstandingContainer(containerDiag);
 		LOG.info("Allocated all initial containers");
 
 		// Now wait for containers to complete
@@ -277,8 +337,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 				+ "containers finished\n"+containerDiag.toString();
 		LOG.info("Diagnostics message: "+diagnosticsMessage);
 		rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, diagnosticsMessage, "");
-		nmClient.close();
-		rmClient.close();
+		this.close();
 		LOG.info("Application Master shutdown completed.");
 	}
 
@@ -286,91 +345,70 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	 * Run a Thread to allocate new containers until taskManagerCount
 	 * is correct again.
 	 */
-	private void allocateOutstandingContainer() {
+	private void allocateOutstandingContainer(StringBuffer containerDiag) throws Exception {
 
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				// respect custom JVM options in the YAML file
-				final String javaOpts = GlobalConfiguration.getString(ConfigConstants.FLINK_JVM_OPTIONS, "");
+		// respect custom JVM options in the YAML file
+		final String javaOpts = GlobalConfiguration.getString(ConfigConstants.FLINK_JVM_OPTIONS, "");
 
-				int allocatedContainers = 0;
-				StringBuffer containerDiag = new StringBuffer(); // diagnostics log for the containers.
-				while (allocatedContainers < taskManagerCount) {
-					AllocateResponse response = rmClient.allocate(0);
-					for (Container container : response.getAllocatedContainers()) {
-						LOG.info("Got new Container for TM "+container.getId()+" on host "+container.getNodeId().getHost());
-						++allocatedContainers;
+		int allocatedContainers = 0;
+		while (allocatedContainers < taskManagerCount) {
+			AllocateResponse response = rmClient.allocate(0);
+			for (Container container : response.getAllocatedContainers()) {
+				LOG.info("Got new Container for TM "+container.getId()+" on host "+container.getNodeId().getHost());
+				++allocatedContainers;
 
-						// Launch container by create ContainerLaunchContext
-						ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
+				// Launch container by create ContainerLaunchContext
+				ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
 
-						String tmCommand = "$JAVA_HOME/bin/java -Xmx"+heapLimit+"m " + javaOpts ;
-						if(hasLog4j) {
-							tmCommand += " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/taskmanager-log4j.log\" -Dlog4j.configuration=file:log4j.properties";
-						}
-						tmCommand	+= " eu.stratosphere.yarn.appMaster.YarnTaskManagerRunner -configDir . "
-								+ " 1>"
-								+ ApplicationConstants.LOG_DIR_EXPANSION_VAR
-								+ "/taskmanager-stdout.log"
-								+ " 2>"
-								+ ApplicationConstants.LOG_DIR_EXPANSION_VAR
-								+ "/taskmanager-stderr.log";
-						ctx.setCommands(Collections.singletonList(tmCommand));
-
-						LOG.info("Starting TM with command="+tmCommand);
-
-						// copy resources to the TaskManagers.
-						Map<String, LocalResource> localResources = new HashMap<String, LocalResource>(2);
-						localResources.put("stratosphere.jar", flinkJar);
-						localResources.put("stratosphere-conf.yaml", flinkConf);
-
-						// add ship resources
-						if(!shipListString.isEmpty()) {
-							Preconditions.checkNotNull(remoteShipRsc);
-							for( int i = 0; i < remoteShipPaths.length; i++) {
-								localResources.put(new Path(remoteShipPaths[i]).getName(), remoteShipRsc[i]);
-							}
-						}
-
-
-						ctx.setLocalResources(localResources);
-
-						// Setup CLASSPATH for Container (=TaskTracker)
-						Map<String, String> containerEnv = new HashMap<String, String>();
-						Utils.setupEnv(conf, containerEnv); //add stratosphere.jar to class path.
-						containerEnv.put(Client.ENV_CLIENT_USERNAME, yarnClientUsername);
-
-						ctx.setEnvironment(containerEnv);
-
-						UserGroupInformation user = UserGroupInformation.getCurrentUser();
-						try {
-							Credentials credentials = user.getCredentials();
-							DataOutputBuffer dob = new DataOutputBuffer();
-							credentials.writeTokenStorageToStream(dob);
-							ByteBuffer securityTokens = ByteBuffer.wrap(dob.getData(),
-									0, dob.getLength());
-							ctx.setTokens(securityTokens);
-						} catch (IOException e) {
-							LOG.warn("Getting current user info failed when trying to launch the container", e);
-						}
-
-						LOG.info("Launching container " + allocatedContainers);
-						nmClient.startContainer(container, ctx);
-						messages.add(new Message("Launching new container"));
-					}
-					for (ContainerStatus status : response.getCompletedContainersStatuses()) {
-						++completedContainers;
-						LOG.info("Completed container (while allocating) "+status.getContainerId()+". Total Completed:" + completedContainers);
-						LOG.info("Diagnostics "+status.getDiagnostics());
-						// status.
-						logDeadContainer(status, containerDiag);
-					}
-					Thread.sleep(100);
+				String tmCommand = "$JAVA_HOME/bin/java -Xmx"+heapLimit+"m " + javaOpts ;
+				if(hasLog4j) {
+					tmCommand += " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/taskmanager-log4j.log\" -Dlog4j.configuration=file:log4j.properties";
 				}
-			}
-		});
+				tmCommand	+= " org.apache.flink.appMaster.YarnTaskManagerRunner -configDir . "
+						+ " 1>"
+						+ ApplicationConstants.LOG_DIR_EXPANSION_VAR
+						+ "/taskmanager-stdout.log" 
+						+ " 2>"
+						+ ApplicationConstants.LOG_DIR_EXPANSION_VAR
+						+ "/taskmanager-stderr.log";
+				ctx.setCommands(Collections.singletonList(tmCommand));
 
+				LOG.info("Starting TM with command="+tmCommand);
+
+				ctx.setLocalResources(taskManagerLocalResources);
+
+				// Setup CLASSPATH for Container (=TaskTracker)
+				Map<String, String> containerEnv = new HashMap<String, String>();
+				Utils.setupEnv(conf, containerEnv); //add flink.jar to class path.
+				containerEnv.put(Client.ENV_CLIENT_USERNAME, yarnClientUsername);
+
+				ctx.setEnvironment(containerEnv);
+
+				UserGroupInformation user = UserGroupInformation.getCurrentUser();
+				try {
+					Credentials credentials = user.getCredentials();
+					DataOutputBuffer dob = new DataOutputBuffer();
+					credentials.writeTokenStorageToStream(dob);
+					ByteBuffer securityTokens = ByteBuffer.wrap(dob.getData(),
+							0, dob.getLength());
+					ctx.setTokens(securityTokens);
+				} catch (IOException e) {
+					LOG.warn("Getting current user info failed when trying to launch the container", e);
+				}
+
+				LOG.info("Launching container " + allocatedContainers);
+				nmClient.startContainer(container, ctx);
+				messages.add(new Message("Launching new container"));
+			}
+			for (ContainerStatus status : response.getCompletedContainersStatuses()) {
+				++completedContainers;
+				LOG.info("Completed container (while allocating) "+status.getContainerId()+". Total Completed:" + completedContainers);
+				LOG.info("Diagnostics "+status.getDiagnostics());
+				// status.
+				logDeadContainer(status, containerDiag);
+			}
+			Thread.sleep(100);
+		}
 	}
 
 	private void logDeadContainer(ContainerStatus status,
@@ -381,12 +419,61 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		containerDiag.append("\n\n");
 		containerDiag.append(msg);
 	}
+	
+	@Override
+	public ApplicationMasterStatus getAppplicationMasterStatus() {
+		ApplicationMasterStatus amStatus;
+		if(jobManager == null) {
+			// JM not yet started
+			amStatus= new ApplicationMasterStatus(0, 0, messages.size() );
+		} else {
+			amStatus = new ApplicationMasterStatus(jobManager.getNumberOfTaskManagers(), 
+				jobManager.getAvailableSlots(), messages.size() );
+		}
+		return amStatus;
+	}
+	
 
+	@Override
+	public BooleanValue shutdownAM() throws Exception {
+		LOG.info("Client requested shutdown of AM");
+		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
+		this.close();
+		return new BooleanValue(true);
+	}
+	
+	private void close() throws Exception {
+		nmClient.close();
+		rmClient.close();
+		amRpcServer.stop();
+	}
+
+	@Override
+	public List<Message> getMessages() {
+		return messages;
+	}
+
+	public void addMessage(Message msg) {
+		messages.add(msg);
+	}
+
+	@Override
+	public void addTaskManagers(int n) {
+		throw new RuntimeException("Implement me");
+	}
+
+	/**
+	 * Keeps the ApplicationMaster JVM with the Client RPC service running
+	 * to allow it retrieving the error message.
+	 */
+	protected void keepRPCAlive() {
+
+	}
 	public static void main(String[] args) throws Exception {
 		// execute Application Master using the client's user
 		final String yarnClientUsername = System.getenv(Client.ENV_CLIENT_USERNAME);
 		LOG.info("YARN daemon runs as '"+UserGroupInformation.getCurrentUser().getShortUserName()+"' setting"
-				+ " user to execute Stratosphere ApplicationMaster/JobManager to '"+yarnClientUsername+"'");
+				+ " user to execute Flink ApplicationMaster/JobManager to '"+yarnClientUsername+"'");
 		UserGroupInformation ugi = UserGroupInformation.createRemoteUser(yarnClientUsername);
 		for(Token<? extends TokenIdentifier> toks : UserGroupInformation.getCurrentUser().getTokens()) {
 			ugi.addToken(toks);
@@ -395,6 +482,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 			@Override
 			public Object run() {
 				AMRMClient<ContainerRequest> rmClient = null;
+				ApplicationMaster am = null;
 				try {
 					Configuration conf = Utils.initializeYarnConfiguration();
 					rmClient = AMRMClient.createAMRMClient();
@@ -402,13 +490,14 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 					rmClient.start();
 
 					// run the actual Application Master
-					ApplicationMaster am = new ApplicationMaster(conf);
+					am = new ApplicationMaster(conf);
 					am.generateConfigurationFile();
 					am.startJobManager();
 					am.setRMClient(rmClient);
 					am.run();
 
 				} catch (Throwable e) {
+					LOG.fatal("Error while running the application master", e);
 					if(rmClient != null) {
 						try {
 							rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, "Stratosphere YARN Application master"
@@ -418,43 +507,16 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 							LOG.fatal("Unable to fail the application master", e1);
 						}
 					}
-					LOG.fatal("Error while running the application master", e);
+					if(am != null) {
+						am.setFailed(true);
+						am.addMessage(new Message("The application master failed with an exception:\n"
+								+ StringUtils.stringifyException(e)));
+						am.keepRPCAlive();
+					}
 				}
 				return null;
 			}
 		});
 	}
 
-	@Override
-	public ApplicationMasterStatus getAppplicationMasterStatus() {
-		ApplicationMasterStatus amStatus;
-		if(jobManager == null) {
-			// JM not yet started
-			amStatus= new ApplicationMasterStatus(0, 0, messages.size() );
-		} else {
-			amStatus = new ApplicationMasterStatus(jobManager.getNumberOfTaskManagers(),
-				jobManager.getAvailableSlots(), messages.size() );
-		}
-		return amStatus;
-	}
-
-	@Override
-	public BooleanValue shutdownAM() throws Exception {
-		LOG.info("Client requested shutdown of AM");
-		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
-		nmClient.close();
-		rmClient.close();
-		return new BooleanValue(true);
-	}
-
-	@Override
-	public List<Message> getMessages() {
-		return messages;
-	}
-
-	@Override
-	public void addTaskManagers(int n) {
-		// TODO Auto-generated method stub
-
-	}
 }
