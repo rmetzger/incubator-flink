@@ -152,7 +152,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	 * The ApplicationMaster will not close the RPC connection if it has failed (so
 	 * that the client can still retrieve the messages and then shut it down)
 	 */
-	private boolean isFailed = false;
+	private Boolean isFailed = false;
 
 	public ApplicationMaster(Configuration conf) throws IOException {
 		fs = FileSystem.get(conf);
@@ -425,11 +425,12 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		ApplicationMasterStatus amStatus;
 		if(jobManager == null) {
 			// JM not yet started
-			amStatus= new ApplicationMasterStatus(0, 0, messages.size() );
+			amStatus = new ApplicationMasterStatus(0, 0 );
 		} else {
-			amStatus = new ApplicationMasterStatus(jobManager.getNumberOfTaskManagers(), 
-				jobManager.getAvailableSlots(), messages.size() );
+			amStatus = new ApplicationMasterStatus(jobManager.getNumberOfTaskManagers(), jobManager.getAvailableSlots() );
 		}
+		amStatus.setMessageCount(messages.size());
+		amStatus.setFailed(isFailed);
 		return amStatus;
 	}
 	
@@ -437,7 +438,15 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	@Override
 	public BooleanValue shutdownAM() throws Exception {
 		LOG.info("Client requested shutdown of AM");
-		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
+		FinalApplicationStatus finalStatus = FinalApplicationStatus.SUCCEEDED;
+		String finalMessage = "";
+		if(isFailed) {
+			finalStatus = FinalApplicationStatus.FAILED;
+			finalMessage = "Application Master failed";
+			isFailed = false; // allow a proper shutdown
+			isFailed.notifyAll();
+		}
+		rmClient.unregisterApplicationMaster(finalStatus, finalMessage, "");
 		this.close();
 		return new BooleanValue(true);
 	}
@@ -445,7 +454,10 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	private void close() throws Exception {
 		nmClient.close();
 		rmClient.close();
-		amRpcServer.stop();
+		if(!isFailed) {
+			LOG.warn("Can not close AM RPC connection since this the AM is in failed state");
+			amRpcServer.stop();
+		}
 	}
 
 	@Override
@@ -467,8 +479,22 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	 * to allow it retrieving the error message.
 	 */
 	protected void keepRPCAlive() {
-
+		synchronized (isFailed) {
+			while(true) {
+				if(isFailed) {
+					try {
+						isFailed.wait(100);
+					} catch (InterruptedException e) {
+						LOG.warn("Error while waiting until end of failed mode of AM", e);
+					}
+				} else {
+					// end of isFailed mode.
+					break;
+				}
+			}
+		}
 	}
+	
 	public static void main(String[] args) throws Exception {
 		// execute Application Master using the client's user
 		final String yarnClientUsername = System.getenv(Client.ENV_CLIENT_USERNAME);
@@ -495,19 +521,25 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 					am.startJobManager();
 					am.setRMClient(rmClient);
 					am.run();
-
 				} catch (Throwable e) {
 					LOG.fatal("Error while running the application master", e);
-					if(rmClient != null) {
+					// the AM is not available. Report error through the unregister function.
+					if(rmClient != null && am == null) {
 						try {
-							rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, "Stratosphere YARN Application master"
+							rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, "Flink YARN Application master"
 									+ " stopped unexpectedly with an exception.\n"
 									+ StringUtils.stringifyException(e), "");
 						} catch (Exception e1) {
 							LOG.fatal("Unable to fail the application master", e1);
 						}
+						LOG.info("AM unregistered from RM");
+						return null;
+					}
+					if(rmClient == null) {
+						LOG.fatal("Unable to unregister AM since the RM client is not available");
 					}
 					if(am != null) {
+						LOG.info("Writing error into internal message system");
 						am.setFailed(true);
 						am.addMessage(new Message("The application master failed with an exception:\n"
 								+ StringUtils.stringifyException(e)));

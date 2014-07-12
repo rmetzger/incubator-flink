@@ -92,6 +92,15 @@ public class ClientMasterControl extends Thread {
 			return appMasterStatus.getNumberOfAvailableSlots();
 		}
 	}
+	
+	public boolean getFailedStatus() {
+		synchronized (lock) {
+			if(appMasterStatus == null) {
+				return false;
+			}
+			return appMasterStatus.getFailed();
+		}
+	}
 
 	public boolean shutdownAM() {
 		try {

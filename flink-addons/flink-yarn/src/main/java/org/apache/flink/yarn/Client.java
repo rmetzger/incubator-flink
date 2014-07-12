@@ -518,6 +518,15 @@ public class Client {
 					System.err.println("Number of connected TaskManagers changed to "+newTmCount+" slots available: "+cmc.getNumberOfAvailableSlots());
 					numTaskmanagers = newTmCount;
 				}
+				if(cmc.getFailedStatus()) {
+					System.err.println("The Application Master failed!\nMessages:\n");
+					for(Message m: cmc.getMessages() ) {
+						System.err.println("Message: "+m.text);
+					}
+					System.err.println("Requesting Application Master shutdown");
+					cmc.shutdownAM();
+					System.err.println("Application Master closed.");
+				}
 				for(Message m: cmc.getMessages() ) {
 					System.err.println("Message: "+m.text);
 				}
@@ -639,9 +648,6 @@ public class Client {
 		formatter.setSyntaxPrefix("   Optional");
 		Options opt = new Options();
 		opt.addOption(VERBOSE);
-	//	opt.addOption(GEN_CONF);
-	//	opt.addOption(STRATOSPHERE_CONF);
-	//	opt.addOption(STRATOSPHERE_JAR);
 		opt.addOption(JM_MEMORY);
 		opt.addOption(TM_MEMORY);
 		opt.addOption(TM_CORES);

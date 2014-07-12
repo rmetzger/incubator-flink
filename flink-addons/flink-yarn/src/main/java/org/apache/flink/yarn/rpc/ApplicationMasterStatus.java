@@ -31,18 +31,25 @@ public class ApplicationMasterStatus implements IOReadableWritable {
 	private int numTaskManagers = 0;
 	private int numSlots = 0;
 	private int messageCount = 0;
+	private boolean failed = false;
 
 
 	public ApplicationMasterStatus() {
 		// for instantiation
 	}
-
-	public ApplicationMasterStatus(int numTaskManagers, int numSlots,
-			int messageCount) {
+	
+	public ApplicationMasterStatus(int numTaskManagers, int numSlots) {
 		this.numTaskManagers = numTaskManagers;
 		this.numSlots = numSlots;
-		this.messageCount = messageCount;
 	}
+
+	public ApplicationMasterStatus(int numTaskManagers, int numSlots,
+			int messageCount, boolean failed) {
+		this(numTaskManagers, numSlots);
+		this.messageCount = messageCount;
+		this.failed = failed;
+	}
+	
 
 	public int getNumberOfTaskManagers() {
 		return numTaskManagers;
@@ -55,12 +62,21 @@ public class ApplicationMasterStatus implements IOReadableWritable {
 	public int getMessageCount() {
 		return messageCount;
 	}
+	
+	public void setMessageCount(int messageCount) {
+		this.messageCount = messageCount;
+	}
+	
+	public void setFailed(Boolean isFailed) {
+		this.failed = isFailed;
+	}
 
 	@Override
 	public void write(DataOutputView out) throws IOException {
 		out.writeInt(numTaskManagers);
 		out.writeInt(numSlots);
 		out.writeInt(messageCount);
+		out.writeBoolean(failed);
 	}
 
 	@Override
@@ -68,5 +84,10 @@ public class ApplicationMasterStatus implements IOReadableWritable {
 		numTaskManagers = in.readInt();
 		numSlots = in.readInt();
 		messageCount = in.readInt();
+		failed = in.readBoolean();
+	}
+
+	public boolean getFailed() {
+		return failed;
 	}
 }

@@ -48,7 +48,7 @@ public class YarnTaskManagerRunner {
 		newArgs[newArgs.length-1] = localDirs;
 		LOG.info("Setting log path "+localDirs);
 		LOG.info("YARN daemon runs as '"+UserGroupInformation.getCurrentUser().getShortUserName()+"' setting"
-				+ " user to execute Stratosphere TaskManager to '"+yarnClientUsername+"'");
+				+ " user to execute Flink TaskManager to '"+yarnClientUsername+"'");
 		UserGroupInformation ugi = UserGroupInformation.createRemoteUser(yarnClientUsername);
 		for(Token<? extends TokenIdentifier> toks : UserGroupInformation.getCurrentUser().getTokens()) {
 			ugi.addToken(toks);
@@ -59,7 +59,7 @@ public class YarnTaskManagerRunner {
 				try {
 					TaskManager.main(newArgs);
 				} catch (Exception e) {
-					e.printStackTrace();
+					LOG.fatal("Error while running the TaskManager", e);
 				}
 				return null;
 			}
