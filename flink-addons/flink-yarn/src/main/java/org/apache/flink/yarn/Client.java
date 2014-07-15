@@ -560,8 +560,8 @@ public class Client {
 	private void printHelp() {
 		System.err.println("Available commands:\n"
 				+ "\t stop : Stop the YARN session\n"
-				+ "\t add n : Add n TaskManagers to the YARN session\n"
-				+ "\t remove n : Remove n TaskManagers to the YARN session\n"
+			//	+ "\t add n : Add n TaskManagers to the YARN session\n"
+			//	+ "\t remove n : Remove n TaskManagers to the YARN session\n"
 				+ "\t allmsg : Show all messages\n");
 	}
 	private void evalCommand(String command) {
