@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-
 package org.apache.flink.yarn;
 
 import java.io.BufferedReader;
@@ -104,7 +101,7 @@ public class Client {
 	private static final Option VERBOSE = new Option("v","verbose",false, "Verbose debug mode");
 	private static final Option GEN_CONF = new Option("g","generateConf",false, "Place default configuration file in current directory");
 	private static final Option QUEUE = new Option("qu","queue",true, "Specify YARN queue.");
-	private static final Option SHIP_PATH = new Option("s","ship",true, "Ship files in the specified directory");
+	private static final Option SHIP_PATH = new Option("t","ship",true, "Ship files in the specified directory (t for transfer)");
 	private static final Option FLINK_CONF_DIR = new Option("c","confDir",true, "Path to Flink configuration directory");
 	private static final Option FLINK_JAR = new Option("j","jar",true, "Path to Flink jar file");
 	private static final Option JM_MEMORY = new Option("jm","jobManagerMemory",true, "Memory for JobManager Container [in MB]");
@@ -112,6 +109,7 @@ public class Client {
 	private static final Option TM_CORES = new Option("tmc","taskManagerCores",true, "Virtual CPU cores per TaskManager");
 	private static final Option CONTAINER = new Option("n","container",true, "Number of Yarn container to allocate (=Number of"
 			+ " TaskTrackers)");
+	private static final Option SLOTS = new Option("s","slots",true, "Number of slots per TaskManager");
 
 	/**
 	 * Constants
@@ -126,6 +124,7 @@ public class Client {
 	public static final String ENV_CLIENT_SHIP_FILES = "_CLIENT_SHIP_FILES";
 	public static final String ENV_CLIENT_USERNAME = "_CLIENT_USERNAME";
 	public static final String ENV_AM_PRC_PORT = "_AM_PRC_PORT";
+	public static final String ENV_SLOTS = "_SLOTS";
 
 	private static final String CONFIG_FILE_NAME = "flink-conf.yaml";
 
@@ -133,6 +132,8 @@ public class Client {
 	 * Seconds to wait between each status query to the AM.
 	 */
 	private static final int CLIENT_POLLING_INTERVALL = 3;
+	private static final int MIN_JM_MEMORY = 128;
+	private static final int MIN_TM_MEMORY = 128;
 
 	private Configuration conf;
 	private YarnClient yarnClient;
@@ -167,6 +168,7 @@ public class Client {
 		options.addOption(QUEUE);
 		options.addOption(QUERY);
 		options.addOption(SHIP_PATH);
+		options.addOption(SLOTS);
 
 		CommandLineParser parser = new PosixParser();
 		CommandLine cmd = null;
@@ -287,11 +289,24 @@ public class Client {
 		if(cmd.hasOption(JM_MEMORY.getOpt())) {
 			jmMemory = Integer.valueOf(cmd.getOptionValue(JM_MEMORY.getOpt()));
 		}
-
+		if(jmMemory < MIN_JM_MEMORY) {
+			System.out.println("The JobManager memory is below the minimum required memory amount "
+					+ "of "+MIN_JM_MEMORY+" MB");
+			System.exit(1);
+		}
 		// Task Managers memory
 		int tmMemory = 1024;
 		if(cmd.hasOption(TM_MEMORY.getOpt())) {
 			tmMemory = Integer.valueOf(cmd.getOptionValue(TM_MEMORY.getOpt()));
+		}
+		if(tmMemory < MIN_TM_MEMORY) {
+			System.out.println("The TaskManager memory is below the minimum required memory amount "
+					+ "of "+MIN_TM_MEMORY+" MB");
+			System.exit(1);
+		}
+		int slots = -1;
+		if(cmd.hasOption(SLOTS.getOpt())) {
+			slots = Integer.valueOf(cmd.getOptionValue(SLOTS.getOpt()));
 		}
 
 		// Task Managers vcores
@@ -460,6 +475,7 @@ public class Client {
 		appMasterEnv.put(Client.ENV_CLIENT_SHIP_FILES, envShipFileList.toString() );
 		appMasterEnv.put(Client.ENV_CLIENT_USERNAME, UserGroupInformation.getCurrentUser().getShortUserName());
 		appMasterEnv.put(Client.ENV_AM_PRC_PORT, String.valueOf(amRPCPort));
+		appMasterEnv.put(Client.ENV_SLOTS, String.valueOf(slots));
 
 		amContainer.setEnvironment(appMasterEnv);
 

@@ -91,6 +91,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	private final int taskManagerCount;
 	private final int memoryPerTaskManager;
 	private final int coresPerTaskManager;
+	private final int slots;
 	private final String localWebInterfaceDir;
 	private final Configuration conf;
 
@@ -170,6 +171,8 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		taskManagerCount = Integer.valueOf(envs.get(Client.ENV_TM_COUNT));
 		memoryPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_MEMORY));
 		coresPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_CORES));
+		slots = Integer.valueOf(envs.get(Client.ENV_SLOTS));
+		
 		localWebInterfaceDir = currDir+"/resources/"+ConfigConstants.DEFAULT_JOB_MANAGER_WEB_PATH_NAME;
 		this.conf = conf;
 
@@ -212,6 +215,13 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		output.append(ConfigConstants.JOB_MANAGER_IPC_ADDRESS_KEY+": "+ownHostname+"\n");
 		output.append(ConfigConstants.JOB_MANAGER_WEB_ROOT_PATH_KEY+": "+localWebInterfaceDir+"\n");
 		output.append(ConfigConstants.JOB_MANAGER_WEB_LOG_PATH_KEY+": "+logDirs+"\n");
+		
+		if(slots != -1) {
+			// configure slots and default dop
+			output.append(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS+": "+slots+"\n");
+			output.append(ConfigConstants.DEFAULT_PARALLELIZATION_DEGREE_KEY+": "+slots*taskManagerCount+"\n");
+		}
+		
 		output.close();
 		br.close();
 		File newConf = new File(currDir+"/flink-conf-modified.yaml");
