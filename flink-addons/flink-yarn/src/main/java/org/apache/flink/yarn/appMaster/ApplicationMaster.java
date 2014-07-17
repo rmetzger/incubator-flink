@@ -374,7 +374,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 				if(hasLog4j) {
 					tmCommand += " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/taskmanager-log4j.log\" -Dlog4j.configuration=file:log4j.properties";
 				}
-				tmCommand	+= " org.apache.flink.appMaster.YarnTaskManagerRunner -configDir . "
+				tmCommand	+= " "+YarnTaskManagerRunner.class.getName()+" -configDir . "
 						+ " 1>"
 						+ ApplicationConstants.LOG_DIR_EXPANSION_VAR
 						+ "/taskmanager-stdout.log" 
@@ -465,8 +465,9 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		nmClient.close();
 		rmClient.close();
 		if(!isFailed) {
-			LOG.warn("Can not close AM RPC connection since this the AM is in failed state");
 			amRpcServer.stop();
+		} else {
+			LOG.warn("Can not close AM RPC connection since the AM is in failed state");
 		}
 	}
 

@@ -47,6 +47,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.flink.client.CliFrontend;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.GlobalConfiguration;
+import org.apache.flink.yarn.appMaster.ApplicationMaster;
 import org.apache.flink.yarn.rpc.YARNClientMasterProtocol.Message;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -335,7 +336,7 @@ public class Client {
 		}
 
 		// Create yarnClient
-		final YarnClient yarnClient = YarnClient.createYarnClient();
+		yarnClient = YarnClient.createYarnClient();
 		yarnClient.init(conf);
 		yarnClient.start();
 
@@ -410,7 +411,7 @@ public class Client {
 		if(hasLog4j) {
 			amCommand 	+= " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/jobmanager-log4j.log\" -Dlog4j.configuration=file:log4j.properties";
 		}
-		amCommand 	+= " org.apache.flink.yarn.appMaster.ApplicationMaster" + " "
+		amCommand 	+= " "+ApplicationMaster.class.getName()+" "
 					+ " 1>"
 					+ ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/jobmanager-stdout.log"
 					+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/jobmanager-stderr.log";
