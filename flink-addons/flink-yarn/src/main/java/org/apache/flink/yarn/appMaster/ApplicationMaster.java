@@ -30,12 +30,10 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.security.PrivilegedAction;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -74,7 +72,6 @@ import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.util.Records;
-import org.hamcrest.number.IsCloseTo;
 
 import com.google.common.base.Preconditions;
 
