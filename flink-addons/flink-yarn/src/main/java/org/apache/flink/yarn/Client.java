@@ -626,7 +626,7 @@ public class Client {
 		try {
 			LOG.info("Sending shutdown request to the Application Master");
 			cmc.shutdownAM();
-			yarnClient.killApplication(appId);
+		//	yarnClient.killApplication(appId);
 			LOG.info("Deleting files in "+sessionFilesDir );
 			FileSystem shutFS = FileSystem.get(conf);
 			shutFS.delete(sessionFilesDir, true); // delete conf and jar file.

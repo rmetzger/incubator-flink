@@ -21,6 +21,7 @@ package org.apache.flink.client;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -814,21 +815,28 @@ public class CliFrontend {
 			String location = getConfigurationDirectory();
 			GlobalConfiguration.loadConfiguration(location);
 			// set default parallelization degree
-			Properties yarnProps = getYarnProperties();
-			if(yarnProps != null) {
-				int paraDegree = Integer.valueOf(yarnProps.getProperty(YARN_PROPERTIES_DOP));
-				if(paraDegree != -1) {
-					Configuration c = GlobalConfiguration.getConfiguration();
-					c.setInteger(ConfigConstants.DEFAULT_PARALLELIZATION_DEGREE_KEY, paraDegree);
-					GlobalConfiguration.includeConfiguration(c); // update config
+			Properties yarnProps;
+			try {
+				yarnProps = getYarnProperties();
+				if(yarnProps != null) {
+					int paraDegree = Integer.valueOf(yarnProps.getProperty(YARN_PROPERTIES_DOP));
+					if(paraDegree != -1) {
+						Configuration c = GlobalConfiguration.getConfiguration();
+						c.setInteger(ConfigConstants.DEFAULT_PARALLELIZATION_DEGREE_KEY, paraDegree);
+						GlobalConfiguration.includeConfiguration(c); // update config
+					}
 				}
+			} catch (IOException e) {
+				System.err.println("Error while loading YARN properties: "+e.getMessage());
+				e.printStackTrace();
 			}
+			
 			globalConfigurationLoaded = true;
 		}
 		return GlobalConfiguration.getConfiguration();
 	}
 	
-	protected Properties getYarnProperties() {
+	protected Properties getYarnProperties() throws IOException {
 		if(!yarnPropertiesLoaded) {
 			String loc = getConfigurationDirectory();
 			File propertiesFile = new File(loc + '/' + YARN_PROPERTIES_FILE);
