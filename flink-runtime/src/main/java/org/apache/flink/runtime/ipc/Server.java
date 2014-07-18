@@ -956,11 +956,12 @@ public abstract class Server {
 					CurCall.set(call);
 
 					value = call(call.connection.protocol, call.param, call.timestamp);
-
+					LOG.warn("+++returned here as well");
 					CurCall.set(null);
 
 					setupResponse(buf, call, (error == null) ? Status.SUCCESS : Status.ERROR, value, errorClass, error);
 					responder.doRespond(call);
+					LOG.warn("+++returned here as well");
 				} catch (InterruptedException e) {
 					if (running) { // unexpected -- log it
 						LOG.error(getName() + " caught: ", e);

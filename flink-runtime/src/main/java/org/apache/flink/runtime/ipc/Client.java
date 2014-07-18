@@ -138,7 +138,8 @@ public class Client {
 		 */
 		protected synchronized void callComplete() {
 			this.done = true;
-			notify(); // notify caller
+			LOG.warn("+++Completed");
+			notifyAll(); // notify caller
 		}
 
 		/**
@@ -497,7 +498,7 @@ public class Client {
 				return;
 			}
 			touch();
-
+LOG.warn("+++ got a response");
 			try {
 				int id = in.readInt(); // try to read an id
 
