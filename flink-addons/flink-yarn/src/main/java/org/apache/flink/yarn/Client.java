@@ -43,6 +43,7 @@ import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.flink.client.CliFrontend;
@@ -112,6 +113,11 @@ public class Client {
 	private static final Option CONTAINER = new Option("n","container",true, "Number of Yarn container to allocate (=Number of"
 			+ " TaskTrackers)");
 	private static final Option SLOTS = new Option("s","slots",true, "Number of slots per TaskManager");
+	/**
+	 * Dynamic properties allow the user to specify additional configuration values with -D, such as
+	 *  -Dfs.overwrite-files=true  -Dtaskmanager.network.numberOfBuffers=16368
+	 */
+	private static final Option DYNAMIC_PROPERTIES = new Option("D", true, "Dynamic properties");
 
 	/**
 	 * Constants,
@@ -128,9 +134,10 @@ public class Client {
 	public static final String ENV_CLIENT_USERNAME = "_CLIENT_USERNAME";
 	public static final String ENV_AM_PRC_PORT = "_AM_PRC_PORT";
 	public static final String ENV_SLOTS = "_SLOTS";
+	public static final String ENV_DYNAMIC_PROPERTIES = "_DYNAMIC_PROPERTIES";
 
 	private static final String CONFIG_FILE_NAME = "flink-conf.yaml";
-
+	
 	/**
 	 * Seconds to wait between each status query to the AM.
 	 */
@@ -184,6 +191,7 @@ public class Client {
 		options.addOption(QUERY);
 		options.addOption(SHIP_PATH);
 		options.addOption(SLOTS);
+		options.addOption(DYNAMIC_PROPERTIES);
 
 		CommandLineParser parser = new PosixParser();
 		CommandLine cmd = null;
@@ -323,6 +331,12 @@ public class Client {
 		if(cmd.hasOption(SLOTS.getOpt())) {
 			slots = Integer.valueOf(cmd.getOptionValue(SLOTS.getOpt()));
 		}
+		
+		String[] dynamicProperties = null;
+		if(cmd.hasOption(DYNAMIC_PROPERTIES.getOpt())) {
+			dynamicProperties = cmd.getOptionValues(DYNAMIC_PROPERTIES.getOpt());
+		}
+		String dynamicPropertiesEncoded = StringUtils.join(dynamicProperties, CliFrontend.YARN_DYNAMIC_PROPERTIES_SEPARATOR);
 
 		// Task Managers vcores
 		int tmCores = 1;
@@ -491,6 +505,7 @@ public class Client {
 		appMasterEnv.put(Client.ENV_CLIENT_USERNAME, UserGroupInformation.getCurrentUser().getShortUserName());
 		appMasterEnv.put(Client.ENV_AM_PRC_PORT, String.valueOf(amRPCPort));
 		appMasterEnv.put(Client.ENV_SLOTS, String.valueOf(slots));
+		appMasterEnv.put(Client.ENV_DYNAMIC_PROPERTIES, dynamicPropertiesEncoded);
 
 		amContainer.setEnvironment(appMasterEnv);
 
@@ -530,6 +545,10 @@ public class Client {
 				yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_JOBMANAGER_KEY, appReport.getHost()+":"+jmPort);
 				if(slots != -1) {
 					yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_DOP, Integer.toString(slots * taskManagerCount) );
+				}
+				// add dynamic properties
+				if(dynamicProperties != null) {
+					yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_DYNAMIC_PROPERTIES_STRING, dynamicPropertiesEncoded);
 				}
 				OutputStream out = new FileOutputStream(yarnPropertiesFile);
 				yarnProps.store(out, "Generated YARN properties file");

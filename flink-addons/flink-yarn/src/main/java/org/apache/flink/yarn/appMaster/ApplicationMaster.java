@@ -36,6 +36,8 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.client.CliFrontend;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.ipc.RPC;
@@ -155,6 +157,8 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	 */
 	private Boolean isFailed = false;
 
+	private String dynamicPropertiesEncodedString;
+
 	public ApplicationMaster(Configuration conf) throws IOException {
 		fs = FileSystem.get(conf);
 		Map<String, String> envs = System.getenv();
@@ -172,6 +176,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		memoryPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_MEMORY));
 		coresPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_CORES));
 		slots = Integer.valueOf(envs.get(Client.ENV_SLOTS));
+		dynamicPropertiesEncodedString = envs.get(Client.ENV_DYNAMIC_PROPERTIES);
 		
 		localWebInterfaceDir = currDir+"/resources/"+ConfigConstants.DEFAULT_JOB_MANAGER_WEB_PATH_NAME;
 		this.conf = conf;
@@ -220,6 +225,13 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 			// configure slots and default dop
 			output.append(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS+": "+slots+"\n");
 			output.append(ConfigConstants.DEFAULT_PARALLELIZATION_DEGREE_KEY+": "+slots*taskManagerCount+"\n");
+		}
+		// add dynamic properties
+		List<Tuple2<String, String>> dynamicProperties = CliFrontend.getDynamicProperties(dynamicPropertiesEncodedString);
+		for(Tuple2<String, String> dynamicProperty : dynamicProperties) {
+			String propLine = dynamicProperty.f0+": "+dynamicProperty.f1;
+			output.append(propLine+"\n");
+			LOG.debug("Adding user-supplied configuration value to generated configuration file: "+propLine);
 		}
 		
 		output.close();
@@ -348,6 +360,8 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		LOG.info("Diagnostics message: "+diagnosticsMessage);
 		rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, diagnosticsMessage, "");
 		this.close();
+		amRpcServer.stop(); // we need to manually stop the RPC service. Usually, the Client stops the RPC,
+		// but at this point, the AM has been shut down (for some reason).
 		LOG.info("Application Master shutdown completed.");
 	}
 

@@ -45,6 +45,7 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.commons.cli.UnrecognizedOptionException;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.accumulators.AccumulatorHelper;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.client.program.Client;
 import org.apache.flink.client.program.PackagedProgram;
 import org.apache.flink.client.program.ProgramInvocationException;
@@ -111,9 +112,15 @@ public class CliFrontend {
 	private static final String CONFIG_DIRECTORY_FALLBACK_1 = "../conf";
 	private static final String CONFIG_DIRECTORY_FALLBACK_2 = "conf";
 	
+	/**
+	 * YARN-session related constants
+	 */
 	public static final String YARN_PROPERTIES_FILE = ".yarn-properties";
 	public static final String YARN_PROPERTIES_JOBMANAGER_KEY = "jobManager";
 	public static final String YARN_PROPERTIES_DOP = "degreeOfParallelism";
+	public static final String YARN_PROPERTIES_DYNAMIC_PROPERTIES_STRING = "dynamicPropertiesString";
+	// this has to be a regex for String.split()
+	public static final String YARN_DYNAMIC_PROPERTIES_SEPARATOR = "@@";
 	
 
 	private CommandLineParser parser;
@@ -335,6 +342,7 @@ public class CliFrontend {
 	
 	protected int executeProgram(PackagedProgram program, Client client, int parallelism) {
 		JobExecutionResult execResult;
+		System.err.println("Active config = "+GlobalConfiguration.getConfiguration());
 		try {
 			client.setPrintStatusDuringExecution(true);
 			execResult = client.run(program, parallelism, true);
@@ -818,11 +826,17 @@ public class CliFrontend {
 				yarnProps = getYarnProperties();
 				if(yarnProps != null) {
 					int paraDegree = Integer.valueOf(yarnProps.getProperty(YARN_PROPERTIES_DOP));
+					Configuration c = GlobalConfiguration.getConfiguration();
 					if(paraDegree != -1) {
-						Configuration c = GlobalConfiguration.getConfiguration();
 						c.setInteger(ConfigConstants.DEFAULT_PARALLELIZATION_DEGREE_KEY, paraDegree);
-						GlobalConfiguration.includeConfiguration(c); // update config
 					}
+					// handle the YARN client's dynamic properties
+					String dynamicPropertiesEncoded = yarnProps.getProperty(YARN_PROPERTIES_DYNAMIC_PROPERTIES_STRING);
+					List<Tuple2<String, String>> dynamicProperties = getDynamicProperties(dynamicPropertiesEncoded);
+					for(Tuple2<String, String> dynamicProperty : dynamicProperties) {
+						c.setString(dynamicProperty.f0, dynamicProperty.f1);
+					}
+					GlobalConfiguration.includeConfiguration(c); // update config
 				}
 			} catch (IOException e) {
 				System.err.println("Error while loading YARN properties: "+e.getMessage());
@@ -832,6 +846,23 @@ public class CliFrontend {
 			globalConfigurationLoaded = true;
 		}
 		return GlobalConfiguration.getConfiguration();
+	}
+	
+	public static List<Tuple2<String, String>> getDynamicProperties(String dynamicPropertiesEncoded) {
+		List<Tuple2<String, String>> ret = new ArrayList<Tuple2<String, String>>();
+		if(dynamicPropertiesEncoded != null && dynamicPropertiesEncoded.length() > 0) {
+			String[] propertyLines = dynamicPropertiesEncoded.split(CliFrontend.YARN_DYNAMIC_PROPERTIES_SEPARATOR);
+			for(String propLine : propertyLines) {
+				if(propLine == null) {
+					continue;
+				}
+				String[] kv = propLine.split("=");
+				if(kv != null && kv[0] != null && kv[1] != null && kv[0].length() > 0) {
+					ret.add(new Tuple2<String, String>(kv[0], kv[1]));
+				}
+			}
+		}
+		return ret;
 	}
 	
 	protected Properties getYarnProperties() throws IOException {
