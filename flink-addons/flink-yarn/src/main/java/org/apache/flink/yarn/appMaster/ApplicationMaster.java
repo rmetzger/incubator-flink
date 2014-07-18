@@ -74,6 +74,7 @@ import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.util.Records;
+import org.hamcrest.number.IsCloseTo;
 
 import com.google.common.base.Preconditions;
 
@@ -158,6 +159,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	 * that the client can still retrieve the messages and then shut it down)
 	 */
 	private Boolean isFailed = false;
+	private boolean isClosed = false;
 
 	private String dynamicPropertiesEncodedString;
 	
@@ -165,6 +167,8 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	 * AM status that is send to the Client periodically
 	 */
 	private ApplicationMasterStatus amStatus;
+
+	
 
 	public ApplicationMaster(Configuration conf) throws IOException {
 		fs = FileSystem.get(conf);
@@ -358,9 +362,9 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 			}
 			Thread.sleep(5000);
 		}
-		LOG.info("Shutting down JobManager");
-		jobManager.shutdown();
-
+		if(isClosed) {
+			return;
+		}
 		// Un-register with ResourceManager
 		final String diagnosticsMessage = "Application Master shut down after all "
 				+ "containers finished\n"+containerDiag.toString();
@@ -429,7 +433,6 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 
 				LOG.info("Launching container " + allocatedContainers);
 				nmClient.startContainer(container, ctx);
-				messages.add(new Message("Launching new container"));
 			}
 			for (ContainerStatus status : response.getCompletedContainersStatuses()) {
 				++completedContainers;
@@ -466,7 +469,6 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		}
 		amStatus.setMessageCount(messages.size());
 		amStatus.setFailed(isFailed);
-		addMessage(new Message("Add a message "+new Date()));
 		return amStatus;
 	}
 	
@@ -488,14 +490,17 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	}
 	
 	private void close() throws Exception {
-		jobManager.shutdown();
-		nmClient.close();
-		rmClient.close();
-		if(!isFailed) {
-		//	amRpcServer.stop();
-		} else {
-			LOG.warn("Can not close AM RPC connection since the AM is in failed state");
+		if(!isClosed) {
+			jobManager.shutdown();
+			nmClient.close();
+			rmClient.close();
+			if(!isFailed) {
+			//	amRpcServer.stop();
+			} else {
+				LOG.warn("Can not close AM RPC connection since the AM is in failed state");
+			}
 		}
+		this.isClosed = true;
 	}
 
 	@Override
