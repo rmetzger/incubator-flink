@@ -500,7 +500,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 
 	@Override
 	public List<Message> getMessages() {
-		LOG.warn("getMessagesCall()", new Exception());
+		LOG.warn("getMessagesCall() to thread "+Thread.currentThread().getName(), new Exception());
 		return messages;
 	}
 

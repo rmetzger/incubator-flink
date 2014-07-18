@@ -139,7 +139,7 @@ public class Client {
 		protected synchronized void callComplete() {
 			this.done = true;
 			LOG.warn("+++Completed");
-			notifyAll(); // notify caller
+			notify(); // notify caller
 		}
 
 		/**
@@ -533,6 +533,7 @@ LOG.warn("+++ got a response");
 					markClosed(new RemoteException(StringRecord.readString(in), StringRecord.readString(in)));
 				}
 			} catch (IOException e) {
+				LOG.warn("Exception while receiving an RPC call", e);
 				markClosed(e);
 			}
 		}
