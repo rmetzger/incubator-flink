@@ -342,7 +342,6 @@ public class CliFrontend {
 	
 	protected int executeProgram(PackagedProgram program, Client client, int parallelism) {
 		JobExecutionResult execResult;
-		System.err.println("Active config = "+GlobalConfiguration.getConfiguration());
 		try {
 			client.setPrintStatusDuringExecution(true);
 			execResult = client.run(program, parallelism, true);

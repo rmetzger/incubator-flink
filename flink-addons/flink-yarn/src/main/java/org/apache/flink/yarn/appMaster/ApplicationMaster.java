@@ -30,6 +30,7 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.security.PrivilegedAction;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +159,11 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	private Boolean isFailed = false;
 
 	private String dynamicPropertiesEncodedString;
+	
+	/**
+	 * AM status that is send to the Client periodically
+	 */
+	private ApplicationMasterStatus amStatus;
 
 	public ApplicationMaster(Configuration conf) throws IOException {
 		fs = FileSystem.get(conf);
@@ -176,7 +182,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		memoryPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_MEMORY));
 		coresPerTaskManager = Integer.valueOf(envs.get(Client.ENV_TM_CORES));
 		slots = Integer.valueOf(envs.get(Client.ENV_SLOTS));
-		dynamicPropertiesEncodedString = envs.get(Client.ENV_DYNAMIC_PROPERTIES);
+		dynamicPropertiesEncodedString = envs.get(Client.ENV_DYNAMIC_PROPERTIES); // might return null!
 		
 		localWebInterfaceDir = currDir+"/resources/"+ConfigConstants.DEFAULT_JOB_MANAGER_WEB_PATH_NAME;
 		this.conf = conf;
@@ -446,15 +452,20 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	
 	@Override
 	public ApplicationMasterStatus getAppplicationMasterStatus() {
-		ApplicationMasterStatus amStatus;
+		if(amStatus == null) {
+			amStatus = new ApplicationMasterStatus();
+		}
 		if(jobManager == null) {
 			// JM not yet started
-			amStatus = new ApplicationMasterStatus(0, 0 );
+			amStatus.setNumTaskManagers(0);
+			amStatus.setNumSlots(0);
 		} else {
-			amStatus = new ApplicationMasterStatus(jobManager.getNumberOfTaskManagers(), jobManager.getAvailableSlots() );
+			amStatus.setNumTaskManagers(jobManager.getNumberOfTaskManagers());
+			amStatus.setNumSlots(jobManager.getAvailableSlots());
 		}
 		amStatus.setMessageCount(messages.size());
 		amStatus.setFailed(isFailed);
+		addMessage(new Message("Add a message "+new Date()));
 		return amStatus;
 	}
 	
@@ -519,6 +530,11 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void closeRPC() {
+		amRpcServer.stop();
 	}
 	
 	public static void main(String[] args) throws Exception {

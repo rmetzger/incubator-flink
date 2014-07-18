@@ -104,7 +104,8 @@ public class ClientMasterControl extends Thread {
 
 	public boolean shutdownAM() {
 		try {
-			return cmp.shutdownAM().getValue();
+			boolean result = cmp.shutdownAM().getValue();
+			return result;
 		} catch(Throwable e) {
 			LOG.warn("Error shutting down the application master", e);
 			return false;
@@ -119,6 +120,7 @@ public class ClientMasterControl extends Thread {
 	}
 
 	public void close() {
+		cmp.closeRPC();
 		running = false;
 	}
 

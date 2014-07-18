@@ -505,7 +505,9 @@ public class Client {
 		appMasterEnv.put(Client.ENV_CLIENT_USERNAME, UserGroupInformation.getCurrentUser().getShortUserName());
 		appMasterEnv.put(Client.ENV_AM_PRC_PORT, String.valueOf(amRPCPort));
 		appMasterEnv.put(Client.ENV_SLOTS, String.valueOf(slots));
-		appMasterEnv.put(Client.ENV_DYNAMIC_PROPERTIES, dynamicPropertiesEncoded);
+		if(dynamicPropertiesEncoded != null) {
+			appMasterEnv.put(Client.ENV_DYNAMIC_PROPERTIES, dynamicPropertiesEncoded);
+		}
 
 		amContainer.setEnvironment(appMasterEnv);
 
@@ -580,6 +582,7 @@ public class Client {
 					}
 					System.err.println("Requesting Application Master shutdown");
 					cmc.shutdownAM();
+					cmc.close();
 					System.err.println("Application Master closed.");
 				}
 				for(Message m: cmc.getMessages() ) {
