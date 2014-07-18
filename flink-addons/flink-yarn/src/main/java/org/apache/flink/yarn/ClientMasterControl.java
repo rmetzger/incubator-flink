@@ -126,8 +126,8 @@ public class ClientMasterControl extends Thread {
 			// we are expecting the RPC service to faile since we are stopping
 			// it on the other side. So there will be an EOFException.
 			// Warn on any other exceptions.
-			if(! ( e.getCause() instanceof EOFException)) {
-				LOG.warn("Unexpected exception", e);
+			if(! ( e.getCause() instanceof IOException)) {
+				LOG.warn("Unexpected exception", e.getCause() );
 			}
 		}
 		running = false;
