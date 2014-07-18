@@ -288,6 +288,14 @@ public class JobManager implements DeploymentManager, ExtendedManagementProtocol
 		if (this.scheduler != null) {
 			this.scheduler.shutdown();
 		}
+		
+		if(server != null) {
+			try {
+				server.stop();
+			} catch (Exception e) {
+				LOG.error("Error while shutting down the JobManager's webserver", e);
+			}
+		}
 
 		this.isShutDown = true;
 		LOG.debug("Shutdown of job manager completed");

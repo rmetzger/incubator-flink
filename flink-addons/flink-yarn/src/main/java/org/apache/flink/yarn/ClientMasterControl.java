@@ -56,14 +56,14 @@ public class ClientMasterControl extends Thread {
 			cmp = RPC.getProxy(YARNClientMasterProtocol.class, applicationMasterAddress, NetUtils.getSocketFactory());
 
 			while(running) {
-		//		synchronized (lock) {
+				synchronized (lock) {
 					appMasterStatus = cmp.getAppplicationMasterStatus();
 					System.err.println("messages.size()="+messages.size() +"\n"
 							+ "appMasterStatus.getMessageCount()="+appMasterStatus.getMessageCount());
-			//		if(appMasterStatus != null && messages.size() != appMasterStatus.getMessageCount()) {
+					if(appMasterStatus != null && messages.size() != appMasterStatus.getMessageCount()) {
 						messages = cmp.getMessages();
-			//		}
-		//		}
+					}
+				}
 
 				try {
 					Thread.sleep(5000);

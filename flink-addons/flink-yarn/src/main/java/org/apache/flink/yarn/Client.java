@@ -607,10 +607,14 @@ public class Client {
 		}
 
 		LOG.info("Application " + appId + " finished with"
-				+ " state " + appState + "and final state " + appReport.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
+				+ " state " + appState + " and "
+				+ "final state " + appReport.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
 
 		if(appState == YarnApplicationState.FAILED || appState == YarnApplicationState.KILLED ) {
 			LOG.warn("Application failed. Diagnostics "+appReport.getDiagnostics());
+			LOG.warn("If log aggregation is activated in the Hadoop cluster, we recommend to retreive\n"
+					+ "the full application log using this command:\n"
+					+ "\tyarn logs -applicationId "+appReport.getApplicationId()+"\n");
 		}
 
 	}
@@ -781,6 +785,4 @@ public class Client {
 		Client c = new Client();
 		c.run(args);
 	}
-
-
 }
