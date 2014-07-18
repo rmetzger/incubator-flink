@@ -25,7 +25,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.jar.JarFile;
 
 import org.apache.commons.cli.CommandLine;
@@ -113,9 +114,10 @@ public class Client {
 	private static final Option SLOTS = new Option("s","slots",true, "Number of slots per TaskManager");
 
 	/**
-	 * Constants
+	 * Constants,
+	 * all starting with ENV_ are used as environment variables to pass values from the Client
+	 * to the Application Master.
 	 */
-	// environment variable names
 	public final static String ENV_TM_MEMORY = "_CLIENT_TM_MEMORY";
 	public final static String ENV_TM_CORES = "_CLIENT_TM_CORES";
 	public final static String ENV_TM_COUNT = "_CLIENT_TM_COUNT";
@@ -133,6 +135,9 @@ public class Client {
 	 * Seconds to wait between each status query to the AM.
 	 */
 	private static final int CLIENT_POLLING_INTERVALL = 3;
+	/**
+	 * Minimum memory requirements, checked by the Client.
+	 */
 	private static final int MIN_JM_MEMORY = 128;
 	private static final int MIN_TM_MEMORY = 128;
 
@@ -143,10 +148,19 @@ public class Client {
 
 	private ApplicationId appId;
 
-	private File addrFile;
+	private File yarnPropertiesFile;
 
+	/**
+	 * Files (usually in a distributed file system) used for the YARN session of Flink.
+	 * Contains configuration files and jar files.
+	 */
 	private Path sessionFilesDir;
 
+	/**
+	 * If the user has specified a different number of slots, we store them here
+	 */
+	private int slots = -1;
+	
 	public void run(String[] args) throws Exception {
 
 		if(UserGroupInformation.isSecurityEnabled()) {
@@ -305,7 +319,7 @@ public class Client {
 					+ "of "+MIN_TM_MEMORY+" MB");
 			System.exit(1);
 		}
-		int slots = -1;
+		
 		if(cmd.hasOption(SLOTS.getOpt())) {
 			slots = Integer.valueOf(cmd.getOptionValue(SLOTS.getOpt()));
 		}
@@ -490,8 +504,8 @@ public class Client {
 		appContext.setResource(capability);
 		appContext.setQueue(queue);
 
-		// file that we write into the conf/ dir containing the jobManager address.
-		addrFile = new File(confDirPath + CliFrontend.JOBMANAGER_ADDRESS_FILE);
+		// file that we write into the conf/ dir containing the jobManager address and the dop.
+		yarnPropertiesFile = new File(confDirPath + CliFrontend.YARN_PROPERTIES_FILE);
 
 
 		LOG.info("Submitting application master " + appId);
@@ -512,10 +526,15 @@ public class Client {
 				System.err.println("Flink JobManager is now running on "+appReport.getHost()+":"+jmPort);
 				System.err.println("JobManager Web Interface: "+appReport.getTrackingUrl());
 				// write jobmanager connect information
-				PrintWriter out = new PrintWriter(addrFile);
-				out.println(appReport.getHost()+":"+jmPort);
+				Properties yarnProps = new Properties();
+				yarnProps.put(CliFrontend.YARN_PROPERTIES_JOBMANAGER_KEY, appReport.getHost()+":"+jmPort);
+				if(slots != -1) {
+					yarnProps.put(CliFrontend.YARN_PROPERTIES_DOP, slots * taskManagerCount);
+				}
+				OutputStream out = new FileOutputStream(yarnPropertiesFile);
+				yarnProps.store(out, "Generated YARN properties file");
 				out.close();
-				addrFile.setReadable(true, false); // readable for all.
+				yarnPropertiesFile.setReadable(true, false); // readable for all.
 
 				// connect RPC service
 				cmc = new ClientMasterControl(new InetSocketAddress(appReport.getHost(), amRPCPort));
@@ -617,7 +636,7 @@ public class Client {
 			LOG.warn("Exception while killing the YARN application", e);
 		}
 		try {
-			addrFile.delete();
+			yarnPropertiesFile.delete();
 		} catch (Exception e) {
 			LOG.warn("Exception while deleting the JobManager address file", e);
 		}
@@ -670,6 +689,7 @@ public class Client {
 		opt.addOption(TM_CORES);
 		opt.addOption(QUERY);
 		opt.addOption(QUEUE);
+		opt.addOption(SLOTS);
 		formatter.printHelp(" ", opt);
 	}
 

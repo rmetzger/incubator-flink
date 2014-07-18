@@ -249,7 +249,7 @@ public class JobManager implements DeploymentManager, ExtendedManagementProtocol
 	}
 
 	public void shutdown() {
-
+		LOG.debug("JobManager shutdown requested");
 		if (!this.isShutdownInProgress.compareAndSet(false, true)) {
 			return;
 		}

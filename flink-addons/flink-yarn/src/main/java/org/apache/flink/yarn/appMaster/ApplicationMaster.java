@@ -462,6 +462,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	}
 	
 	private void close() throws Exception {
+		jobManager.shutdown();
 		nmClient.close();
 		rmClient.close();
 		if(!isFailed) {

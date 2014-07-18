@@ -20,7 +20,9 @@
 package org.apache.flink.client;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -109,7 +112,9 @@ public class CliFrontend {
 	private static final String CONFIG_DIRECTORY_FALLBACK_1 = "../conf";
 	private static final String CONFIG_DIRECTORY_FALLBACK_2 = "conf";
 	
-	public static final String JOBMANAGER_ADDRESS_FILE = ".yarn-jobmanager";
+	public static final String YARN_PROPERTIES_FILE = ".yarn-properties";
+	public static final String YARN_PROPERTIES_JOBMANAGER_KEY = "jobManager";
+	public static final String YARN_PROPERTIES_DOP = "degreeOfParallelism";
 	
 
 	private CommandLineParser parser;
@@ -118,6 +123,10 @@ public class CliFrontend {
 	private boolean printHelp;
 	
 	private boolean globalConfigurationLoaded;
+	
+	private boolean yarnPropertiesLoaded = false;
+	
+	private Properties yarnProperties;
 
 	/**
 	 * Initializes the class
@@ -723,24 +732,19 @@ public class CliFrontend {
 			}
 		}
 		else {
-			// second, search for a .yarn-jobmanager file
-			String loc = getConfigurationDirectory();
-			File jmAddressFile = new File(loc + '/' + JOBMANAGER_ADDRESS_FILE);
-			
-			if (jmAddressFile.exists()) {
+			Properties yarnProps = getYarnProperties();
+			if(yarnProps != null) {
 				try {
-					String address = FileUtils.readFileToString(jmAddressFile).trim();
-					System.out.println("Found a " + JOBMANAGER_ADDRESS_FILE + " file, using \""+address+"\" to connect to the JobManager");
-					
+					String address = yarnProps.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
+					System.out.println("Found a yarn properties file (" + YARN_PROPERTIES_FILE + ") file, "
+							+ "using \""+address+"\" to connect to the JobManager");
 					return RemoteExecutor.getInetFromHostport(address);
-				}
-				catch (Exception e) {
-					System.out.println("Found a " + JOBMANAGER_ADDRESS_FILE + " file, but could not read the JobManager address from the file. " 
+				} catch (Exception e) {
+					System.out.println("Found a yarn properties " + YARN_PROPERTIES_FILE + " file, but could not read the JobManager address from the file. " 
 								+ e.getMessage());
 					return null;
 				}
-			}
-			else {
+			} else {
 				// regular config file gives the address
 				String jobManagerAddress = configuration.getString(ConfigConstants.JOB_MANAGER_IPC_ADDRESS_KEY, null);
 				
@@ -809,9 +813,36 @@ public class CliFrontend {
 		if (!globalConfigurationLoaded) {
 			String location = getConfigurationDirectory();
 			GlobalConfiguration.loadConfiguration(location);
+			// set default parallelization degree
+			Properties yarnProps = getYarnProperties();
+			if(yarnProps != null) {
+				int paraDegree = Integer.valueOf(yarnProps.getProperty(YARN_PROPERTIES_DOP));
+				if(paraDegree != -1) {
+					Configuration c = GlobalConfiguration.getConfiguration();
+					c.setInteger(ConfigConstants.DEFAULT_PARALLELIZATION_DEGREE_KEY, paraDegree);
+					GlobalConfiguration.includeConfiguration(c); // update config
+				}
+			}
 			globalConfigurationLoaded = true;
 		}
 		return GlobalConfiguration.getConfiguration();
+	}
+	
+	protected Properties getYarnProperties() {
+		if(!yarnPropertiesLoaded) {
+			String loc = getConfigurationDirectory();
+			File propertiesFile = new File(loc + '/' + YARN_PROPERTIES_FILE);
+			if (propertiesFile.exists()) {
+				Properties props = new Properties();
+				InputStream is = new FileInputStream( propertiesFile );
+				props.load(is);
+				yarnProperties = props;
+				is.close();
+			} else {
+				yarnProperties = null;
+			}
+		}
+		return yarnProperties;
 	}
 	
 	protected Client getClient(CommandLine line) throws IOException {
