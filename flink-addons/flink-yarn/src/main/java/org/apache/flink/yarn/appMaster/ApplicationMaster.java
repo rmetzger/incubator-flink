@@ -466,7 +466,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		nmClient.close();
 		rmClient.close();
 		if(!isFailed) {
-			amRpcServer.stop();
+		//	amRpcServer.stop();
 		} else {
 			LOG.warn("Can not close AM RPC connection since the AM is in failed state");
 		}

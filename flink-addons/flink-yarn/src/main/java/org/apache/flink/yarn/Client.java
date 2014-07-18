@@ -527,9 +527,9 @@ public class Client {
 				System.err.println("JobManager Web Interface: "+appReport.getTrackingUrl());
 				// write jobmanager connect information
 				Properties yarnProps = new Properties();
-				yarnProps.put(CliFrontend.YARN_PROPERTIES_JOBMANAGER_KEY, appReport.getHost()+":"+jmPort);
+				yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_JOBMANAGER_KEY, appReport.getHost()+":"+jmPort);
 				if(slots != -1) {
-					yarnProps.put(CliFrontend.YARN_PROPERTIES_DOP, slots * taskManagerCount);
+					yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_DOP, Integer.toString(slots * taskManagerCount) );
 				}
 				OutputStream out = new FileOutputStream(yarnPropertiesFile);
 				yarnProps.store(out, "Generated YARN properties file");
