@@ -18,7 +18,9 @@
 package org.apache.flink.yarn;
 
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,15 +56,14 @@ public class ClientMasterControl extends Thread {
 			cmp = RPC.getProxy(YARNClientMasterProtocol.class, applicationMasterAddress, NetUtils.getSocketFactory());
 
 			while(running) {
-				synchronized (lock) {
+		//		synchronized (lock) {
 					appMasterStatus = cmp.getAppplicationMasterStatus();
 					System.err.println("messages.size()="+messages.size() +"\n"
 							+ "appMasterStatus.getMessageCount()="+appMasterStatus.getMessageCount());
-					if(appMasterStatus != null &&
-							messages.size() != appMasterStatus.getMessageCount()) {
+			//		if(appMasterStatus != null && messages.size() != appMasterStatus.getMessageCount()) {
 						messages = cmp.getMessages();
-					}
-				}
+			//		}
+		//		}
 
 				try {
 					Thread.sleep(5000);
@@ -121,9 +122,13 @@ public class ClientMasterControl extends Thread {
 	public void close() {
 		try {
 			cmp.closeRPC();
-		} catch(Throwable e) {
-			System.err.println("Got a "+e.getClass().getName()+" msg="+e.getMessage());
-			
+		} catch(UndeclaredThrowableException e) {
+			// we are expecting the RPC service to faile since we are stopping
+			// it on the other side. So there will be an EOFException.
+			// Warn on any other exceptions.
+			if(! ( e.getCause() instanceof EOFException)) {
+				LOG.warn("Unexpected exception", e);
+			}
 		}
 		running = false;
 	}
