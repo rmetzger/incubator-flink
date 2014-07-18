@@ -138,7 +138,6 @@ public class Client {
 		 */
 		protected synchronized void callComplete() {
 			this.done = true;
-			LOG.warn("+++Completed");
 			notify(); // notify caller
 		}
 
@@ -498,7 +497,6 @@ public class Client {
 				return;
 			}
 			touch();
-LOG.warn("+++ got a response");
 			try {
 				int id = in.readInt(); // try to read an id
 
@@ -522,8 +520,12 @@ LOG.warn("+++ got a response");
 							LOG.error(e);
 						} catch (IllegalAccessException e) {
 							LOG.error(e);
+						} 
+						try {
+							value.read(new InputViewDataInputStreamWrapper(in)); // read value
+						} catch(Throwable e) {
+							LOG.error("Exception while receiving an RPC call", e);
 						}
-						value.read(new InputViewDataInputStreamWrapper(in)); // read value
 					}
 					call.setValue(value);
 				} else if (state == Status.ERROR.state) {
@@ -533,7 +535,9 @@ LOG.warn("+++ got a response");
 					markClosed(new RemoteException(StringRecord.readString(in), StringRecord.readString(in)));
 				}
 			} catch (IOException e) {
-				LOG.warn("Exception while receiving an RPC call", e);
+				if(LOG.isDebugEnabled()) {
+					LOG.debug("Closing RPC connection due to exception", e);
+				}
 				markClosed(e);
 			}
 		}

@@ -37,9 +37,9 @@ public interface YARNClientMasterProtocol extends VersionedProtocol {
 	public static class Message implements IOReadableWritable {
 		public String text;
 
-		public Message() {
+	/*	public Message() {
 			
-		}
+		} */
 		
 		public Message(String msg) {
 			this.text = msg;
