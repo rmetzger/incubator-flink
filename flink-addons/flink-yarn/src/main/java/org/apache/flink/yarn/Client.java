@@ -153,8 +153,6 @@ public class Client {
 
 	private ClientMasterControl cmc;
 
-	private ApplicationId appId;
-
 	private File yarnPropertiesFile;
 
 	/**
@@ -612,7 +610,8 @@ public class Client {
 			LOG.warn("Application failed. Diagnostics "+appReport.getDiagnostics());
 			LOG.warn("If log aggregation is activated in the Hadoop cluster, we recommend to retreive\n"
 					+ "the full application log using this command:\n"
-					+ "\tyarn logs -applicationId "+appReport.getApplicationId()+"\n");
+					+ "\tyarn logs -applicationId "+appReport.getApplicationId()+"\n"
+					+ "(It sometimes takes a few seconds until the logs are aggregated)");
 		}
 
 	}
@@ -620,8 +619,6 @@ public class Client {
 	private void printHelp() {
 		System.err.println("Available commands:\n"
 				+ "\t stop : Stop the YARN session\n"
-			//	+ "\t add n : Add n TaskManagers to the YARN session\n"
-			//	+ "\t remove n : Remove n TaskManagers to the YARN session\n"
 				+ "\t allmsg : Show all messages\n");
 	}
 	private void evalCommand(String command) {
@@ -636,25 +633,29 @@ public class Client {
 				System.err.println("Message: "+m.text);
 			}
 		} else if(command.startsWith("add")) {
-			String nStr = command.replace("add", "").trim();
-			int n = Integer.valueOf(nStr);
-			System.err.println("Adding "+n+" TaskManagers to the session");
-			cmc.addTaskManagers(n);
+			throw new RuntimeException("This feature is not implemented yet!");
+//			String nStr = command.replace("add", "").trim();
+//			int n = Integer.valueOf(nStr);
+//			System.err.println("Adding "+n+" TaskManagers to the session");
+//			cmc.addTaskManagers(n);
 		} else {
 			System.err.println("Unknown command '"+command+"'");
 			printHelp();
 		}
 	}
 
+	private void cleanUp() throws IOException {
+		LOG.info("Deleting files in "+sessionFilesDir );
+		FileSystem shutFS = FileSystem.get(conf);
+		shutFS.delete(sessionFilesDir, true); // delete conf and jar file.
+		shutFS.close();
+	}
+	
 	private void stopSession() {
 		try {
 			LOG.info("Sending shutdown request to the Application Master");
 			cmc.shutdownAM();
-		//	yarnClient.killApplication(appId);
-			LOG.info("Deleting files in "+sessionFilesDir );
-			FileSystem shutFS = FileSystem.get(conf);
-			shutFS.delete(sessionFilesDir, true); // delete conf and jar file.
-			shutFS.close();
+			cleanUp();
 			cmc.close();
 		} catch (Exception e) {
 			LOG.warn("Exception while killing the YARN application", e);

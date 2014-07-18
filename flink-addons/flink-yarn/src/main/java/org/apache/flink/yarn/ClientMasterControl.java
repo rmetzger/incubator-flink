@@ -18,9 +18,7 @@
 package org.apache.flink.yarn;
 
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +55,12 @@ public class ClientMasterControl extends Thread {
 
 			while(running) {
 				synchronized (lock) {
-					appMasterStatus = cmp.getAppplicationMasterStatus();
+					try {
+						appMasterStatus = cmp.getAppplicationMasterStatus();
+					} catch(Throwable e) {
+						// TODO: try to clean up as much as possible! (set to failed state? // kill app? // clean up files)
+						LOG.warn("Failed to get Application Master status", e);
+					}
 					if(appMasterStatus != null && messages.size() != appMasterStatus.getMessageCount()) {
 						messages = cmp.getMessages();
 					}
@@ -118,16 +121,6 @@ public class ClientMasterControl extends Thread {
 	}
 
 	public void close() {
-//		try {
-//			cmp.closeRPC();
-//		} catch(UndeclaredThrowableException e) {
-//			// we are expecting the RPC service to faile since we are stopping
-//			// it on the other side. So there will be an EOFException.
-//			// Warn on any other exceptions.
-//			if(! ( e.getCause() instanceof IOException)) {
-//				LOG.warn("Unexpected exception", e.getCause() );
-//			}
-//		}
 		running = false;
 	}
 
