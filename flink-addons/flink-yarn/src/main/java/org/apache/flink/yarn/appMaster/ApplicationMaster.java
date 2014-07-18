@@ -535,9 +535,23 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		}
 	}
 	
+	/**
+	 * Start a thread that is going to close the RPC connection after a certain timeout.
+	 * We can not close the RPC connection immediately because the method is being called by an RPC call itself.
+	 */
 	@Override
 	public void closeRPC() {
-		amRpcServer.stop();
+		new Runnable() {
+			public void run() {
+				LOG.debug("Going to close the RPC connection in 500ms");
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					LOG.warn("Error while waiting", e);
+				}
+				amRpcServer.stop();
+			}
+		};
 	}
 	
 	public static void main(String[] args) throws Exception {

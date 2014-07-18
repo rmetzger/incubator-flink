@@ -58,8 +58,6 @@ public class ClientMasterControl extends Thread {
 			while(running) {
 				synchronized (lock) {
 					appMasterStatus = cmp.getAppplicationMasterStatus();
-					System.err.println("messages.size()="+messages.size() +"\n"
-							+ "appMasterStatus.getMessageCount()="+appMasterStatus.getMessageCount());
 					if(appMasterStatus != null && messages.size() != appMasterStatus.getMessageCount()) {
 						messages = cmp.getMessages();
 					}
@@ -120,16 +118,16 @@ public class ClientMasterControl extends Thread {
 	}
 
 	public void close() {
-		try {
-			cmp.closeRPC();
-		} catch(UndeclaredThrowableException e) {
-			// we are expecting the RPC service to faile since we are stopping
-			// it on the other side. So there will be an EOFException.
-			// Warn on any other exceptions.
-			if(! ( e.getCause() instanceof IOException)) {
-				LOG.warn("Unexpected exception", e.getCause() );
-			}
-		}
+//		try {
+//			cmp.closeRPC();
+//		} catch(UndeclaredThrowableException e) {
+//			// we are expecting the RPC service to faile since we are stopping
+//			// it on the other side. So there will be an EOFException.
+//			// Warn on any other exceptions.
+//			if(! ( e.getCause() instanceof IOException)) {
+//				LOG.warn("Unexpected exception", e.getCause() );
+//			}
+//		}
 		running = false;
 	}
 

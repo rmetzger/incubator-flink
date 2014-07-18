@@ -575,6 +575,7 @@ public class Client {
 					System.err.println("Number of connected TaskManagers changed to "+newTmCount+" slots available: "+cmc.getNumberOfAvailableSlots());
 					numTaskmanagers = newTmCount;
 				}
+				// we also need to show new messages.
 				if(cmc.getFailedStatus()) {
 					System.err.println("The Application Master failed!\nMessages:\n");
 					for(Message m: cmc.getMessages() ) {
@@ -584,9 +585,6 @@ public class Client {
 					cmc.shutdownAM();
 					cmc.close();
 					System.err.println("Application Master closed.");
-				}
-				for(Message m: cmc.getMessages() ) {
-					System.err.println("Message: "+m.text);
 				}
 
 				// wait until CLIENT_POLLING_INTERVALL is over or the user entered something.
