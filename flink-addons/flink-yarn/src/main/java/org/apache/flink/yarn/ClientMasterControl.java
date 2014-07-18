@@ -40,7 +40,7 @@ public class ClientMasterControl extends Thread {
 	private ApplicationMasterStatus appMasterStatus;
 	private YARNClientMasterProtocol cmp;
 	private Object lock = new Object();
-	private List<Message> messages;
+	private List<Message> messages = new ArrayList<Message>();
 	private boolean running = true;
 
 	public ClientMasterControl(InetSocketAddress applicationMasterAddress) {
@@ -56,7 +56,9 @@ public class ClientMasterControl extends Thread {
 			while(running) {
 				synchronized (lock) {
 					appMasterStatus = cmp.getAppplicationMasterStatus();
-					if(messages != null && appMasterStatus != null &&
+					System.err.println("messages.size()="+messages.size() +"\n"
+							+ "appMasterStatus.getMessageCount()="+appMasterStatus.getMessageCount());
+					if(appMasterStatus != null &&
 							messages.size() != appMasterStatus.getMessageCount()) {
 						messages = cmp.getMessages();
 					}
@@ -113,14 +115,16 @@ public class ClientMasterControl extends Thread {
 	}
 
 	public List<Message> getMessages() {
-		if(this.messages == null) {
-			return new ArrayList<Message>();
-		}
 		return this.messages;
 	}
 
 	public void close() {
-		cmp.closeRPC();
+		try {
+			cmp.closeRPC();
+		} catch(Throwable e) {
+			System.err.println("Got a "+e.getClass().getName()+" msg="+e.getMessage());
+			
+		}
 		running = false;
 	}
 

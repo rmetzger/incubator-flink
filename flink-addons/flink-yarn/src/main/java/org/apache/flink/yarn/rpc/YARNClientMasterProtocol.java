@@ -59,7 +59,6 @@ public interface YARNClientMasterProtocol extends VersionedProtocol {
 	List<Message> getMessages();
 
 	void addTaskManagers(int n);
-	
-	void closeRPC();
 
+	void closeRPC();
 }
