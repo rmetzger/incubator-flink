@@ -18,9 +18,8 @@
 
 package org.apache.flink.api.java.typeutils;
 
-import com.google.common.base.Joiner;
-
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,20 +30,30 @@ import org.apache.flink.api.common.typeinfo.CompositeType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
 
+import com.google.common.base.Joiner;
+
 
 /**
- *
+ * TypeInformation for arbitrary (they have to be java-beans-style) java objects (what we call POJO).
+ * 
+ * Information flow (For Pojos and Tuples)
+ * 	User class	-> TypeExtractor	-> PojoTypeInfo (contains fields) 	-> CompositeType (flattened fields) -> Runtime
+ * 		||	  	->		||	   		-> TupleTypeInfo 					-> 		||							-> Runtime
  */
-public class PojoTypeInfo<T> extends TypeInformation<T> implements CompositeType<T> {
+public class PojoTypeInfo<T> extends CompositeType<T> implements AtomicType<T> {
 
 	private final Class<T> typeClass;
 
 	private PojoField[] fields;
 
+//	private PojoFieldAccessor[] flattenedFields;
+
 	public PojoTypeInfo(Class<T> typeClass, List<PojoField> fields) {
+		super(typeClass);
 		this.typeClass = typeClass;
 		List<PojoField> tempFields = new ArrayList<PojoField>(fields);
 		Collections.sort(tempFields, new Comparator<PojoField>() {
@@ -54,6 +63,11 @@ public class PojoTypeInfo<T> extends TypeInformation<T> implements CompositeType
 			}
 		});
 		this.fields = tempFields.toArray(new PojoField[tempFields.size()]);
+		
+		// check if POJO is public
+		if(!Modifier.isPublic(typeClass.getModifiers())) {
+			throw new RuntimeException("POJO "+typeClass+" is not public");
+		}
 	}
 
 	@Override
@@ -82,18 +96,6 @@ public class PojoTypeInfo<T> extends TypeInformation<T> implements CompositeType
 		return Comparable.class.isAssignableFrom(typeClass);
 	}
 
-	@Override
-	public TypeSerializer<T> createSerializer() {
-		TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[fields.length];
-		Field[] reflectiveFields = new Field[fields.length];
-
-		for (int i = 0; i < fields.length; i++) {
-			fieldSerializers[i] = fields[i].type.createSerializer();
-			reflectiveFields[i] = fields[i].field;
-		}
-
-		return new PojoSerializer<T>(this.typeClass, fieldSerializers, reflectiveFields);
-	}
 
 	@Override
 	public String toString() {
@@ -105,73 +107,86 @@ public class PojoTypeInfo<T> extends TypeInformation<T> implements CompositeType
 				+ ", fields = [" + Joiner.on(", ").join(fieldStrings) + "]"
 				+ ">";
 	}
-
-	public int getLogicalPosition(String fieldExpression) {
-		for (int i = 0; i < fields.length; i++) {
-			if (fields[i].field.getName().equals(fieldExpression)) {
-				return i;
+	
+	// The logical position can identify a field since we rely on the list
+	// of flattened fields which is deterministic. We need the logical positions since this
+	// is the only way to pass field positions to a comparator.
+	// We return -1 in case we don't find the field. Keys.ExpressionKeys will handle this.
+	@Override
+	public FlatFieldDescriptor getKey(String fieldExpression, int offset) {
+		Validate.notEmpty(fieldExpression, "Field expression must not be empty.");
+		// if there is a dot try getting the field from that sub field
+		int firstDot = fieldExpression.indexOf('.');
+		if (firstDot == -1) {
+			// this is the last field (or only field) in the field expression
+			for (int i = 0; i < fields.length; i++) {
+				if (fields[i].field.getName().equals(fieldExpression)) {
+					return new FlatFieldDescriptor(i + offset, fields[i].type, null);
+				}
 			}
-		}
-		return -1;
-	}
-
-	public int[] getLogicalPositions(String[] fieldExpression) {
-		int[] result = new int[fieldExpression.length];
-		for (int i = 0; i < fieldExpression.length; i++) {
-			result[i] = getLogicalPosition(fieldExpression[i]);
-		}
-		return result;
-	}
-
-	public TypeInformation<?> getType(String fieldExpression) {
-		for (int i = 0; i < fields.length; i++) {
-			if (fields[i].field.getName().equals(fieldExpression)) {
-				return fields[i].type;
+		} else {
+			// split and go deeper
+			String firstField = fieldExpression.substring(0, firstDot);
+			String rest = fieldExpression.substring(firstDot + 1);
+			for (int i = 0; i < fields.length; i++) {
+				if (fields[i].field.getName().equals(firstField)) {
+					if (!(fields[i].type instanceof CompositeType<?>)) {
+						throw new RuntimeException("Field "+fields[i].type+" is not composite type");
+					}
+					CompositeType<?> cType = (CompositeType<?>) fields[i].type;
+					return cType.getKey(rest, i + offset);
+				}
 			}
 		}
 		return null;
 	}
 
-	public TypeInformation<?>[] getTypes(String[] fieldExpression) {
-		TypeInformation<?>[] result = new TypeInformation<?>[fieldExpression.length];
+	@Override
+	public <X> TypeInformation<X> getTypeAt(int pos) {
+		if (pos < 0 || pos >= this.fields.length) {
+			throw new IndexOutOfBoundsException();
+		}
+		@SuppressWarnings("unchecked")
+		TypeInformation<X> typed = (TypeInformation<X>) fields[pos].type;
+		return typed;
+	}
+
+	public PojoField getPojoFieldAt(int pos) {
+		if (pos < 0 || pos >= this.fields.length) {
+			throw new IndexOutOfBoundsException();
+		}
+		return this.fields[pos];
+	}
+
+
+/*	@Override
+	public void getTypes(List<TypeInformation<?>> types) {
 		for (int i = 0; i < fieldExpression.length; i++) {
 			result[i] = getType(fieldExpression[i]);
 		}
 		return result;
-	}
+	} */
 
-	@Override
-	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders) {
-		// sanity checks
-		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length ||
-				logicalKeyFields.length > fields.length)
-		{
-			throw new IllegalArgumentException();
-		}
+	// Flatten fields of inner pojo classes into one list with deterministic order so that
+	// we can use it to derive logical key positions/
+/*	private final List<PojoFieldAccessor> getFlattenedFields(List<Field> accessorChain) {
+		List<PojoFieldAccessor> result = new ArrayList<PojoFieldAccessor>();
 
-//		if (logicalKeyFields.length == 1) {
-//			return createSinglefieldComparator(logicalKeyFields[0], orders[0], types[logicalKeyFields[0]]);
-//		}
-
-		// create the comparators for the individual fields
-		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFields.length];
-		Field[] keyFields = new Field[logicalKeyFields.length];
-
-		for (int i = 0; i < logicalKeyFields.length; i++) {
-			int field = logicalKeyFields[i];
-
-			if (field < 0 || field >= fields.length) {
-				throw new IllegalArgumentException("The field position " + field + " is out of range [0," + fields.length + ")");
-			}
-			if (fields[field].type.isKeyType() && fields[field].type instanceof AtomicType) {
-				fieldComparators[i] = ((AtomicType<?>) fields[field].type).createComparator(orders[i]);
-				keyFields[i] = fields[field].field;
-				keyFields[i].setAccessible(true);
+		for (PojoField field : fields) {
+			if (field.type instanceof PojoTypeInfo) {
+				PojoTypeInfo<?> pojoField = (PojoTypeInfo<?>)field.type;
+				List<Field> newAccessorChain = new ArrayList<Field>();
+				newAccessorChain.addAll(accessorChain);
+				newAccessorChain.add(field.field);
+				result.addAll(pojoField.getFlattenedFields(newAccessorChain));
 			} else {
-				throw new IllegalArgumentException("The field at position " + field + " (" + fields[field].type + ") is no atomic key type.");
+				result.add(new PojoFieldAccessor(accessorChain, field.field, field));
 			}
 		}
 
-		return new PojoComparator<T>(keyFields, fieldComparators, createSerializer(), typeClass);
-	}
+		return result;
+	} */
+
+
+	
 }

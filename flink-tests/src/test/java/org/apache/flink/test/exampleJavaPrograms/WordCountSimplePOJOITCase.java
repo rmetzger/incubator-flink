@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -31,7 +31,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 
-public class WordCountPOJOITCase extends JavaProgramTestBase implements Serializable {
+public class WordCountSimplePOJOITCase extends JavaProgramTestBase implements Serializable {
 
 	protected String textPath;
 	protected String resultPath;
@@ -51,14 +51,15 @@ public class WordCountPOJOITCase extends JavaProgramTestBase implements Serializ
 	@Override
 	protected void testProgram() throws Exception {
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
 		DataSet<String> text = env.readTextFile(textPath);
 
 		DataSet<WC> counts = text
 				.flatMap(new Tokenizer())
-				.groupBy("complex.word.f2")
+				.groupBy("word")
 				.reduce(new ReduceFunction<WC>() {
 					public WC reduce(WC value1, WC value2) {
-						return new WC(value1.complex.word.f2, value1.count + value2.count);
+						return new WC(value1.word, value1.count + value2.count);
 					}
 				});
 
@@ -83,44 +84,18 @@ public class WordCountPOJOITCase extends JavaProgramTestBase implements Serializ
 		}
 	}
 
-	public static class ComplexNestedClass {
-		public Date date;
-		public Integer someNumber;
-		public float someFloat;
-		public Tuple3<Long, Long, String> word;
-	//	public Object nothing;
-	//  public IntWritable hadoopCitizen
+	public static class WC {
+		public WC() {}
+		public WC(String w, int c) {
+			word = w;
+			count = c;
+		}
+		public String word;
+		public int count;
+		@Override
+		public String toString() {
+			return word + " " + count;
+		}
 	}
 	
-	/**
-	 * Flat fields: [date, someNumber, someFloat, f0, f1, f2, count]
-	 * Accessor chains
-	 * [
-	 * 	[complex, date],
-	 *  [complex, someNumber],
-	 *  [complex, someFloat],
-	 *  [complex, word, f0],
-	 *  [complex, word, f1],
-	 *  [complex, word, f2]
-	 *  [count]
-	 * ]
-	 *
-	 */
-	public static class WC {
-		ComplexNestedClass complex;
-		int count;
-
-		public WC() {
-		}
-
-		public WC(String word, int count) {
-			this.count = count;
-			this.complex = new ComplexNestedClass();
-			this.complex.word = new Tuple3<Long, Long, String>(0L, 0L, word);
-		}
-
-		public String toString() {
-			return this.complex.word.f2 + " " + count;
-		}
-	}
 }

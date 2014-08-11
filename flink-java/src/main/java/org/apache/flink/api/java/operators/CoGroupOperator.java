@@ -33,6 +33,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.DeltaIteration.SolutionSetPlaceHolder;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.Keys.FieldPositionKeys;
+import org.apache.flink.api.java.operators.Keys.IncompatibleKeysException;
 import org.apache.flink.api.java.operators.translation.KeyExtractingMapper;
 import org.apache.flink.api.java.operators.translation.PlanBothUnwrappingCoGroupOperator;
 import org.apache.flink.api.java.operators.translation.PlanLeftUnwrappingCoGroupOperator;
@@ -41,6 +42,8 @@ import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+
+import com.google.common.base.Preconditions;
 
 /**
  * A {@link DataSet} that is the result of a CoGroup transformation. 
@@ -90,10 +93,10 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 	protected org.apache.flink.api.common.operators.base.CoGroupOperatorBase<?, ?, OUT, ?> translateToDataFlow(Operator<I1> input1, Operator<I2> input2) {
 		
 		String name = getName() != null ? getName() : function.getClass().getName();
-
-		if (!keys1.areCompatibale(keys2)) {
-			throw new InvalidProgramException("The types of the key fields do not match. Left:" +
-					" " + keys1 + " Right: " + keys2);
+		try {
+			keys1.areCompatible(keys2);
+		} catch (IncompatibleKeysException e) {
+			throw new InvalidProgramException("The types of the key fields do not match.", e);
 		}
 
 		if (keys1 instanceof Keys.SelectorFunctionKeys
@@ -153,10 +156,11 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 				((keys1 instanceof Keys.ExpressionKeys
 						&& keys2 instanceof Keys.ExpressionKeys)))
 			{
-
-				if (!keys1.areCompatibale(keys2)) {
-					throw new InvalidProgramException("The types of the key fields do not match.");
-				}
+			try {
+				keys1.areCompatible(keys2);
+			} catch (IncompatibleKeysException e) {
+				throw new InvalidProgramException("The types of the key fields do not match.", e);
+			}
 
 			int[] logicalKeyPositions1 = keys1.computeLogicalKeyPositions();
 			int[] logicalKeyPositions2 = keys2.computeLogicalKeyPositions();
@@ -362,9 +366,9 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 		 * @see Tuple
 		 * @see DataSet
 		 */
-//		public CoGroupOperatorSetsPredicate where(String... fields) {
-//			return new CoGroupOperatorSetsPredicate(new Keys.ExpressionKeys<I1>(fields, input1.getType()));
-//		}
+		public CoGroupOperatorSetsPredicate where(String... fields) {
+			return new CoGroupOperatorSetsPredicate(new Keys.ExpressionKeys<I1>(fields, input1.getType()));
+		}
 
 		/**
 		 * Continues a CoGroup transformation and defines a {@link KeySelector} function for the first co-grouped {@link DataSet}.</br>
@@ -430,9 +434,9 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 			 * @return An incomplete CoGroup transformation.
 			 *           Call {@link org.apache.flink.api.java.operators.CoGroupOperator.CoGroupOperatorSets.CoGroupOperatorSetsPredicate.CoGroupOperatorWithoutFunction#with(org.apache.flink.api.common.functions.CoGroupFunction)} to finalize the CoGroup transformation.
 			 */
-//			public CoGroupOperatorWithoutFunction equalTo(String... fields) {
-//				return createCoGroupOperator(new Keys.ExpressionKeys<I2>(fields, input2.getType()));
-//			}
+			public CoGroupOperatorWithoutFunction equalTo(String... fields) {
+				return createCoGroupOperator(new Keys.ExpressionKeys<I2>(fields, input2.getType()));
+			}
 
 			/**
 			 * Continues a CoGroup transformation and defines a {@link KeySelector} function for the second co-grouped {@link DataSet}.</br>
@@ -462,11 +466,11 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 				if (keys2.isEmpty()) {
 					throw new InvalidProgramException("The co-group keys must not be empty.");
 				}
-
-				if (!keys1.areCompatibale(keys2)) {
-					throw new InvalidProgramException("The pair of co-group keys are not compatible with each other.");
+				try {
+					keys1.areCompatible(keys2);
+				} catch(IncompatibleKeysException ike) {
+					throw new InvalidProgramException("The pair of co-group keys are not compatible with each other.", ike);
 				}
-				
 				// sanity check solution set key mismatches
 				if (input1 instanceof SolutionSetPlaceHolder) {
 					if (keys1 instanceof FieldPositionKeys) {

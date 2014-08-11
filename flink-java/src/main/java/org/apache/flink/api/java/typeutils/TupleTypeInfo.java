@@ -62,6 +62,9 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	
 	@Override
 	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders) {
+		if(containsPojo) {
+			return super.createComparator(logicalKeyFields, orders);
+		}
 		// sanity checks
 		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length ||
 				logicalKeyFields.length > types.length)
@@ -110,9 +113,80 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		
 		return new TupleComparator<T>(logicalKeyFields, fieldComparators, fieldSerializers);
 	}
+
+	
+	@Override
+	public FlatFieldDescriptor getKey(String fieldExpression, int offset) {
+		// check input
+		if(fieldExpression.length() < 2) {
+			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. The length must be at least 2");
+		}
+		if(fieldExpression.charAt(0) != 'f') {
+			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect for a Tuple type. It has to start with an 'f'");
+		}
+		// get first component of nested expression
+		int dotPos = fieldExpression.indexOf('.');
+		String nestedSplitFirst = fieldExpression;
+		if(dotPos != -1 ) {
+			Preconditions.checkArgument(dotPos != fieldExpression.length()-1, "The field expression can never end with a dot.");
+			nestedSplitFirst = fieldExpression.substring(0, dotPos);
+		}
+		String fieldNumStr = nestedSplitFirst.substring(1, nestedSplitFirst.length());
+		if(!StringUtils.isNumeric(fieldNumStr)) {
+			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. Field number '"+fieldNumStr+" is not numeric");
+		}
+		int pos = -1;
+		try {
+			pos = Integer.valueOf(fieldNumStr);
+		} catch(NumberFormatException nfe) {
+			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. Field number '"+fieldNumStr+" is not numeric", nfe);
+		}
+		if(pos < 0) {
+			throw new IllegalArgumentException("Negative position is not possible");
+		}
+		// pass down the remainder (after the dot) of the fieldExpression to the type at that position.
+		if(dotPos != -1) {
+			String rem = fieldExpression.substring(dotPos+1);
+			System.err.println("Got remainer to pass down:"+rem);
+			if( !(types[pos] instanceof CompositeType<?>) ) {
+				throw new RuntimeException("Element at position "+pos+" is not a composite type. Selecting the key by expression is not possible");
+			}
+			CompositeType<?> cType = (CompositeType<?>) types[pos];
+			return cType.getKey(rem, pos + offset);
+		}
+		return new FlatFieldDescriptor(pos + offset, types[pos], null);
+	}
+	
+
+/**	@Override
+	public TypeInformation<?>[] getTypes(String[] fieldExpressions) {
+		TypeInformation<?>[] result = new TypeInformation<?>[fieldExpressions.length];
+		for (int i = 0; i < fieldExpressions.length; i++) {
+			result[i] = this.types[getLogicalPositions(fieldExpressions[i])];
+		}
+		return result;
+	} */
 	
 	// --------------------------------------------------------------------------------------------
-
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof TupleTypeInfo) {
+			@SuppressWarnings("unchecked")
+			TupleTypeInfo<T> other = (TupleTypeInfo<T>) obj;
+			return ((this.tupleType == null && other.tupleType == null) || this.tupleType.equals(other.tupleType)) &&
+					Arrays.deepEquals(this.types, other.types);
+			
+		} else {
+			return false;
+		}
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.types.hashCode() ^ Arrays.deepHashCode(this.types);
+	}
+	
 	@Override
 	public String toString() {
 		return "Java " + super.toString();

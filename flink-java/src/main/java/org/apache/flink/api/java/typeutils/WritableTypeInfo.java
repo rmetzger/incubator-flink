@@ -88,6 +88,20 @@ public class WritableTypeInfo<T extends Writable> extends TypeInformation<T> imp
 		return "WritableType<" + typeClass.getName() + ">";
 	}	
 	
+	@Override
+	public int hashCode() {
+		return typeClass.hashCode() ^ 0xd3a2646c;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj.getClass() == WritableTypeInfo.class) {
+			return typeClass == ((WritableTypeInfo<?>) obj).typeClass;
+		} else {
+			return false;
+		}
+	}
+	
 	// --------------------------------------------------------------------------------------------
 	
 	static final <T extends Writable> TypeInformation<T> getWritableTypeInfo(Class<T> typeClass) {

@@ -18,13 +18,20 @@
 
 package org.apache.flink.api.java.operators;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.typeutils.PojoTypeInfo;
-import org.apache.flink.api.java.typeutils.TupleTypeInfoBase;
+import org.apache.flink.api.java.typeutils.CompositeType;
+import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
+import org.apache.flink.api.java.typeutils.TupleTypeInfo;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.types.TypeInformation;
+
+import com.google.common.base.Preconditions;
 
 
 public abstract class Keys<T> {
@@ -35,15 +42,38 @@ public abstract class Keys<T> {
 	public boolean isEmpty() {
 		return getNumberOfKeyFields() == 0;
 	}
-
-	public abstract boolean areCompatibale(Keys<?> other);
-
+	
+	/**
+	 * Check if two sets of keys are compatible to each other (matching types, key counts)
+	 */
+	public abstract boolean areCompatible(Keys<?> other) throws IncompatibleKeysException;
+	
 	public abstract int[] computeLogicalKeyPositions();
+	
+	
+	public static class IncompatibleKeysException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public static final String SIZE_MISMATCH_MESSAGE = "The number of specified keys is different.";
+		
+		public IncompatibleKeysException(String message) {
+			super(message);
+		}
 
+		public IncompatibleKeysException(TypeInformation<?> typeInformation, TypeInformation<?> typeInformation2) {
+			super(typeInformation+" and "+typeInformation2+" are not compatible");
+		}
+	}
+	
 	// --------------------------------------------------------------------------------------------
 	//  Specializations for field indexed / expression-based / extractor-based grouping
 	// --------------------------------------------------------------------------------------------
-
+	
+	/**
+	 * 
+	 * 
+	 * This key type is also initializing the CompositeType for serialization and comparison.
+	 * For this, we assume that keys specified by int-fields can not be nested.
+	 */
 	public static class FieldPositionKeys<T> extends Keys<T> {
 
 		private final int[] fieldPositions;
@@ -71,7 +101,14 @@ public abstract class Keys<T> {
 			for(int i = 0; i < this.fieldPositions.length; i++) {
 				types[i] = tupleType.getTypeAt(this.fieldPositions[i]);
 			}
-
+			
+			// set fields for composite type (needed for serializer / comparator setup)
+			int fieldCount = tupleType.getArity();
+			List<FlatFieldDescriptor> fields = new ArrayList<FlatFieldDescriptor>(fieldCount);
+			for(int i = 0; i < fieldCount; i++) {
+				fields.add(new FlatFieldDescriptor(i, tupleType.getTypeAt(i), null));
+			}
+			tupleType.populateWithFlatSchema(fields);
 		}
 
 		@Override
@@ -80,32 +117,38 @@ public abstract class Keys<T> {
 		}
 
 		@Override
-		public boolean areCompatibale(Keys<?> other) {
-
+		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
+			
 			if (other instanceof FieldPositionKeys) {
 				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
-
+				
 				if(oKey.types.length != this.types.length) {
-					return false;
+					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
 				}
 				for(int i=0; i<this.types.length; i++) {
 					if(!this.types[i].equals(oKey.types[i])) {
-						return false;
+						throw new IncompatibleKeysException(this.types[i], oKey.types[i]);
 					}
 				}
 				return true;
-
+				
 			} else if (other instanceof SelectorFunctionKeys) {
 				if(this.types.length != 1) {
-					return false;
+					throw new IncompatibleKeysException("Key selector functions are only compatible to one key");
 				}
-
+				
 				SelectorFunctionKeys<?, ?> sfk = (SelectorFunctionKeys<?, ?>) other;
-
-				return sfk.keyType.equals(this.types[0]);
+				
+				if(sfk.keyType.equals(this.types[0])) {
+					return true;
+				} else {
+					throw new IncompatibleKeysException(sfk.keyType, this.types[0]);
+				}
+			} else if( other instanceof ExpressionKeys<?>) {
+				return other.areCompatible(this);
 			}
 			else {
-				return false;
+				throw new IncompatibleKeysException("The key is not compatible with "+other);
 			}
 		}
 
@@ -113,17 +156,15 @@ public abstract class Keys<T> {
 		public int[] computeLogicalKeyPositions() {
 			return this.fieldPositions;
 		}
-
+	
 		@Override
 		public String toString() {
-			String fieldsString = Arrays.toString(fieldPositions);
-			String typesString = Arrays.toString(types);
-			return "Tuple position key (Fields: " + fieldsString + " Types: " + typesString + ")";
+			return "Field Position Key: "+Arrays.toString(fieldPositions);
 		}
 	}
-
+	
 	// --------------------------------------------------------------------------------------------
-
+	
 	public static class SelectorFunctionKeys<T, K> extends Keys<T> {
 
 		private final KeySelector<T, K> keyExtractor;
@@ -156,15 +197,27 @@ public abstract class Keys<T> {
 		}
 
 		@Override
-		public boolean areCompatibale(Keys<?> other) {
-
+		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
+			
 			if (other instanceof SelectorFunctionKeys) {
 				@SuppressWarnings("unchecked")
 				SelectorFunctionKeys<?, K> sfk = (SelectorFunctionKeys<?, K>) other;
 
 				return sfk.keyType.equals(this.keyType);
 			}
-			else if (other instanceof FieldPositionKeys) {
+			else if (other instanceof ExpressionKeys) {
+				ExpressionKeys<?> nestedKeys = (ExpressionKeys<?>) other;
+						
+				if(nestedKeys.getNumberOfKeyFields() != 1) {
+					throw new IncompatibleKeysException("Key selector functions are only compatible to one key");
+				}
+				
+				if(nestedKeys.keyFields.get(0).getType().equals(this.keyType)) {
+					return true;
+				} else {
+					throw new IncompatibleKeysException(nestedKeys.keyFields.get(0).getType(), this.keyType);
+				}
+			} else if (other instanceof FieldPositionKeys) {
 				FieldPositionKeys<?> fpk = (FieldPositionKeys<?>) other;
 
 				if(fpk.types.length != 1) {
@@ -172,9 +225,8 @@ public abstract class Keys<T> {
 				}
 
 				return fpk.types[0].equals(this.keyType);
-			}
-			else {
-				return false;
+			} else {
+				throw new IncompatibleKeysException("The key is not compatible with "+other);
 			}
 		}
 
@@ -188,10 +240,109 @@ public abstract class Keys<T> {
 			return "Key function (Type: " + keyType + ")";
 		}
 	}
-
-	// --------------------------------------------------------------------------------------------
-
+	
+	
+	/**
+	 * Represents (nested) field access through string-based keys for Composite Types (Tuple or Pojo)
+	 */
 	public static class ExpressionKeys<T> extends Keys<T> {
+		
+		/**
+		 * Flattened fields representing keys fields
+		 */
+		private final List<FlatFieldDescriptor> keyFields;
+		
+		/**
+		 * Create NestedKeys from String-expressions
+		 */
+		public ExpressionKeys(String[] expressions, TypeInformation<T> type) {
+			if(!(type instanceof CompositeType<?>)) {
+				throw new RuntimeException("Type "+type+" is not a composite type. Key expressions are not supported.");
+			}
+			CompositeType<T> cType = (CompositeType<T>) type;
+			
+			// extract the keys on their flat position
+			keyFields = new ArrayList<FlatFieldDescriptor>(expressions.length);
+			for (int i = 0; i < expressions.length; i++) {
+				System.err.println("Getting logical key position for "+expressions[i]+" on type "+type);
+				final FlatFieldDescriptor key = cType.getKey(expressions[i], 0);
+				if(key == null) {
+					throw new IllegalArgumentException("Unable to extract key from expression "+expressions[i]+" on key "+cType);
+				}
+				keyFields.add(key);
+				System.err.println("Got "+keyFields.get(keyFields.size()-1).getPosition());
+			}
+			
+		//	List<FlatFieldDescriptor> fields = new ArrayList<FlatFieldDescriptor>(type.getArity());
+			// recursively get the FlatField descriptors, from offset 0
+			// do this on demand later.
+	//		cType.getFlatFields(fields, /*offset = */ 0);
+			// update top level schema
+	//		cType.populateWithFlatSchema(fields);
+		}
+		
+		@Override
+		public int getNumberOfKeyFields() {
+			if(keyFields == null) {
+				return 0;
+			}
+			return keyFields.size();
+		}
+
+		@Override
+		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
+
+			if (other instanceof ExpressionKeys) {
+				ExpressionKeys<?> oKey = (ExpressionKeys<?>) other;
+
+				if(oKey.getNumberOfKeyFields() != this.getNumberOfKeyFields() ) {
+					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+				}
+				for(int i=0; i < this.keyFields.size(); i++) {
+					if(!this.keyFields.get(i).getType().equals(oKey.keyFields.get(i).getType())) {
+						throw new IncompatibleKeysException(this.keyFields.get(i).getType(), oKey.keyFields.get(i).getType() );
+					}
+				}
+				return true;
+			} else if(other instanceof SelectorFunctionKeys<?, ?>) {
+				SelectorFunctionKeys<?,?> oKey = (SelectorFunctionKeys<?,?>) other;
+				Preconditions.checkArgument(oKey.getNumberOfKeyFields() == 1, "The code assumes that key selector functions have only one key field");
+				if(oKey.getNumberOfKeyFields() != this.getNumberOfKeyFields()) { // oKey.lenght == 1 because its a selector function
+					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+				}
+				if(!this.keyFields.get(0).getType().equals(oKey.keyType)) { // assumes that oKey.lenght == 1.
+					throw new IncompatibleKeysException(this.keyFields.get(0).getType(), oKey.keyType);
+				}
+				return true;
+			} else if(other instanceof FieldPositionKeys<?>) {
+				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
+				if(oKey.getNumberOfKeyFields() != this.keyFields.size()) {
+					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+				}
+				for(int i = 0; i < this.keyFields.size(); i++) {
+					if(!this.keyFields.get(i).getType().equals(oKey.types[i])) {
+						throw new IncompatibleKeysException(this.keyFields.get(i).getType(), oKey.types[i]);
+					}
+				}
+				return true;
+			} else {
+				throw new IncompatibleKeysException("The key is not compatible with "+other);
+			}
+		}
+
+		@Override
+		public int[] computeLogicalKeyPositions() {
+			int[] logicalKeys = new int[keyFields.size()];
+			int i = 0;
+			for(FlatFieldDescriptor kd : keyFields) {
+				logicalKeys[i++] = kd.getPosition();
+			}
+			return logicalKeys;
+		}
+		
+	}
+	// --------------------------------------------------------------------------------------------
+/*	public static class ExpressionKeys<T> extends Keys<T> {
 
 		private int[] logicalPositions;
 
@@ -226,23 +377,43 @@ public abstract class Keys<T> {
 		}
 
 		@Override
-		public boolean areCompatibale(Keys<?> other) {
+		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
 
 			if (other instanceof ExpressionKeys) {
 				ExpressionKeys<?> oKey = (ExpressionKeys<?>) other;
 
 				if(oKey.types.length != this.types.length) {
-					return false;
+					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
 				}
 				for(int i=0; i<this.types.length; i++) {
 					if(!this.types[i].equals(oKey.types[i])) {
-						return false;
+						throw new IncompatibleKeysException(this.types[i], oKey.types[i]);
 					}
 				}
 				return true;
-
+			} else if(other instanceof SelectorFunctionKeys<?, ?>) {
+				SelectorFunctionKeys<?,?> oKey = (SelectorFunctionKeys<?,?>) other;
+				Preconditions.checkArgument(oKey.getNumberOfKeyFields() == 1, "The code assumes that key selector functions have only one key field");
+				if(oKey.getNumberOfKeyFields() != this.types.length) { // oKey.lenght == 1 because its a selector function
+					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+				}
+				if(!this.types[0].equals(oKey.keyType)) { // assumes that oKey.lenght == 1.
+					throw new IncompatibleKeysException(this.types[0], oKey.keyType);
+				}
+				return true;
+			} else if(other instanceof FieldPositionKeys<?>) {
+				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
+				if(oKey.getNumberOfKeyFields() != this.types.length) {
+					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+				}
+				for(int i = 0; i < this.types.length; i++) {
+					if(!this.types[i].equals(oKey.types[i])) {
+						throw new IncompatibleKeysException(this.types[0], oKey.types[i]);
+					}
+				}
+				return true;
 			} else {
-				return false;
+				throw new IncompatibleKeysException("The key is not compatible with "+other);
 			}
 		}
 
@@ -250,9 +421,9 @@ public abstract class Keys<T> {
 		public int[] computeLogicalKeyPositions() {
 			return logicalPositions;
 		}
-	}
-
-
+	} */
+	
+	
 	// --------------------------------------------------------------------------------------------
 	//  Utilities
 	// --------------------------------------------------------------------------------------------

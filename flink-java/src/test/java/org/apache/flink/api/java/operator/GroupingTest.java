@@ -112,7 +112,6 @@ public class GroupingTest {
 		tupleDs.groupBy(-1);
 	}
 
-	@Ignore
 	@Test
 	public void testGroupByKeyExpressions1() {
 
@@ -124,13 +123,12 @@ public class GroupingTest {
 
 		// should work
 		try {
-//			ds.groupBy("myInt");
+			ds.groupBy("myInt");
 		} catch(Exception e) {
 			Assert.fail();
 		}
 	}
 
-	@Ignore
 	@Test(expected = UnsupportedOperationException.class)
 	public void testGroupByKeyExpressions2() {
 
@@ -138,10 +136,9 @@ public class GroupingTest {
 
 		DataSet<Long> longDs = env.fromCollection(emptyLongData, BasicTypeInfo.LONG_TYPE_INFO);
 		// should not work: groups on basic type
-//		longDs.groupBy("myInt");
+		longDs.groupBy("myInt");
 	}
 
-	@Ignore
 	@Test(expected = InvalidProgramException.class)
 	public void testGroupByKeyExpressions3() {
 
@@ -150,12 +147,11 @@ public class GroupingTest {
 		this.customTypeData.add(new CustomType());
 
 		DataSet<CustomType> customDs = env.fromCollection(customTypeData);
-		// should not work: groups on custom type
+		// should not work: tuple selector on custom type
 		customDs.groupBy(0);
 
 	}
 
-	@Ignore
 	@Test(expected = IllegalArgumentException.class)
 	public void testGroupByKeyExpressions4() {
 
@@ -163,7 +159,34 @@ public class GroupingTest {
 		DataSet<CustomType> ds = env.fromCollection(customTypeData);
 
 		// should not work, key out of tuple bounds
-//		ds.groupBy("myNonExistent");
+		ds.groupBy("myNonExistent");
+	}
+
+	@Test
+	public void testGroupByKeyExpressions1Nested() {
+
+		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+		this.customTypeData.add(new CustomType());
+
+		DataSet<CustomType> ds = env.fromCollection(customTypeData);
+
+		// should work
+		try {
+			ds.groupBy("nested.myInt");
+		} catch(Exception e) {
+			Assert.fail();
+		}
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testGroupByKeyExpressions2Nested() {
+
+		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		DataSet<CustomType> ds = env.fromCollection(customTypeData);
+
+		// should not work, key out of tuple bounds
+		ds.groupBy("nested.myNonExistent");
 	}
 
 	

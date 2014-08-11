@@ -21,6 +21,9 @@ package org.apache.flink.api.java.type.extractor;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -41,8 +44,13 @@ import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple9;
+import org.apache.flink.api.java.typeutils.BasicArrayTypeInfo;
+import org.apache.flink.api.java.typeutils.BasicTypeInfo;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
+import org.apache.flink.api.java.typeutils.PojoField;
+import org.apache.flink.api.java.typeutils.PojoTypeInfo;
+import org.apache.flink.api.java.typeutils.PrimitiveArrayTypeInfo;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
@@ -53,14 +61,19 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.types.DoubleValue;
 import org.apache.flink.types.IntValue;
 import org.apache.flink.types.StringValue;
+import org.apache.flink.types.TypeInformation;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
 import org.apache.hadoop.io.Writable;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import com.google.common.collect.HashMultiset;
 
 public class TypeExtractorTest {
 
+	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void testBasicType() {
@@ -321,7 +334,372 @@ public class TypeExtractorTest {
 		Assert.assertTrue(ti2 instanceof GenericTypeInfo);
 		Assert.assertEquals(ti2.getTypeClass(), CustomType.class);
 	}
+	
+	//
+	// Pojo Type tests
+	// A Pojo is a bean-style class with getters, setters and empty ctor
+	// OR a class with all fields public (or for every private field, there has to be a public getter/setter)
+	// everything else is a generic type (that can't be used for field selection)
+	//
+	
+	
+	// test with correct pojo types
+	public static class WC { // is a pojo
+		public ComplexNestedClass complex; // is a pojo
+		private int count; // is a BasicType
 
+		public WC() {
+		}
+		public int getCount() {
+			return count;
+		}
+		public void setCount(int c) {
+			this.count = c;
+		}
+	}
+	public static class ComplexNestedClass { // pojo
+		public static int ignoreStaticField;
+		public transient int ignoreTransientField;
+		public Date date; // generic type
+		public Integer someNumber; // BasicType
+		public float someFloat; // BasicType
+		public Tuple3<Long, Long, String> word; //Tuple Type with three basic types
+		public Object nothing; // generic type
+		public MyWritable hadoopCitizen;  // writableType
+	}
+
+	// all public test
+	public static class AllPublic extends ComplexNestedClass {
+		public ArrayList<String> somethingFancy; // generic type
+		public HashMultiset<Integer> fancyIds; // generic type
+		public String[]	fancyArray;			 // generic type
+	}
+	
+	public static class ParentSettingGenerics extends PojoWithGenerics<Integer, Long> {
+		public String field3;
+	}
+	public static class PojoWithGenerics<T1, T2> {
+		public int key;
+		public T1 field1;
+		public T2 field2;
+	}
+	
+	/*
+	 * Has fields:
+	 * int : key
+	 * FromTuple: field1
+	 * Tuple1<String>: field2
+	 */
+	public static class ComplexHierarchyTop extends ComplexHierarchy<Tuple1<String>> {}
+	public static class ComplexHierarchy<T> extends PojoWithGenerics<FromTuple,T> {}
+	
+	// extends from Tuple and adds a field
+	public static class FromTuple extends Tuple3<String, String, Long> {
+		private static final long serialVersionUID = 1L;
+		public int special;
+	}
+	
+	public static class IncorrectPojo {
+		private int isPrivate;
+		public int getIsPrivate() {
+			return isPrivate;
+		}
+		// setter is missing (intentional)
+	}
+	
+	// correct pojo
+	public static class BeanStylePojo {
+		public String abc;
+		private int field;
+		public int getField() {
+			return this.field;
+		}
+		public void setField(int f) {
+			this.field = f;
+		}
+	}
+	public static class WrongCtorPojo {
+		public int a;
+		public WrongCtorPojo(int a) {
+			this.a = a;
+		}
+	}
+	
+	// in this test, the location of the getters and setters is mixed across the type hierarchy.
+	public static class TypedPojoGetterSetterCheck extends GenericPojoGetterSetterCheck<String> {
+		public void setPackageProtected(String in) {
+			this.packageProtected = in;
+		}
+	}
+	public static class GenericPojoGetterSetterCheck<T> {
+		T packageProtected;
+		public T getPackageProtected() {
+			return packageProtected;
+		}
+	}
+	
+	@Test
+	public void testIncorrectPojos() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(IncorrectPojo.class);
+		Assert.assertTrue(typeForClass instanceof GenericTypeInfo<?>);
+		
+		typeForClass = TypeExtractor.createTypeInfo(WrongCtorPojo.class);
+		Assert.assertTrue(typeForClass instanceof GenericTypeInfo<?>);
+	}
+	
+	@Test
+	public void testCorrectPojos() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(BeanStylePojo.class);
+		Assert.assertTrue(typeForClass instanceof PojoTypeInfo<?>);
+		
+		typeForClass = TypeExtractor.createTypeInfo(TypedPojoGetterSetterCheck.class);
+		Assert.assertTrue(typeForClass instanceof PojoTypeInfo<?>);
+	}
+	
+	@Test
+	public void testPojoWC() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(WC.class);
+		checkWCPojoAsserts(typeForClass);
+		
+		WC t = new WC();
+		t.complex = new ComplexNestedClass();
+		TypeInformation<?> typeForObject = TypeExtractor.getForObject(t);
+		checkWCPojoAsserts(typeForObject);
+	}
+	
+	private void checkWCPojoAsserts(TypeInformation<?> typeInfo) {
+		Assert.assertFalse(typeInfo.isBasicType());
+		Assert.assertFalse(typeInfo.isTupleType());
+		Assert.assertTrue(typeInfo instanceof PojoTypeInfo);
+		PojoTypeInfo<?> pojoType = (PojoTypeInfo<?>) typeInfo;
+		
+		TypeInformation<?> typeComplexNested = pojoType.getTypeAt(0); // ComplexNestedClass complex
+		Assert.assertTrue(typeComplexNested instanceof PojoTypeInfo);
+		Assert.assertEquals(typeComplexNested.getArity(), 6);
+		PojoTypeInfo<?> pojoTypeComplexNested = (PojoTypeInfo<?>) typeComplexNested;
+		
+		boolean dateSeen = false, intSeen = false, floatSeen = false,
+				tupleSeen = false, objectSeen = false, writableSeen = false;
+		for(int i = 0; i < pojoTypeComplexNested.getArity(); i++) {
+			PojoField field = pojoTypeComplexNested.getPojoFieldAt(i);
+			String name = field.field.getName();
+			if(name.equals("date")) {
+				if(dateSeen) {
+					Assert.fail("already seen");
+				}
+				dateSeen = true;
+				Assert.assertEquals(new GenericTypeInfo<Date>(Date.class), field.type);
+				Assert.assertEquals(Date.class, field.type.getTypeClass());
+			} else if(name.equals("someNumber")) {
+				if(intSeen) {
+					Assert.fail("already seen");
+				}
+				intSeen = true;
+				Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, field.type);
+				Assert.assertEquals(Integer.class, field.type.getTypeClass());
+			} else if(name.equals("someFloat")) {
+				if(floatSeen) {
+					Assert.fail("already seen");
+				}
+				floatSeen = true;
+				Assert.assertEquals(BasicTypeInfo.FLOAT_TYPE_INFO, field.type);
+				Assert.assertEquals(Float.class, field.type.getTypeClass());
+			} else if(name.equals("word")) {
+				if(tupleSeen) {
+					Assert.fail("already seen");
+				}
+				tupleSeen = true;
+				Assert.assertTrue(field.type instanceof TupleTypeInfo<?>);
+				Assert.assertEquals(Tuple3.class, field.type.getTypeClass());
+				// do some more advanced checks on the tuple
+				TupleTypeInfo<?> tupleTypeFromComplexNested = (TupleTypeInfo<?>) field.type;
+				Assert.assertEquals(BasicTypeInfo.LONG_TYPE_INFO, tupleTypeFromComplexNested.getTypeAt(0));
+				Assert.assertEquals(BasicTypeInfo.LONG_TYPE_INFO, tupleTypeFromComplexNested.getTypeAt(1));
+				Assert.assertEquals(BasicTypeInfo.STRING_TYPE_INFO, tupleTypeFromComplexNested.getTypeAt(2));
+			} else if(name.equals("nothing")) {
+				if(objectSeen) {
+					Assert.fail("already seen");
+				}
+				objectSeen = true;
+				Assert.assertEquals(new GenericTypeInfo<Object>(Object.class), field.type);
+				Assert.assertEquals(Object.class, field.type.getTypeClass());
+			} else if(name.equals("hadoopCitizen")) {
+				if(writableSeen) {
+					Assert.fail("already seen");
+				}
+				writableSeen = true;
+				Assert.assertEquals(new WritableTypeInfo<MyWritable>(MyWritable.class), field.type);
+				Assert.assertEquals(MyWritable.class, field.type.getTypeClass());
+			} else {
+				Assert.fail("field "+field+" is not expected");
+			}
+		}
+		Assert.assertTrue("Field was not present", dateSeen);
+		Assert.assertTrue("Field was not present", intSeen);
+		Assert.assertTrue("Field was not present", floatSeen);
+		Assert.assertTrue("Field was not present", tupleSeen);
+		Assert.assertTrue("Field was not present", objectSeen);
+		Assert.assertTrue("Field was not present", writableSeen);
+		
+		TypeInformation<?> typeAtOne = pojoType.getTypeAt(1); // int count
+		Assert.assertTrue(typeAtOne instanceof BasicTypeInfo);
+		
+		Assert.assertEquals(typeInfo.getTypeClass(), WC.class);
+		Assert.assertEquals(typeInfo.getArity(), 2);
+	}
+	
+	@Test
+	public void testPojoAllPublic() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(AllPublic.class);
+		checkAllPublicAsserts(typeForClass);
+		
+		TypeInformation<?> typeForObject = TypeExtractor.getForObject(new AllPublic() );
+		checkAllPublicAsserts(typeForObject);
+	}
+	
+	private void checkAllPublicAsserts(TypeInformation<?> typeInformation) {
+		Assert.assertTrue(typeInformation instanceof PojoTypeInfo);
+		Assert.assertEquals(9, typeInformation.getArity());
+		// check if the three additional fields are identified correctly
+		boolean arrayListSeen = false, multisetSeen = false, strArraySeen = false;
+		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeInformation;
+		for(int i = 0; i < pojoTypeForClass.getArity(); i++) {
+			PojoField field = pojoTypeForClass.getPojoFieldAt(i);
+			String name = field.field.getName();
+			if(name.equals("somethingFancy")) {
+				if(arrayListSeen) {
+					Assert.fail("already seen");
+				}
+				arrayListSeen = true;
+				Assert.assertTrue(field.type instanceof GenericTypeInfo);
+				Assert.assertEquals(ArrayList.class, field.type.getTypeClass());
+			} else if(name.equals("fancyIds")) {
+				if(multisetSeen) {
+					Assert.fail("already seen");
+				}
+				multisetSeen = true;
+				Assert.assertTrue(field.type instanceof GenericTypeInfo);
+				Assert.assertEquals(HashMultiset.class, field.type.getTypeClass());
+			} else if(name.equals("fancyArray")) {
+				if(strArraySeen) {
+					Assert.fail("already seen");
+				}
+				strArraySeen = true;
+				Assert.assertEquals(BasicArrayTypeInfo.STRING_ARRAY_TYPE_INFO, field.type);
+				Assert.assertEquals(String[].class, field.type.getTypeClass());
+			} else if(Arrays.asList("date", "someNumber", "someFloat", "word", "nothing", "hadoopCitizen").contains(name)) {
+				// ignore these, they are inherited from the ComplexNestedClass
+			} 
+			else {
+				Assert.fail("field "+field+" is not expected");
+			}
+		}
+		Assert.assertTrue("Field was not present", arrayListSeen);
+		Assert.assertTrue("Field was not present", multisetSeen);
+		Assert.assertTrue("Field was not present", strArraySeen);
+	}
+	
+	@Test
+	public void testPojoExtendingTuple() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(FromTuple.class);
+		checkFromTuplePojo(typeForClass);
+		
+		FromTuple ft = new FromTuple();
+		ft.f0 = ""; ft.f1 = ""; ft.f2 = 0L;
+		TypeInformation<?> typeForObject = TypeExtractor.getForObject(ft);
+		checkFromTuplePojo(typeForObject);
+	}
+	
+	private void checkFromTuplePojo(TypeInformation<?> typeInformation) {
+		Assert.assertTrue(typeInformation instanceof PojoTypeInfo<?>);
+		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeInformation;
+		for(int i = 0; i < pojoTypeForClass.getArity(); i++) {
+			PojoField field = pojoTypeForClass.getPojoFieldAt(i);
+			String name = field.field.getName();
+			if(name.equals("special")) {
+				Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, field.type);
+			} else if(name.equals("f0") || name.equals("f1")) {
+				Assert.assertEquals(BasicTypeInfo.STRING_TYPE_INFO, field.type);
+			} else if(name.equals("f2")) {
+				Assert.assertEquals(BasicTypeInfo.LONG_TYPE_INFO, field.type);
+			} else {
+				Assert.fail("unexpected field");
+			}
+		}
+	}
+	
+	@Test
+	public void testPojoWithGenerics() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(ParentSettingGenerics.class);
+		Assert.assertTrue(typeForClass instanceof PojoTypeInfo<?>);
+		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeForClass;
+		for(int i = 0; i < pojoTypeForClass.getArity(); i++) {
+			PojoField field = pojoTypeForClass.getPojoFieldAt(i);
+			String name = field.field.getName();
+			if(name.equals("field1")) {
+				Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, field.type);
+			} else if (name.equals("field2")) {
+				Assert.assertEquals(BasicTypeInfo.LONG_TYPE_INFO, field.type);
+			} else if (name.equals("field3")) {
+				Assert.assertEquals(BasicTypeInfo.STRING_TYPE_INFO, field.type);
+			} else if (name.equals("key")) {
+				Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, field.type);
+			} else {
+				Assert.fail("Unexpected field "+field);
+			}
+		}
+	}
+	
+	/**
+	 * Test if the TypeExtractor is accepting untyped generics,
+	 * making them GenericTypes
+	 */
+	@Test
+	@Ignore // add again once we have Kryo support
+	public void testPojoWithGenericsSomeFieldsGeneric() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(PojoWithGenerics.class);
+		Assert.assertTrue(typeForClass instanceof PojoTypeInfo<?>);
+		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeForClass;
+		for(int i = 0; i < pojoTypeForClass.getArity(); i++) {
+			PojoField field = pojoTypeForClass.getPojoFieldAt(i);
+			String name = field.field.getName();
+			if(name.equals("field1")) {
+				Assert.assertEquals(new GenericTypeInfo<Object>(Object.class), field.type);
+			} else if (name.equals("field2")) {
+				Assert.assertEquals(new GenericTypeInfo<Object>(Object.class), field.type);
+			} else if (name.equals("key")) {
+				Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, field.type);
+			} else {
+				Assert.fail("Unexpected field "+field);
+			}
+		}
+	}
+	
+	
+	@Test
+	public void testPojoWithComplexHierarchy() {
+		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(ComplexHierarchyTop.class);
+		System.err.println("Got "+typeForClass);
+		Assert.assertTrue(typeForClass instanceof PojoTypeInfo<?>);
+		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeForClass;
+		for(int i = 0; i < pojoTypeForClass.getArity(); i++) {
+			PojoField field = pojoTypeForClass.getPojoFieldAt(i);
+			String name = field.field.getName();
+			if(name.equals("field1")) {
+				Assert.assertTrue(field.type instanceof PojoTypeInfo<?>); // From tuple is pojo (not tuple type!)
+			} else if (name.equals("field2")) {
+				Assert.assertTrue(field.type instanceof TupleTypeInfo<?>);
+				Assert.assertTrue( ((TupleTypeInfo<?>)field.type).getTypeAt(0).equals(BasicTypeInfo.STRING_TYPE_INFO) );
+			} else if (name.equals("key")) {
+				Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, field.type);
+			} else {
+				Assert.fail("Unexpected field "+field);
+			}
+		}
+	}
+	
+	// End of Pojo type tests
+	
 	public static class CustomType {
 		public String myField1;
 		public int myField2;

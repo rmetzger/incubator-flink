@@ -18,27 +18,26 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
-import com.google.common.base.Objects;
+import java.util.Random;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.junit.Ignore;
+import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
+import org.apache.flink.types.TypeInformation;
 
-import java.util.Random;
+import com.google.common.base.Objects;
 
 /**
  * A test for the {@link org.apache.flink.api.java.typeutils.runtime.PojoSerializer}.
  */
-@Ignore
 public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserClass> {
 	private TypeInformation<TestUserClass> type = TypeExtractor.getForClass(TestUserClass.class);
 
 	@Override
 	protected TypeSerializer<TestUserClass> createSerializer() {
 		TypeSerializer<TestUserClass> serializer = type.createSerializer();
-		assert (serializer instanceof PojoSerializer);
+		assert(serializer instanceof PojoSerializer);
 		return serializer;
 	}
 
