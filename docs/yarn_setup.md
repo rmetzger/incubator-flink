@@ -185,7 +185,14 @@ It allows to access log files for running YARN applications and shows diagnostic
 Users using Hadoop distributions from companies like Hortonworks, Cloudera or MapR might have to build Flink against their specific versions of Hadoop (HDFS) and YARN. Please read the [build instructions](building.html) for more details.
 
 
-## Background
+# Ship additional libraries or files to the YARN containers started for Flink
+
+In order to use additional classes in your job, you can either package the dependencies into the job's jar file (for example using `maven-assembly-plugin`'s `jar-with-dependencies` descriptor). Another method is putting the jar file into the `ship/` directory of the `yarn-session.sh` script.
+
+All files placed there are automatically included into the container's classpath. In addition to that, the files are also placed in the same directory where the JVM's process for the container is started.
+So you can also access the files (from the working directory).
+
+# Background
 
 This section briefly describes how Flink and YARN interact. 
 

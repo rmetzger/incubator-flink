@@ -49,6 +49,8 @@ public abstract class FileSystem {
 
 	private static final String MAPR_FILESYSTEM_CLASS = "org.apache.flink.runtime.fs.maprfs.MapRFileSystem";
 	
+	private static final String TACHYON_FILESYSTEM_CLASS = "org.apache.flink.fs.tachyon.TachyonFileSystem";
+	
 	private static final String S3_FILESYSTEM_CLASS = "org.apache.flink.runtime.fs.s3.S3FileSystem";
 
 	
@@ -160,6 +162,7 @@ public abstract class FileSystem {
 	static {
 		FSDIRECTORY.put("hdfs", HADOOP_DISTRIBUTED_FILESYSTEM_CLASS);
 		FSDIRECTORY.put("maprfs", MAPR_FILESYSTEM_CLASS);
+		FSDIRECTORY.put("tachyon", TACHYON_FILESYSTEM_CLASS);
 		FSDIRECTORY.put("file", LOCAL_FILESYSTEM_CLASS);
 		FSDIRECTORY.put("s3", S3_FILESYSTEM_CLASS);
 	}
