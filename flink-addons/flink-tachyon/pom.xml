@@ -56,8 +56,9 @@ under the License.
 			<artifactId>tachyon</artifactId>
 			<version>0.5.0</version>
 			<type>test-jar</type>
+			<scope>test</scope>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 			<scope>test</scope>
@@ -66,7 +67,7 @@ under the License.
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<scope>test</scope>
-		</dependency>
+		</dependency>  -->
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -74,11 +75,13 @@ under the License.
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-server</artifactId>
 				<version>7.6.8.v20121106</version>
+				<scope>test</scope>
 			</dependency>
 			<dependency>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-servlet</artifactId>
 				<version>7.6.8.v20121106</version>
+				<scope>test</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

@@ -28,24 +28,24 @@ import tachyon.client.InStream;
  * Implementation of the {@link FSDataInputStream} interface for the Tachyon File System.
  */
 public class TachyonDataInputStream extends FSDataInputStream {
-    private final InStream inStream;
+	private final InStream inStream;
 
-    public TachyonDataInputStream(InStream inStream) {
-        this.inStream = inStream;
-    }
+	public TachyonDataInputStream(InStream inStream) {
+		this.inStream = inStream;
+	}
 
-    @Override
-    public void seek(long desired) throws IOException {
-        inStream.seek(desired);
-    }
+	@Override
+	public void seek(long desired) throws IOException {
+		inStream.seek(desired);
+	}
 
-    @Override
-    public int read() throws IOException {
-        return inStream.read();
-    }
+	@Override
+	public int read() throws IOException {
+		return inStream.read();
+	}
 
-    @Override
-    public void close() throws IOException {
-        inStream.close();
-    }
+	@Override
+	public void close() throws IOException {
+		inStream.close();
+	}
 }

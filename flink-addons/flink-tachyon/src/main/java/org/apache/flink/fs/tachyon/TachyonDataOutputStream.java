@@ -28,19 +28,19 @@ import tachyon.client.OutStream;
  * Implementation of the {@link FSDataOutputStream} interface for the Tachyon File System.
  */
 public class TachyonDataOutputStream extends FSDataOutputStream {
-    private final OutStream outStream;
+	private final OutStream outStream;
 
-    public TachyonDataOutputStream(OutStream outStream) {
-        this.outStream = outStream;
-    }
+	public TachyonDataOutputStream(OutStream outStream) {
+		this.outStream = outStream;
+	}
 
-    @Override
-    public void write(int b) throws IOException {
-        outStream.write(b);
-    }
+	@Override
+	public void write(int b) throws IOException {
+		outStream.write(b);
+	}
 
-    @Override
-    public void close() throws IOException {
-        outStream.close();
-    }
+	@Override
+	public void close() throws IOException {
+		outStream.close();
+	}
 }
