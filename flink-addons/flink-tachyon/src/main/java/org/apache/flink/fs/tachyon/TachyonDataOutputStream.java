@@ -40,6 +40,21 @@ public class TachyonDataOutputStream extends FSDataOutputStream {
 	}
 
 	@Override
+	public void write(byte[] b) throws IOException {
+		outStream.write(b);
+	}
+	
+	@Override
+	public void write(byte[] b, int off, int len) throws IOException {
+		outStream.write(b, off, len);
+	}
+	
+	@Override
+	public void flush() throws IOException {
+		outStream.flush();
+	}
+	
+	@Override
 	public void close() throws IOException {
 		outStream.close();
 	}

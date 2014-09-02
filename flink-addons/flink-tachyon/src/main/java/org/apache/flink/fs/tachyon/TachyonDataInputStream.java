@@ -43,7 +43,22 @@ public class TachyonDataInputStream extends FSDataInputStream {
 	public int read() throws IOException {
 		return inStream.read();
 	}
+	
+	@Override
+	public int read(byte[] b) throws IOException {
+		return inStream.read(b);
+	}
 
+	@Override
+	public int read(byte[] b, int off, int len) throws IOException {
+		return inStream.read(b, off, len);
+	}
+
+	@Override
+	public long skip(long n) throws IOException {
+		return inStream.skip(n);
+	}
+	
 	@Override
 	public void close() throws IOException {
 		inStream.close();

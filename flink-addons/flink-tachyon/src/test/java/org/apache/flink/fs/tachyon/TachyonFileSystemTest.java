@@ -40,12 +40,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import tachyon.client.TachyonFS;
 import tachyon.master.LocalTachyonCluster;
 
 public class TachyonFileSystemTest {
 	private LocalTachyonCluster cluster = null;
-	private TachyonFS mTfs = null;
 	private static final FileSystem fs = new TachyonFileSystem();
 	private static String SCHEME_HOST;
 	private static Path testDir1;
