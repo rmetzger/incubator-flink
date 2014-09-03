@@ -40,10 +40,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import tachyon.client.TachyonFS;
 import tachyon.master.LocalTachyonCluster;
 
 public class TachyonFileSystemTest {
 	private LocalTachyonCluster cluster = null;
+	private TachyonFS mTfs = null;
 	private static final FileSystem fs = new TachyonFileSystem();
 	private static String SCHEME_HOST;
 	private static Path testDir1;
@@ -80,6 +82,7 @@ public class TachyonFileSystemTest {
 
 	@Test
 	public void testWordCount() throws Exception {
+		System.err.println("Starting test code");
 		fs.mkdirs(testDir1);
 		FSDataOutputStream out = fs.create(testFilePath1, true, 0, (short)0, 32);
 		for (int x = 0; x < 10; x++) {
@@ -87,7 +90,9 @@ public class TachyonFileSystemTest {
 			out.write("world\n".getBytes());
 		}
 		out.close();
+		System.err.println("Trigger");
 		new DopOneTestEnvironment(); // load class to trigger static ctor.
+		System.err.println("Callin main");
 		WordCount.main(new String[]{testFilePath1.toString(), testDir2.toString()});
 		FileStatus[] files = fs.listStatus(testDir2);
 		assertTrue("The job did not create any files", fs.exists(testDir2));
