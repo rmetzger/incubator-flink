@@ -20,11 +20,10 @@ package org.apache.flink.api.java.typeutils.runtime;
 
 import java.util.Random;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
-import org.apache.flink.types.TypeInformation;
 
 import com.google.common.base.Objects;
 

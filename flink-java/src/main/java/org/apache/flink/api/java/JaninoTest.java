@@ -24,8 +24,8 @@ import java.util.Map;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.types.TypeInformation;
 import org.apache.flink.util.InstantiationUtil;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.util.resource.MapResourceFinder;

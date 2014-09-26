@@ -21,9 +21,9 @@ package org.apache.flink.api.java.type.extractor;
 
 import static org.junit.Assert.assertTrue;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.CompositeType;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.types.TypeInformation;
 import org.junit.Test;
 
 @SuppressWarnings("unused")

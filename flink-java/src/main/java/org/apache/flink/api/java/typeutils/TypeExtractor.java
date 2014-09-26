@@ -32,8 +32,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.flink.api.common.functions.CoGroupFunction;
 import org.apache.flink.api.common.functions.CrossFunction;
 import org.apache.flink.api.common.functions.FlatJoinFunction;
@@ -55,11 +53,13 @@ import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
 import org.apache.hadoop.io.Writable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
 public class TypeExtractor {
-	private static final Log LOG = LogFactory.getLog(TypeExtractor.class);
+	private static final Logger LOG = LoggerFactory.getLogger(TypeExtractor.class);
 
 	// We need this to detect recursive types and not get caught
 	// in an endless recursion

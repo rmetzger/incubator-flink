@@ -16,24 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.common.typeinfo;
+package org.apache.flink.api.java.typeutils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.flink.api.common.typeinfo.AtomicType;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.java.operators.Keys;
-import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
-import org.apache.flink.api.java.typeutils.runtime.TupleLeadingFieldComparator;
-import org.apache.flink.types.TypeInformation;
-
-import com.google.common.base.Preconditions;
+import org.powermock.tests.utils.Keys;
 
 
 /**
