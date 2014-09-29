@@ -20,6 +20,7 @@ package org.apache.flink.api.java.operators;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.flink.api.common.InvalidProgramException;
@@ -30,6 +31,7 @@ import org.apache.flink.api.java.typeutils.TupleTypeInfoBase;
 import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 
 
 public abstract class Keys<T> {
@@ -244,7 +246,7 @@ public abstract class Keys<T> {
 	 * Represents (nested) field access through string-based keys for Composite Types (Tuple or Pojo)
 	 */
 	public static class ExpressionKeys<T> extends Keys<T> {
-		
+		public static final char SELECT_ALL_CHAR = '*';
 		/**
 		 * Flattened fields representing keys fields
 		 */
@@ -268,7 +270,7 @@ public abstract class Keys<T> {
 					throw new IllegalArgumentException("Unable to extract key from expression "+expressions[i]+" on key "+cType);
 				}
 				keyFields.add(key);
-				System.err.println("Got "+keyFields.get(keyFields.size()-1).getPosition());
+				System.err.println("Got "+keyFields.get(keyFields.size()-1).getPositions());
 			}
 			
 		//	List<FlatFieldDescriptor> fields = new ArrayList<FlatFieldDescriptor>(type.getArity());
@@ -330,12 +332,12 @@ public abstract class Keys<T> {
 
 		@Override
 		public int[] computeLogicalKeyPositions() {
-			int[] logicalKeys = new int[keyFields.size()];
-			int i = 0;
+			// convert a List of FlatFields with int[] into one large int[].
+			List<Integer> logicalKeys = new LinkedList<Integer>();
 			for(FlatFieldDescriptor kd : keyFields) {
-				logicalKeys[i++] = kd.getPosition();
+				logicalKeys.addAll( Ints.asList(kd.getPositions()));
 			}
-			return logicalKeys;
+			return Ints.toArray(logicalKeys);
 		}
 		
 	}

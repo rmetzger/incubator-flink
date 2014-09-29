@@ -19,6 +19,7 @@
 package org.apache.flink.api.java.type.extractor;
 
 import java.io.DataInput;
+
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -149,7 +150,7 @@ public class TypeExtractorTest {
 		Assert.assertTrue(ti.isTupleType());
 		Assert.assertEquals(9, ti.getArity());
 		Assert.assertTrue(ti instanceof TupleTypeInfo);
-		Assert.assertEquals(3, ((TupleTypeInfo) ti).getKey("f3", 0).getPosition() );
+		Assert.assertEquals(3, ((TupleTypeInfo) ti).getKey("f3", 0).getPositions() );
 
 		TupleTypeInfo<?> tti = (TupleTypeInfo<?>) ti;
 		Assert.assertEquals(Tuple9.class, tti.getTypeClass());
@@ -212,10 +213,10 @@ public class TypeExtractorTest {
 		Assert.assertTrue(ti.isTupleType());
 		Assert.assertEquals(3, ti.getArity());
 		Assert.assertTrue(ti instanceof TupleTypeInfo);
-		Assert.assertEquals(0, ((TupleTypeInfo) ti).getKey("f0.f0", 0).getPosition() );
+		Assert.assertEquals(0, ((TupleTypeInfo) ti).getKey("f0.f0", 0).getPositions() );
 		Assert.assertTrue( ((TupleTypeInfo) ti).getKey("f0.f0", 0).getType() instanceof BasicTypeInfo );
 		Assert.assertTrue( ((TupleTypeInfo) ti).getKey("f0.f0", 0).getType().getTypeClass().equals(String.class) );
-		Assert.assertEquals(1, ((TupleTypeInfo) ti).getKey("f1.f0", 0).getPosition() );
+		Assert.assertEquals(1, ((TupleTypeInfo) ti).getKey("f1.f0", 0).getPositions() );
 
 		TupleTypeInfo<?> tti = (TupleTypeInfo<?>) ti;
 		Assert.assertEquals(Tuple3.class, tti.getTypeClass());
@@ -474,15 +475,21 @@ public class TypeExtractorTest {
 		Assert.assertTrue(typeInfo instanceof PojoTypeInfo);
 		PojoTypeInfo<?> pojoType = (PojoTypeInfo<?>) typeInfo;
 		
-		Assert.assertEquals(8, pojoType.getKey("count",0).getPosition()); // this is correct
-		Assert.assertEquals(0, pojoType.getKey("complex.date",0).getPosition()); // this has to be 0
-		Assert.assertEquals(1, pojoType.getKey("complex.hadoopCitizen",0).getPosition()); // has to be 1
-		Assert.assertEquals(2, pojoType.getKey("complex.nothing",0).getPosition());
-		Assert.assertEquals(3, pojoType.getKey("complex.someFloat",0).getPosition());
-		Assert.assertEquals(4, pojoType.getKey("complex.someNumber",0).getPosition());
-		Assert.assertEquals(5, pojoType.getKey("complex.word.f0",0).getPosition());
-		Assert.assertEquals(6, pojoType.getKey("complex.word.f1",0).getPosition());
-		Assert.assertEquals(7, pojoType.getKey("complex.word.f2",0).getPosition());
+		Assert.assertArrayEquals(new int[]{8}, pojoType.getKey("count",0).getPositions());
+		Assert.assertArrayEquals(new int[]{0}, pojoType.getKey("complex.date",0).getPositions()); 
+		Assert.assertArrayEquals(new int[]{1}, pojoType.getKey("complex.hadoopCitizen",0).getPositions());
+		Assert.assertArrayEquals(new int[]{2}, pojoType.getKey("complex.nothing",0).getPositions());
+		Assert.assertArrayEquals(new int[]{3}, pojoType.getKey("complex.someFloat",0).getPositions());
+		Assert.assertArrayEquals(new int[]{4}, pojoType.getKey("complex.someNumber",0).getPositions());
+		Assert.assertArrayEquals(new int[]{5}, pojoType.getKey("complex.word.f0",0).getPositions());
+		Assert.assertArrayEquals(new int[]{6}, pojoType.getKey("complex.word.f1",0).getPositions());
+		Assert.assertArrayEquals(new int[]{7}, pojoType.getKey("complex.word.f2",0).getPositions());
+		
+		Assert.assertArrayEquals(new int[]{5,6,7}, pojoType.getKey("complex.word.*", 0).getPositions());
+		
+		Assert.assertArrayEquals(new int[]{5,6,7}, pojoType.getKey("complex.*", 0).getPositions());
+		
+		Assert.assertArrayEquals(new int[]{5,6,7}, pojoType.getKey("*", 0).getPositions());
 		
 		TypeInformation<?> typeComplexNested = pojoType.getTypeAt(0); // ComplexNestedClass complex
 		Assert.assertTrue(typeComplexNested instanceof PojoTypeInfo);
@@ -749,13 +756,13 @@ public class TypeExtractorTest {
 		TupleTypeInfo<?> tti = (TupleTypeInfo<?>) ti;
 		Assert.assertEquals(Tuple2.class, tti.getTypeClass());
 		
-		Assert.assertEquals(0, tti.getKey("f0", 0).getPosition() ); // Long
+		Assert.assertEquals(0, tti.getKey("f0", 0).getPositions() ); // Long
 		Assert.assertTrue( tti.getKey("f0", 0).getType().getTypeClass().equals(Long.class) );
 		
-		Assert.assertEquals(1, tti.getKey("f1.myField1", 0).getPosition() );
+		Assert.assertEquals(1, tti.getKey("f1.myField1", 0).getPositions() );
 		Assert.assertTrue( tti.getKey("f1.myField1", 0).getType().getTypeClass().equals(String.class) );
 		
-		Assert.assertEquals(2, tti.getKey("f1.myField2", 0).getPosition() );
+		Assert.assertEquals(2, tti.getKey("f1.myField2", 0).getPositions() );
 		Assert.assertTrue( tti.getKey("f1.myField2", 0).getType().getTypeClass().equals(Integer.class) );
 		
 		

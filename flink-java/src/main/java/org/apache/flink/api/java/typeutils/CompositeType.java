@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
@@ -200,25 +201,17 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	
 	
 	public static class FlatFieldDescriptor {
-		private int pos;
+		private int[] keyPositions;
 		private TypeInformation<?> type;
-		private Field reflectField; // may be null if type == TupleTypeInfo
 		
-		public FlatFieldDescriptor(int pos, TypeInformation<?> type, Field reflectField) {
-			this.pos = pos;
+		public FlatFieldDescriptor(int[] keyPositions, TypeInformation<?> type) {
+			this.keyPositions = keyPositions;
 			this.type = type;
-			this.reflectField = reflectField;
-//			if(reflectField == null && !(type instanceof TupleTypeInfo<?>)) {
-//				throw new IllegalArgumentException("Reflect field can not be null if type is not a tuple");
-//			}
 		}
 
-		public Field getReflectionField() {
-			return reflectField;
-		}
 
-		public int getPosition() {
-			return pos;
+		public int[] getPositions() {
+			return keyPositions;
 		}
 		public TypeInformation<?> getType() {
 			return type;
@@ -226,7 +219,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 		
 		@Override
 		public String toString() {
-			return "FlatFieldDescriptor [position="+pos+" typeInfo="+type+" reflectionField="+reflectField+"]";
+			return "FlatFieldDescriptor [positions="+StringUtils.join(keyPositions, ',')+" typeInfo="+type+"]";
 		}
 	}
 	

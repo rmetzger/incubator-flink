@@ -26,6 +26,7 @@ import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
 //CHECKSTYLE.OFF: AvoidStarImport - Needed for TupleGenerator
 import org.apache.flink.api.java.tuple.Tuple;
 //CHECKSTYLE.ON: AvoidStarImport
@@ -142,6 +143,12 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	@Override
 	public FlatFieldDescriptor getKey(String fieldExpression, int offset) {
 		// check input
+		if(fieldExpression.equals(ExpressionKeys.SELECT_ALL_CHAR)) {
+			TODO tomorrow:
+				- FlatFieldDescriptors back to one int only
+				- proper recursive action through everything for selecting all fields
+			
+		}
 		if(fieldExpression.length() < 2) {
 			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. The length must be at least 2");
 		}
@@ -171,14 +178,13 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		// pass down the remainder (after the dot) of the fieldExpression to the type at that position.
 		if(dotPos != -1) {
 			String rem = fieldExpression.substring(dotPos+1);
-			System.err.println("Got remainer to pass down:"+rem);
 			if( !(types[pos] instanceof CompositeType<?>) ) {
 				throw new RuntimeException("Element at position "+pos+" is not a composite type. Selecting the key by expression is not possible");
 			}
 			CompositeType<?> cType = (CompositeType<?>) types[pos];
 			return cType.getKey(rem, offset + pos);
 		}
-		return new FlatFieldDescriptor(offset + pos, types[pos], null);
+		return new FlatFieldDescriptor(new int[] {offset + pos}, types[pos]);
 	}
 	
 	// --------------------------------------------------------------------------------------------

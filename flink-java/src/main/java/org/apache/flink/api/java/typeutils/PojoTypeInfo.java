@@ -134,7 +134,7 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 					fieldId += fields[i].type.getTotalFields()-1;
 				}
 				if (fields[i].field.getName().equals(fieldExpression)) {
-					return new FlatFieldDescriptor(offset + fieldId, fields[i].type, null);
+					return new FlatFieldDescriptor(new int[] {offset + fieldId}, fields[i].type);
 				}
 				fieldId++;
 			}
