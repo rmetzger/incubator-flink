@@ -854,7 +854,7 @@ public class TypeExtractor {
 		}
 
 		if (clazz.equals(Object.class)) {
-// TODO (merging): better throw an exception here. the runtime does not support it yet
+			// TODO (merging): better throw an exception here. the runtime does not support it yet
 			return new GenericTypeInfo<X>(clazz);
 		}
 		

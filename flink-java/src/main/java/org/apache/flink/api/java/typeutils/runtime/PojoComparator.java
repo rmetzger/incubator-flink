@@ -37,12 +37,11 @@ import org.apache.flink.util.InstantiationUtil;
 
 
 public final class PojoComparator<T> extends TypeComparator<T> implements java.io.Serializable {
-
+	
 	private static final long serialVersionUID = 1L;
 
-	// for each "field" we have a list of fields, since we might access fields
-	// in nested objects
-	private transient List<Field>[] keyFields;
+	// Reflection fields for the comp fields
+	private transient Field[] keyFields;
 
 	private final TypeComparator<Object>[] comparators;
 
@@ -61,7 +60,7 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 	private final Comparable[] extractedKeys;
 
 	@SuppressWarnings("unchecked")
-	public PojoComparator(List<Field>[] keyFields, TypeComparator<?>[] comparators, TypeSerializer<T> serializer, Class<T> type) {
+	public PojoComparator(Field[] keyFields, TypeComparator<?>[] comparators, TypeSerializer<T> serializer, Class<T> type) {
 		this.keyFields = keyFields;
 		this.comparators = (TypeComparator<Object>[]) comparators;
 
@@ -144,47 +143,41 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 			throws IOException, ClassNotFoundException {
 		out.defaultWriteObject();
 		out.writeInt(keyFields.length);
-		for (List<Field> fieldAccessors: keyFields) {
-			out.writeInt(fieldAccessors.size());
-			for (Field field: fieldAccessors) {
-				out.writeObject(field.getDeclaringClass());
-				out.writeUTF(field.getName());
-			}
+		for (Field field: keyFields) {
+			out.writeObject(field.getDeclaringClass());
+			out.writeUTF(field.getName());
 		}
 	}
 
+	// TODO: Check refactoring here.
 	private void readObject(ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
 		int numKeyFields = in.readInt();
-		keyFields = new List[numKeyFields];
+		keyFields = new Field[numKeyFields];
 		for (int i = 0; i < numKeyFields; i++) {
-			int numAccessors = in.readInt();
-			keyFields[i] = new ArrayList<Field>();
-			for (int j = 0; j < numAccessors; j++) {
-				Class<?> clazz = (Class<?>) in.readObject();
-				String fieldName = in.readUTF();
-				// try superclasses as well
-				while (clazz != null) {
-					try {
-						Field field = clazz.getDeclaredField(fieldName);
-						field.setAccessible(true);
-						keyFields[i].add(field);
-						break;
-					} catch (NoSuchFieldException e) {
-						clazz = clazz.getSuperclass();
-					}
+			Class<?> clazz = (Class<?>) in.readObject();
+			String fieldName = in.readUTF();
+			// try superclasses as well
+			while (clazz != null) {
+				try {
+					Field field = clazz.getDeclaredField(fieldName);
+					field.setAccessible(true);
+					keyFields[i] = field;
+					break;
+				} catch (NoSuchFieldException e) {
+					clazz = clazz.getSuperclass();
 				}
-				if (keyFields[i] == null || keyFields[i].isEmpty()) {
-					throw new RuntimeException("Class resolved at TaskManager is not compatible with class read during Plan setup."
-							+ " (" + fieldName + ")");
-				}
+			}
+			if (keyFields[i] == null ) {
+				throw new RuntimeException("Class resolved at TaskManager is not compatible with class read during Plan setup."
+						+ " (" + fieldName + ")");
 			}
 		}
 	}
 
 
-	public List<Field>[] getKeyFields() {
+	public Field[] getKeyFields() {
 		return this.keyFields;
 	}
 
@@ -192,25 +185,18 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		return this.comparators;
 	}
 
-	private final Object accessField(List<Field> fieldAccessors, Object object) {
-		// We could have another indirection where we have an AccessorProxy for fields with only
-		// one element in the accessor chain and another MultiAccessorProxy for fields with several
-		// fields to access the final key field. This would add another level of abstraction with additional
-		// objects and additional calls per key field so go with this simple version for now.
-		for (Field accessor : fieldAccessors) {
-			try {
-				object = accessor.get(object);
-			} catch (NullPointerException npex) {
-				List<String> accessorNames = new ArrayList<String>();
-				for (Field f : fieldAccessors) {
-					accessorNames.add(f.getName());
-				}
-				Joiner join = Joiner.on('.');
-				throw new NullKeyFieldException(join.join(accessorNames));
-			} catch (IllegalAccessException iaex) {
-				throw new RuntimeException("This should not happen since we call setAccesssible(true) in PojoTypeInfo."
-				+ " ACC: " + accessor + " obj: " + object);
-			}
+	/**
+	 * This method is handling the IllegalAccess exceptions of Field.get()
+	 */
+	private final Object accessField(Field field, Object object) {
+		try {
+			object = field.get(object);
+		} catch (NullPointerException npex) {
+			// TODO pass npex?
+			throw new NullKeyFieldException("Unable to access field "+field+" on object "+object);
+		} catch (IllegalAccessException iaex) {
+			throw new RuntimeException("This should not happen since we call setAccesssible(true) in PojoTypeInfo."
+			+ " fiels: " + field + " obj: " + object);
 		}
 		return object;
 	}

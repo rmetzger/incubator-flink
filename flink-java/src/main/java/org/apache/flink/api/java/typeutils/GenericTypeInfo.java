@@ -52,6 +52,11 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
 	public int getArity() {
 		return 1;
 	}
+	
+	@Override
+	public int getTotalFields() {
+		return 1;
+	}
 
 	@Override
 	public Class<T> getTypeClass() {

@@ -100,13 +100,13 @@ public abstract class Keys<T> {
 				types[i] = tupleType.getTypeAt(this.fieldPositions[i]);
 			}
 			
-			// set fields for composite type (needed for serializer / comparator setup)
-			int fieldCount = tupleType.getArity();
-			List<FlatFieldDescriptor> fields = new ArrayList<FlatFieldDescriptor>(fieldCount);
-			for(int i = 0; i < fieldCount; i++) {
-				fields.add(new FlatFieldDescriptor(i, tupleType.getTypeAt(i), null));
-			}
-			tupleType.populateWithFlatSchema(fields);
+//			// set fields for composite type (needed for serializer / comparator setup)
+//			int fieldCount = tupleType.getArity();
+//			List<FlatFieldDescriptor> fields = new ArrayList<FlatFieldDescriptor>(fieldCount);
+//			for(int i = 0; i < fieldCount; i++) {
+//				fields.add(new FlatFieldDescriptor(i, tupleType.getTypeAt(i), null));
+//			}
+//			tupleType.populateWithFlatSchema(fields);
 		}
 
 		@Override
@@ -263,7 +263,7 @@ public abstract class Keys<T> {
 			keyFields = new ArrayList<FlatFieldDescriptor>(expressions.length);
 			for (int i = 0; i < expressions.length; i++) {
 				System.err.println("Getting logical key position for "+expressions[i]+" on type "+type);
-				final FlatFieldDescriptor key = cType.getKey(expressions[i], 0);
+				final FlatFieldDescriptor key = cType.getKey(expressions[i], 0 );
 				if(key == null) {
 					throw new IllegalArgumentException("Unable to extract key from expression "+expressions[i]+" on key "+cType);
 				}

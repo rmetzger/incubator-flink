@@ -62,7 +62,7 @@ import com.google.common.base.Preconditions;
 
 
 public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
-
+	
 	@SuppressWarnings("unchecked")
 	public TupleTypeInfo(TypeInformation<?>... types) {
 		this((Class<T>) CLASSES[types.length - 1], types);
@@ -89,9 +89,6 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	
 	@Override
 	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders) {
-		if(containsPojo) {
-			return super.createComparator(logicalKeyFields, orders);
-		}
 		// sanity checks
 		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length ||
 				logicalKeyFields.length > types.length)
@@ -179,20 +176,10 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 				throw new RuntimeException("Element at position "+pos+" is not a composite type. Selecting the key by expression is not possible");
 			}
 			CompositeType<?> cType = (CompositeType<?>) types[pos];
-			return cType.getKey(rem, pos + offset);
+			return cType.getKey(rem, offset + pos);
 		}
-		return new FlatFieldDescriptor(pos + offset, types[pos], null);
+		return new FlatFieldDescriptor(offset + pos, types[pos], null);
 	}
-	
-
-/**	@Override
-	public TypeInformation<?>[] getTypes(String[] fieldExpressions) {
-		TypeInformation<?>[] result = new TypeInformation<?>[fieldExpressions.length];
-		for (int i = 0; i < fieldExpressions.length; i++) {
-			result[i] = this.types[getLogicalPositions(fieldExpressions[i])];
-		}
-		return result;
-	} */
 	
 	// --------------------------------------------------------------------------------------------
 	
@@ -255,4 +242,5 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		Tuple1.class, Tuple2.class, Tuple3.class, Tuple4.class, Tuple5.class, Tuple6.class, Tuple7.class, Tuple8.class, Tuple9.class, Tuple10.class, Tuple11.class, Tuple12.class, Tuple13.class, Tuple14.class, Tuple15.class, Tuple16.class, Tuple17.class, Tuple18.class, Tuple19.class, Tuple20.class, Tuple21.class, Tuple22.class, Tuple23.class, Tuple24.class, Tuple25.class
 	};
 	// END_OF_TUPLE_DEPENDENT_CODE
+
 }

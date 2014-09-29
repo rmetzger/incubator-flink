@@ -149,7 +149,7 @@ public class TypeExtractorTest {
 		Assert.assertTrue(ti.isTupleType());
 		Assert.assertEquals(9, ti.getArity());
 		Assert.assertTrue(ti instanceof TupleTypeInfo);
-		
+		Assert.assertEquals(3, ((TupleTypeInfo) ti).getKey("f3", 0).getPosition() );
 
 		TupleTypeInfo<?> tti = (TupleTypeInfo<?>) ti;
 		Assert.assertEquals(Tuple9.class, tti.getTypeClass());
@@ -212,6 +212,10 @@ public class TypeExtractorTest {
 		Assert.assertTrue(ti.isTupleType());
 		Assert.assertEquals(3, ti.getArity());
 		Assert.assertTrue(ti instanceof TupleTypeInfo);
+		Assert.assertEquals(0, ((TupleTypeInfo) ti).getKey("f0.f0", 0).getPosition() );
+		Assert.assertTrue( ((TupleTypeInfo) ti).getKey("f0.f0", 0).getType() instanceof BasicTypeInfo );
+		Assert.assertTrue( ((TupleTypeInfo) ti).getKey("f0.f0", 0).getType().getTypeClass().equals(String.class) );
+		Assert.assertEquals(1, ((TupleTypeInfo) ti).getKey("f1.f0", 0).getPosition() );
 
 		TupleTypeInfo<?> tti = (TupleTypeInfo<?>) ti;
 		Assert.assertEquals(Tuple3.class, tti.getTypeClass());
@@ -314,11 +318,11 @@ public class TypeExtractorTest {
 
 		Assert.assertFalse(ti.isBasicType());
 		Assert.assertFalse(ti.isTupleType());
-		Assert.assertTrue(ti instanceof GenericTypeInfo);
+		Assert.assertTrue(ti instanceof PojoTypeInfo);
 		Assert.assertEquals(ti.getTypeClass(), CustomType.class);
 
 		// use getForClass()
-		Assert.assertTrue(TypeExtractor.getForClass(CustomType.class) instanceof GenericTypeInfo);
+		Assert.assertTrue(TypeExtractor.getForClass(CustomType.class) instanceof PojoTypeInfo);
 		Assert.assertEquals(TypeExtractor.getForClass(CustomType.class).getTypeClass(), ti.getTypeClass());
 
 		// use getForObject()
@@ -327,7 +331,7 @@ public class TypeExtractorTest {
 
 		Assert.assertFalse(ti2.isBasicType());
 		Assert.assertFalse(ti2.isTupleType());
-		Assert.assertTrue(ti2 instanceof GenericTypeInfo);
+		Assert.assertTrue(ti2 instanceof PojoTypeInfo);
 		Assert.assertEquals(ti2.getTypeClass(), CustomType.class);
 	}
 	
@@ -466,12 +470,25 @@ public class TypeExtractorTest {
 	private void checkWCPojoAsserts(TypeInformation<?> typeInfo) {
 		Assert.assertFalse(typeInfo.isBasicType());
 		Assert.assertFalse(typeInfo.isTupleType());
+		Assert.assertEquals(9, typeInfo.getTotalFields());
 		Assert.assertTrue(typeInfo instanceof PojoTypeInfo);
 		PojoTypeInfo<?> pojoType = (PojoTypeInfo<?>) typeInfo;
 		
+		Assert.assertEquals(8, pojoType.getKey("count",0).getPosition()); // this is correct
+		Assert.assertEquals(0, pojoType.getKey("complex.date",0).getPosition()); // this has to be 0
+		Assert.assertEquals(1, pojoType.getKey("complex.hadoopCitizen",0).getPosition()); // has to be 1
+		Assert.assertEquals(2, pojoType.getKey("complex.nothing",0).getPosition());
+		Assert.assertEquals(3, pojoType.getKey("complex.someFloat",0).getPosition());
+		Assert.assertEquals(4, pojoType.getKey("complex.someNumber",0).getPosition());
+		Assert.assertEquals(5, pojoType.getKey("complex.word.f0",0).getPosition());
+		Assert.assertEquals(6, pojoType.getKey("complex.word.f1",0).getPosition());
+		Assert.assertEquals(7, pojoType.getKey("complex.word.f2",0).getPosition());
+		
 		TypeInformation<?> typeComplexNested = pojoType.getTypeAt(0); // ComplexNestedClass complex
 		Assert.assertTrue(typeComplexNested instanceof PojoTypeInfo);
-		Assert.assertEquals(typeComplexNested.getArity(), 6);
+		
+		Assert.assertEquals(6, typeComplexNested.getArity());
+		Assert.assertEquals(8, typeComplexNested.getTotalFields());
 		PojoTypeInfo<?> pojoTypeComplexNested = (PojoTypeInfo<?>) typeComplexNested;
 		
 		boolean dateSeen = false, intSeen = false, floatSeen = false,
@@ -556,6 +573,7 @@ public class TypeExtractorTest {
 	private void checkAllPublicAsserts(TypeInformation<?> typeInformation) {
 		Assert.assertTrue(typeInformation instanceof PojoTypeInfo);
 		Assert.assertEquals(9, typeInformation.getArity());
+		Assert.assertEquals(11, typeInformation.getTotalFields());
 		// check if the three additional fields are identified correctly
 		boolean arrayListSeen = false, multisetSeen = false, strArraySeen = false;
 		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeInformation;
@@ -608,6 +626,7 @@ public class TypeExtractorTest {
 	
 	private void checkFromTuplePojo(TypeInformation<?> typeInformation) {
 		Assert.assertTrue(typeInformation instanceof PojoTypeInfo<?>);
+		Assert.assertEquals(4, typeInformation.getTotalFields());
 		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeInformation;
 		for(int i = 0; i < pojoTypeForClass.getArity(); i++) {
 			PojoField field = pojoTypeForClass.getPojoFieldAt(i);
@@ -675,7 +694,6 @@ public class TypeExtractorTest {
 	@Test
 	public void testPojoWithComplexHierarchy() {
 		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(ComplexHierarchyTop.class);
-		System.err.println("Got "+typeForClass);
 		Assert.assertTrue(typeForClass instanceof PojoTypeInfo<?>);
 		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeForClass;
 		for(int i = 0; i < pojoTypeForClass.getArity(); i++) {
@@ -731,8 +749,18 @@ public class TypeExtractorTest {
 		TupleTypeInfo<?> tti = (TupleTypeInfo<?>) ti;
 		Assert.assertEquals(Tuple2.class, tti.getTypeClass());
 		
+		Assert.assertEquals(0, tti.getKey("f0", 0).getPosition() ); // Long
+		Assert.assertTrue( tti.getKey("f0", 0).getType().getTypeClass().equals(Long.class) );
+		
+		Assert.assertEquals(1, tti.getKey("f1.myField1", 0).getPosition() );
+		Assert.assertTrue( tti.getKey("f1.myField1", 0).getType().getTypeClass().equals(String.class) );
+		
+		Assert.assertEquals(2, tti.getKey("f1.myField2", 0).getPosition() );
+		Assert.assertTrue( tti.getKey("f1.myField2", 0).getType().getTypeClass().equals(Integer.class) );
+		
+		
 		Assert.assertEquals(Long.class, tti.getTypeAt(0).getTypeClass());
-		Assert.assertTrue(tti.getTypeAt(1) instanceof GenericTypeInfo);
+		Assert.assertTrue(tti.getTypeAt(1) instanceof PojoTypeInfo);
 		Assert.assertEquals(CustomType.class, tti.getTypeAt(1).getTypeClass());
 
 		// use getForObject()
@@ -745,7 +773,7 @@ public class TypeExtractorTest {
 		
 		Assert.assertEquals(Tuple2.class, tti2.getTypeClass());
 		Assert.assertEquals(Long.class, tti2.getTypeAt(0).getTypeClass());
-		Assert.assertTrue(tti2.getTypeAt(1) instanceof GenericTypeInfo);
+		Assert.assertTrue(tti2.getTypeAt(1) instanceof PojoTypeInfo);
 		Assert.assertEquals(CustomType.class, tti2.getTypeAt(1).getTypeClass());
 	}
 
@@ -1588,7 +1616,7 @@ public class TypeExtractorTest {
 		};
 		
 		TypeInformation<?> ti = TypeExtractor.getMapReturnTypes(function, (TypeInformation) TypeInfoParser.parse("org.apache.flink.api.java.type.extractor.TypeExtractorTest$MyObject"));
-		Assert.assertTrue(ti instanceof GenericTypeInfo);
+		Assert.assertTrue(ti instanceof PojoTypeInfo);
 	}
 	
 	@Test

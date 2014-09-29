@@ -23,9 +23,12 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.type.extractor.TypeExtractorTest.ComplexNestedClass;
+import org.apache.flink.api.java.type.extractor.TypeExtractorTest.MyWritable;
 import org.apache.flink.test.testdata.WordCountData;
 import org.apache.flink.test.util.JavaProgramTestBase;
 import org.apache.flink.util.Collector;
+import org.apache.hadoop.io.IntWritable;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -83,44 +86,33 @@ public class WordCountPOJOITCase extends JavaProgramTestBase implements Serializ
 		}
 	}
 
-	public static class ComplexNestedClass {
-		public Date date;
-		public Integer someNumber;
-		public float someFloat;
-		public Tuple3<Long, Long, String> word;
-	//	public Object nothing;
-	//  public IntWritable hadoopCitizen
-	}
-	
-	/**
-	 * Flat fields: [date, someNumber, someFloat, f0, f1, f2, count]
-	 * Accessor chains
-	 * [
-	 * 	[complex, date],
-	 *  [complex, someNumber],
-	 *  [complex, someFloat],
-	 *  [complex, word, f0],
-	 *  [complex, word, f1],
-	 *  [complex, word, f2]
-	 *  [count]
-	 * ]
-	 *
-	 */
-	public static class WC {
-		ComplexNestedClass complex;
-		int count;
+	public static class WC { // is a pojo
+		public ComplexNestedClass complex; // is a pojo
+		public int count; // is a BasicType
 
 		public WC() {
 		}
-
-		public WC(String word, int count) {
-			this.count = count;
+		public WC(String t, int c) {
+			this.count = c;
 			this.complex = new ComplexNestedClass();
-			this.complex.word = new Tuple3<Long, Long, String>(0L, 0L, word);
+			this.complex.word = new Tuple3<Long, Long, String>(0L, 0L, t);
 		}
-
-		public String toString() {
-			return this.complex.word.f2 + " " + count;
+	/*	public int getCount() {
+			return count;
 		}
+		public void setCount(int c) {
+			this.count = c;
+		} */
 	}
+	public static class ComplexNestedClass { // pojo
+		public static int ignoreStaticField;
+		public transient int ignoreTransientField;
+		public Date date; // generic type
+		public Integer someNumber; // BasicType
+		public float someFloat; // BasicType
+		public Tuple3<Long, Long, String> word; //Tuple Type with three basic types
+		public Object nothing; // generic type
+		public MyWritable hadoopCitizen;  // writableType
+	}
+	
 }

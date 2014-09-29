@@ -38,12 +38,12 @@ import org.powermock.tests.utils.Keys;
  * The class is taking care of serialization and comparators for Tuples as well.
  * See @see {@link Keys} class for fields setup.
  */
-public abstract class CompositeType<T> extends TypeInformation<T> implements AtomicType<T> {
+public abstract class CompositeType<T> extends TypeInformation<T> {
 	
 	protected final Class<T> typeClass;
 
-	private List<FlatFieldDescriptor> flatSchema;
-	List<PojoDirectFieldAccessor> flatFieldsList;
+	
+//	List<PojoDirectFieldAccessor> flatFieldsList;
 	
 //	/**
 //	 * Pojo fields determined by the @see {@link TypeExtractor}.
@@ -56,31 +56,33 @@ public abstract class CompositeType<T> extends TypeInformation<T> implements Ato
 		this.typeClass = typeClass;
 	}
 	
+	public abstract TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders);
 	
-	// TODO: we can remove this method.
-	public void populateWithFlatSchema(List<FlatFieldDescriptor> schema) {
-		this.flatSchema = schema;
-	//	List<PojoFieldAccessor> flatFieldsList = getFlattenedFields(new ArrayList<Field>());
-	}
-
-	private void checkFlatSchema() {
-		if(flatSchema == null) {
-		//	throw new RuntimeException("The composite type has not been populated with the flat schema types");
-			System.err.println("+++ Flat Schema not set. Setting it");
-			List<FlatFieldDescriptor> flatFields = new ArrayList<FlatFieldDescriptor>();
-			this.flatFieldsList = this.getFlatFields(new ArrayList<Field>(), flatFields, /* offset = */ 0);
-			debugFlatFieldList();
-			this.populateWithFlatSchema(flatFields);
-		}
-	}
-	private void debugFlatFieldList() {
-		for( PojoDirectFieldAccessor flatField: flatFieldsList) {
-			for(Field field: flatField.accessorChain) {
-				System.err.print(field.getName()+" ");
-			}
-			System.err.println("\n----");
-		}
-	}
+	
+//	// TODO: we can remove this method.
+//	public void populateWithFlatSchema(List<FlatFieldDescriptor> schema) {
+//		this.flatSchema = schema;
+//	//	List<PojoFieldAccessor> flatFieldsList = getFlattenedFields(new ArrayList<Field>());
+//	}
+//
+//	private void checkFlatSchema() {
+//		if(flatSchema == null) {
+//		//	throw new RuntimeException("The composite type has not been populated with the flat schema types");
+//			System.err.println("+++ Flat Schema not set. Setting it");
+//			List<FlatFieldDescriptor> flatFields = new ArrayList<FlatFieldDescriptor>();
+//			this.flatFieldsList = this.getFlatFields(new ArrayList<Field>(), flatFields, /* offset = */ 0);
+//			debugFlatFieldList();
+//			this.populateWithFlatSchema(flatFields);
+//		}
+//	}
+//	private void debugFlatFieldList() {
+//		for( PojoDirectFieldAccessor flatField: flatFieldsList) {
+//			for(Field field: flatField.accessorChain) {
+//				System.err.print(field.getName()+" ");
+//			}
+//			System.err.println("\n----");
+//		}
+//	}
 	
 	/**
 	 * Returns the keyPosition for the given fieldPosition, offsetted by the given offset
@@ -98,7 +100,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> implements Ato
 	 * 
 	 * The number of elements in the flatFields list is exactly the total number of fields in the nested structure.
 	 */
-	public List<PojoDirectFieldAccessor> getFlatFields(List<Field> accessorChain, List<FlatFieldDescriptor> flatFields, int offset) {
+/*	public List<PojoDirectFieldAccessor> getFlatFields(List<Field> accessorChain, List<FlatFieldDescriptor> flatFields, int offset) {
 		List<PojoDirectFieldAccessor> result = new ArrayList<PojoDirectFieldAccessor>();
 		
 		int offsetCounter = offset;
@@ -148,7 +150,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> implements Ato
 		}
 		
 		return result;
-	}
+	} */
 	
 	/**
 	 * Create lists for accessing every field in the pojo
@@ -195,72 +197,6 @@ public abstract class CompositeType<T> extends TypeInformation<T> implements Ato
 //		return result;
 //	}
 	
-	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders) {
-		checkFlatSchema();
-		// sanity checks
-		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length ||
-				logicalKeyFields.length > flatSchema.size())
-		{
-			throw new IllegalArgumentException();
-		}
-		
-//		// special case for tuples where field zero is the key field
-//		if (typeClass.isAssignableFrom(Tuple.class) && logicalKeyFields.length == 1 && logicalKeyFields[0] == 0) {
-//			return createLeadingFieldComparator(orders[0], (TypeInformation) flatSchema.get(0).getType() ); // TypeInfo cast is disabling generics check for tuple type here.
-//		}
-
-		// create the comparators for the individual fields
-		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFields.length];
-		List<Field>[] keyFields = new List[logicalKeyFields.length];
-		for (int i = 0; i < logicalKeyFields.length; i++) {
-			int field = logicalKeyFields[i];
-
-			if (field < 0 || field >= flatSchema.size()) {
-				throw new IllegalArgumentException("The field position " + field + " is out of range [0," + flatSchema.size() + ")");
-			}
-			if (flatSchema.get(field).type.isKeyType() && flatSchema.get(field).type instanceof AtomicType) {
-				fieldComparators[i] = ((AtomicType<?>) flatSchema.get(field).type).createComparator(orders[i]);
-				keyFields[i] = flatFieldsList.get(field).accessorChain;
-				for (Field accessedField : keyFields[i]) {
-					accessedField.setAccessible(true);
-				}
-			} else {
-				throw new IllegalArgumentException("The field at position " + field + " (" + flatSchema.get(field).type + ") is no atomic key type.");
-			}
-		}
-
-		return new PojoComparator<T>(keyFields, fieldComparators, createSerializer(), typeClass);
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public TypeComparator<T> createComparator(boolean sortOrderAscending) {
-		checkFlatSchema();
-		if (isKeyType()) {
-			@SuppressWarnings("rawtypes")
-			GenericTypeComparator comparator = new GenericTypeComparator(sortOrderAscending, createSerializer(), this.typeClass);
-			return (TypeComparator<T>) comparator;
-		}
-
-		throw new UnsupportedOperationException("Types that do not implement java.lang.Comparable cannot be used as keys.");
-	}
-
-	@Override
-	public TypeSerializer<T> createSerializer() {
-		checkFlatSchema();
-		TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[flatSchema.size() ];
-		Field[] reflectiveFields = new Field[flatSchema.size()];
-
-		for (int i = 0; i < flatSchema.size(); i++) {
-			fieldSerializers[i] = flatSchema.get(i).getType().createSerializer();
-			reflectiveFields[i] = flatSchema.get(i).getReflectionField();
-		}
-
-		return new PojoSerializer<T>(this.typeClass, fieldSerializers, reflectiveFields);
-	}
-	
-	
-
 	
 	
 	public static class FlatFieldDescriptor {

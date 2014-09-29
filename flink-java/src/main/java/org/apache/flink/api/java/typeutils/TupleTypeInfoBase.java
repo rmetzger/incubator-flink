@@ -27,11 +27,16 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 	protected final TypeInformation<?>[] types;
 	
 	protected final Class<T> tupleType;
+
+	private int totalFields;
 	
 	public TupleTypeInfoBase(Class<T> tupleType, TypeInformation<?>... types) {
 		super(tupleType);
 		this.tupleType = tupleType;
 		this.types = types;
+		for(TypeInformation<?> type : types) {
+			totalFields += type.getTotalFields();
+		}
 	}
 
 	@Override
@@ -47,6 +52,11 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 	@Override
 	public int getArity() {
 		return types.length;
+	}
+	
+	@Override
+	public int getTotalFields() {
+		return totalFields;
 	}
 
 	@Override

@@ -37,16 +37,10 @@ public abstract class TypeInformation<T> {
 	public abstract boolean isKeyType();
 	
 	public abstract TypeSerializer<T> createSerializer();
-
-
-/*	public int getLogicalKeyPosition(String fieldExpression, int offset) {
-		throw new UnsupportedOperationException(NO_POJO_WARNING);
-	} */
 	
 	/**
-	 * Get the types contained in this type.
-	 
-	public void getTypes(List<TypeInformation<?>> types) {
-		throw new UnsupportedOperationException(NO_POJO_WARNING);
-	} */
+	 * @return The number of fields in this type, including its sub-fields (for compsite types) 
+	 */
+	public abstract int getTotalFields();
+
 }
