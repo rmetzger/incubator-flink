@@ -30,6 +30,7 @@ import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoComparator;
@@ -122,7 +123,24 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 	}
 	
 	@Override
-	public FlatFieldDescriptor getKey(String fieldExpression, int offset) {
+	public void getKey(String fieldExpression, int offset, List<FlatFieldDescriptor> result) {
+		// handle 'select all' first
+		if(fieldExpression.equals(ExpressionKeys.SELECT_ALL_CHAR)) {
+			int keyPosition = 0;
+			for(PojoField field : fields) {
+				if(field.type instanceof AtomicType) {
+					result.add(new FlatFieldDescriptor(offset + keyPosition, field.type));
+				} else if(field.type instanceof CompositeType) {
+					CompositeType<?> cType = (CompositeType<?>)field.type;
+					cType.getKey(String.valueOf(ExpressionKeys.SELECT_ALL_CHAR), offset + keyPosition, result);
+					keyPosition += cType.getTotalFields()-1;
+				} else {
+					throw new RuntimeException("Unexpected key type: "+field.type);
+				}
+				keyPosition++;
+			}
+			return;
+		}
 		Validate.notEmpty(fieldExpression, "Field expression must not be empty.");
 		// if there is a dot try getting the field from that sub field
 		int firstDot = fieldExpression.indexOf('.');
@@ -134,7 +152,8 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 					fieldId += fields[i].type.getTotalFields()-1;
 				}
 				if (fields[i].field.getName().equals(fieldExpression)) {
-					return new FlatFieldDescriptor(new int[] {offset + fieldId}, fields[i].type);
+					 result.add(new FlatFieldDescriptor(offset + fieldId, fields[i].type));
+					 return;
 				}
 				fieldId++;
 			}
@@ -149,12 +168,13 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 						throw new RuntimeException("Field "+fields[i].type+" is not composite type");
 					}
 					CompositeType<?> cType = (CompositeType<?>) fields[i].type;
-					return cType.getKey(rest, offset + fieldId);
+					cType.getKey(rest, offset + fieldId, result); // recurse
+					return;
 				}
 				fieldId++;
 			}
+			throw new RuntimeException("Unable to find field "+fieldExpression+" in type "+this+" (looking for '"+firstField+"')");
 		}
-		return null;
 	}
 
 	@Override

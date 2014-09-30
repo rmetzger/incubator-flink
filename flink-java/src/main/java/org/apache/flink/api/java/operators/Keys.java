@@ -246,11 +246,11 @@ public abstract class Keys<T> {
 	 * Represents (nested) field access through string-based keys for Composite Types (Tuple or Pojo)
 	 */
 	public static class ExpressionKeys<T> extends Keys<T> {
-		public static final char SELECT_ALL_CHAR = '*';
+		public static final String SELECT_ALL_CHAR = "*";
 		/**
 		 * Flattened fields representing keys fields
 		 */
-		private final List<FlatFieldDescriptor> keyFields;
+		private final List<FlatFieldDescriptor> keyFields; // TODO Check if all assumptions still hold after adding support for *
 		
 		/**
 		 * Create NestedKeys from String-expressions
@@ -265,20 +265,13 @@ public abstract class Keys<T> {
 			keyFields = new ArrayList<FlatFieldDescriptor>(expressions.length);
 			for (int i = 0; i < expressions.length; i++) {
 				System.err.println("Getting logical key position for "+expressions[i]+" on type "+type);
-				final FlatFieldDescriptor key = cType.getKey(expressions[i], 0 );
-				if(key == null) {
+				List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>();
+				cType.getKey(expressions[i], 0, keys);
+				if(keys.size() == 0) {
 					throw new IllegalArgumentException("Unable to extract key from expression "+expressions[i]+" on key "+cType);
 				}
-				keyFields.add(key);
-				System.err.println("Got "+keyFields.get(keyFields.size()-1).getPositions());
+				keyFields.addAll(keys);
 			}
-			
-		//	List<FlatFieldDescriptor> fields = new ArrayList<FlatFieldDescriptor>(type.getArity());
-			// recursively get the FlatField descriptors, from offset 0
-			// do this on demand later.
-	//		cType.getFlatFields(fields, /*offset = */ 0);
-			// update top level schema
-	//		cType.populateWithFlatSchema(fields);
 		}
 		
 		@Override
@@ -335,7 +328,7 @@ public abstract class Keys<T> {
 			// convert a List of FlatFields with int[] into one large int[].
 			List<Integer> logicalKeys = new LinkedList<Integer>();
 			for(FlatFieldDescriptor kd : keyFields) {
-				logicalKeys.addAll( Ints.asList(kd.getPositions()));
+				logicalKeys.addAll( Ints.asList(kd.getPosition()));
 			}
 			return Ints.toArray(logicalKeys);
 		}

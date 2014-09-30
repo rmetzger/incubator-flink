@@ -19,6 +19,7 @@
 package org.apache.flink.api.java.typeutils;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.AtomicType;
@@ -55,6 +56,7 @@ import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.tuple.Tuple8;
 import org.apache.flink.api.java.tuple.Tuple9;
+import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 import org.apache.flink.api.java.typeutils.runtime.TupleComparator;
 import org.apache.flink.api.java.typeutils.runtime.TupleSerializer;
 
@@ -141,14 +143,25 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 
 	
 	@Override
-	public FlatFieldDescriptor getKey(String fieldExpression, int offset) {
-		// check input
+	public void getKey(String fieldExpression, int offset, List<FlatFieldDescriptor> result) {
+		// handle 'select all'
 		if(fieldExpression.equals(ExpressionKeys.SELECT_ALL_CHAR)) {
-			TODO tomorrow:
-				- FlatFieldDescriptors back to one int only
-				- proper recursive action through everything for selecting all fields
-			
+			int keyPosition = 0;
+			for(TypeInformation<?> type : types) {
+				if(type instanceof AtomicType) {
+					result.add(new FlatFieldDescriptor(offset + keyPosition, type));
+				} else if(type instanceof CompositeType) {
+					CompositeType<?> cType = (CompositeType<?>)type;
+					cType.getKey(String.valueOf(ExpressionKeys.SELECT_ALL_CHAR), offset + keyPosition, result);
+					keyPosition += cType.getTotalFields()-1;
+				} else {
+					throw new RuntimeException("Unexpected key type: "+type);
+				}
+				keyPosition++;
+			}
+			return;
 		}
+		// check input
 		if(fieldExpression.length() < 2) {
 			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. The length must be at least 2");
 		}
@@ -182,9 +195,10 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 				throw new RuntimeException("Element at position "+pos+" is not a composite type. Selecting the key by expression is not possible");
 			}
 			CompositeType<?> cType = (CompositeType<?>) types[pos];
-			return cType.getKey(rem, offset + pos);
+			cType.getKey(rem, offset + pos, result);
+			return;
 		}
-		return new FlatFieldDescriptor(new int[] {offset + pos}, types[pos]);
+		result.add(new FlatFieldDescriptor(offset + pos, types[pos]));
 	}
 	
 	// --------------------------------------------------------------------------------------------

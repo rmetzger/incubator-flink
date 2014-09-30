@@ -88,7 +88,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	/**
 	 * Returns the keyPosition for the given fieldPosition, offsetted by the given offset
 	 */
-	public abstract FlatFieldDescriptor getKey(String fieldExpression, int offset);
+	public abstract void getKey(String fieldExpression, int offset, List<FlatFieldDescriptor> result);
 	
 	public abstract <X> TypeInformation<X> getTypeAt(int pos);
 	/**
@@ -201,17 +201,17 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	
 	
 	public static class FlatFieldDescriptor {
-		private int[] keyPositions;
+		private int keyPosition;
 		private TypeInformation<?> type;
 		
-		public FlatFieldDescriptor(int[] keyPositions, TypeInformation<?> type) {
-			this.keyPositions = keyPositions;
+		public FlatFieldDescriptor(int keyPosition, TypeInformation<?> type) {
+			this.keyPosition = keyPosition;
 			this.type = type;
 		}
 
 
-		public int[] getPositions() {
-			return keyPositions;
+		public int getPosition() {
+			return keyPosition;
 		}
 		public TypeInformation<?> getType() {
 			return type;
@@ -219,7 +219,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 		
 		@Override
 		public String toString() {
-			return "FlatFieldDescriptor [positions="+StringUtils.join(keyPositions, ',')+" typeInfo="+type+"]";
+			return "FlatFieldDescriptor [position="+keyPosition+" typeInfo="+type+"]";
 		}
 	}
 	
