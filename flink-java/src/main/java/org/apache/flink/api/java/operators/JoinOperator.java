@@ -303,10 +303,10 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 
 				return po;
 			}
-			else if ((super.keys1 instanceof Keys.FieldPositionKeys
-						&& super.keys2 instanceof Keys.FieldPositionKeys) ||
-					((super.keys1 instanceof Keys.ExpressionKeys
-							&& super.keys2 instanceof Keys.ExpressionKeys)))
+			else if ((super.keys1 instanceof Keys.ExpressionKeys
+						|| super.keys1 instanceof Keys.FieldPositionKeys) &&
+					((super.keys2 instanceof Keys.ExpressionKeys
+							|| super.keys2 instanceof Keys.FieldPositionKeys)))
 			{
 				// Neither side needs the tuple wrapping/unwrapping
 

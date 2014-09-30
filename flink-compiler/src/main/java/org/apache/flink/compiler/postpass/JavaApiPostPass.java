@@ -40,6 +40,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializerFactory;
 import org.apache.flink.api.java.operators.translation.PlanUnwrappingReduceGroupOperator;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.typeutils.CompositeType;
+import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.api.java.typeutils.runtime.RuntimeComparatorFactory;
 import org.apache.flink.api.java.typeutils.runtime.RuntimePairComparatorFactory;
 import org.apache.flink.api.java.typeutils.runtime.RuntimeStatefulSerializerFactory;
@@ -306,8 +307,8 @@ public class JavaApiPostPass implements OptimizerPostPass {
 	}
 	
 	private static <T1 extends Tuple, T2 extends Tuple> TypePairComparatorFactory<T1,T2> createPairComparator(TypeInformation<?> typeInfo1, TypeInformation<?> typeInfo2) {
-		if (!(typeInfo1.isTupleType() && typeInfo2.isTupleType())) {
-			throw new RuntimeException("The runtime currently supports only keyed binary operations on tuples.");
+		if (!(typeInfo1.isTupleType() || typeInfo1 instanceof PojoTypeInfo) && (typeInfo2.isTupleType() || typeInfo2 instanceof PojoTypeInfo)) {
+			throw new RuntimeException("The runtime currently supports only keyed binary operations (such as joins) on tuples and POJO types.");
 		}
 		
 //		@SuppressWarnings("unchecked")

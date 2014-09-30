@@ -203,12 +203,14 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 
 	@Override
 	public int hash(T value) {
+		System.err.println("Hashing value: "+value);
 		int i = 0;
 		int code = 0;
 		for (; i < this.keyFields.length; i++) {
 			code ^= this.comparators[i].hash(accessField(keyFields[i], value));
 			code *= HASH_SALT[i & 0x1F]; // salt code with (i % HASH_SALT.length)-th salt component
 		}
+		System.err.println("Returning code: "+code);
 		return code;
 
 	}

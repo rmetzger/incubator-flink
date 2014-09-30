@@ -29,26 +29,12 @@ import org.apache.flink.examples.java.wordcount.util.WordCountData;
 import org.apache.flink.util.Collector;
 
 
-/*
- * TODO LIST:
- * - check for correct configuration of serializer
- * 
- * - add support for using methods instead of fields. (check if field is public!)
- * - keyselectors for aggregation methods?
- * - for using the codegen method, fields have to be public 
- * 
- * - Little benchmark: codegen (handmade) vs reflection
- *
- **/
-
-
-
 public class PojoExample {
 	
 	public static class WordFreq {
-		char firstLetter;
-		String restOfWord;
-		Integer freq;
+		public char firstLetter;
+		public String restOfWord;
+		public Integer freq;
 		public WordFreq() {
 			freq = 0;
 		}
@@ -79,11 +65,6 @@ public class PojoExample {
 		public Tu2<Integer, String> oha;
 	}
 	public static void main(String[] args) throws Exception {
-		Class<?> clazz = Test.class;
-		System.err.println("Field Type "+clazz.getField("oha").getType());
-		System.err.println("Field Type Generics"+clazz.getField("oha").getGenericType());
-		
-		System.exit(0);
 		
 		if(!parseParameters(args)) {
 			return;

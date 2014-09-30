@@ -223,7 +223,14 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 			int keyIndex = c.f0;
 			int arrayIndex = c.f1;
 			
-			if(keyIndex == keyPosition) {
+			// check if this field contains the key.
+			if(field.type instanceof CompositeType && keyPosition + field.type.getTotalFields() - 1 >= keyPosition) {
+				// we are at a composite type and need to go deeper.
+				CompositeType<?> cType = (CompositeType<?>)field.type;
+				keyFields[arrayIndex] = field.field;
+				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, offset + keyPosition);
+				logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
+			} else if(keyIndex == keyPosition) {
 				// we are at an atomic type and need to create a comparator here.
 				keyFields[arrayIndex] = field.field;
 				if(field.type instanceof AtomicType) { // The field has to be an atomic type
@@ -233,20 +240,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 					throw new RuntimeException("Unexpected key type: "+field.type+"."); // in particular, field.type should not be a CompositeType here.
 				}
 			}
-			// check if this field contains the key.
-			if(field.type instanceof CompositeType && keyPosition + field.type.getTotalFields() - 1 >= keyPosition) {
-				// we are at a composite type and need to go deeper.
-			//	if(field.type instanceof CompositeType) {
-				CompositeType<?> cType = (CompositeType<?>)field.type;
-				keyFields[arrayIndex] = field.field;
-				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, offset + keyPosition);
-				logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
-				
-			//	} else {
-			//		throw new IllegalStateException("Expecting Composite type here");
-			//	}
-			}
-			
 			
 			// maintain indexes:
 			if(field.type instanceof CompositeType) {

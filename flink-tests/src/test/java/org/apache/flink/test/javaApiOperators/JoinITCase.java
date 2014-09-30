@@ -25,15 +25,20 @@ import java.util.LinkedList;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.common.functions.RichFlatJoinFunction;
+import org.apache.flink.api.java.operators.JoinOperator.DefaultJoin;
+import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets;
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.CustomType;
+import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.POJO;
 import org.apache.flink.test.util.JavaProgramTestBase;
 import org.apache.flink.util.Collector;
 import org.junit.runner.RunWith;
@@ -46,7 +51,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 @RunWith(Parameterized.class)
 public class JoinITCase extends JavaProgramTestBase {
 	
-	private static int NUM_PROGRAMS = 14;
+	private static int NUM_PROGRAMS = 15;
 	
 	private int curProgId = config.getInteger("ProgramId", -1);
 	private String resultPath;
@@ -493,8 +498,58 @@ public class JoinITCase extends JavaProgramTestBase {
 						"I am fine.,HIJ\n" +
 						"I am fine.,IJK\n";
 			}
+			// TODO: add tests
+			// simple nested pojo field selection
+			// selecting multiple fields using expression language
+			// using one str expression with the * operator
+			// two str expressions: one with *, one with regular
+			// nested into tuple
+			// tuple type with custom in field, nest into custom (through tuple)
+			case 15: {
+				/**
+				 * Join with POJOs
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
+				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
+				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
+						ds1.join(ds2).where("nestedPojo.longNumber").equalTo("f6");
+				joinDs.map(new MapFunction<Tuple2<POJO,Tuple7<Integer,String,Integer,Integer,Long,String,Long>>, String>() {
+
+					@Override
+					public String map(
+							Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long>> value)
+							throws Exception {
+						System.err.println("value="+value);
+						return "abc";
+					}
+				});
+				joinDs.print();
+//						ds1.cross(ds2).map(new MapFunction<Tuple2<POJO,Tuple7<Integer,String,Integer,Integer,Long,String,Long>>,  Tuple1<Long>>() {
+//
+//							@Override
+//							public  Tuple1<Long> map(
+//									Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long>> value)
+//									throws Exception {
+//								return new Tuple1<Long>(1L);
+//							}
+//						});
+				
+				joinDs.writeAsCsv(resultPath);
+				env.setDegreeOfParallelism(1);
+				env.execute();
+				
+				// return expected result
+				return "Hi,Hallo\n" +
+						"Hello,Hallo Welt\n" +
+						"Hello world,Hallo Welt wie gehts?\n" +
+						"Hello world,ABC\n" +
+						"I am fine.,HIJ\n" +
+						"I am fine.,IJK\n";
+			}
 			default: 
-				throw new IllegalArgumentException("Invalid program id");
+				throw new IllegalArgumentException("Invalid program id: "+progId);
 			}
 			
 		}

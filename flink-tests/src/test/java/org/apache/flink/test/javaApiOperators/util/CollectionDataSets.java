@@ -24,8 +24,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple5;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -241,7 +243,52 @@ public class CollectionDataSets {
 		public String toString() {
 			return myInt+","+myLong+","+myString;
 		}
-		
+	}
+	
+	public static DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> getSmallTuplebasedPojoMatchingDataSet(ExecutionEnvironment env) {
+		List<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> data = new ArrayList<Tuple7<Integer, String, Integer, Integer, Long, String, Long>>();
+		data.add(new Tuple7<Integer, String, Integer, Integer, Long, String, Long>(1, "First",10, 100, 1000L, "One", 10000L));
+		data.add(new Tuple7<Integer, String, Integer, Integer, Long, String, Long>(2, "Second",20, 200, 2000L, "Two", 20000L));
+		data.add(new Tuple7<Integer, String, Integer, Integer, Long, String, Long>(3, "Third",30, 300, 3000L, "Three", 30000L));
+		Collections.shuffle(data);
+		return env.fromCollection(data);
+	}
+	
+	public static DataSet<POJO> getSmallPojoDataSet(ExecutionEnvironment env) {
+		List<POJO> data = new ArrayList<POJO>();
+		data.add(new POJO(1, "First",10, 100, 1000L, "One", 10000L));
+		data.add(new POJO(2, "Second",20, 200, 2000L, "Two", 20000L));
+		data.add(new POJO(3, "Third",30, 300, 3000L, "Three", 30000L));
+		Collections.shuffle(data);
+		return env.fromCollection(data);
+	}
+	
+	public static class POJO {
+		public int number;
+		public String str;
+		public Tuple2<Integer, CustomType> nestedTupleWithCustom;
+		public NestedPojo nestedPojo;
+		public transient Long ignoreMe;
+		public POJO(int i0, String s0, 
+						int i1, int i2, long l0, String s1,
+						long l1) {
+			this.number = i0;
+			this.str = s0;
+			this.nestedTupleWithCustom = new Tuple2<Integer, CustomType>(i1, new CustomType(i2, l0, s1));
+			this.nestedPojo = new NestedPojo();
+			this.nestedPojo.longNumber = l1;
+		}
+		public POJO() {}
+		@Override
+		public String toString() {
+			return number+" "+str+" "+nestedTupleWithCustom+" "+nestedPojo.longNumber;
+		}
+	}
+	
+	public static class NestedPojo {
+		public static Object ignoreMe;
+		public long longNumber;
+		public NestedPojo() {}
 	}
 	
 }
