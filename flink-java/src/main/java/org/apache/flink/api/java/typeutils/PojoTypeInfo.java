@@ -31,12 +31,14 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
 
 import com.google.common.base.Joiner;
+import com.google.common.primitives.Ints;
 
 
 /**
@@ -195,37 +197,112 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		return this.fields[pos];
 	}
 
-	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders) {
+	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
 	//	checkFlatSchema();
 		// sanity checks
-		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length ||
-				logicalKeyFields.length > fields.length)
+		int logicalKeyFieldsLength = countPositiveInts(logicalKeyFields);
+		if (logicalKeyFields == null || orders == null || logicalKeyFieldsLength != orders.length)
 		{
 			throw new IllegalArgumentException();
 		}
-
-		// create the comparators for the individual fields
-		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFields.length];
-		Field[] keyFields = new Field[logicalKeyFields.length];
-		for (int i = 0; i < logicalKeyFields.length; i++) {
-			int field = logicalKeyFields[i];
-
-			if (field < 0 || field >= getTotalFields()) {
-				throw new IllegalArgumentException("The field position " + field + " is out of range [0," + getTotalFields() + ")");
+		// TODO add more sanity checks
+		
+		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFieldsLength];
+		Field[] keyFields = new Field[logicalKeyFieldsLength];
+		// "logicalKeyFields" and "orders"
+		int keyPosition = 0; // offset for "global" key fields
+		int fieldIndex = 0; // offset for "local" fields
+		for(PojoField field : fields) {
+			System.err.println("Creating comparator for "+field.type+" on local field "+fieldIndex);
+			// create comparators:
+			Tuple2<Integer, Integer> c = nextKeyField(logicalKeyFields); //remove them for later comparators
+			if(c == null || c.f0 == -1) {
+				System.err.println("got null, breaking");
+				break;
 			}
-		//	if(field >= getArity() )
-			if(fields[field].type instanceof PojoTypeInfo<?>) {
-				// handle pojo comparator for nested fields here
+			int keyIndex = c.f0;
+			int arrayIndex = c.f1;
+			
+			if(keyIndex == keyPosition) {
+				// we are at an atomic type and need to create a comparator here.
+				keyFields[arrayIndex] = field.field;
+				if(field.type instanceof AtomicType) { // The field has to be an atomic type
+					fieldComparators[arrayIndex] = ((AtomicType<?>)field.type).createComparator(orders[arrayIndex]);
+					logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
+				} else {
+					throw new RuntimeException("Unexpected key type: "+field.type+"."); // in particular, field.type should not be a CompositeType here.
+				}
 			}
-			if (fields[field].type.isKeyType() && fields[field].type instanceof AtomicType) {
-				fieldComparators[i] = ((AtomicType<?>) fields[field].type).createComparator(orders[i]);
-				keyFields[i] = fields[field].field;
-			} else {
-				throw new IllegalArgumentException("The field at position " + field + " (" + fields[field].type + ") is no atomic key type.");
+			// check if this field contains the key.
+			if(field.type instanceof CompositeType && keyPosition + field.type.getTotalFields() - 1 >= keyPosition) {
+				// we are at a composite type and need to go deeper.
+			//	if(field.type instanceof CompositeType) {
+				CompositeType<?> cType = (CompositeType<?>)field.type;
+				keyFields[arrayIndex] = field.field;
+				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, offset + keyPosition);
+				logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
+				
+			//	} else {
+			//		throw new IllegalStateException("Expecting Composite type here");
+			//	}
 			}
+			
+			
+			// maintain indexes:
+			if(field.type instanceof CompositeType) {
+				// skip key positions.
+				keyPosition += ((CompositeType<?>)field.type).getTotalFields()-1;
+			}
+			keyPosition++;
+			fieldIndex++;
 		}
 
 		return new PojoComparator<T>(keyFields, fieldComparators, createSerializer(), typeClass);
+	}
+	
+	/**
+	 * Returns the lowest key in the incoming array.
+	 * @param check
+	 * @param intArr
+	 * @return Tuple2 with keyIndex and position inside array.
+	 */
+	public static Tuple2<Integer, Integer> nextKeyField(int[] intArr) {
+		if(intArr.length == 0) {
+			return null;
+		}
+		List<Tuple2<Integer, Integer>> res = new ArrayList<Tuple2<Integer, Integer>>(intArr.length);
+		for(int i = 0; i < intArr.length; i++) {
+			res.add(new Tuple2<Integer, Integer>(intArr[i], i));
+		}
+		Collections.sort(res, new Comparator<Tuple2<Integer, Integer>>() {
+			@Override
+			// This comparator sorts integers with the lowest first,
+			// BUT the -1's to the end.
+			public int compare(Tuple2<Integer, Integer> o1,
+					Tuple2<Integer, Integer> o2) {
+				if(o1.f0 == o2.f0) {
+					return 0;
+				}
+				if(o1.f0 == -1) {
+					return 1;
+				}
+				if(o2.f0 == -1) {
+					return -1;
+				}
+				return o1.f0.compareTo(o2.f0);
+			}
+		});
+		
+		return res.get(0);
+	}
+	public static int countPositiveInts(int[] in) {
+		int res = 0;
+		for(int i : in) {
+			if(i >= 0) {
+				res++;
+			}
+		}
+		return res;
 	}
 
 /*	@SuppressWarnings("unchecked")

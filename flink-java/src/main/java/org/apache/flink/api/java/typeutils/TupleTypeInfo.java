@@ -91,7 +91,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	}
 	
 	@Override
-	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders) {
+	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
 		// sanity checks
 		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length ||
 				logicalKeyFields.length > types.length)
@@ -126,7 +126,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 				// Prepare order
 				boolean[] tupleOrders = new boolean[tupleType.types.length];
 				Arrays.fill(tupleOrders, orders[i]);
-				fieldComparators[i] = tupleType.createComparator(allFieldsKey, tupleOrders);
+				fieldComparators[i] = tupleType.createComparator(allFieldsKey, tupleOrders, offset + keyPos);
 			} else {
 				throw new IllegalArgumentException("The field at position " + i + " (" + types[keyPos] + ") is no atomic key type nor tuple type.");
 			}

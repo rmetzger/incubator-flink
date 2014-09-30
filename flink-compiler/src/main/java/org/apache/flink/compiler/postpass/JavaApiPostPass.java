@@ -292,7 +292,7 @@ public class JavaApiPostPass implements OptimizerPostPass {
 		
 		TypeComparator<T> comparator;
 		if (typeInfo instanceof CompositeType) {
-			comparator = ((CompositeType<T>) typeInfo).createComparator(keys.toArray(), sortOrder);
+			comparator = ((CompositeType<T>) typeInfo).createComparator(keys.toArray(), sortOrder, 0);
 		}
 		else if (typeInfo instanceof AtomicType) {
 			// handle grouping of atomic types

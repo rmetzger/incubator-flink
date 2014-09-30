@@ -456,6 +456,7 @@ public abstract class Keys<T> {
 			if (fields[i] != last) {
 				k++;
 				fields[k] = fields[i];
+				// FIXME: update 'last'?
 			}
 		}
 

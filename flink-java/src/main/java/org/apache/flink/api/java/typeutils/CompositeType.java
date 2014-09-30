@@ -18,18 +18,10 @@
 
 package org.apache.flink.api.java.typeutils;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
-import org.apache.flink.api.java.typeutils.runtime.PojoComparator;
-import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
 import org.powermock.tests.utils.Keys;
 
 
@@ -57,7 +49,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 		this.typeClass = typeClass;
 	}
 	
-	public abstract TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders);
+	public abstract TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset);
 	
 	
 //	// TODO: we can remove this method.

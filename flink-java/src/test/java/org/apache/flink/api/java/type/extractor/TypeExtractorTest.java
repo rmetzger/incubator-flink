@@ -834,15 +834,23 @@ public class TypeExtractorTest {
 		
 		TupleTypeInfo<?> tti = (TupleTypeInfo<?>) ti;
 		Assert.assertEquals(Tuple2.class, tti.getTypeClass());
+		List<FlatFieldDescriptor> ffd = new ArrayList<FlatFieldDescriptor>();
 		
-		Assert.assertEquals(0, tti.getKey("f0", 0).getPosition() ); // Long
-		Assert.assertTrue( tti.getKey("f0", 0).getType().getTypeClass().equals(Long.class) );
+		tti.getKey("f0", 0, ffd);
+		Assert.assertEquals(1, ffd.size());
+		Assert.assertEquals(0, ffd.get(0).getPosition() ); // Long
+		Assert.assertTrue( ffd.get(0).getType().getTypeClass().equals(Long.class) );
+		ffd.clear();
 		
-		Assert.assertEquals(1, tti.getKey("f1.myField1", 0).getPosition() );
-		Assert.assertTrue( tti.getKey("f1.myField1", 0).getType().getTypeClass().equals(String.class) );
+		tti.getKey("f1.myField1", 0, ffd);
+		Assert.assertEquals(1, ffd.get(0).getPosition() );
+		Assert.assertTrue( ffd.get(0).getType().getTypeClass().equals(String.class) );
+		ffd.clear();
 		
-		Assert.assertEquals(2, tti.getKey("f1.myField2", 0).getPosition() );
-		Assert.assertTrue( tti.getKey("f1.myField2", 0).getType().getTypeClass().equals(Integer.class) );
+		
+		tti.getKey("f1.myField2", 0, ffd);
+		Assert.assertEquals(2, ffd.get(0).getPosition() );
+		Assert.assertTrue( ffd.get(0).getType().getTypeClass().equals(Integer.class) );
 		
 		
 		Assert.assertEquals(Long.class, tti.getTypeAt(0).getTypeClass());

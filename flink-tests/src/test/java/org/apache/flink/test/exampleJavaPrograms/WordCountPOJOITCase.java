@@ -23,12 +23,9 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.type.extractor.TypeExtractorTest.ComplexNestedClass;
-import org.apache.flink.api.java.type.extractor.TypeExtractorTest.MyWritable;
 import org.apache.flink.test.testdata.WordCountData;
 import org.apache.flink.test.util.JavaProgramTestBase;
 import org.apache.flink.util.Collector;
-import org.apache.hadoop.io.IntWritable;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -58,10 +55,11 @@ public class WordCountPOJOITCase extends JavaProgramTestBase implements Serializ
 
 		DataSet<WC> counts = text
 				.flatMap(new Tokenizer())
-				.groupBy("complex.word.f2")
+				.groupBy("complex.someTest") // word.f2
 				.reduce(new ReduceFunction<WC>() {
 					public WC reduce(WC value1, WC value2) {
-						return new WC(value1.complex.word.f2, value1.count + value2.count);
+						//return new WC(value1.complex.word.f2, value1.count + value2.count);
+						return new WC(value1.complex.someTest, value1.count + value2.count);
 					}
 				});
 
@@ -95,8 +93,16 @@ public class WordCountPOJOITCase extends JavaProgramTestBase implements Serializ
 		public WC(String t, int c) {
 			this.count = c;
 			this.complex = new ComplexNestedClass();
-			this.complex.word = new Tuple3<Long, Long, String>(0L, 0L, t);
+			this.complex.word = new Tuple3<Long, Long, String>(0L, 0L, "egal");
+			this.complex.date = new Date();
+			this.complex.someFloat = 0.0f;
+			this.complex.someNumber = 666;
+			this.complex.someTest = t;
 		}
+		@Override
+			public String toString() {
+				return this.complex.someTest+" "+count;
+			}
 	/*	public int getCount() {
 			return count;
 		}
@@ -111,8 +117,7 @@ public class WordCountPOJOITCase extends JavaProgramTestBase implements Serializ
 		public Integer someNumber; // BasicType
 		public float someFloat; // BasicType
 		public Tuple3<Long, Long, String> word; //Tuple Type with three basic types
-		public Object nothing; // generic type
-		public MyWritable hadoopCitizen;  // writableType
+		public String someTest;
 	}
 	
 }
