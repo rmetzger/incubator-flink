@@ -46,7 +46,6 @@ public abstract class BasicTypeComparator<T extends Comparable<T>> extends TypeC
 
 	@Override
 	public int hash(T value) {
-		System.err.println("Hashing basic type ("+this+" to "+value.hashCode());
 		return value.hashCode();
 	}
 

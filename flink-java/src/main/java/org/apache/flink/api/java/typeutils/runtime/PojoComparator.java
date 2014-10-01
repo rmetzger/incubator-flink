@@ -73,7 +73,6 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		this.type = type;
 		this.serializer = serializer;
 		this.totalNumberOfKeys = totalNumberOfKeys;
-		System.err.println("got total number of keys: "+totalNumberOfKeys);
 
 		// set up auxiliary fields for normalized key support
 		this.normalizedKeyLengths = new int[keyFields.length];
@@ -221,7 +220,6 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 
 	@Override
 	public int hash(T value) {
-		System.err.println("Hashing value: "+value);
 		int i = 0;
 		int code = 0;
 		for (; i < this.keyFields.length; i++) {
@@ -356,10 +354,7 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 	public Object[] extractKeys(T record) {
 		for (int i = 0; i < totalNumberOfKeys; i++) {
 			if(comparators[i] instanceof PojoComparator) {
-				//PojoComparator pComp = (PojoComparator) comparators[i];
 				Comparable[] nestedKeys = (Comparable[]) comparators[i].extractKeys(accessField(keyFields[i], record));
-				// assert that nestedKeys.length ==  pComp.getTotalNumberOfKeys() - 1
-				//int end = i + pComp.getTotalNumberOfKeys() - 1;
 				int end = i + nestedKeys.length;
 				for(; i < end; i++) {
 					extractedKeys[i] = nestedKeys[i];
@@ -369,7 +364,6 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 				// non-composite case (= atomic). We can assume this to have only one key.
 				extractedKeys[i] = (Comparable) comparators[i].extractKeys(accessField(keyFields[i], record))[0];
 			}
-			System.err.println("Extracted key : "+extractedKeys[i]);
 		}
 		return extractedKeys;
 	}

@@ -250,7 +250,6 @@ public class CollectionDataSets {
 		data.add(new Tuple7<Integer, String, Integer, Integer, Long, String, Long>(1, "First",10, 100, 1000L, "One", 10000L));
 		data.add(new Tuple7<Integer, String, Integer, Integer, Long, String, Long>(2, "Second",20, 200, 2000L, "Two", 20000L));
 		data.add(new Tuple7<Integer, String, Integer, Integer, Long, String, Long>(3, "Third",30, 300, 3000L, "Three", 30000L));
-		Collections.shuffle(data);
 		return env.fromCollection(data);
 	}
 	
@@ -259,7 +258,6 @@ public class CollectionDataSets {
 		data.add(new POJO(1, "First",10, 100, 1000L, "One", 10000L));
 		data.add(new POJO(2, "Second",20, 200, 2000L, "Two", 20000L));
 		data.add(new POJO(3, "Third",30, 300, 3000L, "Three", 30000L));
-		Collections.shuffle(data);
 		return env.fromCollection(data);
 	}
 	

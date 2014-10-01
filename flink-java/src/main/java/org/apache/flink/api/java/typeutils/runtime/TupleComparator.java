@@ -60,7 +60,6 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 				code *= HASH_SALT[i & 0x1F]; // salt code with (i % HASH_SALT.length)-th salt component
 				code += this.comparators[i].hash(value.getFieldNotNull(keyPositions[i]));
 			}
-			System.err.println("Tuple hash code "+code);
 			return code;
 		}
 		catch (NullFieldException nfex) {

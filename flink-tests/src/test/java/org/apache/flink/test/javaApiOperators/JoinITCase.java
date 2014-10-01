@@ -51,7 +51,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 @RunWith(Parameterized.class)
 public class JoinITCase extends JavaProgramTestBase {
 	
-	private static int NUM_PROGRAMS = 15;
+	private static int NUM_PROGRAMS = 17;
 	
 	private int curProgId = config.getInteger("ProgramId", -1);
 	private String resultPath;
@@ -499,15 +499,18 @@ public class JoinITCase extends JavaProgramTestBase {
 						"I am fine.,IJK\n";
 			}
 			// TODO: add tests
-			// simple nested pojo field selection
+			// simple nested pojo field selection DONE
 			// selecting multiple fields using expression language
 			// using one str expression with the * operator
 			// two str expressions: one with *, one with regular
 			// nested into tuple
 			// tuple type with custom in field, nest into custom (through tuple)
+			/**
+			 *  Joins with POJOs
+			 */
 			case 15: {
-				/**
-				 * Join with POJOs
+				/*
+				 * Join nested pojo against tuple (selected using a string)
 				 */
 				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 				
@@ -515,38 +518,55 @@ public class JoinITCase extends JavaProgramTestBase {
 				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
 				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
 						ds1.join(ds2).where("nestedPojo.longNumber").equalTo("f6");
-				joinDs.map(new MapFunction<Tuple2<POJO,Tuple7<Integer,String,Integer,Integer,Long,String,Long>>, String>() {
-
-					@Override
-					public String map(
-							Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long>> value)
-							throws Exception {
-						System.err.println("value="+value);
-						return "abc";
-					}
-				});
-				joinDs.print();
-//						ds1.cross(ds2).map(new MapFunction<Tuple2<POJO,Tuple7<Integer,String,Integer,Integer,Long,String,Long>>,  Tuple1<Long>>() {
-//
-//							@Override
-//							public  Tuple1<Long> map(
-//									Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long>> value)
-//									throws Exception {
-//								return new Tuple1<Long>(1L);
-//							}
-//						});
+				
+				joinDs.writeAsCsv(resultPath);
+				env.execute();
+				
+				// return expected result
+				return "1 First (10,100,1000,One) 10000,(1,First,10,100,1000,One,10000)\n" +
+					   "2 Second (20,200,2000,Two) 20000,(2,Second,20,200,2000,Two,20000)\n" +
+					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
+			}
+			
+			case 16: {
+				/*
+				 * Join nested pojo against tuple (selected as an integer)
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
+				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
+				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
+						ds1.join(ds2).where("nestedPojo.longNumber").equalTo(6); // <--- difference!
+				
+				joinDs.writeAsCsv(resultPath);
+				env.execute();
+				
+				// return expected result
+				return "1 First (10,100,1000,One) 10000,(1,First,10,100,1000,One,10000)\n" +
+					   "2 Second (20,200,2000,Two) 20000,(2,Second,20,200,2000,Two,20000)\n" +
+					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
+			}
+			case 17: {
+				/**
+				 * selecting multiple fields using expression language
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
+				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
+				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
+						ds1.join(ds2).where("nestedPojo.longNumber", "number", "str").equalTo("f6","f0","f1");
 				
 				joinDs.writeAsCsv(resultPath);
 				env.setDegreeOfParallelism(1);
 				env.execute();
 				
 				// return expected result
-				return "Hi,Hallo\n" +
-						"Hello,Hallo Welt\n" +
-						"Hello world,Hallo Welt wie gehts?\n" +
-						"Hello world,ABC\n" +
-						"I am fine.,HIJ\n" +
-						"I am fine.,IJK\n";
+				return "1 First (10,100,1000,One) 10000,(1,First,10,100,1000,One,10000)\n" +
+					   "2 Second (20,200,2000,Two) 20000,(2,Second,20,200,2000,Two,20000)\n" +
+					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
+				
 			}
 			default: 
 				throw new IllegalArgumentException("Invalid program id: "+progId);

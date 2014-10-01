@@ -26,7 +26,6 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.java.operators.Keys;
 import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.java.operators.Keys.FieldPositionKeys;
 import org.apache.flink.api.java.operators.Keys.IncompatibleKeysException;
@@ -207,15 +206,6 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 		System.err.println("Tuple hash "+tHash);
 		Assert.assertTrue("The hashing for tuples and pojos must be the same, so that they are mixable", pHash == tHash);
 		
-		
-		// test with multiple keys:
-		// add dumm1-dumm3 to "result"
-	//	pType.getKey("nestedClass.dumm1", 0, result);
-	//	pType.getKey("nestedClass.dumm3", 0, result);
-	//	int[] multipleFields = new int[] {	result.get(0).getPosition(), 
-	//										result.get(1).getPosition(), 
-	//										result.get(2).getPosition()
-	//									  };
 		Tuple3<Integer, String, Double> multiTupleTest = new Tuple3<Integer, String, Double>(1, "haha", 4d); // its important here to use the same values.
 		TupleTypeInfo<Tuple3<Integer, String, Double>> multiTupleType = (TupleTypeInfo<Tuple3<Integer, String, Double>>)TypeExtractor.getForObject(multiTupleTest);
 		
