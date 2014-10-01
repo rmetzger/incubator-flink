@@ -69,8 +69,6 @@ public abstract class Keys<T> {
 	// --------------------------------------------------------------------------------------------
 	
 	/**
-	 * 
-	 * 
 	 * This key type is also initializing the CompositeType for serialization and comparison.
 	 * For this, we assume that keys specified by int-fields can not be nested.
 	 */
@@ -94,21 +92,13 @@ public abstract class Keys<T> {
 			}
 
 			TupleTypeInfoBase<?> tupleType = (TupleTypeInfoBase<?>)type;
-
+			
 			this.fieldPositions = makeFields(groupingFields, (TupleTypeInfoBase<?>) type);
 
 			types = new TypeInformation[this.fieldPositions.length];
 			for(int i = 0; i < this.fieldPositions.length; i++) {
 				types[i] = tupleType.getTypeAt(this.fieldPositions[i]);
 			}
-			
-//			// set fields for composite type (needed for serializer / comparator setup)
-//			int fieldCount = tupleType.getArity();
-//			List<FlatFieldDescriptor> fields = new ArrayList<FlatFieldDescriptor>(fieldCount);
-//			for(int i = 0; i < fieldCount; i++) {
-//				fields.add(new FlatFieldDescriptor(i, tupleType.getTypeAt(i), null));
-//			}
-//			tupleType.populateWithFlatSchema(fields);
 		}
 
 		@Override
@@ -422,7 +412,7 @@ public abstract class Keys<T> {
 	// --------------------------------------------------------------------------------------------
 
 	private static int[] makeFields(int[] fields, TupleTypeInfoBase<?> type) {
-		int inLength = type.getArity();
+		int inLength = type.getTotalFields();
 
 		// null parameter means all fields are considered
 		if (fields == null || fields.length == 0) {
@@ -432,6 +422,10 @@ public abstract class Keys<T> {
 			}
 			return fields;
 		} else {
+			// expand full-tuple keys
+			TODO
+			refactor tuple key fields while testjob 20 (19) is ensured to keep running
+			extend keying to allow full tuples as keys
 			return rangeCheckFields(fields, inLength-1);
 		}
 	}
