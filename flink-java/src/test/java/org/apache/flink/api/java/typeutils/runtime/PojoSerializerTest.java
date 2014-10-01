@@ -26,6 +26,10 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.operators.Keys;
+import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
+import org.apache.flink.api.java.operators.Keys.FieldPositionKeys;
+import org.apache.flink.api.java.operators.Keys.IncompatibleKeysException;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
@@ -189,6 +193,7 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 		int[] fields = new int[1]; // see below
 		fields[0] = result.get(0).getPosition();
 		TypeComparator<TestUserClass> pojoComp = pType.createComparator( fields, new boolean[]{true}, 0);
+		
 		TestUserClass pojoTestRecord = new TestUserClass(0, "abc", 3d, new int[] {1,2,3}, new NestedTestUserClass(1, "haha", 4d, new int[] {5,4,3}));
 		int pHash = pojoComp.hash(pojoTestRecord);
 		System.err.println("Good pojo hash "+pHash);
@@ -205,19 +210,29 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 		
 		// test with multiple keys:
 		// add dumm1-dumm3 to "result"
-		pType.getKey("nestedClass.dumm1", 0, result);
-		pType.getKey("nestedClass.dumm3", 0, result);
-		int[] multipleFields = new int[] {	result.get(0).getPosition(), 
-											result.get(1).getPosition(), 
-											result.get(2).getPosition()
-										  };
-		TypeComparator<TestUserClass> multiPojoComp = pType.createComparator( multipleFields, new boolean[]{true, true, true}, 0);
-		int multiPojoHash = multiPojoComp.hash(pojoTestRecord);
-		
+	//	pType.getKey("nestedClass.dumm1", 0, result);
+	//	pType.getKey("nestedClass.dumm3", 0, result);
+	//	int[] multipleFields = new int[] {	result.get(0).getPosition(), 
+	//										result.get(1).getPosition(), 
+	//										result.get(2).getPosition()
+	//									  };
 		Tuple3<Integer, String, Double> multiTupleTest = new Tuple3<Integer, String, Double>(1, "haha", 4d); // its important here to use the same values.
 		TupleTypeInfo<Tuple3<Integer, String, Double>> multiTupleType = (TupleTypeInfo<Tuple3<Integer, String, Double>>)TypeExtractor.getForObject(multiTupleTest);
+		
+		FieldPositionKeys fieldKey = new FieldPositionKeys(new int[]{1,0,2}, multiTupleType);
+		ExpressionKeys expressKey = new ExpressionKeys(new String[] {"nestedClass.dumm2", "nestedClass.dumm1", "nestedClass.dumm3"}, pType);
+		try {
+			Assert.assertTrue("Expecting the keys to be compatible", fieldKey.areCompatible(expressKey));
+		} catch (IncompatibleKeysException e) {
+			e.printStackTrace();
+			Assert.fail("Keys must be compatible: "+e.getMessage());
+		}
+		TypeComparator<TestUserClass> multiPojoComp = pType.createComparator( expressKey.computeLogicalKeyPositions(), new boolean[]{true, true, true}, 0);
+		int multiPojoHash = multiPojoComp.hash(pojoTestRecord);
+		
+		
 		// pojo order is: dumm2 (str), dumm1 (int), dumm3 (double).
-		TypeComparator<Tuple3<Integer, String, Double>> multiTupleComp = multiTupleType.createComparator(new int[] {1,0,2}, new boolean[] {true, true,true}, 0);
+		TypeComparator<Tuple3<Integer, String, Double>> multiTupleComp = multiTupleType.createComparator(fieldKey.computeLogicalKeyPositions(), new boolean[] {true, true,true}, 0);
 		int multiTupleHash = multiTupleComp.hash(multiTupleTest);
 		
 		Assert.assertTrue("The hashing for tuples and pojos must be the same, so that they are mixable. Also for those with multiple key fields", multiPojoHash == multiTupleHash);

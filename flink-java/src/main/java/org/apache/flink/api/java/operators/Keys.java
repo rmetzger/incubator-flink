@@ -432,13 +432,11 @@ public abstract class Keys<T> {
 			}
 			return fields;
 		} else {
-			return rangeCheckAndOrderFields(fields, inLength-1);
+			return rangeCheckFields(fields, inLength-1);
 		}
 	}
 
-	private static final int[] rangeCheckAndOrderFields(int[] fields, int maxAllowedField) {
-		// order
-		Arrays.sort(fields);
+	private static final int[] rangeCheckFields(int[] fields, int maxAllowedField) {
 
 		// range check and duplicate eliminate
 		int i = 1, k = 0;
@@ -449,14 +447,13 @@ public abstract class Keys<T> {
 		}
 
 		for (; i < fields.length; i++) {
-			if (fields[i] < 0 || i > maxAllowedField) {
+			if (fields[i] < 0 || fields[i] > maxAllowedField) {
 				throw new IllegalArgumentException("Tuple position is out of range.");
 			}
-
 			if (fields[i] != last) {
 				k++;
+				last = fields[i];
 				fields[k] = fields[i];
-				// FIXME: update 'last'?
 			}
 		}
 
@@ -464,7 +461,7 @@ public abstract class Keys<T> {
 		if (k == fields.length - 1) {
 			return fields;
 		} else {
-			return Arrays.copyOfRange(fields, 0, k);
+			return Arrays.copyOfRange(fields, 0, k+1);
 		}
 	}
 }
