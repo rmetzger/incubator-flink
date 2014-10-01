@@ -216,7 +216,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		
 		// "logicalKeyFields" and "orders"
 		int keyPosition = offset; // offset for "global" key fields
-		int fieldIndex = 0; // offset for "local" fields
 		for(PojoField field : fields) {
 			// create comparators:
 			Tuple2<Integer, Integer> c = nextKeyField(logicalKeyFields); //remove them for later comparators
@@ -251,7 +250,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 				keyPosition += ((CompositeType<?>)field.type).getTotalFields()-1;
 			}
 			keyPosition++;
-			fieldIndex++;
 		}
 		totalNumberOfKeys = totalNumberOfKeys-countPositiveInts(logicalKeyFields);
 		System.err.println("Total number of keys "+totalNumberOfKeys);

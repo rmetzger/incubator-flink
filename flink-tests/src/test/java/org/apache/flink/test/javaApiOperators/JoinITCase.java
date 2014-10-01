@@ -25,11 +25,8 @@ import java.util.LinkedList;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.common.functions.RichFlatJoinFunction;
-import org.apache.flink.api.java.operators.JoinOperator.DefaultJoin;
-import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple5;
@@ -51,7 +48,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 @RunWith(Parameterized.class)
 public class JoinITCase extends JavaProgramTestBase {
 	
-	private static int NUM_PROGRAMS = 17;
+	private static int NUM_PROGRAMS = 19;
 	
 	private int curProgId = config.getInteger("ProgramId", -1);
 	private String resultPath;
@@ -500,10 +497,11 @@ public class JoinITCase extends JavaProgramTestBase {
 			}
 			// TODO: add tests
 			// simple nested pojo field selection DONE
-			// selecting multiple fields using expression language
-			// using one str expression with the * operator
-			// two str expressions: one with *, one with regular
+			// selecting multiple fields using expression language DONE
 			// nested into tuple
+			// using one str expression with the * operator (full pojo, tuple field based)
+			// two str expressions: one with *, one with regular ( full pojo, full tuple)
+			
 			// tuple type with custom in field, nest into custom (through tuple)
 			/**
 			 *  Joins with POJOs
@@ -548,7 +546,7 @@ public class JoinITCase extends JavaProgramTestBase {
 					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
 			}
 			case 17: {
-				/**
+				/*
 				 * selecting multiple fields using expression language
 				 */
 				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -557,6 +555,48 @@ public class JoinITCase extends JavaProgramTestBase {
 				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
 				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
 						ds1.join(ds2).where("nestedPojo.longNumber", "number", "str").equalTo("f6","f0","f1");
+				
+				joinDs.writeAsCsv(resultPath);
+				env.setDegreeOfParallelism(1);
+				env.execute();
+				
+				// return expected result
+				return "1 First (10,100,1000,One) 10000,(1,First,10,100,1000,One,10000)\n" +
+					   "2 Second (20,200,2000,Two) 20000,(2,Second,20,200,2000,Two,20000)\n" +
+					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
+				
+			}
+			case 18: {
+				/*
+				 * nested into tuple
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
+				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
+				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
+						ds1.join(ds2).where("nestedPojo.longNumber", "number","nestedTupleWithCustom.f0").equalTo("f6","f0","f2");
+				
+				joinDs.writeAsCsv(resultPath);
+				env.setDegreeOfParallelism(1);
+				env.execute();
+				
+				// return expected result
+				return "1 First (10,100,1000,One) 10000,(1,First,10,100,1000,One,10000)\n" +
+					   "2 Second (20,200,2000,Two) 20000,(2,Second,20,200,2000,Two,20000)\n" +
+					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
+				
+			}
+			case 19: {
+				/*
+				 * nested into tuple into pojo
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
+				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
+				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
+						ds1.join(ds2).where("nestedPojo.longNumber", "number", "str").equalTo("f6","nestedTupleWithCustom.f0","nestedTupleWithCustom.f0.myString");
 				
 				joinDs.writeAsCsv(resultPath);
 				env.setDegreeOfParallelism(1);

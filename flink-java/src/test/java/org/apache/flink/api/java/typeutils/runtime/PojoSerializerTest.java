@@ -195,7 +195,6 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 		
 		TestUserClass pojoTestRecord = new TestUserClass(0, "abc", 3d, new int[] {1,2,3}, new NestedTestUserClass(1, "haha", 4d, new int[] {5,4,3}));
 		int pHash = pojoComp.hash(pojoTestRecord);
-		System.err.println("Good pojo hash "+pHash);
 		
 		Tuple1<String> tupleTest = new Tuple1<String>("haha");
 		TupleTypeInfo<Tuple1<String>> tType = (TupleTypeInfo<Tuple1<String>>)TypeExtractor.getForObject(tupleTest);
@@ -203,7 +202,6 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 		
 		int tHash = tupleComp.hash(tupleTest);
 		
-		System.err.println("Tuple hash "+tHash);
 		Assert.assertTrue("The hashing for tuples and pojos must be the same, so that they are mixable", pHash == tHash);
 		
 		Tuple3<Integer, String, Double> multiTupleTest = new Tuple3<Integer, String, Double>(1, "haha", 4d); // its important here to use the same values.
