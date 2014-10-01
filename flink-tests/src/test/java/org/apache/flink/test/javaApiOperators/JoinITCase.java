@@ -549,6 +549,7 @@ public class JoinITCase extends JavaProgramTestBase {
 				/*
 				 * selecting multiple fields using expression language
 				 */
+				System.err.println("doin it");
 				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 				
 				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);

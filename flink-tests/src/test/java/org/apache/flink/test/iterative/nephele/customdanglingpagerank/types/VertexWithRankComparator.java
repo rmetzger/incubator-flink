@@ -32,8 +32,6 @@ public final class VertexWithRankComparator extends TypeComparator<VertexWithRan
 	
 	private long reference;
 
-	private Comparable[] extractedKey = new Comparable[1];
-
 	private TypeComparator[] comparators = new TypeComparator[]{new LongComparator(true)};
 
 	@Override
@@ -139,9 +137,9 @@ public final class VertexWithRankComparator extends TypeComparator<VertexWithRan
 	}
 
 	@Override
-	public Object[] extractKeys(VertexWithRank record) {
-		extractedKey[0] = record.getVertexID();
-		return extractedKey;
+	public int extractKeys(VertexWithRank record, Object[] target, int index) {
+		target[index] = record.getVertexID();
+		return 1;
 	}
 
 	@Override

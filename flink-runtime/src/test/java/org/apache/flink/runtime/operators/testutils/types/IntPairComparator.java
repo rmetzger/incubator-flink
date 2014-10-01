@@ -34,8 +34,6 @@ public class IntPairComparator extends TypeComparator<IntPair> {
 	
 	private int reference;
 
-	private final Comparable[] extractedKey = new Comparable[1];
-
 	private final TypeComparator[] comparators = new TypeComparator[] {new IntComparator(true)};
 
 	@Override
@@ -118,10 +116,11 @@ public class IntPairComparator extends TypeComparator<IntPair> {
 	}
 
 	@Override
-	public Object[] extractKeys(IntPair pair) {
-		extractedKey[0] = pair.getKey();
-		return extractedKey;
+	public int extractKeys(IntPair record, Object[] target, int index) {
+		target[index] = record.getKey();
+		return 1;
 	}
+	
 	@Override public TypeComparator[] getComparators() {
 		return comparators;
 	}

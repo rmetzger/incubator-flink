@@ -31,19 +31,14 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 
 	private static final long serialVersionUID = 1L;
 
-	private final Object[] extractedKeys;
-
 	@SuppressWarnings("unchecked")
 	public TupleComparator(int[] keyPositions, TypeComparator<?>[] comparators, TypeSerializer<?>[] serializers) {
 		super(keyPositions, comparators, serializers);
-		extractedKeys = new Object[keyPositions.length];
 	}
 	
 	@SuppressWarnings("unchecked")
 	private TupleComparator(TupleComparator<T> toClone) {
 		super(toClone);
-		extractedKeys = new Object[keyPositions.length];
-
 	}
 	
 	// --------------------------------------------------------------------------------------------
@@ -146,11 +141,11 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 	}
 
 	@Override
-	public Object[] extractKeys(T record) {
-		for (int i = 0; i < keyPositions.length; i++) {
-			extractedKeys[i] = record.getField(keyPositions[i]);
+	public int extractKeys(T record, Object[] target, int index) {
+		for(int i = 0; i < keyPositions.length; i++) {
+			target[index + i] = record.getField(keyPositions[i]);
 		}
-		return extractedKeys;
+		return keyPositions.length;
 	}
 
 	public TypeComparator<T> duplicate() {

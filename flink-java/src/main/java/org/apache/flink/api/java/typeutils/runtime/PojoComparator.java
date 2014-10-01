@@ -351,21 +351,16 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 	}
 
 	@Override
-	public Object[] extractKeys(T record) {
+	public int extractKeys(T record, Object[] target, int index) {
 		for (int i = 0; i < totalNumberOfKeys; i++) {
 			if(comparators[i] instanceof PojoComparator) {
-				Comparable[] nestedKeys = (Comparable[]) comparators[i].extractKeys(accessField(keyFields[i], record));
-				int end = i + nestedKeys.length;
-				for(; i < end; i++) {
-					extractedKeys[i] = nestedKeys[i];
-				}
-				i--;
+				i += comparators[i].extractKeys(accessField(keyFields[i], record), target, i) -1;
 			} else {
 				// non-composite case (= atomic). We can assume this to have only one key.
-				extractedKeys[i] = (Comparable) comparators[i].extractKeys(accessField(keyFields[i], record))[0];
+				comparators[i].extractKeys(accessField(keyFields[i], record), target, i);
 			}
 		}
-		return extractedKeys;
+		return totalNumberOfKeys;
 	}
 
 	// --------------------------------------------------------------------------------------------
