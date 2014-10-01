@@ -18,12 +18,22 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
+import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
+import org.apache.flink.api.java.typeutils.PojoTypeInfo;
+import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.junit.Assert;
+import org.junit.Test;
 
 import com.google.common.base.Objects;
 
@@ -65,12 +75,12 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 
 	// User code class for testing the serializer
 	public static class TestUserClass {
-		private int dumm1;
-		protected String dumm2;
+		public int dumm1;
+		public String dumm2;
 		public double dumm3;
-		private int[] dumm4;
+		public int[] dumm4;
 
-		private NestedTestUserClass nestedClass;
+		public NestedTestUserClass nestedClass;
 
 		public TestUserClass() {
 		}
@@ -119,10 +129,10 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 	}
 
 	public static class NestedTestUserClass {
-		private int dumm1;
-		protected String dumm2;
+		public int dumm1;
+		public String dumm2;
 		public double dumm3;
-		private int[] dumm4;
+		public int[] dumm4;
 
 		public NestedTestUserClass() {
 		}
@@ -164,5 +174,53 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 			}
 			return true;
 		}
+	}
+	
+	/**
+	 * This tests if the hash hashes returned by the pojo and tuple comparators are the same
+	 */
+	@Test
+	public void testTuplePojoTestEquality() {
+		
+		// test with a simple, string-key first.
+		PojoTypeInfo<TestUserClass> pType = (PojoTypeInfo<TestUserClass>) type;
+		List<FlatFieldDescriptor> result = new ArrayList<FlatFieldDescriptor>();
+		pType.getKey("nestedClass.dumm2", 0, result);
+		int[] fields = new int[1]; // see below
+		fields[0] = result.get(0).getPosition();
+		TypeComparator<TestUserClass> pojoComp = pType.createComparator( fields, new boolean[]{true}, 0);
+		TestUserClass pojoTestRecord = new TestUserClass(0, "abc", 3d, new int[] {1,2,3}, new NestedTestUserClass(1, "haha", 4d, new int[] {5,4,3}));
+		int pHash = pojoComp.hash(pojoTestRecord);
+		System.err.println("Good pojo hash "+pHash);
+		
+		Tuple1<String> tupleTest = new Tuple1<String>("haha");
+		TupleTypeInfo<Tuple1<String>> tType = (TupleTypeInfo<Tuple1<String>>)TypeExtractor.getForObject(tupleTest);
+		TypeComparator<Tuple1<String>> tupleComp = tType.createComparator(new int[] {0}, new boolean[] {true}, 0);
+		
+		int tHash = tupleComp.hash(tupleTest);
+		
+		System.err.println("Tuple hash "+tHash);
+		Assert.assertTrue("The hashing for tuples and pojos must be the same, so that they are mixable", pHash == tHash);
+		
+		
+		// test with multiple keys:
+		// add dumm1-dumm3 to "result"
+		pType.getKey("nestedClass.dumm1", 0, result);
+		pType.getKey("nestedClass.dumm3", 0, result);
+		int[] multipleFields = new int[] {	result.get(0).getPosition(), 
+											result.get(1).getPosition(), 
+											result.get(2).getPosition()
+										  };
+		TypeComparator<TestUserClass> multiPojoComp = pType.createComparator( multipleFields, new boolean[]{true, true, true}, 0);
+		int multiPojoHash = multiPojoComp.hash(pojoTestRecord);
+		
+		Tuple3<Integer, String, Double> multiTupleTest = new Tuple3<Integer, String, Double>(1, "haha", 4d); // its important here to use the same values.
+		TupleTypeInfo<Tuple3<Integer, String, Double>> multiTupleType = (TupleTypeInfo<Tuple3<Integer, String, Double>>)TypeExtractor.getForObject(multiTupleTest);
+		// pojo order is: dumm2 (str), dumm1 (int), dumm3 (double).
+		TypeComparator<Tuple3<Integer, String, Double>> multiTupleComp = multiTupleType.createComparator(new int[] {1,0,2}, new boolean[] {true, true,true}, 0);
+		int multiTupleHash = multiTupleComp.hash(multiTupleTest);
+		
+		Assert.assertTrue("The hashing for tuples and pojos must be the same, so that they are mixable. Also for those with multiple key fields", multiPojoHash == multiTupleHash);
+		
 	}
 }	

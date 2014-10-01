@@ -75,6 +75,12 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 
 		for (int i = 0; i < this.comparators.length; i++) {
 			TypeComparator<?> k = this.comparators[i];
+			if(k == null) {
+				throw new IllegalArgumentException("One of the passed comparators is null");
+			}
+			if(keyFields[i] == null) {
+				throw new IllegalArgumentException("One of the passed reflection fields is null");
+			}
 
 			// as long as the leading keys support normalized keys, we can build up the composite key
 			if (k.supportsNormalizedKey()) {
@@ -207,8 +213,9 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		int i = 0;
 		int code = 0;
 		for (; i < this.keyFields.length; i++) {
-			code ^= this.comparators[i].hash(accessField(keyFields[i], value));
-			code *= HASH_SALT[i & 0x1F]; // salt code with (i % HASH_SALT.length)-th salt component
+			code *= TupleComparatorBase.HASH_SALT[i & 0x1F];
+			code += this.comparators[i].hash(accessField(keyFields[i], value));
+			
 		}
 		System.err.println("Returning code: "+code);
 		return code;
@@ -352,19 +359,5 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 	}
 
 	// --------------------------------------------------------------------------------------------
-
-	/**
-	 * A sequence of prime numbers to be used for salting the computed hash values.
-	 * Based on some empirical evidence, we are using a 32-element subsequence of the
-	 * OEIS sequence #A068652 (numbers such that every cyclic permutation is a prime).
-	 *
-	 * @see: http://en.wikipedia.org/wiki/List_of_prime_numbers
-	 * @see: http://oeis.org/A068652
-	 */
-	private static final int[] HASH_SALT = new int[] {
-		73   , 79   , 97   , 113  , 131  , 197  , 199  , 311   ,
-		337  , 373  , 719  , 733  , 919  , 971  , 991  , 1193  ,
-		1931 , 3119 , 3779 , 7793 , 7937 , 9311 , 9377 , 11939 ,
-		19391, 19937, 37199, 39119, 71993, 91193, 93719, 93911 };
 }
 

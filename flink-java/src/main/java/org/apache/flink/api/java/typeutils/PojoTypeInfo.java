@@ -18,9 +18,11 @@
 
 package org.apache.flink.api.java.typeutils;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -207,13 +209,14 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		}
 		// TODO add more sanity checks
 		
+		// these two arrays might contain null positions. We'll remove the null fields in the end
 		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFieldsLength];
 		Field[] keyFields = new Field[logicalKeyFieldsLength];
 		// "logicalKeyFields" and "orders"
-		int keyPosition = 0; // offset for "global" key fields
+		int keyPosition = offset; // offset for "global" key fields
 		int fieldIndex = 0; // offset for "local" fields
 		for(PojoField field : fields) {
-			System.err.println("Creating comparator for "+field.type+" on local field "+fieldIndex);
+			System.err.println("Probing for comparator for "+field.type+" on local field "+fieldIndex);
 			// create comparators:
 			Tuple2<Integer, Integer> c = nextKeyField(logicalKeyFields); //remove them for later comparators
 			if(c == null || c.f0 == -1) {
@@ -228,7 +231,7 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 				// we are at a composite type and need to go deeper.
 				CompositeType<?> cType = (CompositeType<?>)field.type;
 				keyFields[arrayIndex] = field.field;
-				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, offset + keyPosition);
+				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, keyPosition);
 				logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
 			} else if(keyIndex == keyPosition) {
 				// we are at an atomic type and need to create a comparator here.
@@ -236,6 +239,7 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 				if(field.type instanceof AtomicType) { // The field has to be an atomic type
 					fieldComparators[arrayIndex] = ((AtomicType<?>)field.type).createComparator(orders[arrayIndex]);
 					logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
+					System.err.println("adding atomic comparator on index "+arrayIndex+" for type "+field.type);
 				} else {
 					throw new RuntimeException("Unexpected key type: "+field.type+"."); // in particular, field.type should not be a CompositeType here.
 				}
@@ -250,7 +254,23 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 			fieldIndex++;
 		}
 
-		return new PojoComparator<T>(keyFields, fieldComparators, createSerializer(), typeClass);
+		return new PojoComparator<T>( removeNullFieldsFromArray(keyFields, Field.class), removeNullFieldsFromArray(fieldComparators, TypeComparator.class), createSerializer(), typeClass);
+	}
+	
+	/**
+	 * Shrink array by removing null fields.
+	 * @param in
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static <R> R[] removeNullFieldsFromArray(R[] in, Class<?> clazz) {
+		List<R> elements = new ArrayList<R>();
+		for(R e: in) {
+			if(e != null) {
+				elements.add(e);
+			}
+		}
+		return elements.toArray((R[]) Array.newInstance(clazz, 1));
 	}
 	
 	/**
