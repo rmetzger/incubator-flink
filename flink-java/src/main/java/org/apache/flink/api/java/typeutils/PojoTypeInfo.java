@@ -212,6 +212,7 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		// these two arrays might contain null positions. We'll remove the null fields in the end
 		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFieldsLength];
 		Field[] keyFields = new Field[logicalKeyFieldsLength];
+		int totalNumberOfKeys = 0;
 		// "logicalKeyFields" and "orders"
 		int keyPosition = offset; // offset for "global" key fields
 		int fieldIndex = 0; // offset for "local" fields
@@ -249,12 +250,14 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 			if(field.type instanceof CompositeType) {
 				// skip key positions.
 				keyPosition += ((CompositeType<?>)field.type).getTotalFields()-1;
+				totalNumberOfKeys += ((CompositeType<?>)field.type).getTotalFields()-1;
 			}
 			keyPosition++;
 			fieldIndex++;
+			totalNumberOfKeys++;
 		}
 
-		return new PojoComparator<T>( removeNullFieldsFromArray(keyFields, Field.class), removeNullFieldsFromArray(fieldComparators, TypeComparator.class), createSerializer(), typeClass);
+		return new PojoComparator<T>( removeNullFieldsFromArray(keyFields, Field.class), removeNullFieldsFromArray(fieldComparators, TypeComparator.class), createSerializer(), typeClass, totalNumberOfKeys);
 	}
 	
 	/**

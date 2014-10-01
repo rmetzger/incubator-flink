@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -58,14 +59,21 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 	private final Class<T> type;
 
 	private final Comparable[] extractedKeys;
+	
+	/**
+	 * The number of keys below this comparator (used for the extractKeys() method to avoid array resizing)
+	 */
+	private int totalNumberOfKeys;
 
 	@SuppressWarnings("unchecked")
-	public PojoComparator(Field[] keyFields, TypeComparator<?>[] comparators, TypeSerializer<T> serializer, Class<T> type) {
+	public PojoComparator(Field[] keyFields, TypeComparator<?>[] comparators, TypeSerializer<T> serializer, Class<T> type, int totalNumberOfKeys) {
 		this.keyFields = keyFields;
 		this.comparators = (TypeComparator<Object>[]) comparators;
 
 		this.type = type;
 		this.serializer = serializer;
+		this.totalNumberOfKeys = totalNumberOfKeys;
+		System.err.println("got total number of keys: "+totalNumberOfKeys);
 
 		// set up auxiliary fields for normalized key support
 		this.normalizedKeyLengths = new int[keyFields.length];
@@ -114,7 +122,7 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		this.normalizableKeyPrefixLen = nKeyLen;
 		this.invertNormKey = inverted;
 
-		extractedKeys = new Comparable[keyFields.length];
+		extractedKeys = new Comparable[totalNumberOfKeys];
 	}
 
 	@SuppressWarnings("unchecked")
@@ -130,6 +138,7 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		this.numLeadingNormalizableKeys = toClone.numLeadingNormalizableKeys;
 		this.normalizableKeyPrefixLen = toClone.normalizableKeyPrefixLen;
 		this.invertNormKey = toClone.invertNormKey;
+		this.totalNumberOfKeys = toClone.totalNumberOfKeys;
 
 		this.type = toClone.type;
 
@@ -142,7 +151,7 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 			throw new RuntimeException("Cannot copy serializer", e);
 		}
 
-		extractedKeys = new Comparable[keyFields.length];
+		extractedKeys = new Comparable[totalNumberOfKeys];
 	}
 
 	private void writeObject(ObjectOutputStream out)
@@ -182,6 +191,9 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		}
 	}
 
+	public int getTotalNumberOfKeys() {
+		return totalNumberOfKeys;
+	}
 
 	public Field[] getKeyFields() {
 		return this.keyFields;
@@ -217,7 +229,6 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 			code += this.comparators[i].hash(accessField(keyFields[i], value));
 			
 		}
-		System.err.println("Returning code: "+code);
 		return code;
 
 	}
@@ -343,17 +354,22 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 
 	@Override
 	public Object[] extractKeys(T record) {
-		int i = 0;
-		try {
-			for (; i < keyFields.length; i++) {
-				extractedKeys[i] = (Comparable) keyFields[i].get(record);
+		for (int i = 0; i < totalNumberOfKeys; i++) {
+			if(comparators[i] instanceof PojoComparator) {
+				//PojoComparator pComp = (PojoComparator) comparators[i];
+				Comparable[] nestedKeys = (Comparable[]) comparators[i].extractKeys(accessField(keyFields[i], record));
+				// assert that nestedKeys.length ==  pComp.getTotalNumberOfKeys() - 1
+				//int end = i + pComp.getTotalNumberOfKeys() - 1;
+				int end = i + nestedKeys.length;
+				for(; i < end; i++) {
+					extractedKeys[i] = nestedKeys[i];
+				}
+				i--;
+			} else {
+				// non-composite case (= atomic). We can assume this to have only one key.
+				extractedKeys[i] = (Comparable) comparators[i].extractKeys(accessField(keyFields[i], record))[0];
 			}
-		}
-		catch (IllegalAccessException iaex) {
-			throw new RuntimeException("This should not happen since we call setAccesssible(true) in PojoTypeInfo.");
-		}
-		catch (NullPointerException npex) {
-			throw new NullKeyFieldException(this.keyFields[i].toString());
+			System.err.println("Extracted key : "+extractedKeys[i]);
 		}
 		return extractedKeys;
 	}

@@ -34,7 +34,7 @@ public abstract class BasicTypeComparator<T extends Comparable<T>> extends TypeC
 	protected final boolean ascendingComparison;
 
 	// This is used in extractKeys, so that we don't create a new array for every call.
-	private final Comparable[] extractedKey = new Comparable[1];
+	private final Object[] extractedKey = new Object[1];
 
 	// For use by getComparators
 	private final TypeComparator[] comparators = new TypeComparator[] {this};
