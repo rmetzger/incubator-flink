@@ -48,7 +48,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 @RunWith(Parameterized.class)
 public class JoinITCase extends JavaProgramTestBase {
 	
-	private static int NUM_PROGRAMS = 19;
+	private static int NUM_PROGRAMS = 21;
 	
 	private int curProgId = config.getInteger("ProgramId", -1);
 	private String resultPath;
@@ -499,8 +499,10 @@ public class JoinITCase extends JavaProgramTestBase {
 			// simple nested pojo field selection DONE
 			// selecting multiple fields using expression language DONE
 			// nested into tuple
-			// using one str expression with the * operator (full pojo, tuple field based)
 			// two str expressions: one with *, one with regular ( full pojo, full tuple)
+			
+			// Tuple2<Tuple2<Int,int> String> select the whole inner Tuple2 as key (using int-offsets)
+			// Tuple2<Tuple2<Int,int> String> select the whole inner Tuple2 as key (using string-access)
 			
 			// tuple type with custom in field, nest into custom (through tuple)
 			/**
@@ -549,7 +551,6 @@ public class JoinITCase extends JavaProgramTestBase {
 				/*
 				 * selecting multiple fields using expression language
 				 */
-				System.err.println("doin it");
 				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 				
 				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
@@ -607,6 +608,48 @@ public class JoinITCase extends JavaProgramTestBase {
 				return "1 First (10,100,1000,One) 10000,(1,First,10,100,1000,One,10000)\n" +
 					   "2 Second (20,200,2000,Two) 20000,(2,Second,20,200,2000,Two,20000)\n" +
 					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
+				
+			}
+			case 20: {
+				/*
+				 * Non-POJO test to verify that full-tuple keys are working.
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<Tuple2<Tuple2<Integer, Integer>, String>> ds1 = CollectionDataSets.getSmallNestedTupleDataSet(env);
+				DataSet<Tuple2<Tuple2<Integer, Integer>, String>> ds2 = CollectionDataSets.getSmallNestedTupleDataSet(env);
+				DataSet<Tuple2<Tuple2<Tuple2<Integer, Integer>, String>, Tuple2<Tuple2<Integer, Integer>, String> >> joinDs = 
+						ds1.join(ds2).where(0).equalTo(0); // key is now Tuple2<Integer, Integer>
+				
+				joinDs.writeAsCsv(resultPath);
+				env.setDegreeOfParallelism(1);
+				env.execute();
+				
+				// return expected result
+				return "((1,1),one),((1,1),one)\n" +
+					   "((2,2),two),((2,2),two)\n" +
+					   "((3,3),three),((3,3),three)\n";
+				
+			}
+			case 21: {
+				/*
+				 * Non-POJO test to verify "nested" tuple-element selection.
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<Tuple2<Tuple2<Integer, Integer>, String>> ds1 = CollectionDataSets.getSmallNestedTupleDataSet(env);
+				DataSet<Tuple2<Tuple2<Integer, Integer>, String>> ds2 = CollectionDataSets.getSmallNestedTupleDataSet(env);
+				DataSet<Tuple2<Tuple2<Tuple2<Integer, Integer>, String>, Tuple2<Tuple2<Integer, Integer>, String> >> joinDs = 
+						ds1.join(ds2).where("f0.f0").equalTo("f0.f0"); // key is now Integer from Tuple2<Integer, Integer>
+				
+				joinDs.writeAsCsv(resultPath);
+				env.setDegreeOfParallelism(1);
+				env.execute();
+				
+				// return expected result
+				return "((1,1),one),((1,1),one)\n" +
+					   "((2,2),two),((2,2),two)\n" +
+					   "((3,3),three),((3,3),three)\n";
 				
 			}
 			default: 

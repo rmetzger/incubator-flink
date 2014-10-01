@@ -138,6 +138,22 @@ public class CollectionDataSets {
 		return env.fromCollection(data, type);
 	}
 	
+	public static DataSet<Tuple2<Tuple2<Integer, Integer>, String>> getSmallNestedTupleDataSet(ExecutionEnvironment env) {
+		
+		List<Tuple2<Tuple2<Integer, Integer>, String>> data = new ArrayList<Tuple2<Tuple2<Integer, Integer>, String>>();
+		data.add(new Tuple2<Tuple2<Integer,Integer>, String>(new Tuple2<Integer, Integer>(1,1), "one"));
+		data.add(new Tuple2<Tuple2<Integer,Integer>, String>(new Tuple2<Integer, Integer>(2,2), "two"));
+		data.add(new Tuple2<Tuple2<Integer,Integer>, String>(new Tuple2<Integer, Integer>(3,3), "three"));
+		
+		TupleTypeInfo<Tuple2<Tuple2<Integer, Integer>, String>> type = new 
+				TupleTypeInfo<Tuple2<Tuple2<Integer, Integer>, String>>(
+						new TupleTypeInfo<Tuple2<Integer, Integer>>(BasicTypeInfo.INT_TYPE_INFO,BasicTypeInfo.INT_TYPE_INFO),
+						BasicTypeInfo.STRING_TYPE_INFO
+				);
+		
+		return env.fromCollection(data, type);
+	}
+	
 	public static DataSet<String> getStringDataSet(ExecutionEnvironment env) {
 		
 		List<String> data = new ArrayList<String>();
