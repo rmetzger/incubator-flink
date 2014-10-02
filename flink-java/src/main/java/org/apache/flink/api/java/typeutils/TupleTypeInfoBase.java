@@ -178,16 +178,22 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 		if(dotPos != -1) { // we need to go deeper
 			String rem = fieldExpression.substring(dotPos+1);
 			if( !(types[pos] instanceof CompositeType<?>) ) {
-				throw new RuntimeException("Element at position "+pos+" is not a composite type. Selecting the key by expression is not possible");
+				throw new RuntimeException("Element at position "+pos+" is not a composite type. There are no nested types to select");
 			}
 			CompositeType<?> cType = (CompositeType<?>) types[pos];
 			cType.getKey(rem, offset + pos, result);
 			return;
 		}
+		
+		if(pos >= types.length) {
+			throw new IllegalArgumentException("The specified tuple position does not exist");
+		}
+		
 		// count nested fields before "pos".
 		for(int i = 0; i < pos; i++) {
 			offset += types[i].getTotalFields() - 1; // this adds only something to offset if its a composite type.
 		}
+		
 		result.add(new FlatFieldDescriptor(offset + pos, types[pos]));
 	}
 	

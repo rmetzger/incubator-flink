@@ -619,7 +619,7 @@ public class JoinITCase extends JavaProgramTestBase {
 				DataSet<Tuple2<Tuple2<Integer, Integer>, String>> ds1 = CollectionDataSets.getSmallNestedTupleDataSet(env);
 				DataSet<Tuple2<Tuple2<Integer, Integer>, String>> ds2 = CollectionDataSets.getSmallNestedTupleDataSet(env);
 				DataSet<Tuple2<Tuple2<Tuple2<Integer, Integer>, String>, Tuple2<Tuple2<Integer, Integer>, String> >> joinDs = 
-						ds1.join(ds2).where(0).equalTo(0); // key is now Tuple2<Integer, Integer>
+						ds1.join(ds2).where(0).equalTo("f0.f0", "f0.f1"); // key is now Tuple2<Integer, Integer>
 				
 				joinDs.writeAsCsv(resultPath);
 				env.setDegreeOfParallelism(1);

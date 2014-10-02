@@ -81,18 +81,40 @@ public class KeysTest {
 			}
 			int[] inInts = Arrays.copyOf(ints, ints.length); // copy, just to make sure that the code is not cheating by changing the ints.
 			ek = new ExpressionKeys<Tuple7<String, String, String, String, String, String, String>>(inInts, typeInfo);
-			System.err.println("result = "+Arrays.toString(ek.computeLogicalKeyPositions())+" in = "+Arrays.toString(inInts));
 			Assert.assertArrayEquals(ints, ek.computeLogicalKeyPositions());
 			Assert.assertEquals(ints.length, ek.computeLogicalKeyPositions().length);
 			
 			ArrayUtils.reverse(ints);
 			inInts = Arrays.copyOf(ints, ints.length);
 			ek = new ExpressionKeys<Tuple7<String, String, String, String, String, String, String>>(inInts, typeInfo);
-			System.err.println("reversed result = "+Arrays.toString(ek.computeLogicalKeyPositions())+" in = "+Arrays.toString(inInts));
 			Assert.assertArrayEquals(ints, ek.computeLogicalKeyPositions());
 			Assert.assertEquals(ints.length, ek.computeLogicalKeyPositions().length);
 		}
 	}
+	
+	@Test 
+	public void testInvalid() throws Throwable {
+		TupleTypeInfo<Tuple3<String, Tuple3<String, String, String>, String>> typeInfo = new TupleTypeInfo<Tuple3<String,Tuple3<String,String,String>,String>>(
+				BasicTypeInfo.STRING_TYPE_INFO,
+				new TupleTypeInfo<Tuple3<String, String, String>>(BasicTypeInfo.STRING_TYPE_INFO,BasicTypeInfo.STRING_TYPE_INFO,BasicTypeInfo.STRING_TYPE_INFO),
+				BasicTypeInfo.STRING_TYPE_INFO);
+		ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>> fpk;
+		
+		String[][] tests = new String[][] {
+				new String[] {"f11"},new String[] {"f-35"}, new String[] {"f0.f33"}, new String[] {"f1.f33"}
+		};
+		for(int i = 0; i < tests.length; i++) {
+			Throwable e = null;
+			try {
+				fpk = new ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>>(tests[i], typeInfo);
+			} catch(Throwable t) {
+//				System.err.println("Message: "+t.getMessage()); t.printStackTrace();
+				e = t;	
+			}
+			Assert.assertNotNull(e);
+		}
+	}
+	
 	@Test
 	public void testTupleKeyExpansion() {
 		TupleTypeInfo<Tuple3<String, Tuple3<String, String, String>, String>> typeInfo = new TupleTypeInfo<Tuple3<String,Tuple3<String,String,String>,String>>(

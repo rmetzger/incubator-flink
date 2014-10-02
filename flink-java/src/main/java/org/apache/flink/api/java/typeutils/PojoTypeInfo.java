@@ -196,7 +196,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 	}
 
 	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
-	//	checkFlatSchema();
 		// sanity checks
 		int totalNumberOfKeys = countPositiveInts(logicalKeyFields);
 		int logicalKeyFieldsLength = countPositiveInts(logicalKeyFields);
@@ -204,7 +203,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		{
 			throw new IllegalArgumentException();
 		}
-		// TODO add more sanity checks
 		
 		// these two arrays might contain null positions. We'll remove the null fields in the end
 		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFieldsLength];
@@ -223,7 +221,7 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 			int arrayIndex = c.f1;
 			
 			// check if this field contains the key.
-			if(field.type instanceof CompositeType && keyPosition + field.type.getTotalFields() - 1 >= keyIndex) { // was: keyPosition (TODO: maybe ke
+			if(field.type instanceof CompositeType && keyPosition + field.type.getTotalFields() - 1 >= keyIndex) {
 				// we are at a composite type and need to go deeper.
 				CompositeType<?> cType = (CompositeType<?>)field.type;
 				keyFields[arrayIndex] = field.field;
@@ -248,8 +246,9 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 			keyPosition++;
 		}
 		totalNumberOfKeys = totalNumberOfKeys-countPositiveInts(logicalKeyFields);
-		System.err.println("Total number of keys "+totalNumberOfKeys);
-		return new PojoComparator<T>( removeNullFieldsFromArray(keyFields, Field.class), removeNullFieldsFromArray(fieldComparators, TypeComparator.class), createSerializer(), typeClass, totalNumberOfKeys);
+		
+		return new PojoComparator<T>( removeNullFieldsFromArray(keyFields, Field.class), removeNullFieldsFromArray(fieldComparators, TypeComparator.class), 
+				createSerializer(), typeClass, totalNumberOfKeys);
 	}
 	
 	/**
@@ -278,24 +277,9 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		return res;
 	}
 	
-	
-
-/*	@SuppressWarnings("unchecked")
-	@Override
-	public TypeComparator<T> createComparator(boolean sortOrderAscending) {
-	//	checkFlatSchema();
-		if (isKeyType()) {
-			@SuppressWarnings("rawtypes")
-			GenericTypeComparator comparator = new GenericTypeComparator(sortOrderAscending, createSerializer(), this.typeClass);
-			return (TypeComparator<T>) comparator;
-		}
-
-		throw new UnsupportedOperationException("Types that do not implement java.lang.Comparable cannot be used as keys.");
-	} */
 
 	@Override
 	public TypeSerializer<T> createSerializer() {
-	//	checkFlatSchema();
 		TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[fields.length ];
 		Field[] reflectiveFields = new Field[fields.length];
 
