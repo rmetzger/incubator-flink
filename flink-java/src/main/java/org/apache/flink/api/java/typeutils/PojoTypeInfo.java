@@ -268,41 +268,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		return elements.toArray((R[]) Array.newInstance(clazz, 1));
 	}
 	
-	/**
-	 * Returns the lowest key in the incoming array.
-	 * @param check
-	 * @param intArr
-	 * @return Tuple2 with keyIndex and position inside array.
-	 */
-	public static Tuple2<Integer, Integer> nextKeyField(int[] intArr) {
-		if(intArr.length == 0) {
-			return null;
-		}
-		List<Tuple2<Integer, Integer>> res = new ArrayList<Tuple2<Integer, Integer>>(intArr.length);
-		for(int i = 0; i < intArr.length; i++) {
-			res.add(new Tuple2<Integer, Integer>(intArr[i], i));
-		}
-		Collections.sort(res, new Comparator<Tuple2<Integer, Integer>>() {
-			@Override
-			// This comparator sorts integers with the lowest first,
-			// BUT the -1's to the end.
-			public int compare(Tuple2<Integer, Integer> o1,
-					Tuple2<Integer, Integer> o2) {
-				if(o1.f0 == o2.f0) {
-					return 0;
-				}
-				if(o1.f0 == -1) {
-					return 1;
-				}
-				if(o2.f0 == -1) {
-					return -1;
-				}
-				return o1.f0.compareTo(o2.f0);
-			}
-		});
-		
-		return res.get(0);
-	}
 	public static int countPositiveInts(int[] in) {
 		int res = 0;
 		for(int i : in) {
@@ -312,6 +277,8 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		}
 		return res;
 	}
+	
+	
 
 /*	@SuppressWarnings("unchecked")
 	@Override

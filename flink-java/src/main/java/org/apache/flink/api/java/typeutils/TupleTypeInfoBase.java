@@ -73,40 +73,61 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 	/**
 	 * Recursively get key fields for (nested) tuples
 	 */
-	public void getKeyFields(int searchField, int offset, List<FlatFieldDescriptor> target) {
-		int localFieldId = offset; // its in this level of recursion
-		int globalFieldId = offset; // global field id
-		for(int j = 0; j < types.length; j++) {
-			TypeInformation<?> elType = types[j];
-			if (elType instanceof TupleTypeInfoBase<?>) {
-				// recurse, "field" is a tuple as well.
-				TupleTypeInfoBase<?> tuType = (TupleTypeInfoBase<?>) elType;
-				if(searchField == localFieldId + offset) {
-					// we found the key: recursively expand
-					for(int i = 0; i < elType.getArity(); i++) {
-						tuType.getKeyFields(i + offset + localFieldId, localFieldId + offset, target);
-					}
-					return;
-				} else if(tuType.getTotalFields() +localFieldId < searchField) { // see if this nested tuple can contain the field
-					// keep searching recursively:
-					tuType.getKeyFields(searchField, localFieldId + offset, target);
-				}
-				globalFieldId += tuType.getTotalFields() - 1;
+//	public void getKeyFields(int searchField, int offset, List<FlatFieldDescriptor> target) {
+//		int fieldId = offset; // its in this level of recursion
+//	//	int globalFieldId = offset; // global field id
+//		for(int j = 0; j < types.length; j++) {
+//			TypeInformation<?> elType = types[j];
+//			if (elType instanceof TupleTypeInfoBase<?>) {
+//				// recurse, "field" is a tuple as well.
+//				TupleTypeInfoBase<?> tuType = (TupleTypeInfoBase<?>) elType;
+//				if(searchField == fieldId + offset) {
+//					// we found the key: recursively expand
+//					for(int i = 0; i < elType.getArity(); i++) {
+//						tuType.getKeyFields(i + offset + fieldId, fieldId + offset, target);
+//					}
+//					return;
+//				} else if(tuType.getTotalFields() +fieldId < searchField) { // see if this nested tuple can contain the field
+//					// keep searching recursively:
+//					tuType.getKeyFields(searchField, fieldId + offset, target);
+//				}
+//		//		globalFieldId += tuType.getTotalFields() - 1;
+//				fieldId += tuType.getTotalFields() - 1;
+//			}
+//			if(searchField == fieldId) {
+//				if(elType instanceof PojoTypeInfo<?>) {
+//					throw new IllegalArgumentException("Pojos are not usable with field position keys");
+//				} else {
+//					// standard case, just add the given field to the field list
+//					target.add( new FlatFieldDescriptor(fieldId, this.getTypeAt(j) ) );
+//					return; // we are done
+//				}
+//			}
+//			fieldId++;
+//		//	globalFieldId++;
+//		}
+//	}
+	
+	/**
+	 * Recursively add all fields in this tuple type. We need this in particular to get all
+	 * the types.
+	 * @param keyId
+	 * @param keyFields
+	 */
+	public void addAllFields(int startKeyId, List<FlatFieldDescriptor> keyFields) {
+		for(int i = 0; i < this.getArity(); i++) {
+			TypeInformation<?> type = this.types[i];
+			if(type instanceof AtomicType) {
+				keyFields.add(new FlatFieldDescriptor(startKeyId, type));
+			} else if(type instanceof TupleTypeInfoBase<?>) {
+				TupleTypeInfoBase<?> ttb = (TupleTypeInfoBase<?>) type;
+				ttb.addAllFields(startKeyId, keyFields);
 			}
-			if(searchField == localFieldId) {
-				if(elType instanceof PojoTypeInfo<?>) {
-					throw new IllegalArgumentException("Pojos are not usable with field position keys");
-				} else {
-					// standard case, just add the given field to the field list
-					target.add( new FlatFieldDescriptor(globalFieldId, this.getTypeAt(j) ) );
-					return; // we are done
-				}
-			}
-			localFieldId++;
-			globalFieldId++;
+			startKeyId += type.getTotalFields();
 		}
 	}
 	
+
 	@Override
 	public void getKey(String fieldExpression, int offset, List<FlatFieldDescriptor> result) {
 		// handle 'select all'
@@ -230,4 +251,5 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 		bld.append('>');
 		return bld.toString();
 	}
+	
 }

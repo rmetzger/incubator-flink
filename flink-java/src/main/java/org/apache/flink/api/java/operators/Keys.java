@@ -24,8 +24,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.flink.api.common.InvalidProgramException;
+import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.CompositeType;
 import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.api.java.typeutils.TupleTypeInfoBase;
@@ -248,7 +250,7 @@ public abstract class Keys<T> {
 		/**
 		 * Flattened fields representing keys fields
 		 */
-		private final List<FlatFieldDescriptor> keyFields;
+		private List<FlatFieldDescriptor> keyFields;
 		
 		/**
 		 * two constructors for field-based (tuple-type) keys
@@ -278,14 +280,51 @@ public abstract class Keys<T> {
 				groupingFields = rangeCheckFields(groupingFields, type.getArity() -1);
 			}
 			TupleTypeInfoBase<?> tupleType = (TupleTypeInfoBase<?>)type;
+			Preconditions.checkArgument(groupingFields.length > 0, "Grouping fields can not be empty at this point");
 			
-			keyFields = new ArrayList<FlatFieldDescriptor>();
-			for(int field : groupingFields) { // loop outside the method to avoid int-array magic
-				// System.err.println("field="+field+" offset="+offset+" totalFields="+tupleType.getTypeAt(field).getTotalFields());
-				tupleType.getKeyFields(field, 0, keyFields);
+			keyFields = new ArrayList<FlatFieldDescriptor>(type.getTotalFields());
+			// for each key, find the field:
+			for(int j = 0; j < groupingFields.length; j++) {
+				for(int i = 0; i < type.getArity(); i++) {
+					TypeInformation<?> fieldType = tupleType.getTypeAt(i);
+					
+					if(groupingFields[j] == i) { // check if user set the key
+						int keyId = countNestedElementsBefore(tupleType, i) + i;
+						if(fieldType instanceof TupleTypeInfoBase) {
+							TupleTypeInfoBase<?> tupleFieldType = (TupleTypeInfoBase<?>) fieldType;
+							tupleFieldType.addAllFields(keyId, keyFields);
+						} else {
+							Preconditions.checkArgument(fieldType instanceof AtomicType, "Wrong field type");
+							keyFields.add(new FlatFieldDescriptor(keyId, fieldType));
+						}
+						
+					}
+				}
 			}
+			keyFields = removeNullElementsFromList(keyFields);
 		}
 		
+		private static int countNestedElementsBefore(TupleTypeInfoBase<?> tupleType, int pos) {
+			if( pos == 0) {
+				return 0;
+			}
+			int ret = 0;
+			for (int i = 0; i < pos; i++) {
+				TypeInformation<?> fieldType = tupleType.getTypeAt(i);
+				ret += fieldType.getTotalFields() -1;
+			}
+			return ret;
+		}
+		
+		public static <R> List<R> removeNullElementsFromList(List<R> in) {
+			List<R> elements = new ArrayList<R>();
+			for(R e: in) {
+				if(e != null) {
+					elements.add(e);
+				}
+			}
+			return elements;
+		}
 		
 		/**
 		 * Create NestedKeys from String-expressions

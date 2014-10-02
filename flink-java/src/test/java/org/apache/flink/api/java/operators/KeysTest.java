@@ -79,11 +79,18 @@ public class KeysTest {
 			for( int j = 0; j < i; j++) {
 				ints[j] = j;
 			}
-			ek = new ExpressionKeys<Tuple7<String, String, String, String, String, String, String>>(ints, typeInfo);
+			int[] inInts = Arrays.copyOf(ints, ints.length); // copy, just to make sure that the code is not cheating by changing the ints.
+			ek = new ExpressionKeys<Tuple7<String, String, String, String, String, String, String>>(inInts, typeInfo);
+			System.err.println("result = "+Arrays.toString(ek.computeLogicalKeyPositions())+" in = "+Arrays.toString(inInts));
 			Assert.assertArrayEquals(ints, ek.computeLogicalKeyPositions());
+			Assert.assertEquals(ints.length, ek.computeLogicalKeyPositions().length);
+			
 			ArrayUtils.reverse(ints);
-			ek = new ExpressionKeys<Tuple7<String, String, String, String, String, String, String>>(ints, typeInfo);
+			inInts = Arrays.copyOf(ints, ints.length);
+			ek = new ExpressionKeys<Tuple7<String, String, String, String, String, String, String>>(inInts, typeInfo);
+			System.err.println("reversed result = "+Arrays.toString(ek.computeLogicalKeyPositions())+" in = "+Arrays.toString(inInts));
 			Assert.assertArrayEquals(ints, ek.computeLogicalKeyPositions());
+			Assert.assertEquals(ints.length, ek.computeLogicalKeyPositions().length);
 		}
 	}
 	@Test
@@ -103,6 +110,9 @@ public class KeysTest {
 		Assert.assertArrayEquals(new int[] {4}, fpk.computeLogicalKeyPositions());
 		
 		fpk = new ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>>(new int[] {0,1,2}, typeInfo);
+		Assert.assertArrayEquals(new int[] {0,1,2,3,4}, fpk.computeLogicalKeyPositions());
+		
+		fpk = new ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>>(null, typeInfo, true); // empty case
 		Assert.assertArrayEquals(new int[] {0,1,2,3,4}, fpk.computeLogicalKeyPositions());
 		
 		// duplicate elimination
