@@ -29,14 +29,17 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.CompositeType;
 import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.api.java.typeutils.TupleTypeInfoBase;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 
 
 public abstract class Keys<T> {
-
+	private static final Logger LOG = LoggerFactory.getLogger(Keys.class);
 
 	public abstract int getNumberOfKeyFields();
 
@@ -283,17 +286,20 @@ public abstract class Keys<T> {
 			}
 		}
 		
+		
 		/**
 		 * Create NestedKeys from String-expressions
 		 */
-		public ExpressionKeys(String[] expressions, TypeInformation<T> type) {
+		public ExpressionKeys(String[] expressionsIn, TypeInformation<T> type) {
 			if(!(type instanceof CompositeType<?>)) {
 				throw new RuntimeException("Type "+type+" is not a composite type. Key expressions are not supported.");
 			}
 			CompositeType<T> cType = (CompositeType<T>) type;
 			
-			// TODO: add key-deduplication somewhere.
-			
+			String[] expressions = removeDuplicates(expressionsIn);
+			if(expressionsIn.length != expressions.length) {
+				LOG.warn("The key expressions contained duplicates. They are now unique");
+			}
 			// extract the keys on their flat position
 			keyFields = new ArrayList<FlatFieldDescriptor>(expressions.length);
 			for (int i = 0; i < expressions.length; i++) {
@@ -365,6 +371,16 @@ public abstract class Keys<T> {
 			return Ints.toArray(logicalKeys);
 		}
 		
+	}
+	
+	private static String[] removeDuplicates(String[] in) {
+		List<String> ret = new LinkedList<String>();
+		for(String el : in) {
+			if(!ret.contains(el)) {
+				ret.add(el);
+			}
+		}
+		return ret.toArray(new String[ret.size()]);
 	}
 	// --------------------------------------------------------------------------------------------
 	

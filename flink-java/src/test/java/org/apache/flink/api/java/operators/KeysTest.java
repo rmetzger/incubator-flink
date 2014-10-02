@@ -114,11 +114,9 @@ public class KeysTest {
 		
 		// this was a bug:
 		fpk = new ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>>(new String[] {"f2"}, typeInfo);
-		System.err.println("res = "+Arrays.toString(fpk.computeLogicalKeyPositions()));
 		Assert.assertArrayEquals(new int[] {4}, fpk.computeLogicalKeyPositions());
 		
 		fpk = new ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>>(new String[] {"f0","f1.f0","f1.f1", "f1.f2", "f2"}, typeInfo);
-		System.err.println("res = "+Arrays.toString(fpk.computeLogicalKeyPositions()));
 		Assert.assertArrayEquals(new int[] {0,1,2,3,4}, fpk.computeLogicalKeyPositions());
 		
 		fpk = new ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>>(new String[] {"f0","f1.f0","f1.f1", "f2"}, typeInfo);

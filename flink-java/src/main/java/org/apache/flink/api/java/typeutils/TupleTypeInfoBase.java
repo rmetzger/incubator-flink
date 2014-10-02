@@ -18,7 +18,6 @@
 
 package org.apache.flink.api.java.typeutils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,7 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
-import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 
 import com.google.common.base.Preconditions;
 
@@ -86,7 +84,6 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 				if(searchField == localFieldId + offset) {
 					// we found the key: recursively expand
 					for(int i = 0; i < elType.getArity(); i++) {
-						System.err.println("Searching for "+ (i+offset));
 						tuType.getKeyFields(i + offset + localFieldId, localFieldId + offset, target);
 					}
 					return;
