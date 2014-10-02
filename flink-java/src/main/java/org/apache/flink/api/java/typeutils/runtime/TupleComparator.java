@@ -30,10 +30,12 @@ import org.apache.flink.types.NullKeyFieldException;
 public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<T> {
 
 	private static final long serialVersionUID = 1L;
-
+	private int totalNumberOfKeys;
+	
 	@SuppressWarnings("unchecked")
-	public TupleComparator(int[] keyPositions, TypeComparator<?>[] comparators, TypeSerializer<?>[] serializers) {
+	public TupleComparator(int[] keyPositions, TypeComparator<?>[] comparators, TypeSerializer<?>[] serializers, int totalNumberOfKeys) {
 		super(keyPositions, comparators, serializers);
+		this.totalNumberOfKeys = totalNumberOfKeys;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -142,8 +144,15 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 
 	@Override
 	public int extractKeys(T record, Object[] target, int index) {
-		for(int i = 0; i < keyPositions.length; i++) {
-			target[index + i] = record.getField(keyPositions[i]);
+		for(int i = 0; i < totalNumberOfKeys; i++) {
+			// handle nested case
+			if(comparators[i] instanceof TupleComparator || comparators[i] instanceof PojoComparator) {
+				i += comparators[i].extractKeys(record, target, index + i) -1;
+			} else {
+				// flat
+				target[index + i] = record.getField(keyPositions[i]);
+			}
+			
 		}
 		return keyPositions.length;
 	}

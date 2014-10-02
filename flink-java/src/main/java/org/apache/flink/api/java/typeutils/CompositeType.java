@@ -40,16 +40,6 @@ import org.powermock.tests.utils.Keys;
 public abstract class CompositeType<T> extends TypeInformation<T> {
 	
 	protected final Class<T> typeClass;
-
-	
-//	List<PojoDirectFieldAccessor> flatFieldsList;
-	
-//	/**
-//	 * Pojo fields determined by the @see {@link TypeExtractor}.
-//	 * Note that these fields only represent the types at this level of the type hierarchy.
-//	 * The "flatSchema" field is the type info that is being used in the end.
-//	 */
-	private List<PojoField> pojoFields;
 	
 	public CompositeType(Class<T> typeClass) {
 		this.typeClass = typeClass;
@@ -57,6 +47,32 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	
 	public abstract TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset);
 	
+	
+	/**
+	 * Shrink array by removing null fields.
+	 * @param in
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static <R> R[] removeNullFieldsFromArray(R[] in, Class<?> clazz) {
+		List<R> elements = new ArrayList<R>();
+		for(R e: in) {
+			if(e != null) {
+				elements.add(e);
+			}
+		}
+		return elements.toArray((R[]) Array.newInstance(clazz, 1));
+	}
+	
+	public static int countPositiveInts(int[] in) {
+		int res = 0;
+		for(int i : in) {
+			if(i >= 0) {
+				res++;
+			}
+		}
+		return res;
+	}
 	
 //	// TODO: we can remove this method.
 //	public void populateWithFlatSchema(List<FlatFieldDescriptor> schema) {

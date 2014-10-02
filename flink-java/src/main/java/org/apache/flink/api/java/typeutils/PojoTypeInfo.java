@@ -250,32 +250,7 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		return new PojoComparator<T>( removeNullFieldsFromArray(keyFields, Field.class), removeNullFieldsFromArray(fieldComparators, TypeComparator.class), 
 				createSerializer(), typeClass, totalNumberOfKeys);
 	}
-	
-	/**
-	 * Shrink array by removing null fields.
-	 * @param in
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static <R> R[] removeNullFieldsFromArray(R[] in, Class<?> clazz) {
-		List<R> elements = new ArrayList<R>();
-		for(R e: in) {
-			if(e != null) {
-				elements.add(e);
-			}
-		}
-		return elements.toArray((R[]) Array.newInstance(clazz, 1));
-	}
-	
-	public static int countPositiveInts(int[] in) {
-		int res = 0;
-		for(int i : in) {
-			if(i >= 0) {
-				res++;
-			}
-		}
-		return res;
-	}
+
 	
 
 	@Override

@@ -70,43 +70,6 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 		return tupleType;
 	}
 
-	/**
-	 * Recursively get key fields for (nested) tuples
-	 */
-//	public void getKeyFields(int searchField, int offset, List<FlatFieldDescriptor> target) {
-//		int fieldId = offset; // its in this level of recursion
-//	//	int globalFieldId = offset; // global field id
-//		for(int j = 0; j < types.length; j++) {
-//			TypeInformation<?> elType = types[j];
-//			if (elType instanceof TupleTypeInfoBase<?>) {
-//				// recurse, "field" is a tuple as well.
-//				TupleTypeInfoBase<?> tuType = (TupleTypeInfoBase<?>) elType;
-//				if(searchField == fieldId + offset) {
-//					// we found the key: recursively expand
-//					for(int i = 0; i < elType.getArity(); i++) {
-//						tuType.getKeyFields(i + offset + fieldId, fieldId + offset, target);
-//					}
-//					return;
-//				} else if(tuType.getTotalFields() +fieldId < searchField) { // see if this nested tuple can contain the field
-//					// keep searching recursively:
-//					tuType.getKeyFields(searchField, fieldId + offset, target);
-//				}
-//		//		globalFieldId += tuType.getTotalFields() - 1;
-//				fieldId += tuType.getTotalFields() - 1;
-//			}
-//			if(searchField == fieldId) {
-//				if(elType instanceof PojoTypeInfo<?>) {
-//					throw new IllegalArgumentException("Pojos are not usable with field position keys");
-//				} else {
-//					// standard case, just add the given field to the field list
-//					target.add( new FlatFieldDescriptor(fieldId, this.getTypeAt(j) ) );
-//					return; // we are done
-//				}
-//			}
-//			fieldId++;
-//		//	globalFieldId++;
-//		}
-//	}
 	
 	/**
 	 * Recursively add all fields in this tuple type. We need this in particular to get all
