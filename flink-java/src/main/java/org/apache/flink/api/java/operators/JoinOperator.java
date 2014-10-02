@@ -34,11 +34,11 @@ import org.apache.flink.api.common.operators.base.MapOperatorBase;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.DeltaIteration.SolutionSetPlaceHolder;
+import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.java.operators.Keys.IncompatibleKeysException;
 import org.apache.flink.api.common.functions.RichFlatJoinFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.functions.SemanticPropUtil;
-import org.apache.flink.api.java.operators.Keys.FieldPositionKeys;
 import org.apache.flink.api.java.operators.translation.KeyExtractingMapper;
 import org.apache.flink.api.java.operators.translation.PlanBothUnwrappingJoinOperator;
 import org.apache.flink.api.java.operators.translation.PlanLeftUnwrappingJoinOperator;
@@ -51,6 +51,7 @@ import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.util.Collector;
 //CHECKSTYLE.ON: AvoidStarImport
+
 
 
 
@@ -303,10 +304,7 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 
 				return po;
 			}
-			else if ((super.keys1 instanceof Keys.ExpressionKeys
-						|| super.keys1 instanceof Keys.FieldPositionKeys) &&
-					((super.keys2 instanceof Keys.ExpressionKeys
-							|| super.keys2 instanceof Keys.FieldPositionKeys)))
+			else if (super.keys1 instanceof Keys.ExpressionKeys && super.keys2 instanceof Keys.ExpressionKeys)
 			{
 				// Neither side needs the tuple wrapping/unwrapping
 
@@ -753,7 +751,7 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 		 * @see DataSet
 		 */
 		public JoinOperatorSetsPredicate where(int... fields) {
-			return new JoinOperatorSetsPredicate(new Keys.FieldPositionKeys<I1>(fields, input1.getType()));
+			return new JoinOperatorSetsPredicate(new Keys.ExpressionKeys<I1>(fields, input1.getType()));
 		}
 
 		/**
@@ -831,7 +829,7 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 			 * @return A DefaultJoin that represents the joined DataSet.
 			 */
 			public DefaultJoin<I1, I2> equalTo(int... fields) {
-				return createJoinOperator(new Keys.FieldPositionKeys<I2>(fields, input2.getType()));
+				return createJoinOperator(new Keys.ExpressionKeys<I2>(fields, input2.getType()));
 			}
 
 			/**
@@ -884,16 +882,16 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 				
 				// sanity check solution set key mismatches
 				if (input1 instanceof SolutionSetPlaceHolder) {
-					if (keys1 instanceof FieldPositionKeys) {
-						int[] positions = ((FieldPositionKeys<?>) keys1).computeLogicalKeyPositions();
+					if (keys1 instanceof ExpressionKeys) {
+						int[] positions = ((ExpressionKeys<?>) keys1).computeLogicalKeyPositions();
 						((SolutionSetPlaceHolder<?>) input1).checkJoinKeyFields(positions);
 					} else {
 						throw new InvalidProgramException("Currently, the solution set may only be joined with using tuple field positions.");
 					}
 				}
 				if (input2 instanceof SolutionSetPlaceHolder) {
-					if (keys2 instanceof FieldPositionKeys) {
-						int[] positions = ((FieldPositionKeys<?>) keys2).computeLogicalKeyPositions();
+					if (keys2 instanceof ExpressionKeys) {
+						int[] positions = ((ExpressionKeys<?>) keys2).computeLogicalKeyPositions();
 						((SolutionSetPlaceHolder<?>) input2).checkJoinKeyFields(positions);
 					} else {
 						throw new InvalidProgramException("Currently, the solution set may only be joined with using tuple field positions.");

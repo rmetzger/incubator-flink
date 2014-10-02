@@ -19,15 +19,12 @@
 package org.apache.flink.api.java.typeutils;
 
 import java.util.Arrays;
-import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
 //CHECKSTYLE.OFF: AvoidStarImport - Needed for TupleGenerator
 import org.apache.flink.api.java.tuple.Tuple;
 //CHECKSTYLE.ON: AvoidStarImport
@@ -59,7 +56,6 @@ import org.apache.flink.api.java.tuple.Tuple9;
 import org.apache.flink.api.java.typeutils.runtime.TupleComparator;
 import org.apache.flink.api.java.typeutils.runtime.TupleSerializer;
 
-import com.google.common.base.Preconditions;
 
 
 
@@ -141,64 +137,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	}
 
 	
-	@Override
-	public void getKey(String fieldExpression, int offset, List<FlatFieldDescriptor> result) {
-		// handle 'select all'
-		if(fieldExpression.equals(ExpressionKeys.SELECT_ALL_CHAR)) {
-			int keyPosition = 0;
-			for(TypeInformation<?> type : types) {
-				if(type instanceof AtomicType) {
-					result.add(new FlatFieldDescriptor(offset + keyPosition, type));
-				} else if(type instanceof CompositeType) {
-					CompositeType<?> cType = (CompositeType<?>)type;
-					cType.getKey(String.valueOf(ExpressionKeys.SELECT_ALL_CHAR), offset + keyPosition, result);
-					keyPosition += cType.getTotalFields()-1;
-				} else {
-					throw new RuntimeException("Unexpected key type: "+type);
-				}
-				keyPosition++;
-			}
-			return;
-		}
-		// check input
-		if(fieldExpression.length() < 2) {
-			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. The length must be at least 2");
-		}
-		if(fieldExpression.charAt(0) != 'f') {
-			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect for a Tuple type. It has to start with an 'f'");
-		}
-		// get first component of nested expression
-		int dotPos = fieldExpression.indexOf('.');
-		String nestedSplitFirst = fieldExpression;
-		if(dotPos != -1 ) {
-			Preconditions.checkArgument(dotPos != fieldExpression.length()-1, "The field expression can never end with a dot.");
-			nestedSplitFirst = fieldExpression.substring(0, dotPos);
-		}
-		String fieldNumStr = nestedSplitFirst.substring(1, nestedSplitFirst.length());
-		if(!StringUtils.isNumeric(fieldNumStr)) {
-			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. Field number '"+fieldNumStr+" is not numeric");
-		}
-		int pos = -1;
-		try {
-			pos = Integer.valueOf(fieldNumStr);
-		} catch(NumberFormatException nfe) {
-			throw new IllegalArgumentException("The field expression '"+fieldExpression+"' is incorrect. Field number '"+fieldNumStr+" is not numeric", nfe);
-		}
-		if(pos < 0) {
-			throw new IllegalArgumentException("Negative position is not possible");
-		}
-		// pass down the remainder (after the dot) of the fieldExpression to the type at that position.
-		if(dotPos != -1) {
-			String rem = fieldExpression.substring(dotPos+1);
-			if( !(types[pos] instanceof CompositeType<?>) ) {
-				throw new RuntimeException("Element at position "+pos+" is not a composite type. Selecting the key by expression is not possible");
-			}
-			CompositeType<?> cType = (CompositeType<?>) types[pos];
-			cType.getKey(rem, offset + pos, result);
-			return;
-		}
-		result.add(new FlatFieldDescriptor(offset + pos, types[pos]));
-	}
+
 	
 	// --------------------------------------------------------------------------------------------
 	

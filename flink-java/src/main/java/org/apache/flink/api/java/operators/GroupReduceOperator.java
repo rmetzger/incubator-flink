@@ -139,7 +139,7 @@ public class GroupReduceOperator<IN, OUT> extends SingleInputUdfOperator<IN, OUT
 			
 			return po;
 		}
-		else if (grouper.getKeys() instanceof Keys.FieldPositionKeys) {
+		else if (grouper.getKeys() instanceof Keys.ExpressionKeys) {
 
 			int[] logicalKeyPositions = grouper.getKeys().computeLogicalKeyPositions();
 			UnaryOperatorInformation<IN, OUT> operatorInfo = new UnaryOperatorInformation<IN, OUT>(getInputType(), getResultType());

@@ -27,7 +27,6 @@ import org.apache.flink.api.common.typeutils.SerializerTestBase;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
-import org.apache.flink.api.java.operators.Keys.FieldPositionKeys;
 import org.apache.flink.api.java.operators.Keys.IncompatibleKeysException;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -207,7 +206,7 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 		Tuple3<Integer, String, Double> multiTupleTest = new Tuple3<Integer, String, Double>(1, "haha", 4d); // its important here to use the same values.
 		TupleTypeInfo<Tuple3<Integer, String, Double>> multiTupleType = (TupleTypeInfo<Tuple3<Integer, String, Double>>)TypeExtractor.getForObject(multiTupleTest);
 		
-		FieldPositionKeys fieldKey = new FieldPositionKeys(new int[]{1,0,2}, multiTupleType);
+		ExpressionKeys fieldKey = new ExpressionKeys(new int[]{1,0,2}, multiTupleType);
 		ExpressionKeys expressKey = new ExpressionKeys(new String[] {"nestedClass.dumm2", "nestedClass.dumm1", "nestedClass.dumm3"}, pType);
 		try {
 			Assert.assertTrue("Expecting the keys to be compatible", fieldKey.areCompatible(expressKey));

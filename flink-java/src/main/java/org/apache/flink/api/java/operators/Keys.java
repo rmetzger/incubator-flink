@@ -69,92 +69,92 @@ public abstract class Keys<T> {
 	//  Specializations for field indexed / expression-based / extractor-based grouping
 	// --------------------------------------------------------------------------------------------
 	
-	/**
-	 * This key type is also initializing the CompositeType for serialization and comparison.
-	 * For this, we assume that keys specified by int-fields can not be nested.
-	 */
-	public static class FieldPositionKeys<T> extends Keys<T> {
-
-		private final int[] fieldPositions;
-		private final TypeInformation<?>[] types;
-
-		public FieldPositionKeys(int[] groupingFields, TypeInformation<T> type) {
-			this(groupingFields, type, false);
-		}
-
-		public FieldPositionKeys(int[] groupingFields, TypeInformation<T> type, boolean allowEmpty) {
-			if (!type.isTupleType()) {
-				throw new InvalidProgramException("Specifying keys via field positions is only valid" +
-						"for tuple data types. Type: " + type);
-			}
-
-			if (!allowEmpty && (groupingFields == null || groupingFields.length == 0)) {
-				throw new IllegalArgumentException("The grouping fields must not be empty.");
-			}
-
-			TupleTypeInfoBase<?> tupleType = (TupleTypeInfoBase<?>)type;
-			
-			List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>();
-			
-			this.fieldPositions = makeFields(groupingFields, (TupleTypeInfoBase<?>) type);
-
-			types = new TypeInformation[this.fieldPositions.length];
-			for(int i = 0; i < this.fieldPositions.length; i++) {
-				types[i] = tupleType.getTypeAt(this.fieldPositions[i]);
-			}
-		}
-
-		@Override
-		public int getNumberOfKeyFields() {
-			return this.fieldPositions.length;
-		}
-
-		@Override
-		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
-			
-			if (other instanceof FieldPositionKeys) {
-				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
-				
-				if(oKey.types.length != this.types.length) {
-					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-				}
-				for(int i=0; i<this.types.length; i++) {
-					if(!this.types[i].equals(oKey.types[i])) {
-						throw new IncompatibleKeysException(this.types[i], oKey.types[i]);
-					}
-				}
-				return true;
-				
-			} else if (other instanceof SelectorFunctionKeys) {
-				if(this.types.length != 1) {
-					throw new IncompatibleKeysException("Key selector functions are only compatible to one key");
-				}
-				
-				SelectorFunctionKeys<?, ?> sfk = (SelectorFunctionKeys<?, ?>) other;
-				
-				if(sfk.keyType.equals(this.types[0])) {
-					return true;
-				} else {
-					throw new IncompatibleKeysException(sfk.keyType, this.types[0]);
-				}
-			} else if( other instanceof ExpressionKeys<?>) {
-				return other.areCompatible(this);
-			}
-			else {
-				throw new IncompatibleKeysException("The key is not compatible with "+other);
-			}
-		}
-
-		@Override
-		public int[] computeLogicalKeyPositions() {
-			return this.fieldPositions;
-		}
-	
-		@Override
-		public String toString() {
-			return "Field Position Key: "+Arrays.toString(fieldPositions);
-		}
-	}
+//	/**
+//	 * This key type is also initializing the CompositeType for serialization and comparison.
+//	 * For this, we assume that keys specified by int-fields can not be nested.
+//	 */
+//	public static class FieldPositionKeys<T> extends Keys<T> {
+//
+//		private final int[] fieldPositions;
+//		private final TypeInformation<?>[] types;
+//
+//		public FieldPositionKeys(int[] groupingFields, TypeInformation<T> type) {
+//			this(groupingFields, type, false);
+//		}
+//
+//		public FieldPositionKeys(int[] groupingFields, TypeInformation<T> type, boolean allowEmpty) {
+//			if (!type.isTupleType()) {
+//				throw new InvalidProgramException("Specifying keys via field positions is only valid" +
+//						"for tuple data types. Type: " + type);
+//			}
+//
+//			if (!allowEmpty && (groupingFields == null || groupingFields.length == 0)) {
+//				throw new IllegalArgumentException("The grouping fields must not be empty.");
+//			}
+//
+//			TupleTypeInfoBase<?> tupleType = (TupleTypeInfoBase<?>)type;
+//			
+//			List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>();
+//			
+//			this.fieldPositions = makeFields(groupingFields, (TupleTypeInfoBase<?>) type);
+//
+//			types = new TypeInformation[this.fieldPositions.length];
+//			for(int i = 0; i < this.fieldPositions.length; i++) {
+//				types[i] = tupleType.getTypeAt(this.fieldPositions[i]);
+//			}
+//		}
+//
+//		@Override
+//		public int getNumberOfKeyFields() {
+//			return this.fieldPositions.length;
+//		}
+//
+//		@Override
+//		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
+//			
+//			if (other instanceof FieldPositionKeys) {
+//				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
+//				
+//				if(oKey.types.length != this.types.length) {
+//					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+//				}
+//				for(int i=0; i<this.types.length; i++) {
+//					if(!this.types[i].equals(oKey.types[i])) {
+//						throw new IncompatibleKeysException(this.types[i], oKey.types[i]);
+//					}
+//				}
+//				return true;
+//				
+//			} else if (other instanceof SelectorFunctionKeys) {
+//				if(this.types.length != 1) {
+//					throw new IncompatibleKeysException("Key selector functions are only compatible to one key");
+//				}
+//				
+//				SelectorFunctionKeys<?, ?> sfk = (SelectorFunctionKeys<?, ?>) other;
+//				
+//				if(sfk.keyType.equals(this.types[0])) {
+//					return true;
+//				} else {
+//					throw new IncompatibleKeysException(sfk.keyType, this.types[0]);
+//				}
+//			} else if( other instanceof ExpressionKeys<?>) {
+//				return other.areCompatible(this);
+//			}
+//			else {
+//				throw new IncompatibleKeysException("The key is not compatible with "+other);
+//			}
+//		}
+//
+//		@Override
+//		public int[] computeLogicalKeyPositions() {
+//			return this.fieldPositions;
+//		}
+//	
+//		@Override
+//		public String toString() {
+//			return "Field Position Key: "+Arrays.toString(fieldPositions);
+//		}
+//	}
 	
 	// --------------------------------------------------------------------------------------------
 	
@@ -210,14 +210,14 @@ public abstract class Keys<T> {
 				} else {
 					throw new IncompatibleKeysException(nestedKeys.keyFields.get(0).getType(), this.keyType);
 				}
-			} else if (other instanceof FieldPositionKeys) {
-				FieldPositionKeys<?> fpk = (FieldPositionKeys<?>) other;
-
-				if(fpk.types.length != 1) {
-					return false;
-				}
-
-				return fpk.types[0].equals(this.keyType);
+//			} else if (other instanceof FieldPositionKeys) {
+//				FieldPositionKeys<?> fpk = (FieldPositionKeys<?>) other;
+//
+//				if(fpk.types.length != 1) {
+//					return false;
+//				}
+//
+//				return fpk.types[0].equals(this.keyType);
 			} else {
 				throw new IncompatibleKeysException("The key is not compatible with "+other);
 			}
@@ -236,7 +236,7 @@ public abstract class Keys<T> {
 	
 	
 	/**
-	 * Represents (nested) field access through string-based keys for Composite Types (Tuple or Pojo)
+	 * Represents (nested) field access through string and integer-based keys for Composite Types (Tuple or Pojo)
 	 */
 	public static class ExpressionKeys<T> extends Keys<T> {
 		
@@ -248,6 +248,42 @@ public abstract class Keys<T> {
 		private final List<FlatFieldDescriptor> keyFields;
 		
 		/**
+		 * two constructors for field-based (tuple-type) keys
+		 */
+		public ExpressionKeys(int[] groupingFields, TypeInformation<T> type) {
+			this(groupingFields, type, false);
+		}
+
+		// int-defined field
+		public ExpressionKeys(int[] groupingFields, TypeInformation<T> type, boolean allowEmpty) {
+			if (!type.isTupleType()) {
+				throw new InvalidProgramException("Specifying keys via field positions is only valid" +
+						"for tuple data types. Type: " + type);
+			}
+
+			if (!allowEmpty && (groupingFields == null || groupingFields.length == 0)) {
+				throw new IllegalArgumentException("The grouping fields must not be empty.");
+			}
+			// select all fields. Therefore, set all fields on this tuple level and let the logic handle the rest
+			// (makes type assignment easier).
+			if (groupingFields == null || groupingFields.length == 0) {
+				groupingFields = new int[type.getArity()];
+				for (int i = 0; i < groupingFields.length; i++) {
+					groupingFields[i] = i;
+				}
+			} else {
+				groupingFields = rangeCheckFields(groupingFields, type.getArity() -1);
+			}
+			TupleTypeInfoBase<?> tupleType = (TupleTypeInfoBase<?>)type;
+			
+			keyFields = new ArrayList<FlatFieldDescriptor>();
+			for(int field : groupingFields) { // loop outside the method to avoid int-array magic
+				// System.err.println("field="+field+" offset="+offset+" totalFields="+tupleType.getTypeAt(field).getTotalFields());
+				tupleType.getKeyFields(field, 0, keyFields);
+			}
+		}
+		
+		/**
 		 * Create NestedKeys from String-expressions
 		 */
 		public ExpressionKeys(String[] expressions, TypeInformation<T> type) {
@@ -256,10 +292,12 @@ public abstract class Keys<T> {
 			}
 			CompositeType<T> cType = (CompositeType<T>) type;
 			
+			// TODO: add key-deduplication somewhere.
+			
 			// extract the keys on their flat position
 			keyFields = new ArrayList<FlatFieldDescriptor>(expressions.length);
 			for (int i = 0; i < expressions.length; i++) {
-				List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>();
+				List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>(); // use separate list to do a size check
 				cType.getKey(expressions[i], 0, keys);
 				if(keys.size() == 0) {
 					throw new IllegalArgumentException("Unable to extract key from expression "+expressions[i]+" on key "+cType);
@@ -301,17 +339,17 @@ public abstract class Keys<T> {
 					throw new IncompatibleKeysException(this.keyFields.get(0).getType(), oKey.keyType);
 				}
 				return true;
-			} else if(other instanceof FieldPositionKeys<?>) {
-				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
-				if(oKey.getNumberOfKeyFields() != this.keyFields.size()) {
-					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-				}
-				for(int i = 0; i < this.keyFields.size(); i++) {
-					if(!this.keyFields.get(i).getType().equals(oKey.types[i])) {
-						throw new IncompatibleKeysException(this.keyFields.get(i).getType(), oKey.types[i]);
-					}
-				}
-				return true;
+//			} else if(other instanceof FieldPositionKeys<?>) {
+//				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
+//				if(oKey.getNumberOfKeyFields() != this.keyFields.size()) {
+//					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+//				}
+//				for(int i = 0; i < this.keyFields.size(); i++) {
+//					if(!this.keyFields.get(i).getType().equals(oKey.types[i])) {
+//						throw new IncompatibleKeysException(this.keyFields.get(i).getType(), oKey.types[i]);
+//					}
+//				}
+//				return true;
 			} else {
 				throw new IncompatibleKeysException("The key is not compatible with "+other);
 			}
@@ -335,26 +373,6 @@ public abstract class Keys<T> {
 	//  Utilities
 	// --------------------------------------------------------------------------------------------
 
-	private static int[] makeFields(int[] fields, TupleTypeInfoBase<?> type) {
-		int inLength = type.getTotalFields();
-
-		// null parameter means all fields are considered
-		if (fields == null || fields.length == 0) {
-			fields = new int[inLength];
-			for (int i = 0; i < inLength; i++) {
-				fields[i] = i;
-			}
-			return fields;
-		} else {
-			// expand full-tuple keys
-			List<Integer> target = new ArrayList<Integer>(fields.length);
-			for(int field : fields) { // loop outside the method to avoid int-array magic
-				type.getKeyFields(field, target, 0);
-			}
-			fields = Ints.toArray(target);
-			return rangeCheckFields(fields, inLength-1);
-		}
-	}
 
 	private static final int[] rangeCheckFields(int[] fields, int maxAllowedField) {
 

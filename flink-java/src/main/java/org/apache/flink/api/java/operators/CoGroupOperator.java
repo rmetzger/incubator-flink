@@ -32,7 +32,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.DeltaIteration.SolutionSetPlaceHolder;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.operators.Keys.FieldPositionKeys;
+import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.java.operators.Keys.IncompatibleKeysException;
 import org.apache.flink.api.java.operators.translation.KeyExtractingMapper;
 import org.apache.flink.api.java.operators.translation.PlanBothUnwrappingCoGroupOperator;
@@ -43,7 +43,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 
-import com.google.common.base.Preconditions;
 
 /**
  * A {@link DataSet} that is the result of a CoGroup transformation. 
@@ -151,10 +150,7 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 
 			return po;
 		}
-		else if ((keys1 instanceof Keys.FieldPositionKeys
-				&& keys2 instanceof Keys.FieldPositionKeys) ||
-				((keys1 instanceof Keys.ExpressionKeys
-						&& keys2 instanceof Keys.ExpressionKeys)))
+		else if ( keys1 instanceof Keys.ExpressionKeys && keys2 instanceof Keys.ExpressionKeys)
 			{
 			try {
 				keys1.areCompatible(keys2);
@@ -350,7 +346,7 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 		 * @see DataSet
 		 */
 		public CoGroupOperatorSetsPredicate where(int... fields) {
-			return new CoGroupOperatorSetsPredicate(new Keys.FieldPositionKeys<I1>(fields, input1.getType()));
+			return new CoGroupOperatorSetsPredicate(new Keys.ExpressionKeys<I1>(fields, input1.getType()));
 		}
 
 		/**
@@ -422,7 +418,7 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 			 *           Call {@link org.apache.flink.api.java.operators.CoGroupOperator.CoGroupOperatorSets.CoGroupOperatorSetsPredicate.CoGroupOperatorWithoutFunction#with(org.apache.flink.api.common.functions.CoGroupFunction)} to finalize the CoGroup transformation.
 			 */
 			public CoGroupOperatorWithoutFunction equalTo(int... fields) {
-				return createCoGroupOperator(new Keys.FieldPositionKeys<I2>(fields, input2.getType()));
+				return createCoGroupOperator(new Keys.ExpressionKeys<I2>(fields, input2.getType()));
 			}
 
 			/**
@@ -473,16 +469,16 @@ public class CoGroupOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OU
 				}
 				// sanity check solution set key mismatches
 				if (input1 instanceof SolutionSetPlaceHolder) {
-					if (keys1 instanceof FieldPositionKeys) {
-						int[] positions = ((FieldPositionKeys<?>) keys1).computeLogicalKeyPositions();
+					if (keys1 instanceof ExpressionKeys) {
+						int[] positions = ((ExpressionKeys<?>) keys1).computeLogicalKeyPositions();
 						((SolutionSetPlaceHolder<?>) input1).checkJoinKeyFields(positions);
 					} else {
 						throw new InvalidProgramException("Currently, the solution set may only be CoGrouped with using tuple field positions.");
 					}
 				}
 				if (input2 instanceof SolutionSetPlaceHolder) {
-					if (keys2 instanceof FieldPositionKeys) {
-						int[] positions = ((FieldPositionKeys<?>) keys2).computeLogicalKeyPositions();
+					if (keys2 instanceof ExpressionKeys) {
+						int[] positions = ((ExpressionKeys<?>) keys2).computeLogicalKeyPositions();
 						((SolutionSetPlaceHolder<?>) input2).checkJoinKeyFields(positions);
 					} else {
 						throw new InvalidProgramException("Currently, the solution set may only be CoGrouped with using tuple field positions.");

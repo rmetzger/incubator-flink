@@ -431,7 +431,7 @@ public abstract class DataSet<T> {
 	 * @return A DistinctOperator that represents the distinct DataSet.
 	 */
 	public DistinctOperator<T> distinct(int... fields) {
-		return new DistinctOperator<T>(this, new Keys.FieldPositionKeys<T>(fields, getType(), true));
+		return new DistinctOperator<T>(this, new Keys.ExpressionKeys<T>(fields, getType(), true));
 	}
 	
 	/**
@@ -501,7 +501,7 @@ public abstract class DataSet<T> {
 	 * @see DataSet
 	 */
 	public UnsortedGrouping<T> groupBy(int... fields) {
-		return new UnsortedGrouping<T>(this, new Keys.FieldPositionKeys<T>(fields, getType(), false));
+		return new UnsortedGrouping<T>(this, new Keys.ExpressionKeys<T>(fields, getType(), false));
 	}
 
 	/**
@@ -814,7 +814,7 @@ public abstract class DataSet<T> {
 	 * @see org.apache.flink.api.java.operators.DeltaIteration
 	 */
 	public <R> DeltaIteration<T, R> iterateDelta(DataSet<R> workset, int maxIterations, int... keyPositions) {
-		Keys.FieldPositionKeys<T> keys = new Keys.FieldPositionKeys<T>(keyPositions, getType(), false);
+		Keys.ExpressionKeys<T> keys = new Keys.ExpressionKeys<T>(keyPositions, getType(), false);
 		return new DeltaIteration<T, R>(getExecutionEnvironment(), getType(), this, workset, keys, maxIterations);
 	}
 
@@ -863,7 +863,7 @@ public abstract class DataSet<T> {
 	 * @return The partitioned DataSet.
 	 */
 	public PartitionedDataSet<T> partitionByHash(int... fields) {
-		return new PartitionedDataSet<T>(this, PartitionMethod.HASH, new Keys.FieldPositionKeys<T>(fields, getType(), false));
+		return new PartitionedDataSet<T>(this, PartitionMethod.HASH, new Keys.ExpressionKeys<T>(fields, getType(), false));
 	}
 	
 	/**

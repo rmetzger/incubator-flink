@@ -51,7 +51,7 @@ public class PartitionedDataSet<IN> {
 			throw new UnsupportedOperationException("Range Partitioning not yet supported");
 		}
 		
-		if(pKeys instanceof Keys.FieldPositionKeys<?> && !input.getType().isTupleType()) {
+		if(pKeys instanceof Keys.ExpressionKeys<?> && !input.getType().isTupleType()) {
 			throw new IllegalArgumentException("Hash Partitioning with key fields only possible on Tuple DataSets");
 		}
 		
@@ -183,7 +183,7 @@ public class PartitionedDataSet<IN> {
 		} 
 		else if (pMethod == PartitionMethod.HASH) {
 			
-			if (pKeys instanceof Keys.FieldPositionKeys) {
+			if (pKeys instanceof Keys.ExpressionKeys) {
 				
 				int[] logicalKeyPositions = pKeys.computeLogicalKeyPositions();
 				UnaryOperatorInformation<IN, IN> operatorInfo = new UnaryOperatorInformation<IN, IN>(dataSet.getType(), dataSet.getType());

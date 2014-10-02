@@ -57,10 +57,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 	private PojoField[] fields;
 	
 	private int totalFields;
-	
-//	private List<FlatFieldDescriptor> flatSchema;
-
-//	private PojoFieldAccessor[] flattenedFields;
 
 	public PojoTypeInfo(Class<T> typeClass, List<PojoField> fields) {
 		super(typeClass);
