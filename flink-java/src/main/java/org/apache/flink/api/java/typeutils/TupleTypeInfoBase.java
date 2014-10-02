@@ -18,7 +18,9 @@
 
 package org.apache.flink.api.java.typeutils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
@@ -64,6 +66,27 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 		return tupleType;
 	}
 
+	/**
+	 * Recursively get key fields for (nested) tuples
+	 */
+	public void getKeyFields(int field, List<Integer> target, int offset) {
+		if(field >= this.getArity()) {
+			throw new IllegalArgumentException("key field ("+field+") is out of range");
+		}
+		TypeInformation<?> elType = types[field];
+		if(elType instanceof PojoTypeInfo<?>) {
+			throw new IllegalArgumentException("Pojos are not usable with field position keys");
+		} else if (elType instanceof TupleTypeInfoBase<?>) {
+			// recurse, "field" is a tuple as well.
+			TupleTypeInfoBase<?> tuType = (TupleTypeInfoBase<?>) elType;
+			for(int i = 0; i < tuType.getArity(); i++) {
+				tuType.getKeyFields(i, target, field);
+			}
+		} else {
+			// standard case, just add the given field to the field list
+			target.add( offset + field );
+		}
+	}
 	
 	public <X> TypeInformation<X> getTypeAt(int pos) {
 		if (pos < 0 || pos >= this.types.length) {

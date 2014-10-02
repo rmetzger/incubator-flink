@@ -27,6 +27,7 @@ import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.CompositeType;
+import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.api.java.typeutils.TupleTypeInfoBase;
 import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 
@@ -92,6 +93,8 @@ public abstract class Keys<T> {
 			}
 
 			TupleTypeInfoBase<?> tupleType = (TupleTypeInfoBase<?>)type;
+			
+			List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>();
 			
 			this.fieldPositions = makeFields(groupingFields, (TupleTypeInfoBase<?>) type);
 
@@ -236,11 +239,13 @@ public abstract class Keys<T> {
 	 * Represents (nested) field access through string-based keys for Composite Types (Tuple or Pojo)
 	 */
 	public static class ExpressionKeys<T> extends Keys<T> {
+		
 		public static final String SELECT_ALL_CHAR = "*";
+		
 		/**
 		 * Flattened fields representing keys fields
 		 */
-		private final List<FlatFieldDescriptor> keyFields; // TODO Check if all assumptions still hold after adding support for *
+		private final List<FlatFieldDescriptor> keyFields;
 		
 		/**
 		 * Create NestedKeys from String-expressions
@@ -254,7 +259,6 @@ public abstract class Keys<T> {
 			// extract the keys on their flat position
 			keyFields = new ArrayList<FlatFieldDescriptor>(expressions.length);
 			for (int i = 0; i < expressions.length; i++) {
-				System.err.println("Getting logical key position for "+expressions[i]+" on type "+type);
 				List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>();
 				cType.getKey(expressions[i], 0, keys);
 				if(keys.size() == 0) {
@@ -325,86 +329,6 @@ public abstract class Keys<T> {
 		
 	}
 	// --------------------------------------------------------------------------------------------
-/*	public static class ExpressionKeys<T> extends Keys<T> {
-
-		private int[] logicalPositions;
-
-		private final TypeInformation<?>[] types;
-
-		@SuppressWarnings("unused")
-		private PojoTypeInfo<?> type;
-
-		public ExpressionKeys(String[] expressions, TypeInformation<T> type) {
-			if (!(type instanceof PojoTypeInfo<?>)) {
-				throw new UnsupportedOperationException("Key expressions can only be used on POJOs." + " " +
-						"A POJO must have a default constructor without arguments and not have readObject" +
-						" and/or writeObject methods. A current restriction is that it can only have nested POJOs or primitive (also boxed)" +
-						" fields.");
-			}
-			PojoTypeInfo<?> pojoType = (PojoTypeInfo<?>) type;
-			this.type = pojoType;
-			logicalPositions = pojoType.getLogicalPositions(expressions);
-			types = pojoType.getTypes(expressions);
-
-			for (int i = 0; i < logicalPositions.length; i++) {
-				if (logicalPositions[i] < 0) {
-					throw new IllegalArgumentException("Expression '" + expressions[i] + "' is not a valid key for POJO" +
-							" type " + type.toString() + ".");
-				}
-			}
-		}
-
-		@Override
-		public int getNumberOfKeyFields() {
-			return logicalPositions.length;
-		}
-
-		@Override
-		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
-
-			if (other instanceof ExpressionKeys) {
-				ExpressionKeys<?> oKey = (ExpressionKeys<?>) other;
-
-				if(oKey.types.length != this.types.length) {
-					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-				}
-				for(int i=0; i<this.types.length; i++) {
-					if(!this.types[i].equals(oKey.types[i])) {
-						throw new IncompatibleKeysException(this.types[i], oKey.types[i]);
-					}
-				}
-				return true;
-			} else if(other instanceof SelectorFunctionKeys<?, ?>) {
-				SelectorFunctionKeys<?,?> oKey = (SelectorFunctionKeys<?,?>) other;
-				Preconditions.checkArgument(oKey.getNumberOfKeyFields() == 1, "The code assumes that key selector functions have only one key field");
-				if(oKey.getNumberOfKeyFields() != this.types.length) { // oKey.lenght == 1 because its a selector function
-					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-				}
-				if(!this.types[0].equals(oKey.keyType)) { // assumes that oKey.lenght == 1.
-					throw new IncompatibleKeysException(this.types[0], oKey.keyType);
-				}
-				return true;
-			} else if(other instanceof FieldPositionKeys<?>) {
-				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
-				if(oKey.getNumberOfKeyFields() != this.types.length) {
-					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-				}
-				for(int i = 0; i < this.types.length; i++) {
-					if(!this.types[i].equals(oKey.types[i])) {
-						throw new IncompatibleKeysException(this.types[0], oKey.types[i]);
-					}
-				}
-				return true;
-			} else {
-				throw new IncompatibleKeysException("The key is not compatible with "+other);
-			}
-		}
-
-		@Override
-		public int[] computeLogicalKeyPositions() {
-			return logicalPositions;
-		}
-	} */
 	
 	
 	// --------------------------------------------------------------------------------------------
@@ -423,9 +347,11 @@ public abstract class Keys<T> {
 			return fields;
 		} else {
 			// expand full-tuple keys
-			TODO
-			refactor tuple key fields while testjob 20 (19) is ensured to keep running
-			extend keying to allow full tuples as keys
+			List<Integer> target = new ArrayList<Integer>(fields.length);
+			for(int field : fields) { // loop outside the method to avoid int-array magic
+				type.getKeyFields(field, target, 0);
+			}
+			fields = Ints.toArray(target);
 			return rangeCheckFields(fields, inLength-1);
 		}
 	}
