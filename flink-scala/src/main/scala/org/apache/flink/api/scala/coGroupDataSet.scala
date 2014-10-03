@@ -202,7 +202,7 @@ private[flink] class UnfinishedCoGroupOperationImpl[T: ClassTag, O: ClassTag](
     leftSet.set match {
       case solutionSet: DeltaIteration.SolutionSetPlaceHolder[_] =>
         leftKey match {
-          case keyFields: Keys.FieldPositionKeys[_] =>
+          case keyFields: Keys.ExpressionKeys[_] =>
             val positions: Array[Int] = keyFields.computeLogicalKeyPositions
             solutionSet.checkJoinKeyFields(positions)
           case _ =>
@@ -215,7 +215,7 @@ private[flink] class UnfinishedCoGroupOperationImpl[T: ClassTag, O: ClassTag](
     rightSet.set match {
       case solutionSet: DeltaIteration.SolutionSetPlaceHolder[_] =>
         rightKey match {
-          case keyFields: Keys.FieldPositionKeys[_] =>
+          case keyFields: Keys.ExpressionKeys[_] =>
             val positions: Array[Int] = keyFields.computeLogicalKeyPositions
             solutionSet.checkJoinKeyFields(positions)
           case _ =>

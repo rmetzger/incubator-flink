@@ -85,5 +85,14 @@ abstract class CaseClassTypeInfo[T <: Product](
     result
   }
 
+  val unsupported = {
+    throw new UnsupportedOperationException("The Scala API is not using the composite type comparator creation")
+  };
+  protected def initializeNewComparator(localKeyCount: Int): Unit = unsupported
+
+  override protected def getNewComparator: TypeComparator[T] = unsupported
+
+  override protected def addCompareField(fieldId: Int, comparator: TypeComparator[_]): Unit = unsupported
+
   override def toString = "Scala " + super.toString
 }
