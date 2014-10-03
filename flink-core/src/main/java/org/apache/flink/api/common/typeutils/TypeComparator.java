@@ -292,13 +292,13 @@ public abstract class TypeComparator<T> implements Serializable {
 	 * interoperability between different record types.
 	 * @return the number of keys added to target.
 	 */
-	public abstract int extractKeys(T record, Object[] target, int index);
+	public abstract int extractKeys(Object record, Object[] target, int index);
 
 	/**
 	 * Get the field comparators. This is used together with {@link #extractKeys(Object)} to provide
 	 * interoperability between different record types.
 	 */
-	public abstract TypeComparator[] getComparators();
+	public abstract TypeComparator[] getFlatComparators();
 
 	// --------------------------------------------------------------------------------------------
 

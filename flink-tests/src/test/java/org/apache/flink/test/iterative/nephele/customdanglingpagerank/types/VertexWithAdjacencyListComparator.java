@@ -134,13 +134,13 @@ public final class VertexWithAdjacencyListComparator extends TypeComparator<Vert
 	}
 
 	@Override
-	public int extractKeys(VertexWithAdjacencyList record, Object[] target, int index) {
-		target[index] = record.getVertexID();
+	public int extractKeys(Object record, Object[] target, int index) {
+		target[index] = ((VertexWithAdjacencyList) record).getVertexID();
 		return 1;
 	}
 
 	@Override
-	public TypeComparator[] getComparators() {
+	public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}
 }

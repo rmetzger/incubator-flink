@@ -124,13 +124,13 @@ public class CopyableValueComparator<T extends CopyableValue<T> & Comparable<T>>
 	}
 
 	@Override
-	public int extractKeys(T record, Object[] target, int index) {
+	public int extractKeys(Object record, Object[] target, int index) {
 		target[index] = record;
 		return 1;
 	}
 
 	@Override
-	public TypeComparator<?>[] getComparators() {
+	public TypeComparator<?>[] getFlatComparators() {
 		return comparators;
 	}
 	

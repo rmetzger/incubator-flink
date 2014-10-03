@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
+import org.apache.flink.api.common.typeutils.CompositeTypeComparator;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;
@@ -27,9 +28,13 @@ import org.apache.flink.types.KeyFieldOutOfBoundsException;
 import org.apache.flink.types.NullKeyFieldException;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 
-public abstract class TupleComparatorBase<T> extends TypeComparator<T> implements java.io.Serializable {
+public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> implements java.io.Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	/** key positions describe which fields are keys in what order */
 	protected int[] keyPositions;
@@ -146,13 +151,21 @@ public abstract class TupleComparatorBase<T> extends TypeComparator<T> implement
 		return this.keyPositions;
 	}
 	
-	public TypeComparator[] getComparators() {
-		return this.comparators;
-	}
 	
+	@Override
+	public void getFlatComparator(List<TypeComparator> flatComparators) {
+		for(int i = 0; i < comparators.length; i++) {
+			if(comparators[i] instanceof CompositeTypeComparator) {
+				((CompositeTypeComparator)comparators[i]).getFlatComparator(flatComparators);
+			} else {
+				flatComparators.add(comparators[i]);
+			}
+		}
+	}	
 	// --------------------------------------------------------------------------------------------
 	//  Comparator Methods
 	// --------------------------------------------------------------------------------------------
+
 
 	@Override
 	public int compareToReference(TypeComparator<T> referencedComparator) {

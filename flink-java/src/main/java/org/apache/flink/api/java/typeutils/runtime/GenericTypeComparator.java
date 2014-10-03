@@ -167,13 +167,13 @@ public class GenericTypeComparator<T extends Comparable<T>> extends TypeComparat
 	}
 
 	@Override
-	public int extractKeys(T record, Object[] target, int index) {
+	public int extractKeys(Object record, Object[] target, int index) {
 		target[index] = record;
 		return 1;
 	}
 
 	@Override
-	public TypeComparator[] getComparators() {
+	public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}
 

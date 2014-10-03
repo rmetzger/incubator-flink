@@ -139,12 +139,12 @@ public class IntListComparator extends TypeComparator<IntList> {
 	}
 
 	@Override
-	public int extractKeys(IntList record, Object[] target, int index) {
+	public int extractKeys(Object record, Object[] target, int index) {
 		target[index] = (Comparable) record;
 		return 1;
 	}
 
-	@Override public TypeComparator[] getComparators() {
+	@Override public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}
 

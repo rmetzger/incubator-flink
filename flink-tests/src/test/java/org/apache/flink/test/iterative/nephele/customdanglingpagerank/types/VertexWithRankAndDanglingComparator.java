@@ -139,13 +139,13 @@ public final class VertexWithRankAndDanglingComparator extends TypeComparator<Ve
 	}
 
 	@Override
-	public int extractKeys(VertexWithRankAndDangling record, Object[] target, int index) {
-		target[index] = record.getVertexID();
+	public int extractKeys(Object record, Object[] target, int index) {
+		target[index] = ((VertexWithRankAndDangling) record).getVertexID();
 		return 1;
 	}
 
 	@Override
-	public TypeComparator[] getComparators() {
+	public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}
 }

@@ -116,12 +116,12 @@ public class IntPairComparator extends TypeComparator<IntPair> {
 	}
 
 	@Override
-	public int extractKeys(IntPair record, Object[] target, int index) {
-		target[index] = record.getKey();
+	public int extractKeys(Object record, Object[] target, int index) {
+		target[index] = ((IntPair) record).getKey();
 		return 1;
 	}
 	
-	@Override public TypeComparator[] getComparators() {
+	@Override public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}
 

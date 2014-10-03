@@ -127,12 +127,12 @@ public class WritableComparator<T extends Writable & Comparable<T>> extends Type
 	}
 
 	@Override
-	public int extractKeys(T record, Object[] target, int index) {
+	public int extractKeys(Object record, Object[] target, int index) {
 		target[index] = record;
 		return 1;
 	}
 
-	@Override public TypeComparator[] getComparators() {
+	@Override public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}
 	

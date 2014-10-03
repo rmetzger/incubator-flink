@@ -28,6 +28,7 @@ import java.util.List;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
+import org.apache.flink.api.common.typeutils.CompositeTypeComparator;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
@@ -37,7 +38,7 @@ import org.apache.flink.types.NullKeyFieldException;
 import org.apache.flink.util.InstantiationUtil;
 
 
-public final class PojoComparator<T> extends TypeComparator<T> implements java.io.Serializable {
+public final class PojoComparator<T> extends CompositeTypeComparator<T> implements java.io.Serializable {
 	
 	private static final long serialVersionUID = 1L;
 
@@ -198,10 +199,21 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		return this.keyFields;
 	}
 
-	public TypeComparator[] getComparators() {
+	public TypeComparator[] getFlatComparators() {
 		return this.comparators;
 	}
 
+	@Override
+	public void getFlatComparator(List<TypeComparator> flatComparators) {
+		for(int i = 0; i < comparators.length; i++) {
+			if(comparators[i] instanceof CompositeTypeComparator) {
+				((CompositeTypeComparator)comparators[i]).getFlatComparator(flatComparators);
+			} else {
+				flatComparators.add(comparators[i]);
+			}
+		}
+	}
+	
 	/**
 	 * This method is handling the IllegalAccess exceptions of Field.get()
 	 */
@@ -351,7 +363,7 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 	}
 
 	@Override
-	public int extractKeys(T record, Object[] target, int index) {
+	public int extractKeys(Object record, Object[] target, int index) {
 		int localIndex = index;
 		for (int i = 0; i < comparators.length; i++) {
 			if(comparators[i] instanceof PojoComparator || comparators[i] instanceof TupleComparator) {

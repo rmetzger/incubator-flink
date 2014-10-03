@@ -43,8 +43,8 @@ public class GenericPairComparator<T1, T2> extends TypePairComparator<T1, T2>
 	public GenericPairComparator(TypeComparator<T1> comparator1, TypeComparator<T2> comparator2) {
 		this.comparator1 = comparator1;
 		this.comparator2 = comparator2;
-		this.comparators1 = comparator1.getComparators();
-		this.comparators2 = comparator2.getComparators();
+		this.comparators1 = comparator1.getFlatComparators();
+		this.comparators2 = comparator2.getFlatComparators();
 
 		if(comparators1.length != comparators2.length) {
 			throw new IllegalArgumentException("Number of key fields and comparators differ.");

@@ -115,12 +115,12 @@ public class StringPairComparator extends TypeComparator<StringPair> {
 	}
 
 	@Override
-	public int extractKeys(StringPair record, Object[] target, int index) {
-		target[index] = record.getKey();
+	public int extractKeys(Object record, Object[] target, int index) {
+		target[index] = ((StringPair) record).getKey();
 		return 1;
 	}
 
-	@Override public TypeComparator[] getComparators() {
+	@Override public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}
 }
