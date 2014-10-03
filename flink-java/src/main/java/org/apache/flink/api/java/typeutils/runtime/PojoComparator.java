@@ -355,7 +355,7 @@ public final class PojoComparator<T> extends TypeComparator<T> implements java.i
 		int localIndex = index;
 		for (int i = 0; i < comparators.length; i++) {
 			if(comparators[i] instanceof PojoComparator || comparators[i] instanceof TupleComparator) {
-				localIndex += comparators[i].extractKeys(accessField(keyFields[i], record), target, localIndex) -1;
+				localIndex += comparators[i].extractKeys(accessField(keyFields[i], record), target, localIndex);
 			} else {
 				// non-composite case (= atomic). We can assume this to have only one key.
 				// comparators[i].extractKeys(accessField(keyFields[i], record), target, i);

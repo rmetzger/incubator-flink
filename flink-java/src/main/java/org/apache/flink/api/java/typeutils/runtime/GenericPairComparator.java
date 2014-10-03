@@ -68,6 +68,7 @@ public class GenericPairComparator<T1, T2> extends TypePairComparator<T1, T2>
 
 	@Override
 	public boolean equalToReference(T2 candidate) {
+		System.err.println("eqToRe");
 		comparator2.extractKeys(candidate, candidateKeyFields, 0);
 		for (int i = 0; i < this.comparators1.length; i++) {
 			if (this.comparators1[i].compare(referenceKeyFields[i], candidateKeyFields[i]) != 0) {

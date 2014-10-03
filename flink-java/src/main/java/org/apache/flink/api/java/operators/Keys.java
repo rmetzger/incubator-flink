@@ -167,6 +167,7 @@ public abstract class Keys<T> {
 
 		private final KeySelector<T, K> keyExtractor;
 		private final TypeInformation<K> keyType;
+		private final int[] logicalKeyFields;
 
 		public SelectorFunctionKeys(KeySelector<T, K> keyExtractor, TypeInformation<T> inputType, TypeInformation<K> keyType) {
 			if (keyExtractor == null) {
@@ -175,6 +176,16 @@ public abstract class Keys<T> {
 
 			this.keyExtractor = keyExtractor;
 			this.keyType = keyType;
+			
+			// we have to handle a special case here:
+			// if the keyType is a tuple type, we need to select the full tuple with all its fields.
+			if(keyType.isTupleType()) {
+				ExpressionKeys<K> ek = new ExpressionKeys<K>(new String[] {"*"}, keyType);
+				logicalKeyFields = ek.computeLogicalKeyPositions();
+				System.err.println("Doing the special case "+Arrays.toString(logicalKeyFields));
+			} else {
+				logicalKeyFields = new int[] {0};
+			}
 
 			if (!this.keyType.isKeyType()) {
 				throw new IllegalArgumentException("Invalid type of KeySelector keys");
@@ -191,7 +202,7 @@ public abstract class Keys<T> {
 
 		@Override
 		public int getNumberOfKeyFields() {
-			return 1;
+			return logicalKeyFields.length;
 		}
 
 		@Override
@@ -215,14 +226,6 @@ public abstract class Keys<T> {
 				} else {
 					throw new IncompatibleKeysException(nestedKeys.keyFields.get(0).getType(), this.keyType);
 				}
-//			} else if (other instanceof FieldPositionKeys) {
-//				FieldPositionKeys<?> fpk = (FieldPositionKeys<?>) other;
-//
-//				if(fpk.types.length != 1) {
-//					return false;
-//				}
-//
-//				return fpk.types[0].equals(this.keyType);
 			} else {
 				throw new IncompatibleKeysException("The key is not compatible with "+other);
 			}
@@ -230,7 +233,7 @@ public abstract class Keys<T> {
 
 		@Override
 		public int[] computeLogicalKeyPositions() {
-			return new int[] {0};
+			return logicalKeyFields;
 		}
 
 		@Override

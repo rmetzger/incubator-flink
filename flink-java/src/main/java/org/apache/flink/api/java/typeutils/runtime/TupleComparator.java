@@ -18,6 +18,8 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
+import java.util.Arrays;
+
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple;
@@ -147,7 +149,7 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 		for(int i = 0; i < comparators.length; i++) {
 			// handle nested case
 			if(comparators[i] instanceof TupleComparator || comparators[i] instanceof PojoComparator) {
-				localIndex += comparators[i].extractKeys(record, target, localIndex) -1;
+				localIndex += comparators[i].extractKeys(record, target, localIndex);
 			} else {
 				// flat
 				target[localIndex] = record.getField(keyPositions[i]);
@@ -155,7 +157,8 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 			}
 			
 		}
-		return keyPositions.length;
+		System.err.println("Returning "+Arrays.toString(target));
+		return localIndex - index;
 	}
 
 	public TypeComparator<T> duplicate() {

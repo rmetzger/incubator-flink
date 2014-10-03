@@ -103,7 +103,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 						&& logicalKeyField <= logicalField + (localFieldType.getTotalFields() - 1) ) // check if logical field + lookahead could contain our key
 						) {
 					// we found a compositeType that is containing the logicalKeyField we are looking for --> create comparator
-					addCompareField(localFieldId, ((CompositeType) localFieldType).createComparator(logicalKeyFields, orders, logicalField));
+					addCompareField(localFieldId, ((CompositeType) localFieldType).createComparator(new int[] {logicalKeyField}, orders, logicalField));
 				}
 				System.err.println("Checking if logicalField="+logicalField+" logicalKeyField="+logicalKeyField+" logicalFieldwithLookahead="+ ( logicalField + (localFieldType.getTotalFields() - 1)));
 				
