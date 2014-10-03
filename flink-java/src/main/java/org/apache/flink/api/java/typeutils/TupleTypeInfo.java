@@ -95,7 +95,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		int[] localLogicalKeyFields = new int[maxPossibleKeyCount];
 		TypeSerializer<?>[] fieldSerializers = new TypeSerializer[maxPossibleKeyCount];
 		
-		if (logicalKeyFields == null || orders == null || maxPossibleKeyCount != orders.length)
+		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length)
 		{
 			throw new IllegalArgumentException();
 		}
