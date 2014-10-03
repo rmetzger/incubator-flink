@@ -223,7 +223,7 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		if(finalFieldComparators.length == 0 || finalKeyFields.length == 0 ||  finalFieldComparators.length != finalKeyFields.length) {
 			throw new IllegalArgumentException("Pojo comparator creation has a bug");
 		}
-		return new PojoComparator<T>(finalKeyFields, finalFieldComparators, createSerializer(), typeClass, -1);
+		return new PojoComparator<T>(finalKeyFields, finalFieldComparators, createSerializer(), typeClass);
 	}
 //	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
 //		// sanity checks

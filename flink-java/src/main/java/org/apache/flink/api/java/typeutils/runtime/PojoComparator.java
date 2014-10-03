@@ -59,21 +59,20 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 
 	private final Class<T> type;
 
-	private final Comparable[] extractedKeys;
+	private final Object[] extractedKeys;
 	
 	/**
 	 * The number of keys below this comparator (used for the extractKeys() method to avoid array resizing)
 	 */
-	private int totalNumberOfKeys;
+//	private int totalNumberOfKeys;
 
 	@SuppressWarnings("unchecked")
-	public PojoComparator(Field[] keyFields, TypeComparator<?>[] comparators, TypeSerializer<T> serializer, Class<T> type, int totalNumberOfKeys) {
+	public PojoComparator(Field[] keyFields, TypeComparator<?>[] comparators, TypeSerializer<T> serializer, Class<T> type) {
 		this.keyFields = keyFields;
 		this.comparators = (TypeComparator<Object>[]) comparators;
 
 		this.type = type;
 		this.serializer = serializer;
-		this.totalNumberOfKeys = totalNumberOfKeys;
 
 		// set up auxiliary fields for normalized key support
 		this.normalizedKeyLengths = new int[keyFields.length];
@@ -122,7 +121,7 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		this.normalizableKeyPrefixLen = nKeyLen;
 		this.invertNormKey = inverted;
 
-		extractedKeys = new Comparable[totalNumberOfKeys];
+		extractedKeys = new Object[keyFields.length];
 	}
 
 	@SuppressWarnings("unchecked")
@@ -138,7 +137,6 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		this.numLeadingNormalizableKeys = toClone.numLeadingNormalizableKeys;
 		this.normalizableKeyPrefixLen = toClone.normalizableKeyPrefixLen;
 		this.invertNormKey = toClone.invertNormKey;
-		this.totalNumberOfKeys = toClone.totalNumberOfKeys;
 
 		this.type = toClone.type;
 
@@ -151,7 +149,7 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 			throw new RuntimeException("Cannot copy serializer", e);
 		}
 
-		extractedKeys = new Comparable[totalNumberOfKeys];
+		extractedKeys = new Comparable[keyFields.length];
 	}
 
 	private void writeObject(ObjectOutputStream out)
@@ -191,9 +189,9 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		}
 	}
 
-	public int getTotalNumberOfKeys() {
+	/*public int getTotalNumberOfKeys() {
 		return totalNumberOfKeys;
-	}
+	} */
 
 	public Field[] getKeyFields() {
 		return this.keyFields;
@@ -367,13 +365,13 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		int localIndex = index;
 		for (int i = 0; i < comparators.length; i++) {
 			if(comparators[i] instanceof PojoComparator || comparators[i] instanceof TupleComparator) {
-				localIndex += comparators[i].extractKeys(accessField(keyFields[i], record), target, localIndex);
+				localIndex += comparators[i].extractKeys(accessField(keyFields[i], record), target, localIndex) -1;
 			} else {
 				// non-composite case (= atomic). We can assume this to have only one key.
 				// comparators[i].extractKeys(accessField(keyFields[i], record), target, i);
 				target[localIndex] = accessField(keyFields[i], record);
-				localIndex++;
 			}
+			localIndex++;
 		}
 		return localIndex - index;
 	}
