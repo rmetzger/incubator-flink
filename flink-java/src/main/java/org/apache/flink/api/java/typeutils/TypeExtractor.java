@@ -1006,23 +1006,9 @@ public class TypeExtractor {
 				typeHierarchy.add(fieldType);
 				pojoFields.add(new PojoField(field, createTypeInfoWithTypeHierarchy(typeHierarchy, fieldType, null, null) ));
 			} catch (InvalidTypesException e) {
-				
-				if(fieldType instanceof Class<?> || fieldType instanceof ParameterizedType || fieldType instanceof TypeVariable<?>) {
-					pojoFields.add(new PojoField(field, new GenericTypeInfo( Object.class ))); // we need kryo to properly serialize this
-				} else {
-					throw new InvalidTypesException("Unsupported type "+fieldType);
-				}
-				// TODO: we should throw this error for now (but not here)
-				// It is okay for fields to be generic types (for return types etc.) but we need to fail when creating serializers etc.
-				
-//				throw new InvalidTypesException("Flink does currently not support the serialization of all types."
-//						+ "In this case the field "+field+" of type "+fieldType+" caused the issue", e);
-				
-				// If some of the fields cannot be analyzed, just return a generic type info
-				// right now this happens when a field is an interface (collections are the prominent case here) or
-				// when the POJO is generic, in which case the fields will have type Object.
-				// We might fix that in the future when we use Kryo.
-			//	return new GenericTypeInfo<X>(clazz);
+				//pojoFields.add(new PojoField(field, new GenericTypeInfo( Object.class ))); // we need kryo to properly serialize this
+				throw new InvalidTypesException("Flink is currently unable to serialize this type: "+fieldType+""
+						+ "\nThe system is using the Avro serializer which is not able to handle all types.", e);
 			}
 		}
 

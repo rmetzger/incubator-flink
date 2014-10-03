@@ -129,7 +129,7 @@ public class GroupingTest {
 		}
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void testGroupByKeyExpressions2() {
 
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -332,11 +332,15 @@ public class GroupingTest {
 
 	public static class CustomType implements Serializable {
 		
+		public static class Nest {
+			public int myInt;
+		}
 		private static final long serialVersionUID = 1L;
 		
 		public int myInt;
 		public long myLong;
 		public String myString;
+		public Nest nested;
 		
 		public CustomType() {};
 		

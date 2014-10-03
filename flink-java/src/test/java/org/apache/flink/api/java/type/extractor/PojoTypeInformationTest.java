@@ -33,25 +33,25 @@ import org.junit.Test;
 public class PojoTypeInformationTest {
 
 	public static class SimplePojo {
-		String str;
-		Boolean Bl;
-		boolean bl;
-		Byte Bt;
-		byte bt;
-		Short Shrt;
-		short shrt;
-		Integer Intgr;
-		int intgr;
-		Long Lng;
-		long lng;
-		Float Flt;
-		float flt;
-		Double Dbl;
-		double dbl;
-		Character Ch;
-		char ch;
-		int[] primIntArray;
-		Integer[] intWrapperArray;
+		public String str;
+		public Boolean Bl;
+		public boolean bl;
+		public Byte Bt;
+		public byte bt;
+		public Short Shrt;
+		public short shrt;
+		public Integer Intgr;
+		public int intgr;
+		public Long Lng;
+		public long lng;
+		public Float Flt;
+		public float flt;
+		public Double Dbl;
+		public double dbl;
+		public Character Ch;
+		public char ch;
+		public int[] primIntArray;
+		public Integer[] intWrapperArray;
 	}
 
 	@Test
@@ -61,12 +61,12 @@ public class PojoTypeInformationTest {
 	}
 
 	public static class NestedPojoInner {
-		private String field;
+		public String field;
 	}
 
 	public static class NestedPojoOuter {
-		private Integer intField;
-		NestedPojoInner inner;
+		public Integer intField;
+		public NestedPojoInner inner;
 	}
 
 	@Test
@@ -76,13 +76,13 @@ public class PojoTypeInformationTest {
 	}
 
 	public static class Recursive1Pojo {
-		private Integer intField;
-		Recursive2Pojo rec;
+		public Integer intField;
+		public Recursive2Pojo rec;
 	}
 
 	public static class Recursive2Pojo {
-		private String strField;
-		Recursive1Pojo rec;
+		public String strField;
+		public Recursive1Pojo rec;
 	}
 
 	@Test

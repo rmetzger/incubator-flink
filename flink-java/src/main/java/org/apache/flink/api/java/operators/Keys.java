@@ -179,7 +179,6 @@ public abstract class Keys<T> {
 			if(keyType.isTupleType()) {
 				ExpressionKeys<K> ek = new ExpressionKeys<K>(new String[] {"*"}, keyType);
 				logicalKeyFields = ek.computeLogicalKeyPositions();
-				System.err.println("Doing the special case "+Arrays.toString(logicalKeyFields));
 			} else {
 				logicalKeyFields = new int[] {0};
 			}
@@ -331,7 +330,7 @@ public abstract class Keys<T> {
 		 */
 		public ExpressionKeys(String[] expressionsIn, TypeInformation<T> type) {
 			if(!(type instanceof CompositeType<?>)) {
-				throw new RuntimeException("Type "+type+" is not a composite type. Key expressions are not supported.");
+				throw new IllegalArgumentException("Type "+type+" is not a composite type. Key expressions are not supported.");
 			}
 			CompositeType<T> cType = (CompositeType<T>) type;
 			
