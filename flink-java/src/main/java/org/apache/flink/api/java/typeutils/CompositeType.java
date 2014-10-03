@@ -70,14 +70,6 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	protected abstract TypeComparator<T> getNewComparator();
 	
 	
-	
-	/******
-	 * 
-	 * Comparator creation logic
-	 * 
-	 ******/
-	
-	
 	/**
 	 * Generic implementation of the comparator creation. Composite types are supplying the infrastructure
 	 * to create the actual comparators
@@ -94,7 +86,6 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 				
 				if(localFieldType instanceof AtomicType && logicalField == logicalKeyField) {
 					// we found an atomic key --> create comparator
-					System.err.println("adding compare field");
 					addCompareField(localFieldId, ((AtomicType) localFieldType).createComparator(orders[logicalKeyFieldIndex]) );
 				} else if(localFieldType instanceof CompositeType  && // must be a composite type
 						( logicalField <= logicalKeyField //check if keyField can be at or behind the current logicalField
