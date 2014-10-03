@@ -153,7 +153,6 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 			} else {
 				// flat
 				target[localIndex] = ((Tuple) record).getField(keyPositions[i]);
-				//if(target[localIndex])
 			}
 			localIndex++;
 		}

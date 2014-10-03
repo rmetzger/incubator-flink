@@ -498,7 +498,7 @@ public class JoinITCase extends JavaProgramTestBase {
 			// TODO: add tests
 			// simple nested pojo field selection DONE
 			// selecting multiple fields using expression language DONE
-			// nested into tuple
+			// nested into tuple DONE
 			// two str expressions: one with *, one with regular ( full pojo, full tuple)
 			
 			// Tuple2<Tuple2<Int,int> String> select the whole inner Tuple2 as key (using int-offsets)
@@ -598,7 +598,7 @@ public class JoinITCase extends JavaProgramTestBase {
 				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
 				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
 				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
-						ds1.join(ds2).where("nestedPojo.longNumber", "number", "str").equalTo("f6","nestedTupleWithCustom.f0","nestedTupleWithCustom.f0.myString");
+						ds1.join(ds2).where("nestedTupleWithCustom.f0","nestedTupleWithCustom.f1.myInt","nestedTupleWithCustom.f1.myLong").equalTo("f2","f3","f4");
 				
 				joinDs.writeAsCsv(resultPath);
 				env.setDegreeOfParallelism(1);
@@ -651,6 +651,26 @@ public class JoinITCase extends JavaProgramTestBase {
 					   "((2,2),two),((2,2),two)\n" +
 					   "((3,3),three),((3,3),three)\n";
 				
+			}
+			case 22: {
+				/*
+				 * full pojo with full tuple
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<POJO> ds1 = CollectionDataSets.getSmallPojoDataSet(env);
+				DataSet<Tuple7<Integer, String, Integer, Integer, Long, String, Long>> ds2 = CollectionDataSets.getSmallTuplebasedPojoMatchingDataSet(env);
+				DataSet<Tuple2<POJO, Tuple7<Integer, String, Integer, Integer, Long, String, Long> >> joinDs = 
+						ds1.join(ds2).where("*").equalTo("*");
+				
+				joinDs.writeAsCsv(resultPath);
+				env.setDegreeOfParallelism(1);
+				env.execute();
+				
+				// return expected result
+				return "1 First (10,100,1000,One) 10000,(1,First,10,100,1000,One,10000)\n" +
+					   "2 Second (20,200,2000,Two) 20000,(2,Second,20,200,2000,Two,20000)\n" +
+					   "3 Third (30,300,3000,Three) 30000,(3,Third,30,300,3000,Three,30000)\n";
 			}
 			default: 
 				throw new IllegalArgumentException("Invalid program id: "+progId);

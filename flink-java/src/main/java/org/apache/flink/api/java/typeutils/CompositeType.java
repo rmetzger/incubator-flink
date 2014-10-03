@@ -84,8 +84,6 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	 * @return
 	 */
 	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int logicalFieldOffset) {
-		System.err.println("Starting at logicalField="+logicalFieldOffset+" for comparator "+this+" on "+logicalKeyFields.length+" key fields");
-		
 		initializeNewComparator(logicalKeyFields.length);
 		
 		for(int logicalKeyFieldIndex = 0; logicalKeyFieldIndex < logicalKeyFields.length; logicalKeyFieldIndex++) {
@@ -105,7 +103,6 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 					// we found a compositeType that is containing the logicalKeyField we are looking for --> create comparator
 					addCompareField(localFieldId, ((CompositeType) localFieldType).createComparator(new int[] {logicalKeyField}, orders, logicalField));
 				}
-				System.err.println("Checking if logicalField="+logicalField+" logicalKeyField="+logicalKeyField+" logicalFieldwithLookahead="+ ( logicalField + (localFieldType.getTotalFields() - 1)));
 				
 				// maintain logicalField
 				if(localFieldType instanceof CompositeType) {
