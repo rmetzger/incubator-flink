@@ -87,68 +87,107 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		return new TupleSerializer<T>(tupleClass, fieldSerializers);
 	}
 	
-	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
-		// sanity checks
-		final int maxPossibleKeyCount = countPositiveInts(logicalKeyFields);
-		int totalNumberOfKeys = maxPossibleKeyCount;
-		
-		int[] localLogicalKeyFields = new int[maxPossibleKeyCount];
-		TypeSerializer<?>[] fieldSerializers = new TypeSerializer[maxPossibleKeyCount];
-		
-		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length)
-		{
-			throw new IllegalArgumentException();
-		}
-		
-		// these two arrays might contain null positions. We'll remove the null fields in the end
-		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[maxPossibleKeyCount];
-		
-		int keyPosition = offset; // offset for "global" key fields
-		int i = 0;
-		for(TypeInformation<?> type : types) {
-			// create comparators:
-			Tuple2<Integer, Integer> c = nextKeyField(logicalKeyFields); //remove them for later comparators
-			if(c == null || c.f0 == -1) {
-				// all key fields have been set to -1
-				break;
-			}
-			int keyIndex = c.f0;
-			int arrayIndex = c.f1;
-			
-			// check if this field contains the key.
-			if(type instanceof CompositeType && keyPosition + type.getTotalFields() - 1 >= keyIndex) {
-				// we are at a composite type and need to go deeper.
-				CompositeType<?> cType = (CompositeType<?>)type;
-				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, keyPosition);
-				logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
-				localLogicalKeyFields[arrayIndex] = i;
-				fieldSerializers[arrayIndex] = cType.createSerializer();
-			} else if(keyIndex == keyPosition) {
-				// we are at an atomic type and need to create a comparator here.
-				if(type instanceof AtomicType) { // The field has to be an atomic type
-					fieldComparators[arrayIndex] = ((AtomicType<?>)type).createComparator(orders[arrayIndex]);
-					logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
-					localLogicalKeyFields[arrayIndex] = i;
-					fieldSerializers[arrayIndex] = type.createSerializer();
-				} else {
-					throw new RuntimeException("Unexpected key type: "+type+"."); // in particular, field.type should not be a CompositeType here.
-				}
-			}
-			
-			// maintain indexes:
-			if(type instanceof CompositeType) {
-				// skip key positions.
-				keyPosition += ((CompositeType<?>)type).getTotalFields()-1;
-			}
-			keyPosition++;
-			i++;
-		}
-		totalNumberOfKeys = totalNumberOfKeys-countPositiveInts(logicalKeyFields); // TODO this does not make sense at the top level total number of keys might me lower (imagine 10 keys in a sub-comparator.
-		// the logical key fields will not reflect this. Maybe just count the field comparators?
-		localLogicalKeyFields = Arrays.copyOf(localLogicalKeyFields, totalNumberOfKeys);
-		return new TupleComparator<T>(localLogicalKeyFields, removeNullFieldsFromArray(fieldComparators, TypeComparator.class), 
-				removeNullFieldsFromArray(fieldSerializers, TypeSerializer.class), totalNumberOfKeys);
+	/**
+	 * Comparator creation
+	 */
+	private TypeSerializer<?>[] fieldSerializers;
+	private TypeComparator<?>[] fieldComparators;
+	private int[] logicalKeyFields;
+	private int comparatorHelperIndex = 0;
+	
+	@Override
+	protected void initializeNewComparator(int localKeyCount) {
+		fieldSerializers = new TypeSerializer[localKeyCount];
+		fieldComparators = new TypeComparator<?>[localKeyCount];
+		logicalKeyFields = new int[localKeyCount];
+		comparatorHelperIndex = 0;
 	}
+
+	@Override
+	protected void addCompareField(int fieldId, TypeComparator<?> comparator) {
+		fieldComparators[comparatorHelperIndex] = comparator;
+		fieldSerializers[comparatorHelperIndex] = types[fieldId].createSerializer();
+		logicalKeyFields[comparatorHelperIndex] = fieldId;
+		comparatorHelperIndex++;
+	}
+
+	@Override
+	protected TypeComparator<T> getNewComparator() {
+		final TypeComparator[] finalFieldComparators = Arrays.copyOf(fieldComparators, comparatorHelperIndex);
+		final int[] finalLogicalKeyFields = Arrays.copyOf(logicalKeyFields, comparatorHelperIndex);
+		final TypeSerializer[] finalFieldSerializers = Arrays.copyOf(fieldSerializers, comparatorHelperIndex);
+		if(finalFieldComparators.length == 0 || finalLogicalKeyFields.length == 0 || finalFieldSerializers.length == 0 
+				|| finalFieldComparators.length != finalLogicalKeyFields.length ||
+				finalFieldComparators.length !=	finalFieldSerializers.length) {
+			throw new IllegalArgumentException("Tuple comparator creation has a bug");
+		}
+		return new TupleComparator<T>(finalLogicalKeyFields, finalFieldComparators, finalFieldSerializers);
+	}
+	
+//	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
+//		// sanity checks
+//		final int maxPossibleKeyCount = countPositiveInts(logicalKeyFields);
+//		int totalNumberOfKeys = maxPossibleKeyCount;
+//		
+//		int[] localLogicalKeyFields = new int[maxPossibleKeyCount];
+//		TypeSerializer<?>[] fieldSerializers = new TypeSerializer[maxPossibleKeyCount];
+//		
+//		if (logicalKeyFields == null || orders == null || logicalKeyFields.length != orders.length)
+//		{
+//			throw new IllegalArgumentException();
+//		}
+//		
+//		// these two arrays might contain null positions. We'll remove the null fields in the end
+//		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[maxPossibleKeyCount];
+//		
+//		int keyPosition = offset; // offset for "global" key fields
+//		int i = 0;
+//		for(TypeInformation<?> type : types) {
+//			// create comparators:
+//			Tuple2<Integer, Integer> c = nextKeyField(logicalKeyFields); //remove them for later comparators
+//			if(c == null || c.f0 == -1) {
+//				// all key fields have been set to -1
+//				break;
+//			}
+//			int keyIndex = c.f0;
+//			int arrayIndex = c.f1;
+//			
+//			// check if this field contains the key.
+//			if(type instanceof CompositeType && keyPosition + type.getTotalFields() - 1 >= keyIndex) {
+//				// we are at a composite type and need to go deeper.
+//				CompositeType<?> cType = (CompositeType<?>)type;
+//				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, keyPosition);
+//				logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
+//				localLogicalKeyFields[arrayIndex] = i;
+//				fieldSerializers[arrayIndex] = cType.createSerializer();
+//			} else if(keyIndex == keyPosition) {
+//				// we are at an atomic type and need to create a comparator here.
+//				if(type instanceof AtomicType) { // The field has to be an atomic type
+//					fieldComparators[arrayIndex] = ((AtomicType<?>)type).createComparator(orders[arrayIndex]);
+//					logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
+//					localLogicalKeyFields[arrayIndex] = i;
+//					fieldSerializers[arrayIndex] = type.createSerializer();
+//				} else {
+//					throw new RuntimeException("Unexpected key type: "+type+"."); // in particular, field.type should not be a CompositeType here.
+//				}
+//			}
+//			
+//			// maintain indexes:
+//			if(type instanceof CompositeType) {
+//				// skip key positions.
+//				keyPosition += ((CompositeType<?>)type).getTotalFields()-1;
+//			}
+//			keyPosition++;
+//			i++;
+//		}
+//		totalNumberOfKeys = totalNumberOfKeys-countPositiveInts(logicalKeyFields); // TODO this does not make sense at the top level total number of keys might me lower (imagine 10 keys in a sub-comparator.
+//		// the logical key fields will not reflect this. Maybe just count the field comparators?
+//		localLogicalKeyFields = Arrays.copyOf(localLogicalKeyFields, totalNumberOfKeys);
+//		return new TupleComparator<T>(localLogicalKeyFields, removeNullFieldsFromArray(fieldComparators, TypeComparator.class), 
+//				removeNullFieldsFromArray(fieldSerializers, TypeSerializer.class), totalNumberOfKeys);
+//	}
+	
+	
 	
 //	@Override
 //	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
@@ -265,5 +304,4 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		Tuple1.class, Tuple2.class, Tuple3.class, Tuple4.class, Tuple5.class, Tuple6.class, Tuple7.class, Tuple8.class, Tuple9.class, Tuple10.class, Tuple11.class, Tuple12.class, Tuple13.class, Tuple14.class, Tuple15.class, Tuple16.class, Tuple17.class, Tuple18.class, Tuple19.class, Tuple20.class, Tuple21.class, Tuple22.class, Tuple23.class, Tuple24.class, Tuple25.class
 	};
 	// END_OF_TUPLE_DEPENDENT_CODE
-
 }

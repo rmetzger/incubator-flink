@@ -45,34 +45,193 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 		this.typeClass = typeClass;
 	}
 	
-	public abstract TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset);
+	/**
+	 * Returns the keyPosition for the given fieldPosition, offsetted by the given offset
+	 */
+	public abstract void getKey(String fieldExpression, int offset, List<FlatFieldDescriptor> result);
+	
+	public abstract <X> TypeInformation<X> getTypeAt(int pos);
+	
+	/**
+	 * Initializes the internal state inside a Composite type to create a new comparator 
+	 * (such as the lists / arrays for the fields and field comparators)
+	 * @param localKeyCount 
+	 */
+	protected abstract void initializeNewComparator(int localKeyCount);
+	
+	/**
+	 * Add a field for comparison in this type.
+	 */
+	protected abstract void addCompareField(int fieldId, TypeComparator<?> comparator);
+	
+	/**
+	 * Get the actual comparator we've initialized.
+	 */
+	protected abstract TypeComparator<T> getNewComparator();
+	
+	
+	
+	/******
+	 * 
+	 * Comparator creation logic
+	 * 
+	 ******/
 	
 	
 	/**
-	 * Shrink array by removing null fields.
-	 * @param in
+	 * Generic implementation of the comparator creation. Composite types are supplying the infrastructure
+	 * to create the actual comparators
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
-	public static <R> R[] removeNullFieldsFromArray(R[] in, Class<?> clazz) {
-		List<R> elements = new ArrayList<R>();
-		for(R e: in) {
-			if(e != null) {
-				elements.add(e);
+	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int logicalFieldOffset) {
+		System.err.println("Starting at logicalField="+logicalFieldOffset+" for comparator "+this+" on "+logicalKeyFields.length+" key fields");
+		
+		initializeNewComparator(logicalKeyFields.length);
+		
+		for(int logicalKeyFieldIndex = 0; logicalKeyFieldIndex < logicalKeyFields.length; logicalKeyFieldIndex++) {
+			int logicalKeyField = logicalKeyFields[logicalKeyFieldIndex];
+			int logicalField = logicalFieldOffset; // this is the global/logical field number
+			for(int localFieldId = 0; localFieldId < this.getArity(); localFieldId++) {
+				TypeInformation<?> localFieldType = this.getTypeAt(localFieldId);
+				
+				if(localFieldType instanceof AtomicType && logicalField == logicalKeyField) {
+					// we found an atomic key --> create comparator
+					System.err.println("adding compare field");
+					addCompareField(localFieldId, ((AtomicType) localFieldType).createComparator(orders[logicalKeyFieldIndex]) );
+				} else if(localFieldType instanceof CompositeType  && // must be a composite type
+						( logicalField <= logicalKeyField //check if keyField can be at or behind the current logicalField
+						&& logicalKeyField <= logicalField + (localFieldType.getTotalFields() - 1) ) // check if logical field + lookahead could contain our key
+						) {
+					// we found a compositeType that is containing the logicalKeyField we are looking for --> create comparator
+					addCompareField(localFieldId, ((CompositeType) localFieldType).createComparator(logicalKeyFields, orders, logicalField));
+				}
+				System.err.println("Checking if logicalField="+logicalField+" logicalKeyField="+logicalKeyField+" logicalFieldwithLookahead="+ ( logicalField + (localFieldType.getTotalFields() - 1)));
+				
+				// maintain logicalField
+				if(localFieldType instanceof CompositeType) {
+					// we need to subtract 1 because we are not accounting for the local field (not accessible for the user)
+					logicalField += localFieldType.getTotalFields() - 1;
+				}
+				logicalField++;
 			}
 		}
-		return elements.toArray((R[]) Array.newInstance(clazz, 1));
+		return getNewComparator();
 	}
 	
-	public static int countPositiveInts(int[] in) {
-		int res = 0;
-		for(int i : in) {
-			if(i >= 0) {
-				res++;
-			}
-		}
-		return res;
-	}
+	
+	
+//	private static interface Walker {
+//		abstract void field(int logicalField, int localFieldId, TypeInformation<?> fieldType);
+//	}
+//	
+//	private void allLocalFieldsWalker(Walker w) {
+//		int logicalField = logicalFieldOffset;
+//		for(int localFieldId = 0; localFieldId < this.getArity(); localFieldId++) {
+//			TypeInformation<?> localFieldType = this.getTypeAt(localFieldId);
+//			w.field(logicalField, localFieldId, localFieldType);
+//			if(localFieldType instanceof CompositeType) {
+//				logicalField += localFieldType.getTotalFields() - 1;
+//			}
+//			logicalField++;
+//		}
+//	}
+//	
+//	// local key fields are atomic types which are created at this level
+//	private List<LogicalKeyFieldDescriptor> localKeyFields;
+//	
+//	private int logicalFieldOffset = -1;
+//	private int localAtomicKeyCount = -1;
+//	private int localKeyCount = -1;
+//	
+//	
+//	private void computeLocalKeyFields(final int[] logicalKeyFields) {
+//		if(localAtomicKeyCount > 0) {
+//			throw new IllegalStateException("This method has probably been called before");
+//		}
+//		if(logicalFieldOffset == -1 || localAtomicKeyCount == -1) { // we depend on this to be set up correctly
+//			throw new IllegalStateException("The comparators have not been properly set up");
+//		}
+//		Walker computeLocalKeyFieldsWalker = new Walker() {
+//			@Override
+//			public void field(int logicalField, int localFieldId, TypeInformation<?> fieldType) {
+//				for(int i = 0; i < logicalKeyFields.length; i++) {
+//					if(logicalField == logicalKeyFields[i]) {
+//						if(!(fieldType instanceof AtomicType)) {
+//							throw new IllegalStateException("Can not be non-atomic");
+//						}
+//						LogicalKeyFieldDescriptor d = new LogicalKeyFieldDescriptor();
+//						d.keyFieldPosition = i;
+//						d.logicalKeyFieldId = logicalField;
+//						localKeyFields.add(d);
+//						localAtomicKeyCount++;
+//					}
+//				}
+//			}
+//		};
+//		allLocalFieldsWalker(computeLocalKeyFieldsWalker);
+//	}
+//	// count local keys including composite ones.
+//	private void countLocalKeys(final int[] logicalKeyFields) {
+//	}
+//	
+//	private LogicalKeyFieldDescriptor getLocalKeyField(int logicalFieldId) {
+//		for(LogicalKeyFieldDescriptor localKeyField : localKeyFields) {
+//			if(logicalFieldId == localKeyField.logicalKeyFieldId) {
+//				return localKeyField;
+//			}
+//		}
+//		return null;
+//	}
+//	/**
+//	 * Generic implementation of the comparator creation. Composite types are supplying the infrastructure
+//	 * to create the actual comparators
+//	 * @return
+//	 */
+//	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int logicalFieldOffset) {
+//		
+//		this.logicalFieldOffset = logicalFieldOffset;
+//		int logicalField = logicalFieldOffset; // this is the global/logical field number
+//		computeLocalKeyFields(logicalKeyFields);
+//		
+//		initializeNewComparator(localAtomicKeyCount);
+//		
+//		for(int localFieldId = 0; localFieldId < this.getArity(); localFieldId++) {
+//			TypeInformation<?> localFieldType = this.getTypeAt(localFieldId);
+//			
+//			// test and see if  
+//			LogicalKeyFieldDescriptor logicalKeyDescriptor = getLocalKeyField(logicalField);
+//			if(logicalKeyDescriptor != null) {
+//				if(! (localFieldType instanceof AtomicType)) {
+//					// Composite types can never be comparison keys.
+//					throw new IllegalStateException("This field has to be a atomic type");
+//				}
+//			}
+//			if(localFieldType instanceof AtomicType && logicalField == logicalKeyField) {
+//				// we found an atomic key --> create comparator
+//				addCompareField(localFieldId, ((AtomicType) localFieldType).createComparator(orders[logicalKeyFieldIndex]) );
+//			} else if(localFieldType instanceof CompositeType 
+//					&& logicalField >= logicalKeyField
+//					&& logicalField + (localFieldType.getTotalFields() - 1) <= logicalKeyField ) {
+//				// we found a compositeType that is containing the logicalKeyField we are looking for --> create comparator
+//				addCompareField(localFieldId, ((CompositeType) localFieldType).createComparator(null, null, logicalField));
+//			}
+//			
+//			// maintain logicalField
+//			if(localFieldType instanceof CompositeType) {
+//				// we need to subtract 1 because we are not accounting for the local field (not accessible for the user)
+//				logicalField += localFieldType.getTotalFields() - 1;
+//			}
+//			logicalField++;
+//		}
+//		return getNewComparator();
+//	}
+//	
+//	public static class LogicalKeyFieldDescriptor {
+//		public int logicalKeyFieldId;
+//		public int keyFieldPosition;
+//	}
+//	
+
 	
 //	// TODO: we can remove this method.
 //	public void populateWithFlatSchema(List<FlatFieldDescriptor> schema) {
@@ -99,12 +258,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 //		}
 //	}
 	
-	/**
-	 * Returns the keyPosition for the given fieldPosition, offsetted by the given offset
-	 */
-	public abstract void getKey(String fieldExpression, int offset, List<FlatFieldDescriptor> result);
-	
-	public abstract <X> TypeInformation<X> getTypeAt(int pos);
+
 	/**
 	 * recursively get the FlatField descriptor
 	 */
@@ -249,11 +403,6 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	}
 
 	
-
-	
-	
-	
-	
 	public static class FlatFieldDescriptor {
 		private int keyPosition;
 		private TypeInformation<?> type;
@@ -278,6 +427,32 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 		public String toString() {
 			return "FlatFieldDescriptor [position="+keyPosition+" typeInfo="+type+"]";
 		}
+	}
+	
+	/**
+	 * Shrink array by removing null fields.
+	 * @param in
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static <R> R[] removeNullFieldsFromArray(R[] in, Class<?> clazz) {
+		List<R> elements = new ArrayList<R>();
+		for(R e: in) {
+			if(e != null) {
+				elements.add(e);
+			}
+		}
+		return elements.toArray((R[]) Array.newInstance(clazz, 1));
+	}
+	
+	public static int countPositiveInts(int[] in) {
+		int res = 0;
+		for(int i : in) {
+			if(i >= 0) {
+				res++;
+			}
+		}
+		return res;
 	}
 	
 }
