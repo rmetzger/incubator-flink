@@ -28,7 +28,6 @@ import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.powermock.tests.utils.Keys;
 
 
 /**

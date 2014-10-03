@@ -18,7 +18,6 @@
 
 package org.apache.flink.api.java.typeutils;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -33,22 +32,15 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
-import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoComparator;
 import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
 
 import com.google.common.base.Joiner;
-import com.google.common.primitives.Ints;
 
 
 /**
  * TypeInformation for arbitrary (they have to be java-beans-style) java objects (what we call POJO).
  * 
- * Information flow (For Pojos and Tuples)
- * 	User class	-> TypeExtractor	-> PojoTypeInfo (contains fields) 	-> CompositeType (flattened fields) -> Runtime
- * 		||	  	->		||	   		-> TupleTypeInfo 					-> 		||							-> Runtime
  */
 public class PojoTypeInfo<T> extends CompositeType<T>{
 
@@ -152,8 +144,8 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 					fieldId += fields[i].type.getTotalFields()-1;
 				}
 				if (fields[i].field.getName().equals(fieldExpression)) {
-					 result.add(new FlatFieldDescriptor(offset + fieldId, fields[i].type));
-					 return;
+					result.add(new FlatFieldDescriptor(offset + fieldId, fields[i].type));
+					return;
 				}
 				fieldId++;
 			}

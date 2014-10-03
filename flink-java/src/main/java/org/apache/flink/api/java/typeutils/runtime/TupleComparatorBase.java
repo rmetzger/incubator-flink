@@ -18,6 +18,9 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.flink.api.common.typeutils.CompositeTypeComparator;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -26,10 +29,6 @@ import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.types.KeyFieldOutOfBoundsException;
 import org.apache.flink.types.NullKeyFieldException;
-
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
 
 
 public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> implements java.io.Serializable {

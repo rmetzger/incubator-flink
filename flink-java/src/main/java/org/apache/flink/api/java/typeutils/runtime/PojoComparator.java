@@ -22,11 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 
 import org.apache.flink.api.common.typeutils.CompositeTypeComparator;
 import org.apache.flink.api.common.typeutils.TypeComparator;
