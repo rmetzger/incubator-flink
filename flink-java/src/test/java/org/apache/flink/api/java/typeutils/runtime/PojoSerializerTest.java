@@ -179,7 +179,7 @@ public class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.Te
 	}
 	
 	/**
-	 * This tests if the hash hashes returned by the pojo and tuple comparators are the same
+	 * This tests if the hashes returned by the pojo and tuple comparators are the same
 	 */
 	@Test
 	public void testTuplePojoTestEquality() {

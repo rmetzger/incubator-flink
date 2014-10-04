@@ -241,7 +241,7 @@ public abstract class Keys<T> {
 		}
 		
 		/**
-		 * Create NestedKeys from String-expressions
+		 * Create ExpressionKeys from String-expressions
 		 */
 		public ExpressionKeys(String[] expressionsIn, TypeInformation<T> type) {
 			if(!(type instanceof CompositeType<?>)) {

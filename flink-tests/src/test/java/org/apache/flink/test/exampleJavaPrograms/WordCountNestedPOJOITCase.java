@@ -55,12 +55,10 @@ public class WordCountNestedPOJOITCase extends JavaProgramTestBase implements Se
 
 		DataSet<WC> counts = text
 				.flatMap(new Tokenizer())
-				.groupBy("complex.someTest") // word.f2
+				.groupBy("complex.someTest")
 				.reduce(new ReduceFunction<WC>() {
 					private static final long serialVersionUID = 1L;
-
 					public WC reduce(WC value1, WC value2) {
-						//return new WC(value1.complex.word.f2, value1.count + value2.count);
 						return new WC(value1.complex.someTest, value1.count + value2.count);
 					}
 				});

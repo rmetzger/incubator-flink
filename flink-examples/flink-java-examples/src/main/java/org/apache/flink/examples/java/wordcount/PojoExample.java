@@ -40,9 +40,18 @@ public class PojoExample {
 	 * As long as all fields are public or have a getter/setter, the system can handle them
 	 */
 	public static class Word {
+		// fields
 		private String word;
 		private Integer frequency;
 		
+		// constructors
+		public Word() {
+		}
+		public Word(String word, int i) {
+			this.word = word;
+			this.frequency = i;
+		}
+		// getters setters
 		public String getWord() {
 			return word;
 		}
@@ -55,12 +64,7 @@ public class PojoExample {
 		public void setFrequency(Integer frequency) {
 			this.frequency = frequency;
 		}
-		public Word() {
-		}
-		public Word(String word, int i) {
-			this.word = word;
-			this.frequency = i;
-		}
+		// to String
 		@Override
 		public String toString() {
 			return "Word="+word+" freq="+frequency;

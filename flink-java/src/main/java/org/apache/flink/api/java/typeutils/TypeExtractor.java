@@ -255,7 +255,6 @@ public class TypeExtractor {
 			TypeInformation<IN1> in1Type, TypeInformation<IN2> in2Type) {
 		
 		// check if type is a subclass of tuple
-		// TODO add check if Tuple contains additional fields
 		if ( (t instanceof Class<?> && Tuple.class.isAssignableFrom((Class<?>) t)) 
 			|| (t instanceof ParameterizedType && Tuple.class.isAssignableFrom((Class<?>) ((ParameterizedType) t).getRawType()))) {
 			

@@ -495,16 +495,6 @@ public class JoinITCase extends JavaProgramTestBase {
 						"I am fine.,HIJ\n" +
 						"I am fine.,IJK\n";
 			}
-			// TODO: add tests
-			// simple nested pojo field selection DONE
-			// selecting multiple fields using expression language DONE
-			// nested into tuple DONE
-			// two str expressions: one with *, one with regular ( full pojo, full tuple)
-			
-			// Tuple2<Tuple2<Int,int> String> select the whole inner Tuple2 as key (using int-offsets)
-			// Tuple2<Tuple2<Int,int> String> select the whole inner Tuple2 as key (using string-access)
-			
-			// tuple type with custom in field, nest into custom (through tuple)
 			/**
 			 *  Joins with POJOs
 			 */
