@@ -108,7 +108,7 @@ public class KeysTest {
 			try {
 				fpk = new ExpressionKeys<Tuple3<String, Tuple3<String, String, String>, String>>(tests[i], typeInfo);
 			} catch(Throwable t) {
-//				System.err.println("Message: "+t.getMessage()); t.printStackTrace();
+				// System.err.println("Message: "+t.getMessage()); t.printStackTrace();
 				e = t;	
 			}
 			Assert.assertNotNull(e);

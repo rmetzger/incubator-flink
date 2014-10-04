@@ -28,6 +28,7 @@ import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.CompositeType;
+import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TupleTypeInfoBase;
 import org.apache.flink.api.java.typeutils.CompositeType.FlatFieldDescriptor;
 import org.slf4j.Logger;
@@ -177,7 +178,7 @@ public abstract class Keys<T> {
 			// we have to handle a special case here:
 			// if the keyType is a tuple type, we need to select the full tuple with all its fields.
 			if(keyType.isTupleType()) {
-				ExpressionKeys<K> ek = new ExpressionKeys<K>(new String[] {"*"}, keyType);
+				ExpressionKeys<K> ek = new ExpressionKeys<K>(new String[] {ExpressionKeys.SELECT_ALL_CHAR}, keyType);
 				logicalKeyFields = ek.computeLogicalKeyPositions();
 			} else {
 				logicalKeyFields = new int[] {0};
@@ -211,16 +212,31 @@ public abstract class Keys<T> {
 				return sfk.keyType.equals(this.keyType);
 			}
 			else if (other instanceof ExpressionKeys) {
-				ExpressionKeys<?> nestedKeys = (ExpressionKeys<?>) other;
-						
-				if(nestedKeys.getNumberOfKeyFields() != 1) {
+				ExpressionKeys<?> expressionKeys = (ExpressionKeys<?>) other;
+				
+				if(keyType.isTupleType()) {
+					// special case again:
+					TupleTypeInfo<?> tupleKeyType = (TupleTypeInfo<?>) keyType;
+					List<FlatFieldDescriptor> keyTypeFields = new ArrayList<FlatFieldDescriptor>(tupleKeyType.getTotalFields());
+					tupleKeyType.getKey(ExpressionKeys.SELECT_ALL_CHAR, 0, keyTypeFields);
+					if(expressionKeys.keyFields.size() != keyTypeFields.size()) {
+						throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+					}
+					for(int i=0; i < expressionKeys.keyFields.size(); i++) {
+						if(!expressionKeys.keyFields.get(i).getType().equals(keyTypeFields.get(i).getType())) {
+							throw new IncompatibleKeysException(expressionKeys.keyFields.get(i).getType(), keyTypeFields.get(i).getType() );
+						}
+					}
+					return true;
+				}
+				if(expressionKeys.getNumberOfKeyFields() != 1) {
 					throw new IncompatibleKeysException("Key selector functions are only compatible to one key");
 				}
 				
-				if(nestedKeys.keyFields.get(0).getType().equals(this.keyType)) {
+				if(expressionKeys.keyFields.get(0).getType().equals(this.keyType)) {
 					return true;
 				} else {
-					throw new IncompatibleKeysException(nestedKeys.keyFields.get(0).getType(), this.keyType);
+					throw new IncompatibleKeysException(expressionKeys.keyFields.get(0).getType(), this.keyType);
 				}
 			} else {
 				throw new IncompatibleKeysException("The key is not compatible with "+other);
@@ -374,15 +390,16 @@ public abstract class Keys<T> {
 				}
 				return true;
 			} else if(other instanceof SelectorFunctionKeys<?, ?>) {
-				SelectorFunctionKeys<?,?> oKey = (SelectorFunctionKeys<?,?>) other;
-				Preconditions.checkArgument(oKey.getNumberOfKeyFields() == 1, "The code assumes that key selector functions have only one key field");
-				if(oKey.getNumberOfKeyFields() != this.getNumberOfKeyFields()) { // oKey.lenght == 1 because its a selector function
-					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-				}
-				if(!this.keyFields.get(0).getType().equals(oKey.keyType)) { // assumes that oKey.lenght == 1.
-					throw new IncompatibleKeysException(this.keyFields.get(0).getType(), oKey.keyType);
-				}
-				return true;
+				return other.areCompatible(this);
+//				SelectorFunctionKeys<?,?> oKey = (SelectorFunctionKeys<?,?>) other;
+//				Preconditions.checkArgument(oKey.getNumberOfKeyFields() == 1, "The code assumes that key selector functions have only one key field");
+//				if(oKey.getNumberOfKeyFields() != this.getNumberOfKeyFields()) { // oKey.lenght == 1 because its a selector function
+//					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
+//				}
+//				if(!this.keyFields.get(0).getType().equals(oKey.keyType)) { // assumes that oKey.lenght == 1.
+//					throw new IncompatibleKeysException(this.keyFields.get(0).getType(), oKey.keyType);
+//				}
+//				return true;
 //			} else if(other instanceof FieldPositionKeys<?>) {
 //				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
 //				if(oKey.getNumberOfKeyFields() != this.keyFields.size()) {
