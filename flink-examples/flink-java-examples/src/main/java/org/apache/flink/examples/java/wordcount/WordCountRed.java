@@ -24,7 +24,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.examples.java.wordcount.PojoExample.Word;
 import org.apache.flink.examples.java.wordcount.util.WordCountData;
 
 /**
