@@ -28,6 +28,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.tuple.Tuple7;
+import org.apache.flink.api.java.type.extractor.TypeExtractorTest.FromTuple;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -303,6 +304,67 @@ public class CollectionDataSets {
 		public static Object ignoreMe;
 		public long longNumber;
 		public NestedPojo() {}
+	}
+	
+	public static DataSet<CrazyNested> getCrazyNestedDataSet(ExecutionEnvironment env) {
+		List<CrazyNested> data = new ArrayList<CrazyNested>();
+		data.add(new CrazyNested("aa"));
+		data.add(new CrazyNested("bb"));
+		data.add(new CrazyNested("bb"));
+		data.add(new CrazyNested("cc"));
+		data.add(new CrazyNested("cc"));
+		data.add(new CrazyNested("cc"));
+		return env.fromCollection(data);
+	}
+	
+	public static class CrazyNested {
+		public CrazyNestedL1 nest_Lvl1;
+		public Long something; // test proper null-value handling
+		public CrazyNested() {}
+		public CrazyNested(String set) {
+			nest_Lvl1 = new CrazyNestedL1();
+			nest_Lvl1.nest_Lvl2 = new CrazyNestedL2();
+			nest_Lvl1.nest_Lvl2.nest_Lvl3 = new CrazyNestedL3();
+			nest_Lvl1.nest_Lvl2.nest_Lvl3.nest_Lvl4 = new CrazyNestedL4();
+			nest_Lvl1.nest_Lvl2.nest_Lvl3.nest_Lvl4.f1nal = set;
+		}
+	}
+	public static class CrazyNestedL1 {
+		public String a;
+		public int b;
+		public CrazyNestedL2 nest_Lvl2;
+	}
+	public static class CrazyNestedL2 {
+		public CrazyNestedL3 nest_Lvl3;
+	}
+	public static class CrazyNestedL3 {
+		public CrazyNestedL4 nest_Lvl4;
+	}
+	public static class CrazyNestedL4 {
+		public String f1nal;
+	}
+	
+	// Copied from TypeExtractorTest
+	public static class FromTuple extends Tuple3<String, String, Long> {
+		private static final long serialVersionUID = 1L;
+		public int special;
+	}
+	
+	public static class FromTupleWithCTor extends FromTuple {
+		public FromTupleWithCTor() {}
+		public FromTupleWithCTor(int special, long tupleField ) {
+			this.special = special;
+			this.setField(tupleField, 2);
+		}
+	}
+	public static DataSet<FromTupleWithCTor> getPojoExtendingFromTuple(ExecutionEnvironment env) {
+		List<FromTupleWithCTor> data = new ArrayList<FromTupleWithCTor>();
+		data.add(new FromTupleWithCTor(1, 10L)); // 3x
+		data.add(new FromTupleWithCTor(1, 10L));
+		data.add(new FromTupleWithCTor(1, 10L));
+		data.add(new FromTupleWithCTor(2, 20L)); // 2x
+		data.add(new FromTupleWithCTor(2, 20L));
+		return env.fromCollection(data);
 	}
 	
 }

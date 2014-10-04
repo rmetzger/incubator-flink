@@ -23,9 +23,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 
+import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -33,8 +35,12 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets;
+import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.CrazyNested;
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.CustomType;
+import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.FromTuple;
+import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.FromTupleWithCTor;
 import org.apache.flink.test.util.JavaProgramTestBase;
+import org.apache.flink.util.Collector;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -42,7 +48,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ReduceITCase extends JavaProgramTestBase {
 	
-	private static int NUM_PROGRAMS = 10;
+	private static int NUM_PROGRAMS = 12;
 	
 	private int curProgId = config.getInteger("ProgramId", -1);
 	private String resultPath;
@@ -331,14 +337,73 @@ public class ReduceITCase extends JavaProgramTestBase {
 						"5,29,0,P-),2\n" +
 						"5,25,0,P-),3\n";
 			} 
+			case 11: {
+				/*
+				 * Deep nesting test
+				 * + null value in pojo
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<CrazyNested> ds = CollectionDataSets.getCrazyNestedDataSet(env);
+				DataSet<Tuple2<String, Integer>> reduceDs = ds.groupBy("nest_Lvl1.nest_Lvl2.nest_Lvl3.nest_Lvl4.f1nal")
+						.reduceGroup(new GroupReduceFunction<CollectionDataSets.CrazyNested, Tuple2<String, Integer>>() {
+							private static final long serialVersionUID = 1L;
+
+							@Override
+							public void reduce(Iterable<CrazyNested> values,
+									Collector<Tuple2<String, Integer>> out)
+									throws Exception {
+								int c = 0; String n = null;
+								for(CrazyNested v : values) {
+									c++; // haha
+									n = v.nest_Lvl1.nest_Lvl2.nest_Lvl3.nest_Lvl4.f1nal;
+								}
+								out.collect(new Tuple2<String, Integer>(n,c));
+							}
+						});
+				
+				reduceDs.writeAsCsv(resultPath);
+				env.execute();
+				
+				// return expected result
+				return "aa,1\nbb,2\ncc,3\n";
+			} 
+			case 12: {
+				/*
+				 * Test Pojo extending from tuple WITH custom fields
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<FromTupleWithCTor> ds = CollectionDataSets.getPojoExtendingFromTuple(env);
+				DataSet<Integer> reduceDs = ds.groupBy("special", "f2")
+						.reduceGroup(new GroupReduceFunction<FromTupleWithCTor, Integer>() {
+							private static final long serialVersionUID = 1L;
+							@Override
+							public void reduce(Iterable<FromTupleWithCTor> values,
+									Collector<Integer> out)
+									throws Exception {
+								int c = 0;
+								for(FromTuple v : values) {
+									c++;
+								}
+								out.collect(c);
+							}
+						});
+				
+				reduceDs.writeAsText(resultPath);
+				env.execute();
+				
+				// return expected result
+				return "3\n2\n";
+			} 
 			/******
 			 * 
 			 * 
 			 * TODO nested pojos (in all variants: 
 			 * tuple containing pojo
 			 * pojo containing tuple
-			 * nested pojo
-			 * pojo extending tuple with additional fields.
+			 * nested pojo DONE
+			 * pojo extending tuple with additional fields. DONE
 			 * 
 			 * 
 			 * 

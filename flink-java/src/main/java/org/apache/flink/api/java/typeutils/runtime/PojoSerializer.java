@@ -162,7 +162,12 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 		try {
 			for (int i = 0; i < numFields; i++) {
 				Object o = fields[i].get(value);
-				fieldSerializers[i].serialize(o, target);
+				if(o == null) {
+					target.writeBoolean(true); // null field handling
+				} else {
+					target.writeBoolean(false);
+					fieldSerializers[i].serialize(o, target);
+				}
 			}
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException("Error during POJO copy, this should not happen since we check the fields" +
@@ -179,8 +184,13 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 		}
 		try {
 			for (int i = 0; i < numFields; i++) {
-				Object field = fieldSerializers[i].deserialize(fields[i].get(reuse), source);
-				fields[i].set(reuse, field);
+				isNull = source.readBoolean();
+				if(isNull) {
+					fields[i].set(reuse, null);
+				} else {
+					Object field = fieldSerializers[i].deserialize(fields[i].get(reuse), source);
+					fields[i].set(reuse, field);
+				}
 			}
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException("Error during POJO copy, this should not happen since we check the fields" +

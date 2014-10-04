@@ -297,7 +297,6 @@ public abstract class Keys<T> {
 
 		@Override
 		public int[] computeLogicalKeyPositions() {
-			// convert a List of FlatFields with int[] into one large int[].
 			List<Integer> logicalKeys = new LinkedList<Integer>();
 			for(FlatFieldDescriptor kd : keyFields) {
 				logicalKeys.addAll( Ints.asList(kd.getPosition()));

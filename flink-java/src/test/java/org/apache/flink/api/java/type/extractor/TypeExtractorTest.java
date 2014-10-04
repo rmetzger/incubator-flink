@@ -399,12 +399,6 @@ public class TypeExtractorTest {
 		public T2 field2;
 	}
 	
-	/*
-	 * Has fields:
-	 * int : key
-	 * FromTuple: field1
-	 * Tuple1<String>: field2
-	 */
 	public static class ComplexHierarchyTop extends ComplexHierarchy<Tuple1<String>> {}
 	public static class ComplexHierarchy<T> extends PojoWithGenerics<FromTuple,T> {}
 	
