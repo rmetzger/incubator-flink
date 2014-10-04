@@ -390,6 +390,7 @@ public class GroupReduceITCase extends JavaProgramTestBase {
 				/*
 				 * check correctness of groupReduce with descending group sort
 				 */
+					System.err.println("Here we go again");
 
 					final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 					env.setDegreeOfParallelism(1);

@@ -30,6 +30,8 @@ import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.types.KeyFieldOutOfBoundsException;
 import org.apache.flink.types.NullKeyFieldException;
 
+import com.google.common.base.Preconditions;
+
 
 public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> implements java.io.Serializable {
 
@@ -68,6 +70,8 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 		this.keyPositions = keyPositions;
 		this.comparators = (TypeComparator<Object>[]) comparators;
 		this.serializers = (TypeSerializer<Object>[]) serializers;
+		Preconditions.checkArgument(comparators.length == serializers.length);
+		Preconditions.checkArgument(keyPositions.length == comparators.length);
 
 		// set the serializer factories.
 		this.serializerFactories = new TypeSerializerFactory[this.serializers.length];
@@ -201,9 +205,10 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 				deserializedFields2[i] = serializers[i].deserialize(deserializedFields2[i], secondSource);
 			}
 			
-			for (i = 0; i < keyPositions.length; i++) {
-				int keyPos = keyPositions[i];
-				int cmp = comparators[i].compare(deserializedFields1[keyPos], deserializedFields2[keyPos]);
+			for (i = 0; i < comparators.length; i++) {
+				// int keyPos = keyPositions[i];
+				// TODO: validate with Stephan
+				int cmp = comparators[i].compare(deserializedFields1[i], deserializedFields2[i]);
 				if (cmp != 0) {
 					return cmp;
 				}
@@ -213,7 +218,7 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 		} catch (NullPointerException npex) {
 			throw new NullKeyFieldException(keyPositions[i]);
 		} catch (IndexOutOfBoundsException iobex) {
-			throw new KeyFieldOutOfBoundsException(keyPositions[i]);
+			throw new KeyFieldOutOfBoundsException(keyPositions[i], iobex);
 		}
 	}
 	
