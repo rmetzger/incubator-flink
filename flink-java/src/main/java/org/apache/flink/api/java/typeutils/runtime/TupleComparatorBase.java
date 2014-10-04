@@ -30,7 +30,6 @@ import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.types.KeyFieldOutOfBoundsException;
 import org.apache.flink.types.NullKeyFieldException;
 
-import com.google.common.base.Preconditions;
 
 
 public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> implements java.io.Serializable {
@@ -70,8 +69,6 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 		this.keyPositions = keyPositions;
 		this.comparators = (TypeComparator<Object>[]) comparators;
 		this.serializers = (TypeSerializer<Object>[]) serializers;
-		//Preconditions.checkArgument( comparators.length <= serializers.length); // at least the same number of serializers
-		//Preconditions.checkArgument(keyPositions.length == comparators.length);
 
 		// set the serializer factories.
 		this.serializerFactories = new TypeSerializerFactory[this.serializers.length];

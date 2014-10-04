@@ -158,7 +158,6 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		}
 	}
 
-	// TODO: Check refactoring here.
 	private void readObject(ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
@@ -185,16 +184,8 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		}
 	}
 
-	/*public int getTotalNumberOfKeys() {
-		return totalNumberOfKeys;
-	} */
-
 	public Field[] getKeyFields() {
 		return this.keyFields;
-	}
-
-	public TypeComparator[] getFlatComparators() {
-		return this.comparators;
 	}
 
 	@Override
