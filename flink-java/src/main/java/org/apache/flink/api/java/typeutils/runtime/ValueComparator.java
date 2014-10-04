@@ -47,6 +47,7 @@ public class ValueComparator<T extends Value & Comparable<T>> extends TypeCompar
 	
 	private transient Kryo kryo;
 
+	@SuppressWarnings("rawtypes")
 	private final TypeComparator[] comparators = new TypeComparator[] {this};
 
 	public ValueComparator(boolean ascending, Class<T> type) {
@@ -148,6 +149,7 @@ public class ValueComparator<T extends Value & Comparable<T>> extends TypeCompar
 		return 1;
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public TypeComparator[] getFlatComparators() {
 		return comparators;

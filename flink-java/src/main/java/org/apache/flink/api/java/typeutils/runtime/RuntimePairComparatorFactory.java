@@ -27,7 +27,6 @@ public final class RuntimePairComparatorFactory<T1, T2>
 
 	private static final long serialVersionUID = 1L;
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public TypePairComparator<T1, T2> createComparator12(
 			TypeComparator<T1> comparator1,
@@ -35,7 +34,6 @@ public final class RuntimePairComparatorFactory<T1, T2>
 		return new GenericPairComparator<T1, T2>(comparator1, comparator2);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public TypePairComparator<T2, T1> createComparator21(
 			TypeComparator<T1> comparator1,

@@ -44,6 +44,7 @@ public class WritableComparator<T extends Writable & Comparable<T>> extends Type
 	
 	private transient Kryo kryo;
 
+	@SuppressWarnings("rawtypes")
 	private final TypeComparator[] comparators = new TypeComparator[] {this};
 
 	public WritableComparator(boolean ascending, Class<T> type) {
@@ -132,6 +133,7 @@ public class WritableComparator<T extends Writable & Comparable<T>> extends Type
 		return 1;
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override public TypeComparator[] getFlatComparators() {
 		return comparators;
 	}

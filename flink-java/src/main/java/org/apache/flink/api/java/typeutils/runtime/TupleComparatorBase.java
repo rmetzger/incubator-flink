@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.flink.api.java.typeutils.runtime;
 
 import java.io.IOException;
@@ -31,7 +30,6 @@ import org.apache.flink.types.KeyFieldOutOfBoundsException;
 import org.apache.flink.types.NullKeyFieldException;
 
 
-
 public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -40,6 +38,7 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 	protected int[] keyPositions;
 
 	/** comparators for the key fields, in the same order as the key fields */
+	@SuppressWarnings("rawtypes")
 	protected TypeComparator[] comparators;
 
 	/** serializer factories to duplicate non thread-safe serializers */
@@ -56,6 +55,7 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 
 
 	/** serializers to deserialize the first n fields for comparison */
+	@SuppressWarnings("rawtypes")
 	protected transient TypeSerializer[] serializers;
 
 	// cache for the deserialized field objects
@@ -120,7 +120,6 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 		this.invertNormKey = inverted;
 	}
 
-	@SuppressWarnings("unchecked")
 	protected TupleComparatorBase(TupleComparatorBase<T> toClone) {
 		privateDuplicate(toClone);
 	}
@@ -152,6 +151,7 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 	}
 	
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void getFlatComparator(List<TypeComparator> flatComparators) {
 		for(int i = 0; i < comparators.length; i++) {
@@ -174,6 +174,7 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 		int i = 0;
 		try {
 			for (; i < this.keyPositions.length; i++) {
+				@SuppressWarnings("unchecked")
 				int cmp = this.comparators[i].compareToReference(other.comparators[i]);
 				if (cmp != 0) {
 					return cmp;
@@ -189,6 +190,7 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public int compareSerialized(DataInputView firstSource, DataInputView secondSource) throws IOException {
 		if (deserializedFields1 == null) {
@@ -258,7 +260,6 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 	
 	// --------------------------------------------------------------------------------------------
 	
-	@SuppressWarnings("unchecked")
 	protected final void instantiateDeserializationUtils() {
 		if (this.serializers == null) {
 			this.serializers = new TypeSerializer[this.serializerFactories.length];

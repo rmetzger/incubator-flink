@@ -31,12 +31,10 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 
 	private static final long serialVersionUID = 1L;
 	
-	@SuppressWarnings("unchecked")
 	public TupleComparator(int[] keyPositions, TypeComparator<?>[] comparators, TypeSerializer<?>[] serializers) {
 		super(keyPositions, comparators, serializers);
 	}
 	
-	@SuppressWarnings("unchecked")
 	private TupleComparator(TupleComparator<T> toClone) {
 		super(toClone);
 	}
@@ -45,6 +43,7 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 	//  Comparator Methods
 	// --------------------------------------------------------------------------------------------
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public int hash(T value) {
 		int i = 0;
@@ -65,6 +64,7 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void setReference(T toCompare) {
 		int i = 0;
@@ -81,6 +81,7 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equalToReference(T candidate) {
 		int i = 0;
@@ -100,6 +101,7 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public int compare(T first, T second) {
 		int i = 0;
@@ -122,6 +124,7 @@ public final class TupleComparator<T extends Tuple> extends TupleComparatorBase<
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void putNormalizedKey(T value, MemorySegment target, int offset, int numBytes) {
 		int i = 0;

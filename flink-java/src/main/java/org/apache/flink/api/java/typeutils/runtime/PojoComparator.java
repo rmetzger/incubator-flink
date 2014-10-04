@@ -55,13 +55,6 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 
 	private final Class<T> type;
 
-	private final Object[] extractedKeys;
-	
-	/**
-	 * The number of keys below this comparator (used for the extractKeys() method to avoid array resizing)
-	 */
-//	private int totalNumberOfKeys;
-
 	@SuppressWarnings("unchecked")
 	public PojoComparator(Field[] keyFields, TypeComparator<?>[] comparators, TypeSerializer<T> serializer, Class<T> type) {
 		this.keyFields = keyFields;
@@ -116,8 +109,6 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		this.numLeadingNormalizableKeys = nKeys;
 		this.normalizableKeyPrefixLen = nKeyLen;
 		this.invertNormKey = inverted;
-
-		extractedKeys = new Object[keyFields.length];
 	}
 
 	@SuppressWarnings("unchecked")
@@ -144,8 +135,6 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException("Cannot copy serializer", e);
 		}
-
-		extractedKeys = new Comparable[keyFields.length];
 	}
 
 	private void writeObject(ObjectOutputStream out)
@@ -188,6 +177,7 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		return this.keyFields;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void getFlatComparator(List<TypeComparator> flatComparators) {
 		for(int i = 0; i < comparators.length; i++) {
@@ -206,7 +196,6 @@ public final class PojoComparator<T> extends CompositeTypeComparator<T> implemen
 		try {
 			object = field.get(object);
 		} catch (NullPointerException npex) {
-			// TODO pass npex?
 			throw new NullKeyFieldException("Unable to access field "+field+" on object "+object);
 		} catch (IllegalAccessException iaex) {
 			throw new RuntimeException("This should not happen since we call setAccesssible(true) in PojoTypeInfo."

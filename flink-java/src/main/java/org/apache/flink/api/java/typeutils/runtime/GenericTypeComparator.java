@@ -52,6 +52,7 @@ public class GenericTypeComparator<T extends Comparable<T>> extends TypeComparat
 
 	private transient Kryo kryo;
 
+	@SuppressWarnings("rawtypes")
 	private final TypeComparator[] comparators = new TypeComparator[] {this};
 
 	// ------------------------------------------------------------------------
@@ -172,6 +173,7 @@ public class GenericTypeComparator<T extends Comparable<T>> extends TypeComparat
 		return 1;
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public TypeComparator[] getFlatComparators() {
 		return comparators;

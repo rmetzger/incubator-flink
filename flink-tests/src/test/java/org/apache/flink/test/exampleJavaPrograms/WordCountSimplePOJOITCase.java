@@ -22,17 +22,15 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.test.testdata.WordCountData;
 import org.apache.flink.test.util.JavaProgramTestBase;
 import org.apache.flink.util.Collector;
 
 import java.io.Serializable;
-import java.util.Date;
 
 
 public class WordCountSimplePOJOITCase extends JavaProgramTestBase implements Serializable {
-
+	private static final long serialVersionUID = 1L;
 	protected String textPath;
 	protected String resultPath;
 
@@ -58,6 +56,8 @@ public class WordCountSimplePOJOITCase extends JavaProgramTestBase implements Se
 				.flatMap(new Tokenizer())
 				.groupBy("word")
 				.reduce(new ReduceFunction<WC>() {
+					private static final long serialVersionUID = 1L;
+
 					public WC reduce(WC value1, WC value2) {
 						return new WC(value1.word, value1.count + value2.count);
 					}
@@ -69,6 +69,7 @@ public class WordCountSimplePOJOITCase extends JavaProgramTestBase implements Se
 	}
 
 	public static final class Tokenizer implements FlatMapFunction<String, WC> {
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public void flatMap(String value, Collector<WC> out) {

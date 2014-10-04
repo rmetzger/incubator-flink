@@ -15,55 +15,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-package org.apache.flink.example.java.wordcount;
+package org.apache.flink.examples.java.wordcount;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.examples.java.wordcount.util.WordCountData;
 import org.apache.flink.util.Collector;
 
 
+/**
+ * This example shows an implementation of Wordcount without using the
+ * Tuple2 type, but a custom class.
+ *
+ */
+@SuppressWarnings("serial")
 public class PojoExample {
 	
-	public static class WordFreq {
-		public char firstLetter;
-		public String restOfWord;
-		public Integer freq;
-		public WordFreq() {
-			freq = 0;
+	/**
+	 * This is the POJO (Plain Old Java Object) that is bein used
+	 * for all the operations.
+	 * As long as all fields are public or have a getter/setter, the system can handle them
+	 */
+	public static class Word {
+		public String word;
+		public Integer frequency;
+		public Word() {
 		}
-		public WordFreq(char f, String restOfWord, int i) {
-			this.firstLetter = f;
-			this.restOfWord = restOfWord;
-			this.freq = i;
-		}
-		public String getMeTheKey() {
-			return firstLetter+restOfWord;
+		public Word(String word, int i) {
+			this.word = word;
+			this.frequency = i;
 		}
 		@Override
 		public String toString() {
-			return "WordFreq. word="+getMeTheKey()+" freq="+freq;
+			return "Word="+word+" freq="+frequency;
 		}
-		
 	}
 	
-	// *************************************************************************
-	//     PROGRAM
-	// *************************************************************************
-	
-	public static class Tu2<V1, V2> {
-		//
-	}
-	public static class Test {
-		public int v1;
-		public Tu2<Integer, String> oha;
-	}
 	public static void main(String[] args) throws Exception {
 		
 		if(!parseParameters(args)) {
@@ -76,29 +65,18 @@ public class PojoExample {
 		// get input data
 		DataSet<String> text = getTextDataSet(env);
 		
-		DataSet<WordFreq> counts = 
-				// split up the lines in pairs (2-tuples) containing: (word,1)
-				text.flatMap(new Tokenizer())
-				// group by the tuple field "0" and sum up tuple field "1"
-				.groupBy("firstLetter", "restOfWord", "freq")
-				.reduce(new ReduceFunction<PojoExample.WordFreq>() {
-					private static final long serialVersionUID = 1L;
-					@Override
-					public WordFreq reduce(WordFreq value1, WordFreq value2) throws Exception {
-						return new WordFreq(value1.firstLetter, value1.restOfWord, value1.freq + value2.freq);
-					}
-				});
-				//.sum("freq");
-		DataSet<Integer> joinPartner = env.fromElements(1,2,3);
-		DataSet<Tuple2<WordFreq, Integer>> joined = counts.join(joinPartner).where("freq").equalTo(new KeySelector<Integer, Integer>() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public Integer getKey(Integer value) throws Exception {
-				return value;
-			}
-		});
-		// emit result
+		DataSet<Word> counts = 
+			// split up the lines in pairs (2-tuples) containing: (word,1)
+			text.flatMap(new Tokenizer())
+			// group by the tuple field "0" and sum up tuple field "1"
+			.groupBy("word")
+			.reduce(new ReduceFunction<Word>() {
+				@Override
+				public Word reduce(Word value1, Word value2) throws Exception {
+					return new Word(value1.word,value1.frequency + value2.frequency);
+				}
+			});
+		
 		if(fileOutput) {
 			counts.writeAsCsv(outputPath, "\n", " ");
 		} else {
@@ -118,22 +96,18 @@ public class PojoExample {
 	 * FlatMapFunction. The function takes a line (String) and splits it into 
 	 * multiple pairs in the form of "(word,1)" (Tuple2<String, Integer>).
 	 */
-	public static final class Tokenizer implements FlatMapFunction<String, WordFreq> {
+	public static final class Tokenizer implements FlatMapFunction<String, Word> {
+		private static final long serialVersionUID = 1L;
 
 		@Override
-		public void flatMap(String value, Collector<WordFreq> out) {
+		public void flatMap(String value, Collector<Word> out) {
 			// normalize and split the line
 			String[] tokens = value.toLowerCase().split("\\W+");
 			
 			// emit the pairs
 			for (String token : tokens) {
 				if (token.length() > 0) {
-					// System.err.println("token: "+token);
-					String rest = "";
-					if(token.length() > 1) {
-						rest = token.substring(1, token.length());
-					}
-					out.collect(new WordFreq(token.charAt(0), rest, 1));
+					out.collect(new Word(token, 1));
 				}
 			}
 		}

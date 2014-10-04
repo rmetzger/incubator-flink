@@ -284,11 +284,8 @@ public class TypeExtractor {
 				}
 			}
 			
-			
-			
 			// check if immediate child of Tuple has generics
 			if (curT instanceof Class<?>) {
-				TypeVariable[] typeParams = ((Class) curT).getTypeParameters();
 				throw new InvalidTypesException("Tuple needs to be parameterized by using generics.");
 			}
 			
@@ -992,7 +989,6 @@ public class TypeExtractor {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private <X> TypeInformation<X> analyzePojo(Class<X> clazz, ArrayList<Type> typeHierarchy) {
 		// try to create Type hierarchy, if the incoming one is empty.
 		if(typeHierarchy.size() == 0) {

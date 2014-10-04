@@ -211,69 +211,14 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 	protected TypeComparator<T> getNewComparator() {
 		// first remove the null array fields
 		final Field[] finalKeyFields = Arrays.copyOf(keyFields, comparatorHelperIndex);
+		@SuppressWarnings("rawtypes")
 		final TypeComparator[] finalFieldComparators = Arrays.copyOf(fieldComparators, comparatorHelperIndex);
 		if(finalFieldComparators.length == 0 || finalKeyFields.length == 0 ||  finalFieldComparators.length != finalKeyFields.length) {
 			throw new IllegalArgumentException("Pojo comparator creation has a bug");
 		}
 		return new PojoComparator<T>(finalKeyFields, finalFieldComparators, createSerializer(), typeClass);
 	}
-//	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
-//		// sanity checks
-//		int totalNumberOfKeys = countPositiveInts(logicalKeyFields);
-//		int logicalKeyFieldsLength = countPositiveInts(logicalKeyFields);
-//		if (logicalKeyFields == null || orders == null || logicalKeyFieldsLength != orders.length)
-//		{
-//			throw new IllegalArgumentException();
-//		}
-//		
-//		// these two arrays might contain null positions. We'll remove the null fields in the end
-//		TypeComparator<?>[] fieldComparators = new TypeComparator<?>[logicalKeyFieldsLength];
-//		Field[] keyFields = new Field[logicalKeyFieldsLength];
-//		
-//		// "logicalKeyFields" and "orders"
-//		int keyPosition = offset; // offset for "global" key fields
-//		for(PojoField field : fields) {
-//			// create comparators:
-//			Tuple2<Integer, Integer> c = nextKeyField(logicalKeyFields); //remove them for later comparators
-//			if(c == null || c.f0 == -1) {
-//				// all key fields have been set to -1
-//				break;
-//			}
-//			int keyIndex = c.f0;
-//			int arrayIndex = c.f1;
-//			
-//			// check if this field contains the key.
-//			if(field.type instanceof CompositeType && keyPosition + field.type.getTotalFields() - 1 >= keyIndex) {
-//				// we are at a composite type and need to go deeper.
-//				CompositeType<?> cType = (CompositeType<?>)field.type;
-//				keyFields[arrayIndex] = field.field;
-//				fieldComparators[arrayIndex] = cType.createComparator(logicalKeyFields, orders, keyPosition);
-//				logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
-//			} else if(keyIndex == keyPosition) {
-//				// we are at an atomic type and need to create a comparator here.
-//				keyFields[arrayIndex] = field.field;
-//				if(field.type instanceof AtomicType) { // The field has to be an atomic type
-//					fieldComparators[arrayIndex] = ((AtomicType<?>)field.type).createComparator(orders[arrayIndex]);
-//					logicalKeyFields[arrayIndex] = -1; // invalidate keyfield.
-//				} else {
-//					throw new RuntimeException("Unexpected key type: "+field.type+"."); // in particular, field.type should not be a CompositeType here.
-//				}
-//			}
-//			
-//			// maintain indexes:
-//			if(field.type instanceof CompositeType) {
-//				// skip key positions.
-//				keyPosition += ((CompositeType<?>)field.type).getTotalFields()-1;
-//			}
-//			keyPosition++;
-//		}
-//		totalNumberOfKeys = totalNumberOfKeys-countPositiveInts(logicalKeyFields);
-//		
-//		return new PojoComparator<T>( removeNullFieldsFromArray(keyFields, Field.class), removeNullFieldsFromArray(fieldComparators, TypeComparator.class), 
-//				createSerializer(), typeClass, totalNumberOfKeys);
-//	}
 
-	
 
 	@Override
 	public TypeSerializer<T> createSerializer() {

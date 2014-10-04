@@ -55,111 +55,10 @@ public abstract class Keys<T> {
 	public abstract int[] computeLogicalKeyPositions();
 	
 	
-	public static class IncompatibleKeysException extends Exception {
-		private static final long serialVersionUID = 1L;
-		public static final String SIZE_MISMATCH_MESSAGE = "The number of specified keys is different.";
-		
-		public IncompatibleKeysException(String message) {
-			super(message);
-		}
-
-		public IncompatibleKeysException(TypeInformation<?> typeInformation, TypeInformation<?> typeInformation2) {
-			super(typeInformation+" and "+typeInformation2+" are not compatible");
-		}
-	}
-	
 	// --------------------------------------------------------------------------------------------
-	//  Specializations for field indexed / expression-based / extractor-based grouping
+	//  Specializations for expression-based / extractor-based grouping
 	// --------------------------------------------------------------------------------------------
 	
-//	/**
-//	 * This key type is also initializing the CompositeType for serialization and comparison.
-//	 * For this, we assume that keys specified by int-fields can not be nested.
-//	 */
-//	public static class FieldPositionKeys<T> extends Keys<T> {
-//
-//		private final int[] fieldPositions;
-//		private final TypeInformation<?>[] types;
-//
-//		public FieldPositionKeys(int[] groupingFields, TypeInformation<T> type) {
-//			this(groupingFields, type, false);
-//		}
-//
-//		public FieldPositionKeys(int[] groupingFields, TypeInformation<T> type, boolean allowEmpty) {
-//			if (!type.isTupleType()) {
-//				throw new InvalidProgramException("Specifying keys via field positions is only valid" +
-//						"for tuple data types. Type: " + type);
-//			}
-//
-//			if (!allowEmpty && (groupingFields == null || groupingFields.length == 0)) {
-//				throw new IllegalArgumentException("The grouping fields must not be empty.");
-//			}
-//
-//			TupleTypeInfoBase<?> tupleType = (TupleTypeInfoBase<?>)type;
-//			
-//			List<FlatFieldDescriptor> keys = new ArrayList<FlatFieldDescriptor>();
-//			
-//			this.fieldPositions = makeFields(groupingFields, (TupleTypeInfoBase<?>) type);
-//
-//			types = new TypeInformation[this.fieldPositions.length];
-//			for(int i = 0; i < this.fieldPositions.length; i++) {
-//				types[i] = tupleType.getTypeAt(this.fieldPositions[i]);
-//			}
-//		}
-//
-//		@Override
-//		public int getNumberOfKeyFields() {
-//			return this.fieldPositions.length;
-//		}
-//
-//		@Override
-//		public boolean areCompatible(Keys<?> other) throws IncompatibleKeysException {
-//			
-//			if (other instanceof FieldPositionKeys) {
-//				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
-//				
-//				if(oKey.types.length != this.types.length) {
-//					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-//				}
-//				for(int i=0; i<this.types.length; i++) {
-//					if(!this.types[i].equals(oKey.types[i])) {
-//						throw new IncompatibleKeysException(this.types[i], oKey.types[i]);
-//					}
-//				}
-//				return true;
-//				
-//			} else if (other instanceof SelectorFunctionKeys) {
-//				if(this.types.length != 1) {
-//					throw new IncompatibleKeysException("Key selector functions are only compatible to one key");
-//				}
-//				
-//				SelectorFunctionKeys<?, ?> sfk = (SelectorFunctionKeys<?, ?>) other;
-//				
-//				if(sfk.keyType.equals(this.types[0])) {
-//					return true;
-//				} else {
-//					throw new IncompatibleKeysException(sfk.keyType, this.types[0]);
-//				}
-//			} else if( other instanceof ExpressionKeys<?>) {
-//				return other.areCompatible(this);
-//			}
-//			else {
-//				throw new IncompatibleKeysException("The key is not compatible with "+other);
-//			}
-//		}
-//
-//		@Override
-//		public int[] computeLogicalKeyPositions() {
-//			return this.fieldPositions;
-//		}
-//	
-//		@Override
-//		public String toString() {
-//			return "Field Position Key: "+Arrays.toString(fieldPositions);
-//		}
-//	}
-	
-	// --------------------------------------------------------------------------------------------
 	
 	public static class SelectorFunctionKeys<T, K> extends Keys<T> {
 
@@ -391,26 +290,6 @@ public abstract class Keys<T> {
 				return true;
 			} else if(other instanceof SelectorFunctionKeys<?, ?>) {
 				return other.areCompatible(this);
-//				SelectorFunctionKeys<?,?> oKey = (SelectorFunctionKeys<?,?>) other;
-//				Preconditions.checkArgument(oKey.getNumberOfKeyFields() == 1, "The code assumes that key selector functions have only one key field");
-//				if(oKey.getNumberOfKeyFields() != this.getNumberOfKeyFields()) { // oKey.lenght == 1 because its a selector function
-//					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-//				}
-//				if(!this.keyFields.get(0).getType().equals(oKey.keyType)) { // assumes that oKey.lenght == 1.
-//					throw new IncompatibleKeysException(this.keyFields.get(0).getType(), oKey.keyType);
-//				}
-//				return true;
-//			} else if(other instanceof FieldPositionKeys<?>) {
-//				FieldPositionKeys<?> oKey = (FieldPositionKeys<?>) other;
-//				if(oKey.getNumberOfKeyFields() != this.keyFields.size()) {
-//					throw new IncompatibleKeysException(IncompatibleKeysException.SIZE_MISMATCH_MESSAGE);
-//				}
-//				for(int i = 0; i < this.keyFields.size(); i++) {
-//					if(!this.keyFields.get(i).getType().equals(oKey.types[i])) {
-//						throw new IncompatibleKeysException(this.keyFields.get(i).getType(), oKey.types[i]);
-//					}
-//				}
-//				return true;
 			} else {
 				throw new IncompatibleKeysException("The key is not compatible with "+other);
 			}
@@ -471,6 +350,19 @@ public abstract class Keys<T> {
 			return fields;
 		} else {
 			return Arrays.copyOfRange(fields, 0, k+1);
+		}
+	}
+	
+	public static class IncompatibleKeysException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public static final String SIZE_MISMATCH_MESSAGE = "The number of specified keys is different.";
+		
+		public IncompatibleKeysException(String message) {
+			super(message);
+		}
+
+		public IncompatibleKeysException(TypeInformation<?> typeInformation, TypeInformation<?> typeInformation2) {
+			super(typeInformation+" and "+typeInformation2+" are not compatible");
 		}
 	}
 }
