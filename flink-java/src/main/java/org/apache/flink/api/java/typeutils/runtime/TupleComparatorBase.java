@@ -70,8 +70,8 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 		this.keyPositions = keyPositions;
 		this.comparators = (TypeComparator<Object>[]) comparators;
 		this.serializers = (TypeSerializer<Object>[]) serializers;
-		Preconditions.checkArgument(comparators.length == serializers.length);
-		Preconditions.checkArgument(keyPositions.length == comparators.length);
+		//Preconditions.checkArgument( comparators.length <= serializers.length); // at least the same number of serializers
+		//Preconditions.checkArgument(keyPositions.length == comparators.length);
 
 		// set the serializer factories.
 		this.serializerFactories = new TypeSerializerFactory[this.serializers.length];
@@ -205,10 +205,9 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 				deserializedFields2[i] = serializers[i].deserialize(deserializedFields2[i], secondSource);
 			}
 			
-			for (i = 0; i < comparators.length; i++) {
-				// int keyPos = keyPositions[i];
-				// TODO: validate with Stephan
-				int cmp = comparators[i].compare(deserializedFields1[i], deserializedFields2[i]);
+			for (i = 0; i < keyPositions.length; i++) {
+				int keyPos = keyPositions[i];
+				int cmp = comparators[i].compare(deserializedFields1[keyPos], deserializedFields2[keyPos]);
 				if (cmp != 0) {
 					return cmp;
 				}

@@ -112,13 +112,21 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	protected TypeComparator<T> getNewComparator() {
 		final TypeComparator[] finalFieldComparators = Arrays.copyOf(fieldComparators, comparatorHelperIndex);
 		final int[] finalLogicalKeyFields = Arrays.copyOf(logicalKeyFields, comparatorHelperIndex);
-		final TypeSerializer[] finalFieldSerializers = Arrays.copyOf(fieldSerializers, comparatorHelperIndex);
-		if(finalFieldComparators.length == 0 || finalLogicalKeyFields.length == 0 || finalFieldSerializers.length == 0 
-				|| finalFieldComparators.length != finalLogicalKeyFields.length ||
-				finalFieldComparators.length !=	finalFieldSerializers.length) {
+		//final TypeSerializer[] finalFieldSerializers = Arrays.copyOf(fieldSerializers, comparatorHelperIndex);
+		// create the serializers for the prefix up to highest key position
+		int maxKey = 0;
+		for(int key : finalLogicalKeyFields) {
+			maxKey = Math.max(maxKey, key);
+		}
+		TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[maxKey + 1];
+		for (int i = 0; i <= maxKey; i++) {
+			fieldSerializers[i] = types[i].createSerializer();
+		}
+		if(finalFieldComparators.length == 0 || finalLogicalKeyFields.length == 0 || fieldSerializers.length == 0 
+				|| finalFieldComparators.length != finalLogicalKeyFields.length) {
 			throw new IllegalArgumentException("Tuple comparator creation has a bug");
 		}
-		return new TupleComparator<T>(finalLogicalKeyFields, finalFieldComparators, finalFieldSerializers);
+		return new TupleComparator<T>(finalLogicalKeyFields, finalFieldComparators, fieldSerializers);
 	}
 	
 //	public TypeComparator<T> createComparator(int[] logicalKeyFields, boolean[] orders, int offset) {
