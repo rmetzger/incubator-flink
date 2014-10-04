@@ -21,6 +21,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.examples.java.wordcount.util.WordCountData;
 import org.apache.flink.util.Collector;
 
@@ -78,13 +79,13 @@ public class PojoExample {
 			});
 		
 		if(fileOutput) {
-			counts.writeAsCsv(outputPath, "\n", " ");
+			counts.writeAsText(outputPath, WriteMode.OVERWRITE);
 		} else {
 			counts.print();
 		}
 		
 		// execute program
-		env.execute("WordCount Example");
+		env.execute("WordCount-Pojo Example");
 	}
 	
 	// *************************************************************************
