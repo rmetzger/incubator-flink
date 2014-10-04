@@ -70,6 +70,9 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
 
 	@Override
 	public TypeSerializer<T> createSerializer() {
+		// NOTE: The TypeExtractor / pojo logic is assuming that we are using a Avro Serializer here
+		// in particular classes implementing GenericContainer are handled as GenericTypeInfos 
+		// (this will probably not work with Kryo)
 		return new AvroSerializer<T>(this.typeClass);
 	}
 

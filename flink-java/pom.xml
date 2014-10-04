@@ -57,11 +57,6 @@ under the License.
 			<artifactId>kryo</artifactId>
 			<version>2.24.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.codehaus.janino</groupId>
-			<artifactId>janino</artifactId>
-			<version>2.7.5</version>
-		</dependency>
 	</dependencies>
 
     <!-- Because flink-scala uses it in tests -->
