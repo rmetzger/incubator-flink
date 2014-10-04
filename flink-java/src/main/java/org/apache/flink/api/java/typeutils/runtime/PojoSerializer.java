@@ -204,6 +204,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 		// copy the Non-Null/Null tag
 		target.writeBoolean(source.readBoolean());
 		for (int i = 0; i < numFields; i++) {
+			target.writeBoolean(source.readBoolean());
 			fieldSerializers[i].copy(source, target);
 		}
 	}

@@ -28,10 +28,10 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.tuple.Tuple7;
-import org.apache.flink.api.java.type.extractor.TypeExtractorTest.FromTuple;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.hadoop.io.IntWritable;
 
 /**
  * #######################################################################################################
@@ -321,6 +321,11 @@ public class CollectionDataSets {
 		public CrazyNestedL1 nest_Lvl1;
 		public Long something; // test proper null-value handling
 		public CrazyNested() {}
+		public CrazyNested(String set, String second, long s) { // additional CTor to set all fields to non-null values
+			this(set);
+			something = s;
+			nest_Lvl1.a = second;
+		}
 		public CrazyNested(String set) {
 			nest_Lvl1 = new CrazyNestedL1();
 			nest_Lvl1.nest_Lvl2 = new CrazyNestedL2();
@@ -364,6 +369,40 @@ public class CollectionDataSets {
 		data.add(new FromTupleWithCTor(1, 10L));
 		data.add(new FromTupleWithCTor(2, 20L)); // 2x
 		data.add(new FromTupleWithCTor(2, 20L));
+		return env.fromCollection(data);
+	}
+	
+	public static class PojoContainingTupleAndWritable {
+		public int someInt;
+		public String someString;
+		public IntWritable hadoopFan;
+		public Tuple2<Long, Long> theTuple;
+		public PojoContainingTupleAndWritable() {}
+		public PojoContainingTupleAndWritable(int i, long l1, long l2) {
+			hadoopFan = new IntWritable(i);
+			someInt = i;
+			theTuple = new Tuple2<Long, Long>(l1, l2);
+		}
+	}
+	
+	public static DataSet<PojoContainingTupleAndWritable> getPojoContainingTupleAndWritable(ExecutionEnvironment env) {
+		List<PojoContainingTupleAndWritable> data = new ArrayList<PojoContainingTupleAndWritable>();
+		data.add(new PojoContainingTupleAndWritable(1, 10L, 100L)); // 1x
+		data.add(new PojoContainingTupleAndWritable(2, 20L, 200L)); // 5x
+		data.add(new PojoContainingTupleAndWritable(2, 20L, 200L));
+		data.add(new PojoContainingTupleAndWritable(2, 20L, 200L));
+		data.add(new PojoContainingTupleAndWritable(2, 20L, 200L));
+		data.add(new PojoContainingTupleAndWritable(2, 20L, 200L));
+		return env.fromCollection(data);
+	}
+	
+	public static DataSet<Tuple3<Integer,CrazyNested, POJO>> getTupleContainingPojos(ExecutionEnvironment env) {
+		List<Tuple3<Integer,CrazyNested, POJO>> data = new ArrayList<Tuple3<Integer,CrazyNested, POJO>>();
+		data.add(new Tuple3<Integer,CrazyNested, POJO>(1, new CrazyNested("one", "uno", 1L), new POJO(1, "First",10, 100, 1000L, "One", 10000L) )); // 3x
+		data.add(new Tuple3<Integer,CrazyNested, POJO>(1, new CrazyNested("one", "uno", 1L), new POJO(1, "First",10, 100, 1000L, "One", 10000L) ));
+		data.add(new Tuple3<Integer,CrazyNested, POJO>(1, new CrazyNested("one", "uno", 1L), new POJO(1, "First",10, 100, 1000L, "One", 10000L) ));
+		// POJO is not initialized according to the first two fields.
+		data.add(new Tuple3<Integer,CrazyNested, POJO>(2, new CrazyNested("two", "duo", 2L), new POJO(1, "First",10, 100, 1000L, "One", 10000L) )); // 1x
 		return env.fromCollection(data);
 	}
 	

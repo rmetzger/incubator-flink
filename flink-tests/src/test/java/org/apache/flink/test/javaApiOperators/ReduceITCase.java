@@ -27,7 +27,6 @@ import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -39,6 +38,8 @@ import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.CrazyNeste
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.CustomType;
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.FromTuple;
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.FromTupleWithCTor;
+import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.POJO;
+import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.PojoContainingTupleAndWritable;
 import org.apache.flink.test.util.JavaProgramTestBase;
 import org.apache.flink.util.Collector;
 import org.junit.runner.RunWith;
@@ -48,7 +49,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ReduceITCase extends JavaProgramTestBase {
 	
-	private static int NUM_PROGRAMS = 12;
+	private static int NUM_PROGRAMS = 14;
 	
 	private int curProgId = config.getInteger("ProgramId", -1);
 	private String resultPath;
@@ -359,8 +360,7 @@ public class ReduceITCase extends JavaProgramTestBase {
 									n = v.nest_Lvl1.nest_Lvl2.nest_Lvl3.nest_Lvl4.f1nal;
 								}
 								out.collect(new Tuple2<String, Integer>(n,c));
-							}
-						});
+							}});
 				
 				reduceDs.writeAsCsv(resultPath);
 				env.execute();
@@ -387,8 +387,7 @@ public class ReduceITCase extends JavaProgramTestBase {
 									c++;
 								}
 								out.collect(c);
-							}
-						});
+							}});
 				
 				reduceDs.writeAsText(resultPath);
 				env.execute();
@@ -396,12 +395,68 @@ public class ReduceITCase extends JavaProgramTestBase {
 				// return expected result
 				return "3\n2\n";
 			} 
+			case 13: {
+				/*
+				 * Test Pojo containing a Writable and Tuples
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<PojoContainingTupleAndWritable> ds = CollectionDataSets.getPojoContainingTupleAndWritable(env);
+				DataSet<Integer> reduceDs = ds.groupBy("hadoopFan", "theTuple.*") // full tuple selection
+						.reduceGroup(new GroupReduceFunction<PojoContainingTupleAndWritable, Integer>() {
+							private static final long serialVersionUID = 1L;
+							@Override
+							public void reduce(Iterable<PojoContainingTupleAndWritable> values,
+									Collector<Integer> out)
+									throws Exception {
+								int c = 0;
+								for(PojoContainingTupleAndWritable v : values) {
+									c++;
+								}
+								out.collect(c);
+							}});
+				
+				reduceDs.writeAsText(resultPath);
+				env.execute();
+				
+				// return expected result
+				return "1\n5\n";
+			} 
+			case 14: {
+				/*
+				 * Test Tuple containing pojos and regular fields
+				 */
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<Tuple3<Integer,CrazyNested, POJO>> ds = CollectionDataSets.getTupleContainingPojos(env);
+				DataSet<Integer> reduceDs = ds.groupBy("f0", "f1.*") // nested full tuple selection
+						.reduceGroup(new GroupReduceFunction<Tuple3<Integer,CrazyNested, POJO>, Integer>() {
+							private static final long serialVersionUID = 1L;
+							@Override
+							public void reduce(Iterable<Tuple3<Integer,CrazyNested, POJO>> values,
+									Collector<Integer> out)
+									throws Exception {
+								int c = 0;
+								for(Tuple3<Integer,CrazyNested, POJO> v : values) {
+									c++;
+								}
+								out.collect(c);
+							}});
+				
+				reduceDs.writeAsText(resultPath);
+				env.execute();
+				
+				// return expected result
+				return "3\n1\n";
+			} 
+			
+			
 			/******
 			 * 
 			 * 
 			 * TODO nested pojos (in all variants: 
 			 * tuple containing pojo
-			 * pojo containing tuple
+			 * pojo containing tuple DONE
 			 * nested pojo DONE
 			 * pojo extending tuple with additional fields. DONE
 			 * 

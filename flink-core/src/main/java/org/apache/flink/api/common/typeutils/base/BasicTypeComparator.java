@@ -34,6 +34,7 @@ public abstract class BasicTypeComparator<T extends Comparable<T>> extends TypeC
 	protected final boolean ascendingComparison;
 
 	// For use by getComparators
+	@SuppressWarnings("rawtypes")
 	private final TypeComparator[] comparators = new TypeComparator[] {this};
 	
 
@@ -89,6 +90,7 @@ public abstract class BasicTypeComparator<T extends Comparable<T>> extends TypeC
 		return 1;
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public TypeComparator[] getFlatComparators() {
 		return comparators;

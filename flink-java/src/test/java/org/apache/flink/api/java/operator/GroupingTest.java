@@ -32,7 +32,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class GroupingTest {
