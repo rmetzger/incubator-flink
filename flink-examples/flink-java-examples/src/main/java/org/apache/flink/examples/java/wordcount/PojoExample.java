@@ -40,8 +40,21 @@ public class PojoExample {
 	 * As long as all fields are public or have a getter/setter, the system can handle them
 	 */
 	public static class Word {
-		public String word;
-		public Integer frequency;
+		private String word;
+		private Integer frequency;
+		
+		public String getWord() {
+			return word;
+		}
+		public void setWord(String word) {
+			this.word = word;
+		}
+		public Integer getFrequency() {
+			return frequency;
+		}
+		public void setFrequency(Integer frequency) {
+			this.frequency = frequency;
+		}
 		public Word() {
 		}
 		public Word(String word, int i) {
