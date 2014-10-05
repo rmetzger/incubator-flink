@@ -635,6 +635,8 @@ public class TaskManager implements TaskOperationProtocol {
 					// remove task 
 					this.runningTasks.remove(executionId);
 					
+					this.channelManager.unregister(executionId, task);
+					
 					// delete distributed cache files
 					for (Entry<String, DistributedCacheEntry> e : DistributedCache.readFileInfoFromConfig(tdd.getJobConfiguration())) {
 						this.fileCache.deleteTmpFile(e.getKey(), e.getValue(), jobID);

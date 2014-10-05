@@ -205,7 +205,7 @@ public class ChannelManager implements EnvelopeDispatcher, BufferProviderBroker 
 				channel.destroy();
 			}
 
-			this.receiverCache.remove(channel);
+			this.receiverCache.remove(channel.getID());
 		}
 
 		// destroy and remove INPUT channels from registered channels and cache
@@ -215,7 +215,7 @@ public class ChannelManager implements EnvelopeDispatcher, BufferProviderBroker 
 				channel.destroy();
 			}
 
-			this.receiverCache.remove(channel);
+			this.receiverCache.remove(channel.getID());
 		}
 
 		// clear and remove INPUT side buffer pools
@@ -395,7 +395,9 @@ public class ChannelManager implements EnvelopeDispatcher, BufferProviderBroker 
 			}
 		}
 
-		this.receiverCache.put(sourceChannelID, receiverList);
+		if (channels.containsKey(sourceChannelID)) {
+			this.receiverCache.put(sourceChannelID, receiverList);
+		}
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug(String.format("Receiver for %s: %s [%s])",
@@ -656,6 +658,18 @@ public class ChannelManager implements EnvelopeDispatcher, BufferProviderBroker 
 			if (channel.isInputChannel()) {
 				((InputChannel<?>) channel).logQueuedEnvelopes();
 			}
+		}
+	}
+	
+	public void verifyAllCachesEmpty() {
+		if (!channels.isEmpty()) {
+			throw new IllegalStateException("Channel manager caches not empty: There are still registered channels.");
+		}
+		if (!localBuffersPools.isEmpty()) {
+			throw new IllegalStateException("Channel manager caches not empty: There are still local buffer pools.");
+		}
+		if (!receiverCache.isEmpty()) {
+			throw new IllegalStateException("Channel manager caches not empty: There are still entries in the receiver cache.");
 		}
 	}
 }
