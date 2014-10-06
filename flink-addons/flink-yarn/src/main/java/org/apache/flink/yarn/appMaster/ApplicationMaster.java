@@ -220,7 +220,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		// determine JobManager port
 		int port = GlobalConfiguration.getInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, -1);
 		if(port != -1) {
-			port += appNumber;
+		//	port += appNumber;
 		} else {
 			LOG.warn("JobManager port is unknown");
 		}
