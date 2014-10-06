@@ -140,6 +140,8 @@ public class JobManager implements ExtendedManagementProtocol, InputSplitProvide
 	
 	private final int defaultExecutionRetries;
 	
+	private final long delayBetweenRetries;
+	
 	private final AtomicBoolean isShutdownInProgress = new AtomicBoolean(false);
 	
 	private volatile boolean isShutDown;
@@ -177,6 +179,11 @@ public class JobManager implements ExtendedManagementProtocol, InputSplitProvide
 		this.defaultExecutionRetries = GlobalConfiguration.getInteger(
 			ConfigConstants.DEFAULT_EXECUTION_RETRIES_KEY, ConfigConstants.DEFAULT_EXECUTION_RETRIES);
 
+		// delay between retries should be one heartbeat timeout
+		this.delayBetweenRetries = 2 * GlobalConfiguration.getLong(
+				ConfigConstants.JOB_MANAGER_DEAD_TASKMANAGER_TIMEOUT_KEY,
+				ConfigConstants.DEFAULT_JOB_MANAGER_DEAD_TASKMANAGER_TIMEOUT);
+		
 		// Load the job progress collector
 		this.eventCollector = new EventCollector(this.recommendedClientPollingInterval);
 
@@ -324,6 +331,7 @@ public class JobManager implements ExtendedManagementProtocol, InputSplitProvide
 				
 				executionGraph.setNumberOfRetriesLeft(job.getNumberOfExecutionRetries() >= 0 ?
 						job.getNumberOfExecutionRetries() : this.defaultExecutionRetries);
+				executionGraph.setDelayBeforeRetrying(this.delayBetweenRetries);
 				
 				ExecutionGraph previous = this.currentJobs.putIfAbsent(job.getJobID(), executionGraph);
 				if (previous != null) {
