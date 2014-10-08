@@ -27,7 +27,6 @@ import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.AbstractJobResult;
 import org.apache.flink.runtime.client.JobSubmissionResult;
-import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.instance.LocalInstanceManager;
 import org.apache.flink.runtime.io.network.bufferprovider.GlobalBufferPool;
@@ -74,9 +73,6 @@ public class RecoveryITCase {
 			
 			final GlobalBufferPool bp = ((LocalInstanceManager) jm.getInstanceManager())
 					.getTaskManagers()[0].getChannelManager().getGlobalBufferPool();
-			
-			// we need to register the job at the library cache manager (with no libraries)
-			LibraryCacheManager.register(jobGraph.getJobID(), new String[0]);
 			
 			JobSubmissionResult result = jm.submitJob(jobGraph);
 
@@ -144,9 +140,6 @@ public class RecoveryITCase {
 			final GlobalBufferPool bp = ((LocalInstanceManager) jm.getInstanceManager())
 					.getTaskManagers()[0].getChannelManager().getGlobalBufferPool();
 			
-			// we need to register the job at the library cache manager (with no libraries)
-			LibraryCacheManager.register(jobGraph.getJobID(), new String[0]);
-			
 			JobSubmissionResult result = jm.submitJob(jobGraph);
 
 			if (result.getReturnCode() != AbstractJobResult.ReturnCode.SUCCESS) {
@@ -211,9 +204,6 @@ public class RecoveryITCase {
 			cfg.setInteger(ConfigConstants.TASK_MANAGER_HEARTBEAT_INTERVAL_KEY, 1000);
 			
 			jm = startJobManager(2, NUM_TASKS, cfg);
-			
-			// we need to register the job at the library cache manager (with no libraries)
-			LibraryCacheManager.register(jobGraph.getJobID(), new String[0]);
 			
 			JobSubmissionResult result = jm.submitJob(jobGraph);
 

@@ -23,7 +23,10 @@ import static org.apache.flink.runtime.executiongraph.ExecutionGraphTestUtils.ge
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.blob.BlobKey;
 import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.jobgraph.AbstractJobVertex;
@@ -59,8 +62,6 @@ public class ExecutionGraphRestartTest {
 			ExecutionGraph eg = new ExecutionGraph(new JobID(), "test job", new Configuration());
 			eg.setNumberOfRetriesLeft(0);
 			eg.attachJobGraph(jobGraph.getVerticesSortedTopologicallyFromSources());
-			
-			LibraryCacheManager.register(eg.getJobID(), new String[0]);
 			
 			assertEquals(JobStatus.CREATED, eg.getState());
 			
@@ -106,8 +107,6 @@ public class ExecutionGraphRestartTest {
 			ExecutionGraph eg = new ExecutionGraph(new JobID(), "test job", new Configuration());
 			eg.setNumberOfRetriesLeft(1);
 			eg.attachJobGraph(jobGraph.getVerticesSortedTopologicallyFromSources());
-			
-			LibraryCacheManager.register(eg.getJobID(), new String[0]);
 			
 			assertEquals(JobStatus.CREATED, eg.getState());
 			
