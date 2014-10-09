@@ -77,6 +77,7 @@ under the License.
 			</activation>
 			<modules>
 				<module>flink-yarn</module>
+				<module>flink-yarn-tests</module>
 			</modules>
 		</profile>
 	</profiles>

@@ -62,9 +62,9 @@ under the License.
 		<module>flink-clients</module>
 		<module>flink-tests</module>
 		<module>flink-test-utils</module>
-		<module>flink-addons</module>
 		<module>flink-quickstart</module>
 		<module>flink-dist</module>
+		<module>flink-addons</module>
 	</modules>
 
 	<properties>
@@ -279,9 +279,6 @@ under the License.
                     <!--hadoop2--><name>hadoop.profile</name><value>2</value>
                 </property>
             </activation>
-            <modules>
-                <module>flink-yarn-tests</module>
-            </modules>
         </profile>
 		<profile>
 			<id>vendor-repos</id>
