@@ -24,32 +24,31 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
-import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.yaml.snakeyaml.Yaml;
 
 public class YarnConfManager {
 	private static TemporaryFolder tmp = new TemporaryFolder();
 
 
-	public Map getDefaultFlinkConfig() {
-		Map flink_conf = new HashMap();
-		flink_conf.put("jobmanager.rpc.address", "localhost");
-		flink_conf.put("jobmanager.rpc.port", 6123);
-		flink_conf.put("jobmanager.heap.mb", 256);
-		flink_conf.put("taskmanager.heap.mb", 512);
-		flink_conf.put("taskmanager.numberOfTaskSlots", -1);
-		flink_conf.put("parallelization.degree.default", 1);
-		flink_conf.put("jobmanager.web.port", 8081);
-		flink_conf.put("webclient.port", 8080);
+	public Map<String, Object> getDefaultFlinkConfig() {
+		Map<String, Object> flinkConf = new HashMap<String, Object>();
+		flinkConf.put("jobmanager.rpc.address", "localhost");
+		flinkConf.put("jobmanager.rpc.port", 6123);
+		flinkConf.put("jobmanager.heap.mb", 256);
+		flinkConf.put("taskmanager.heap.mb", 512);
+		flinkConf.put("taskmanager.numberOfTaskSlots", -1);
+		flinkConf.put("parallelization.degree.default", 1);
+		flinkConf.put("jobmanager.web.port", 8081);
+		flinkConf.put("webclient.port", 8080);
 
-		return flink_conf;
+		return flinkConf;
 	}
 
 	public Configuration getMiniClusterConf() {
@@ -66,40 +65,40 @@ public class YarnConfManager {
 		return conf;
 	}
 
-	public File createYarnSiteConfig(Configuration yarn_conf) throws IOException {
+	public File createYarnSiteConfig(Configuration yarnConf) throws IOException {
 		tmp.create();
 		File yarnSiteXML = new File(tmp.newFolder().getAbsolutePath() + "/yarn-site.xml");
 
 		FileWriter writer = new FileWriter(yarnSiteXML);
-		yarn_conf.writeXml(writer);
+		yarnConf.writeXml(writer);
 		writer.flush();
 		writer.close();
 		return yarnSiteXML;
 	}
 
-	@SuppressWarnings("rawtypes")
-	public File createConfigFile(Map flink_conf) throws IOException {
+	public File createConfigFile(Map<String, Object> flinkConf) throws IOException {
 		tmp.create();
 		File flinkConfFile = new File(tmp.newFolder().getAbsolutePath() + "/flink-conf.yaml");
 
-		Yaml yaml = new Yaml();
 		FileWriter writer = new FileWriter(flinkConfFile);
 
-		deleteNulls(flink_conf);
-		yaml.dump(flink_conf, writer);
+		deleteNulls(flinkConf);
+		for(Entry<String, Object> el : flinkConf.entrySet()) {
+			writer.write(el.getKey()+": "+el.getValue()+"\n");
+		}
 		writer.flush();
 		writer.close();
 		return flinkConfFile;
 	}
 
-	@SuppressWarnings("rawtypes")
-	static void deleteNulls(Map map) {
-		Set set = map.entrySet();
-		Iterator it = set.iterator();
+	static <K,V> void deleteNulls(Map<K, V> map) {
+		Set<Entry<K,V>> set = map.entrySet();
+		Iterator<Entry<K,V>> it = set.iterator();
 		while (it.hasNext()) {
-			Map.Entry m =(Map.Entry)it.next();
-			if (m.getValue() == null)
+			Map.Entry<K,V> m = it.next();
+			if (m.getValue() == null) {
 				it.remove();
+			}
 		}
 	}
 }

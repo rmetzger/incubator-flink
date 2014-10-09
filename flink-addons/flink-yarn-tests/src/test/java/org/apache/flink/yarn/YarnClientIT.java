@@ -21,11 +21,8 @@ package org.apache.flink.yarn;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class YarnClientIT extends YarnTestBase {
-	private static final Logger LOG = LoggerFactory.getLogger(YarnClientIT.class);
 
 	/*
 	Should run cleanly, parameters are correct

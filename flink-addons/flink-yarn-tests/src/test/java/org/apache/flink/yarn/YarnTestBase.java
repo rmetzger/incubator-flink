@@ -32,7 +32,6 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,6 +46,7 @@ public abstract class YarnTestBase {
 	protected static String uberJarLocation;
 	protected static YarnConfManager yarnConfManager = new YarnConfManager();
 
+	@SuppressWarnings("unchecked")
 	protected static void setEnv(Map<String, String> newenv) {
 		try {
 			Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
@@ -60,9 +60,9 @@ public abstract class YarnTestBase {
 			cienv.putAll(newenv);
 		} catch (NoSuchFieldException e) {
 			try {
-				Class[] classes = Collections.class.getDeclaredClasses();
+				Class<?>[] classes = Collections.class.getDeclaredClasses();
 				Map<String, String> env = System.getenv();
-				for (Class cl : classes) {
+				for (Class<?> cl : classes) {
 					if ("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
 						Field field = cl.getDeclaredField("m");
 						field.setAccessible(true);
@@ -80,12 +80,11 @@ public abstract class YarnTestBase {
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@BeforeClass
 	public static void setup() {
-		File uberjar = new File("../flink-dist/target/flink-dist-0.7-incubating-SNAPSHOT-yarn-uberjar.jar");
+		File uberjar = new File("../../flink-dist/target/flink-dist-0.7-incubating-SNAPSHOT-yarn-uberjar.jar");
 		if (!uberjar.exists()) {
-			uberjar = new File("./flink-dist/target/flink-dist-0.7-incubating-SNAPSHOT-yarn-uberjar.jar");
+			uberjar = new File("./../flink-dist/target/flink-dist-0.7-incubating-SNAPSHOT-yarn-uberjar.jar");
 		}
 
 		uberJarLocation = uberjar.getAbsolutePath();
@@ -101,11 +100,11 @@ public abstract class YarnTestBase {
 
 			Thread.sleep(5000);
 
-			Configuration miniyarn_conf = yarnCluster.getConfig();
-			Map flink_conf = yarnConfManager.getDefaultFlinkConfig();
+			Configuration miniYarnConf = yarnCluster.getConfig();
+			Map<String, Object> flinkConf = yarnConfManager.getDefaultFlinkConfig();
 
-			yarnSiteXML = yarnConfManager.createYarnSiteConfig(miniyarn_conf);
-			flinkConfFile = yarnConfManager.createConfigFile(flink_conf);
+			yarnSiteXML = yarnConfManager.createYarnSiteConfig(miniYarnConf);
+			flinkConfFile = yarnConfManager.createConfigFile(flinkConf);
 
 			Map<String, String> map = new HashMap<String, String>(System.getenv());
 			map.put("FLINK_CONF_DIR", flinkConfFile.getParentFile().getAbsolutePath());
@@ -147,7 +146,7 @@ public abstract class YarnTestBase {
 		try {
 			ex = future.get(timeout, TimeUnit.MILLISECONDS);
 		} catch (TimeoutException e) {
-
+			LOG.warn("Timeout", e);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

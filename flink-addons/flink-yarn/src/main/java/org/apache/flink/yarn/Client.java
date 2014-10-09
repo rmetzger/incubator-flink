@@ -515,7 +515,8 @@ public class Client {
 		appContext.setAMContainerSpec(amContainer);
 		appContext.setResource(capability);
 		appContext.setQueue(queue);
-
+		appContext.setMaxAppAttempts(1);
+		
 		// file that we write into the conf/ dir containing the jobManager address and the dop.
 		yarnPropertiesFile = new File(confDirPath + CliFrontend.YARN_PROPERTIES_FILE);
 
