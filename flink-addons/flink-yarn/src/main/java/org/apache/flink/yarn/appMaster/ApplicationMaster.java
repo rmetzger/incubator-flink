@@ -78,6 +78,9 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ApplicationMaster.class);
 
+	private final static int LOST_CLIENT_CHECK_INTERVAL_SEC = 2;
+	private final static int LOST_CLIENT_RECONNECT_WAIT_SEC = 60;
+	
 	private final String currDir;
 	private final String logDirs;
 	private final String ownHostname;
@@ -176,6 +179,8 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 	private final int jobManagerPort;
 	private final int jobManagerWebPort;
 	
+	private Thread lostClientChecker;
+	
 
 	public ApplicationMaster(Configuration conf) throws IOException {
 		fs = FileSystem.get(conf);
@@ -214,6 +219,51 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 		// start AM RPC service
 		amRpcServer = RPC.getServer(this, ownHostname, Integer.valueOf(rpcPort), 2);
 		amRpcServer.start();
+		
+		/*
+		 * Check periodically if we lost the connection to the Client. If so,
+		 * stop the YARN application after a certain timeout. 
+		 */
+		lostClientChecker = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				long lostClientAt = -1; // -1 => client is there
+				while(true) {
+					try {
+						Thread.sleep(LOST_CLIENT_CHECK_INTERVAL_SEC * 1000);
+					} catch (InterruptedException e) {
+						LOG.warn("Interrupted", e);
+					}
+					int numConn = amRpcServer.getNumOpenConnections();
+					if(lostClientAt == -1) {
+						if(numConn == 0) {// we lost the client.
+							LOG.warn("The Application Master detected not connection with the Flink YARN client.");
+							lostClientAt = System.currentTimeMillis();
+						}
+						// all good.
+					} else {// we are in lost state.
+						if(numConn > 0) {
+							LOG.info("The Application master found a connection with the Flink YARN client again. All good.");
+							lostClientAt = -1;
+						} else { // still no sign of life.
+							if(lostClientAt + (LOST_CLIENT_RECONNECT_WAIT_SEC * 1000 ) < System.currentTimeMillis()) {
+								LOG.warn("The Application Master did not respond after "+LOST_CLIENT_RECONNECT_WAIT_SEC+" seconds. "
+										+ "Shutting down the YARN session.");
+								try {
+									shutdownAM();
+								} catch (Exception e) {
+									LOG.warn("Error while shutting down the Application Master", e);
+								}
+								
+							}
+						}
+					}
+				}
+				
+			}
+		});
+		lostClientChecker.start();
 		
 		// determine JobManager port
 		int port = GlobalConfiguration.getInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, -1);
@@ -524,6 +574,7 @@ public class ApplicationMaster implements YARNClientMasterProtocol {
 			jobManager.shutdown();
 			nmClient.close();
 			rmClient.close();
+			lostClientChecker.join(LOST_CLIENT_CHECK_INTERVAL_SEC * 1000);
 			if(!isFailed) {
 				amRpcServer.stop();
 			} else {
