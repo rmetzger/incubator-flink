@@ -372,4 +372,37 @@ public abstract class Keys<T> {
 			super(typeInformation+" and "+typeInformation2+" are not compatible");
 		}
 	}
+	
+	/**
+	 * This class wraps different kinds of field types (int-based and string based)
+	 * into one class, to simplifiy the differentiation between the two in the API.
+	 *
+	 * (internal class)
+	 */
+	public static class FieldTypeWrapper {
+		int intField = -1;
+		String stringField = null;
+		
+		public FieldTypeWrapper(String in) {
+			this.stringField = in;
+		}
+		
+		public FieldTypeWrapper(int in) {
+			this.intField = in;
+		}
+		
+		public boolean isIntField() {
+			return intField != -1;
+		}
+		
+		public boolean isStringField() {
+			return stringField != null;
+		}
+		public String getStringField() {
+			return stringField;
+		}
+		public int getIntField() {
+			return intField;
+		}
+	}
 }

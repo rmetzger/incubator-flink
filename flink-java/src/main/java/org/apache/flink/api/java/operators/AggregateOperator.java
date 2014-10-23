@@ -29,12 +29,14 @@ import org.apache.flink.api.common.operators.Operator;
 import org.apache.flink.api.common.operators.SingleInputSemanticProperties;
 import org.apache.flink.api.common.operators.UnaryOperatorInformation;
 import org.apache.flink.api.common.operators.base.GroupReduceOperatorBase;
+import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.aggregation.AggregationFunction;
 import org.apache.flink.api.java.aggregation.AggregationFunctionFactory;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.common.functions.RichGroupReduceFunction;
 import org.apache.flink.api.common.functions.RichGroupReduceFunction.Combinable;
+import org.apache.flink.api.java.operators.Keys.FieldTypeWrapper;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.typeutils.TupleTypeInfoBase;
 import org.apache.flink.configuration.Configuration;
@@ -58,60 +60,45 @@ public class AggregateOperator<IN> extends SingleInputOperator<IN, IN, Aggregate
 	 * <p>
 	 * Non grouped aggregation
 	 */
-	public AggregateOperator(DataSet<IN> input, Aggregations function, int field) {
-		super(Validate.notNull(input), input.getType());
-		
-		Validate.notNull(function);
-		
-		if (!input.getType().isTupleType()) {
-			throw new InvalidProgramException("Aggregating on field positions is only possible on tuple data types.");
-		}
-		
-		TupleTypeInfoBase<?> inType = (TupleTypeInfoBase<?>) input.getType();
-		
-		if (field < 0 || field >= inType.getArity()) {
-			throw new IllegalArgumentException("Aggregation field position is out of range.");
-		}
-		
-		AggregationFunctionFactory factory = function.getFactory();
-		AggregationFunction<?> aggFunct = factory.createAggregationFunction(inType.getTypeAt(field).getTypeClass());
-		
-		// this is the first aggregation operator after a regular data set (non grouped aggregation)
-		this.aggregationFunctions.add(aggFunct);
-		this.fields.add(field);
-		this.grouping = null;
+	public AggregateOperator(DataSet<IN> input, Aggregations function, FieldTypeWrapper field) {
+		this(input, null, function, field);
+	}
+	
+	public AggregateOperator(Grouping<IN> grouping, Aggregations function, FieldTypeWrapper field) {
+		this(grouping.getDataSet(), grouping, function, field);
 	}
 	
 	/**
+	 * Combined (private) constructor for both grouped and ungrouped aggregation
 	 * 
-	 * Grouped aggregation
-	 * 
-	 * @param input
+	 * @param grouping
 	 * @param function
 	 * @param field
 	 */
-	public AggregateOperator(Grouping<IN> input, Aggregations function, int field) {
-		super(Validate.notNull(input).getDataSet(), input.getDataSet().getType());
+	private AggregateOperator(DataSet<IN> dsIn, Grouping<IN> grouping, Aggregations function, FieldTypeWrapper field) {
+		super(Validate.notNull(dsIn), dsIn.getType());
 		
 		Validate.notNull(function);
 		
-		if (!input.getDataSet().getType().isTupleType()) {
-			throw new InvalidProgramException("Aggregating on field positions is only possible on tuple data types.");
-		}
-		
-		TupleTypeInfoBase<?> inType = (TupleTypeInfoBase<?>) input.getDataSet().getType();
-		
-		if (field < 0 || field >= inType.getArity()) {
-			throw new IllegalArgumentException("Aggregation field position is out of range.");
+		if (! (dsIn.getType() instanceof CompositeType<?>)) {
+			throw new InvalidProgramException("Aggregating on fields is only possible on tuple and POJO data types.");
 		}
 		
 		AggregationFunctionFactory factory = function.getFactory();
+		
+		CompositeType<?> inType = (CompositeType<?>) dsIn.getType();
+		if(field.isIntField()) {
+			int intField = field.getIntField();
+			if (intField < 0 || intField >= inType.getArity()) {
+				throw new IllegalArgumentException("Aggregation field position is out of range.");
+			}
+		
 		AggregationFunction<?> aggFunct = factory.createAggregationFunction(inType.getTypeAt(field).getTypeClass());
 		
 		// set the aggregation fields
 		this.aggregationFunctions.add(aggFunct);
 		this.fields.add(field);
-		this.grouping = input;
+		this.grouping = grouping;
 	}
 	
 	

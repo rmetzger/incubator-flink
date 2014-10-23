@@ -267,7 +267,11 @@ public abstract class DataSet<T> {
 	 * @see DataSet
 	 */
 	public AggregateOperator<T> aggregate(Aggregations agg, int field) {
-		return new AggregateOperator<T>(this, agg, field);
+		return new AggregateOperator<T>(this, agg, new Keys.FieldTypeWrapper(field));
+	}
+	
+	public AggregateOperator<T> aggregate(Aggregations agg, String field) {
+		return new AggregateOperator<T>(this, agg, new Keys.FieldTypeWrapper(field));
 	}
 
 	/**

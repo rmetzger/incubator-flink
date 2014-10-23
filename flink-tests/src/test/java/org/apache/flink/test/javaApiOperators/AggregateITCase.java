@@ -29,6 +29,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.test.javaApiOperators.util.CollectionDataSets;
+import org.apache.flink.test.javaApiOperators.util.CollectionDataSets.FromTupleWithCTor;
 import org.apache.flink.test.util.JavaProgramTestBase;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,7 +40,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 @RunWith(Parameterized.class)
 public class AggregateITCase extends JavaProgramTestBase {
 	
-	private static int NUM_PROGRAMS = 3;
+	private static int NUM_PROGRAMS = 4;
 	
 	private int curProgId = config.getInteger("ProgramId", -1);
 	private String resultPath;
@@ -143,6 +144,22 @@ public class AggregateITCase extends JavaProgramTestBase {
 				
 				// return expected result
 				return "1\n";
+			}
+			case 4: {
+				/*
+				 * Aggregate with Pojos
+				 */
+				
+				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+				
+				DataSet<FromTupleWithCTor> ds = CollectionDataSets.getPojoExtendingFromTuple(env);
+				DataSet<FromTupleWithCTor> aggregateDs = ds.aggregate(Aggregations.SUM, "f0");
+				
+				aggregateDs.writeAsCsv(resultPath);
+				env.execute();
+				
+				// return expected result
+				return "231,6\n";
 			}
 			default: 
 				throw new IllegalArgumentException("Invalid program id");
