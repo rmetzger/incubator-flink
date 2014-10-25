@@ -57,6 +57,7 @@ public class WordCount {
 		if(!parseParameters(args)) {
 			return;
 		}
+		Thread.sleep(5000);
 		
 		// set up the execution environment
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
