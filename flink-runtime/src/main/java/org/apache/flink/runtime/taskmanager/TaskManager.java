@@ -1299,7 +1299,7 @@ public class TaskManager implements TaskOperationProtocol {
 
 	@Override
 	public void stop() throws IOException {
-		this.shutdown();
-		LOG.info("TaskManager has been stopped");
+		LOG.info("Killing TaskManager");
+		System.exit(0);
 	}
 }
