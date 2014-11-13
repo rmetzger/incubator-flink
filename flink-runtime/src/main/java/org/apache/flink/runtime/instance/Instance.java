@@ -132,7 +132,7 @@ public class Instance {
 	
 	public void stopInstance() {
 		try {
-			this.taskManager.stop();
+			this.getTaskManagerProxy().stop();
 		} catch (IOException e) {
 			if(Log.isDebugEnabled()) {
 				Log.debug("Error while stopping TaskManager", e);
