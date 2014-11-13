@@ -1296,4 +1296,10 @@ public class TaskManager implements TaskOperationProtocol {
 			return timeout;
 		}
 	}
+
+	@Override
+	public void stop() throws IOException {
+		this.shutdown();
+		LOG.info("TaskManager has been stopped");
+	}
 }
