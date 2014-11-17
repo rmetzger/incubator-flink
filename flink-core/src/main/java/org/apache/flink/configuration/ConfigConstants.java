@@ -588,7 +588,7 @@ public final class ConfigConstants {
 
 	public static String DEFAULT_AKKA_WATCH_HEARTBEAT_PAUSE = "10 s";
 
-	public static double DEFAULT_AKKA_WATCH_THRESHOLD = 10.0;
+	public static double DEFAULT_AKKA_WATCH_THRESHOLD = 300.0;
 
 	public static String DEFAULT_AKKA_TCP_TIMEOUT = "15 s";
 

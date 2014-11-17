@@ -206,7 +206,7 @@ public class InstanceManager {
 
 		if(host != null){
 			registeredHostsByConnection.remove(taskManager);
-			registeredHostsById.remove(taskManager);
+			registeredHostsById.remove(host.getId());
 			deadHosts.add(taskManager);
 
 			host.markDead();
@@ -216,7 +216,8 @@ public class InstanceManager {
 			notifyDeadInstance(host);
 
 			LOG.info("Unregistered task manager " + taskManager.path().address() + ". Number of " +
-					"registered task managers " + getNumberOfRegisteredTaskManagers());
+					"registered task managers " + getNumberOfRegisteredTaskManagers() + ". Number" +
+					" of available slots " + getTotalNumberOfSlots() + ".");
 		}
 	}
 
