@@ -79,7 +79,7 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
   val REGISTRATION_DELAY = 0 seconds
   val REGISTRATION_INTERVAL = 10 seconds
   val MAX_REGISTRATION_ATTEMPTS = 10
-  val HEARTBEAT_INTERVAL = 1000 millisecond
+  val HEARTBEAT_INTERVAL = 5000 millisecond
 
   TaskManager.checkTempDirs(tmpDirPaths)
   val ioManager = new IOManagerAsync(tmpDirPaths)

@@ -578,15 +578,15 @@ public final class ConfigConstants {
 	
 	// ------------------------------ Akka Values ------------------------------
 
-	public static String DEFAULT_AKKA_TRANSPORT_HEARTBEAT_INTERVAL = "1000 ms";
+	public static String DEFAULT_AKKA_TRANSPORT_HEARTBEAT_INTERVAL = "5000 ms";
 
-	public static String DEFAULT_AKKA_TRANSPORT_HEARTBEAT_PAUSE = "10 s";
+	public static String DEFAULT_AKKA_TRANSPORT_HEARTBEAT_PAUSE = "100 s";
 
 	public static double DEFAULT_AKKA_TRANSPORT_THRESHOLD = 300.0;
 
-	public static String DEFAULT_AKKA_WATCH_HEARTBEAT_INTERVAL = "1000 ms";
+	public static String DEFAULT_AKKA_WATCH_HEARTBEAT_INTERVAL = "5000 ms";
 
-	public static String DEFAULT_AKKA_WATCH_HEARTBEAT_PAUSE = "10 s";
+	public static String DEFAULT_AKKA_WATCH_HEARTBEAT_PAUSE = "100 s";
 
 	public static double DEFAULT_AKKA_WATCH_THRESHOLD = 300.0;
 
