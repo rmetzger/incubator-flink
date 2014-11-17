@@ -214,6 +214,9 @@ public class InstanceManager {
 			totalNumberOfAliveTaskSlots -= host.getTotalNumberOfSlots();
 
 			notifyDeadInstance(host);
+
+			LOG.info("Unregistered task manager " + taskManager.path().address() + ". Number of " +
+					"registered task managers " + getNumberOfRegisteredTaskManagers());
 		}
 	}
 
