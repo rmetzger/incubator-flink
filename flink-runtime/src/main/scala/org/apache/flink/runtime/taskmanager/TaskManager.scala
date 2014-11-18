@@ -232,9 +232,18 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
       val taskIndex = tdd.getIndexInSubtaskGroup
       val numSubtasks = tdd.getCurrentNumberOfSubtasks
       var jarsRegistered = false
+      var startRegisteringTask = 0l
 
       try {
+        if(log.isDebugEnabled){
+          startRegisteringTask = System.currentTimeMillis()
+        }
         libraryCacheManager.registerTask(jobID, executionID, tdd.getRequiredJarFiles());
+
+        if(log.isDebugEnabled){
+          log.debug(s"Register task ${executionID} took ${(System.currentTimeMillis() -
+            startRegisteringTask)/1000.0}s")
+        }
         jarsRegistered = true
 
         val userCodeClassLoader = libraryCacheManager.getClassLoader(jobID)

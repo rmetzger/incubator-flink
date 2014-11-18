@@ -367,6 +367,9 @@ public class NetUtils {
 							}
 							break;
 						case HEURISTIC:
+							LOG.debug("ResolveAddress using heuristic strategy for " + i + " with" +
+									"isLinkLocalAddress:" + i.isLinkLocalAddress() +" " +
+									"isLoopbackAddress:" + i.isLoopbackAddress() + ".");
 							if(!i.isLinkLocalAddress() && !i.isLoopbackAddress() && i instanceof Inet4Address){
 								LOG.warn("Hostname " + InetAddress.getLocalHost().getHostName() + " resolves to " +
 										"loopback address. Using instead " + i.getHostAddress() + " on network " +
@@ -395,7 +398,8 @@ public class NetUtils {
 						break;
 					}
 				case HEURISTIC:
-					throw new RuntimeException("The TaskManager is unable to connect to the JobManager (Address: '"+jobManagerAddress+"').");
+					throw new RuntimeException("Unable to resolve own inet address by connecting " +
+							"to address (" + jobManagerAddress + ").");
 			}
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("Defaulting to detection strategy " + strategy);
