@@ -52,9 +52,9 @@ public class DateComparatorTest extends ComparatorTestBase<Date> {
 		}
 		return new Date[]{
 			new Date(0L),
-            new Date(1L),
-            new Date(2L),
-            new Date(rndLong),
-            new Date(Long.MAX_VALUE)};
+			new Date(1L),
+			new Date(2L),
+			new Date(rndLong),
+			new Date(Long.MAX_VALUE)};
 	}
 }

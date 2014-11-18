@@ -65,7 +65,7 @@ public final class AvroSerializer<T> extends TypeSerializer<T> {
 			throw new NullPointerException();
 		}
 		
-		// InstantiationUtil.checkForInstantiation(typeToInstantiate);
+		InstantiationUtil.checkForInstantiation(typeToInstantiate);
 		
 		this.type = type;
 		this.typeToInstantiate = typeToInstantiate;

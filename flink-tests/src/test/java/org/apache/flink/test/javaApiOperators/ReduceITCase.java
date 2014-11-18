@@ -357,7 +357,7 @@ public class ReduceITCase extends JavaProgramTestBase {
 							} */
 							Assert.assertEquals(666, val.date.getTime());
 						}
-                        out.collect("ok");
+						out.collect("ok");
 					}
 				});
 				
