@@ -877,8 +877,7 @@ public class TypeExtractor {
 		}
 
 		if (clazz.equals(Object.class)) {
-			// TODO (merging): better throw an exception here. the runtime does not support it yet
-			return new GenericTypeInfo<X>(clazz);
+			throw new InvalidTypesException("Flink does currently not support serializing Object-types. FLINK-610 is going to fix this.");
 		}
 		
 		// check for arrays
