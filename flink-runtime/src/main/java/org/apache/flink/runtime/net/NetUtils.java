@@ -392,6 +392,8 @@ public class NetUtils {
 					break;
 				case SLOW_CONNECT:
 					if(!InetAddress.getLocalHost().isLoopbackAddress()){
+						LOG.info("Heuristically taking " + InetAddress.getLocalHost() + " as own " +
+								"IP address.");
 						return InetAddress.getLocalHost();
 					}else {
 						strategy = AddressDetectionState.HEURISTIC;
