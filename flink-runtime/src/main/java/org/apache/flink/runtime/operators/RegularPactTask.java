@@ -1235,8 +1235,6 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 			return null;
 		}
 
-		LOG.debug("Number of outputs {}.", numOutputs);
-
 		// get the factory for the serializer
 		final TypeSerializerFactory<T> serializerFactory = config.getOutputSerializer(cl);
 
@@ -1296,13 +1294,11 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 					final TypeComparator<T> comparator = compFactory.createComparator();
 					oe = new OutputEmitter<T>(strategy, comparator, partitioner, dataDist);
 				}
-				LOG.debug("Created comparator nr. {}.", i);
 				writers.add(new RecordWriter<SerializationDelegate<T>>(task, oe));
 			}
 			if (eventualOutputs != null) {
 				eventualOutputs.addAll(writers);
 			}
-			LOG.debug("Created output collector.");
 			return new OutputCollector<T>(writers, serializerFactory.getSerializer());
 		}
 	}
