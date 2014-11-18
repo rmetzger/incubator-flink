@@ -78,23 +78,24 @@ object AkkaUtils {
     val logLevel = configuration.getString(ConfigConstants.AKKA_LOG_LEVEL,
       ConfigConstants.DEFAULT_AKKA_LOG_LEVEL)
 
-    val configString = s"""akka.remote.transport-failure-detector.heartbeat-interval =
-                       $transportHeartbeatInterval
-       |akka.remote.transport-failure-detector.acceptable-heartbeat-pause = $transportHeartbeatPause
-       |akka.remote.transport-failure-detector.threshold = $transportThreshold
-       |akka.remote.watch-failure-detector.heartbeat-interval = $watchHeartbeatInterval
-       |akka.remote.watch-failure-detector.acceptable-heartbeat-pause = $watchHeartbeatPause
-       |akka.remote.wathc-failure-detector.threshold = $watchThreshold
+    val configString =
+      s"""akka.loglevel = "$logLevel"
+       |akka.stdout-loglevel = "$logLevel"
+//       |akka.remote.transport-failure-detector.heartbeat-interval =
+//                       $transportHeartbeatInterval
+//       |akka.remote.transport-failure-detector.acceptable-heartbeat-pause = $transportHeartbeatPause
+//       |akka.remote.transport-failure-detector.threshold = $transportThreshold
+//       |akka.remote.watch-failure-detector.heartbeat-interval = $watchHeartbeatInterval
+//       |akka.remote.watch-failure-detector.acceptable-heartbeat-pause = $watchHeartbeatPause
+//       |akka.remote.watch-failure-detector.threshold = $watchThreshold
        |akka.remote.netty.tcp.hostname = $host
        |akka.remote.netty.tcp.port = $port
-       |akka.remote.netty.tcp.connection-timeout = $akkaTCPTimeout
+//       |akka.remote.netty.tcp.connection-timeout = $akkaTCPTimeout
        |akka.remote.netty.tcp.maximum-frame-size = $akkaFramesize
        |akka.actor.default-dispatcher.throughput = $akkaThroughput
        |akka.remote.log-remote-lifecycle-events = $logLifecycleEvents
        |akka.log-dead-letters = $logLifecycleEvents
        |akka.log-dead-letters-during-shutdown = $logLifecycleEvents
-       |akka.loglevel = "$logLevel"
-       |akka.stdout-loglevel = "$logLevel"
      """.stripMargin
 
     getDefaultActorSystemConfigString + configString
@@ -108,8 +109,8 @@ object AkkaUtils {
       |akka.stdout-loglevel = "WARNING"
       |akka.jvm-exit-on-fatal-error = off
       |akka.actor.provider = "akka.remote.RemoteActorRefProvider"
-      |akka.remote.netty.tcp.transport-class = "akka.remote.transport.netty.NettyTransport"
-      |akka.remote.netty.tcp.tcp-nodelay = on
+//      |akka.remote.netty.tcp.transport-class = "akka.remote.transport.netty.NettyTransport"
+//      |akka.remote.netty.tcp.tcp-nodelay = on
       |akka.log-config-on-start = off
       |akka.remote.netty.tcp.port = 0
       |akka.remote.netty.tcp.maximum-frame-size = 1MB
