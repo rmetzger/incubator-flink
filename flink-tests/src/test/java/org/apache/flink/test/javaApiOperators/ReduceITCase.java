@@ -21,9 +21,11 @@ package org.apache.flink.test.javaApiOperators;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 
 import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -340,7 +342,27 @@ public class ReduceITCase extends JavaProgramTestBase {
 				 * Test support for Date and enum serialization
 				 */
 				final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-				DataSet<PojoWithDateAndEnum> ds = CollectionDataSets.getPojoWithDateAndEnum(env);
+				DataSet<PojoWithDateAndEnum> ds = env.generateSequence(0,2).map(new MapFunction<Long, PojoWithDateAndEnum>() {
+					@Override
+					public PojoWithDateAndEnum map(Long value) throws Exception {
+						int l = value.intValue();
+						switch(l) {
+							case 0:
+								PojoWithDateAndEnum one = new PojoWithDateAndEnum();
+								one.group = "a"; one.date = new Date(666); one.cat = CollectionDataSets.Category.CAT_A;
+								return one;
+							case 1:
+								PojoWithDateAndEnum two = new PojoWithDateAndEnum();
+								two.group = "a"; two.date = new Date(666); two.cat = CollectionDataSets.Category.CAT_A;
+								return two;
+							case 2:
+								PojoWithDateAndEnum three = new PojoWithDateAndEnum();
+								three.group = "b"; three.date = new Date(666); three.cat = CollectionDataSets.Category.CAT_B;
+								return three;
+						}
+						throw new RuntimeException("Unexpected value for l="+l);
+					}
+				});
 				DataSet<String> res = ds.groupBy("group").reduceGroup(new GroupReduceFunction<CollectionDataSets.PojoWithDateAndEnum, String>() {
 					private static final long serialVersionUID = 1L;
 

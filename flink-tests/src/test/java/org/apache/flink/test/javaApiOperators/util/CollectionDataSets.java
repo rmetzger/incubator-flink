@@ -531,21 +531,21 @@ public class CollectionDataSets {
 		return env.fromCollection(data);
 	}
 
-	/*public static enum Category {
-		CAT_A, CAT_B
-	} */
+	public enum Category {
+		CAT_A, CAT_B;
+	}
 
 	public static class PojoWithDateAndEnum {
 		public String group;
 		public Date date;
-	//	public Category cat;
+		public Category cat;
 	}
 	
 	public static DataSet<PojoWithDateAndEnum> getPojoWithDateAndEnum(ExecutionEnvironment env) {
 		List<PojoWithDateAndEnum> data = new ArrayList<PojoWithDateAndEnum>();
 		
 		PojoWithDateAndEnum one = new PojoWithDateAndEnum();
-		one.group = "a"; one.date = new Date(666); // one.cat = Category.CAT_A;
+		one.group = "a"; one.date = new Date(666); one.cat = Category.CAT_A;
 		data.add(one);
 		
 		PojoWithDateAndEnum two = new PojoWithDateAndEnum();
