@@ -37,6 +37,10 @@ import org.apache.flink.core.memory.DataOutputView;
 
 public final class PojoSerializer<T> extends TypeSerializer<T> {
 
+	// Flags for the header
+	private static byte IS_NULL = 1;
+	private static byte IS_SUBCLASS = 2;
+
 	private static final long serialVersionUID = 1L;
 
 	private final Class<T> clazz;
@@ -51,7 +55,6 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 	private final boolean stateful;
 
 	private transient Map<Class<?>, TypeSerializer> subclassSerializerCache;
-
 
 	@SuppressWarnings("unchecked")
 	public PojoSerializer(Class<T> clazz, TypeSerializer<?>[] fieldSerializers, Field[] fields) {
@@ -177,8 +180,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 			return t;
 		}
 		catch (Exception e) {
-//			throw new RuntimeException("Cannot instantiate class.", e);
-			return null;
+			throw new RuntimeException("Cannot instantiate class.", e);
 		}
 	}
 
@@ -259,18 +261,21 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void serialize(T value, DataOutputView target) throws IOException {
+		int flags = 0;
 		// handle null values
 		if (value == null) {
-			target.writeBoolean(true);
+			flags |= IS_NULL;
+			target.writeByte(flags);
 			return;
-		} else {
-			target.writeBoolean(false);
 		}
 
-		if (clazz == value.getClass()) {
-			target.writeBoolean(true);
-		} else {
-			target.writeBoolean(false);
+		if (clazz != value.getClass()) {
+			flags |= IS_SUBCLASS;
+		}
+
+		target.writeByte(flags);
+
+		if ((flags & IS_SUBCLASS) != 0) {
 			Class<?> subclass = value.getClass();
 			target.writeUTF(subclass.getName());
 		}
@@ -301,8 +306,8 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public T deserialize(DataInputView source) throws IOException {
-		boolean isNull = source.readBoolean();
-		if(isNull) {
+		int flags = source.readByte();
+		if((flags & IS_NULL) != 0) {
 			return null;
 		}
 
@@ -311,8 +316,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 		Class<?> subclass = null;
 		TypeSerializer subclassSerializer = null;
 
-		boolean isExactClass = source.readBoolean();
-		if (!isExactClass) {
+		if ((flags & IS_SUBCLASS) != 0) {
 			String subclassName = source.readUTF();
 			try {
 				subclass = Class.forName(subclassName, true, this.getClass().getClassLoader());
@@ -329,7 +333,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 
 		try {
 			for (int i = 0; i < numFields; i++) {
-				isNull = source.readBoolean();
+				boolean isNull = source.readBoolean();
 				if(isNull) {
 					fields[i].set(target, null);
 				} else {
@@ -352,15 +356,14 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 	@SuppressWarnings("unchecked")
 	public T deserialize(T reuse, DataInputView source) throws IOException {
 		// handle null values
-		boolean isNull = source.readBoolean();
-		if (isNull) {
+		int flags = source.readByte();
+		if((flags & IS_NULL) != 0) {
 			return null;
 		}
 
 		Class<?> subclass = null;
 		TypeSerializer subclassSerializer = null;
-		boolean isExactClass = source.readBoolean();
-		if (!isExactClass) {
+		if ((flags & IS_SUBCLASS) != 0) {
 			String subclassName = source.readUTF();
 			try {
 				subclass = Class.forName(subclassName, true, this.getClass().getClassLoader());
@@ -383,7 +386,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 
 		try {
 			for (int i = 0; i < numFields; i++) {
-				isNull = source.readBoolean();
+				boolean isNull = source.readBoolean();
 				if(isNull) {
 					fields[i].set(reuse, null);
 				} else {
@@ -405,13 +408,12 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 
 	@Override
 	public void copy(DataInputView source, DataOutputView target) throws IOException {
-		// copy the Non-Null/Null tag
-		target.writeBoolean(source.readBoolean());
+		// copy the flags
+		int flags = source.readByte();
+		target.writeByte(flags);
 
-		boolean isExactClass = source.readBoolean();
 		Class<?> subclass = null;
-		target.writeBoolean(isExactClass);
-		if (!isExactClass) {
+		if ((flags & IS_SUBCLASS) != 0) {
 			String className = source.readUTF();
 			target.writeUTF(className);
 			try {

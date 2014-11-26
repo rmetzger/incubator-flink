@@ -1059,11 +1059,10 @@ public class TypeExtractorTest {
 
 	public interface Testable {}
 
-	public abstract class AbstractClass {}
+	public static abstract class AbstractClass {}
 
 	@Test
-	@Ignore
-	public void testAbstractAndInterfaceTypesException() {
+	public void testAbstractAndInterfaceTypes() {
 		RichMapFunction<String, ?> function = new RichMapFunction<String, Testable>() {
 			private static final long serialVersionUID = 1L;
 
@@ -1073,12 +1072,8 @@ public class TypeExtractorTest {
 			}
 		};
 		
-		try {
-			TypeExtractor.getMapReturnTypes(function, BasicTypeInfo.STRING_TYPE_INFO);
-			Assert.fail("exception expected");
-		} catch (InvalidTypesException e) {
-			// good
-		}
+		TypeInformation<?> ti = TypeExtractor.getMapReturnTypes(function, BasicTypeInfo.STRING_TYPE_INFO);
+		Assert.assertTrue(ti instanceof PojoTypeInfo);
 
 		RichMapFunction<String, ?> function2 = new RichMapFunction<String, AbstractClass>() {
 			private static final long serialVersionUID = 1L;
@@ -1089,12 +1084,8 @@ public class TypeExtractorTest {
 			}
 		};
 
-		try {
-			TypeExtractor.getMapReturnTypes(function2, BasicTypeInfo.STRING_TYPE_INFO);
-			Assert.fail("exception expected");
-		} catch (InvalidTypesException e) {
-			// slick!
-		}
+		ti = TypeExtractor.getMapReturnTypes(function2, BasicTypeInfo.STRING_TYPE_INFO);
+		Assert.assertTrue(ti instanceof PojoTypeInfo);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
