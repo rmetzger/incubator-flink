@@ -164,6 +164,8 @@ public class Client {
 	
 	public void run(String[] args) throws Exception {
 
+		conf = Utils.initializeYarnConfiguration();
+
 		if(UserGroupInformation.isSecurityEnabled()) {
 			throw new RuntimeException("Flink YARN client does not have security support right now."
 					+ "File a bug, we will fix it asap");
@@ -349,8 +351,6 @@ public class Client {
 			jmPort = ConfigConstants.DEFAULT_JOB_MANAGER_IPC_PORT;
 		}
 		
-		conf = Utils.initializeYarnConfiguration();
-
 		// intialize HDFS
 		LOG.info("Copy App Master jar from local filesystem and add to local environment");
 		// Copy the application master jar to the filesystem
