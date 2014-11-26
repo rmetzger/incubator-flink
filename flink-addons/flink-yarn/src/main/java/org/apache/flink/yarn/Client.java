@@ -292,6 +292,10 @@ public class Client {
 			queue = cmd.getOptionValue(QUEUE.getOpt());
 		}
 
+		// the yarnMinAllocationMB specifies the smallest possible container allocation size.
+		// all allocations below this value are automatically set to this value.
+		final int yarnMinAllocationMB = conf.getInt("yarn.scheduler.minimum-allocation-mb", 0);
+
 		// JobManager Memory
 		int jmMemory = 512;
 		if(cmd.hasOption(JM_MEMORY.getOpt())) {
@@ -302,6 +306,11 @@ public class Client {
 					+ "of "+MIN_JM_MEMORY+" MB");
 			System.exit(1);
 		}
+		if(jmMemory < yarnMinAllocationMB) {
+			System.out.println("The JobManager memory is below the smallest possible YARN Container size. "
+					+ "The value of 'yarn.scheduler.minimum-allocation-mb' is '"+yarnMinAllocationMB+"'. Please increase the memory size.");
+			System.exit(1);
+		}
 		// Task Managers memory
 		int tmMemory = 1024;
 		if(cmd.hasOption(TM_MEMORY.getOpt())) {
@@ -310,6 +319,11 @@ public class Client {
 		if(tmMemory < MIN_TM_MEMORY) {
 			System.out.println("The TaskManager memory is below the minimum required memory amount "
 					+ "of "+MIN_TM_MEMORY+" MB");
+			System.exit(1);
+		}
+		if(tmMemory < yarnMinAllocationMB) {
+			System.out.println("The JobManager memory is below the smallest possible YARN Container size. "
+					+ "The value of 'yarn.scheduler.minimum-allocation-mb' is '"+yarnMinAllocationMB+"'. Please increase the memory size.");
 			System.exit(1);
 		}
 		
