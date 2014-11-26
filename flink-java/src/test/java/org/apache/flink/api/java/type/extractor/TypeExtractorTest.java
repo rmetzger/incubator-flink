@@ -60,6 +60,7 @@ import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
 import org.apache.hadoop.io.Writable;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -1061,6 +1062,7 @@ public class TypeExtractorTest {
 	public abstract class AbstractClass {}
 
 	@Test
+	@Ignore
 	public void testAbstractAndInterfaceTypesException() {
 		RichMapFunction<String, ?> function = new RichMapFunction<String, Testable>() {
 			private static final long serialVersionUID = 1L;

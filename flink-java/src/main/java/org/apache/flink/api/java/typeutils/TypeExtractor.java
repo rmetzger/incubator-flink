@@ -252,6 +252,9 @@ public class TypeExtractor {
 			else {
 				curT = ((Class<?>) curT).getGenericSuperclass();
 			}
+			if (curT == null) {
+				break;
+			}
 		}
 		return curT;
 	}
@@ -871,11 +874,6 @@ public class TypeExtractor {
 	private <X> TypeInformation<X> privateGetForClass(Class<X> clazz, ArrayList<Type> typeHierarchy, ParameterizedType clazzTypeHint) {
 		Validate.notNull(clazz);
 		
-		// check for abstract classes or interfaces
-		if (!clazz.isPrimitive() && (Modifier.isInterface(clazz.getModifiers()) || (Modifier.isAbstract(clazz.getModifiers()) && !clazz.isArray()))) {
-			throw new InvalidTypesException("Interfaces and abstract classes are not valid types: " + clazz);
-		}
-
 		if (clazz.equals(Object.class)) {
 			return new GenericTypeInfo<X>(clazz);
 		}
@@ -1065,8 +1063,15 @@ public class TypeExtractor {
 		try {
 			clazz.getDeclaredConstructor();
 		} catch (NoSuchMethodException e) {
-			LOG.warn("Class " + clazz + " must have a default constructor to be used as a POJO.");
-			return null;
+			if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
+				// ignore, since the user cannot have elements of this, these
+				// will be handled by the subclass serializer in PojoSerializer
+				LOG.warn("Class " + clazz + " is abstract or an interface, having a concrete " +
+						"type can increase performance.");
+			} else {
+				LOG.warn("Class " + clazz + " must have a default constructor to be used as a POJO.");
+				return null;
+			}
 		}
 		
 		// everything is checked, we return the pojo
