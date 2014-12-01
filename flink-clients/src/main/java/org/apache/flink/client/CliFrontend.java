@@ -126,6 +126,8 @@ public class CliFrontend {
 	public static final String YARN_PROPERTIES_DYNAMIC_PROPERTIES_STRING = "dynamicPropertiesString";
 	// this has to be a regex for String.split()
 	public static final String YARN_DYNAMIC_PROPERTIES_SEPARATOR = "@@";
+	// run job by deploying Flink into a YARN cluster, if this string is specified as the jobmanager address
+	public static final String YARN_DEPLOY_JOBMANAGER = "yarn-cluster";
 	
 
 	private CommandLineParser parser;
@@ -693,14 +695,13 @@ public class CliFrontend {
 		}
 	}
 	
-	protected InetSocketAddress getJobManagerAddress(CommandLine line) throws IOException {
+	protected String getJobManagerAddressString(CommandLine line) throws IOException {
 		Configuration configuration = getGlobalConfiguration();
 		
 		// first, check if the address comes from the command line option
 		if (line.hasOption(ADDRESS_OPTION.getOpt())) {
 			try {
-				String address = line.getOptionValue(ADDRESS_OPTION.getOpt());
-				return RemoteExecutor.getInetFromHostport(address);
+				return line.getOptionValue(ADDRESS_OPTION.getOpt());
 			}
 			catch (Exception e) {
 				System.out.println("Error: The JobManager address has an invalid format. " + e.getMessage());
@@ -714,9 +715,9 @@ public class CliFrontend {
 					String address = yarnProps.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
 					System.out.println("Found a yarn properties file (" + YARN_PROPERTIES_FILE + ") file, "
 							+ "using \""+address+"\" to connect to the JobManager");
-					return RemoteExecutor.getInetFromHostport(address);
+					return address;
 				} catch (Exception e) {
-					System.out.println("Found a yarn properties " + YARN_PROPERTIES_FILE + " file, but could not read the JobManager address from the file. " 
+					System.out.println("Found a yarn properties " + YARN_PROPERTIES_FILE + " file, but could not read the JobManager address from the file. "
 								+ e.getMessage());
 					return null;
 				}
@@ -746,18 +747,18 @@ public class CliFrontend {
 					return null;
 				}
 				
-				return new InetSocketAddress(jobManagerAddress, jobManagerPort);
+				return jobManagerAddress + ":" + jobManagerPort;
 			}
 		}
 	}
 	
 	protected ActorRef getJobManager(CommandLine line) throws IOException {
-		InetSocketAddress jobManagerAddress = getJobManagerAddress(line);
-		if (jobManagerAddress == null) {
+		String jobManagerAddressStr = getJobManagerAddressString(line);
+		if (jobManagerAddressStr == null) {
 			return null;
 		}
 
-		return JobManager.getJobManager(jobManagerAddress,
+		return JobManager.getJobManager(RemoteExecutor.getInetFromHostport(jobManagerAddressStr),
 				ActorSystem.create("CliFrontendActorSystem", AkkaUtils
 						.getDefaultActorSystemConfig()),getAkkaTimeout());
 	}
@@ -861,7 +862,13 @@ public class CliFrontend {
 	}
 	
 	protected Client getClient(CommandLine line, ClassLoader classLoader) throws IOException {
-		return new Client(getJobManagerAddress(line), getGlobalConfiguration(), classLoader);
+		String jmAddrString = getJobManagerAddressString(line);
+		if(jmAddrString.equals(YARN_DEPLOY_JOBMANAGER)) {
+			// user wants to Flink to run in YARN cluster.
+			
+		}
+		InetSocketAddress jobManagerAddress = RemoteExecutor.getInetFromHostport(jmAddrString);
+		return new Client(jobManagerAddress, getGlobalConfiguration(), classLoader);
 	}
 
 	/**

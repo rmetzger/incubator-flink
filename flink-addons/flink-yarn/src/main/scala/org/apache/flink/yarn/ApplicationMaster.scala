@@ -41,7 +41,7 @@ object ApplicationMaster{
   val MODIFIED_CONF_FILE = "flink-conf-modified.yaml"
 
   def main(args: Array[String]): Unit ={
-    val yarnClientUsername = System.getenv(Client.ENV_CLIENT_USERNAME)
+    val yarnClientUsername = System.getenv(FlinkYarnClient.ENV_CLIENT_USERNAME)
     LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName} " +
       s"' setting user to execute Flink ApplicationMaster/JobManager to ${yarnClientUsername}'")
 
@@ -69,11 +69,11 @@ object ApplicationMaster{
           val ownHostname = env.get(Environment.NM_HOST.key())
           require(ownHostname != null, s"Own hostname not set.")
 
-          val taskManagerCount = env.get(Client.ENV_TM_COUNT).toInt
-          val slots = env.get(Client.ENV_SLOTS).toInt
-          val dynamicPropertiesEncodedString = env.get(Client.ENV_DYNAMIC_PROPERTIES)
+          val taskManagerCount = env.get(FlinkYarnClient.ENV_TM_COUNT).toInt
+          val slots = env.get(FlinkYarnClient.ENV_SLOTS).toInt
+          val dynamicPropertiesEncodedString = env.get(FlinkYarnClient.ENV_DYNAMIC_PROPERTIES)
 
-          val appNumber = env.get(Client.ENV_APP_NUMBER).toInt
+          val appNumber = env.get(FlinkYarnClient.ENV_APP_NUMBER).toInt
 
           val jobManagerPort = GlobalConfiguration.getInteger(
             ConfigConstants.JOB_MANAGER_IPC_PORT_KEY,

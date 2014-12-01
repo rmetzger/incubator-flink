@@ -95,23 +95,23 @@ trait YarnJobManager extends ActorLogMessages {
 
     case StartYarnSession(conf) => {
       log.info("Start yarn session.")
-      val memoryPerTaskManager = env.get(Client.ENV_TM_MEMORY).toInt
+      val memoryPerTaskManager = env.get(FlinkYarnClient.ENV_TM_MEMORY).toInt
       val heapLimit = Utils.calculateHeapSize(memoryPerTaskManager)
 
       val applicationMasterHost = env.get(Environment.NM_HOST.key)
       require(applicationMasterHost != null, s"Application master (${Environment.NM_HOST} not set.")
 
-      numTaskManager = env.get(Client.ENV_TM_COUNT).toInt
+      numTaskManager = env.get(FlinkYarnClient.ENV_TM_COUNT).toInt
       log.info(s"Requesting ${numTaskManager} task managers.")
 
-      val coresPerTaskManager = env.get(Client.ENV_TM_CORES).toInt
-      val remoteFlinkJarPath = env.get(Client.FLINK_JAR_PATH)
+      val coresPerTaskManager = env.get(FlinkYarnClient.ENV_TM_CORES).toInt
+      val remoteFlinkJarPath = env.get(FlinkYarnClient.FLINK_JAR_PATH)
       val fs = FileSystem.get(conf)
-      val appId = env.get(Client.ENV_APP_ID)
+      val appId = env.get(FlinkYarnClient.ENV_APP_ID)
       val currDir = env.get(Environment.PWD.key())
-      val clientHomeDir = env.get(Client.ENV_CLIENT_HOME_DIR)
-      val shipListString = env.get(Client.ENV_CLIENT_SHIP_FILES)
-      val yarnClientUsername = env.get(Client.ENV_CLIENT_USERNAME)
+      val clientHomeDir = env.get(FlinkYarnClient.ENV_CLIENT_HOME_DIR)
+      val shipListString = env.get(FlinkYarnClient.ENV_CLIENT_SHIP_FILES)
+      val yarnClientUsername = env.get(FlinkYarnClient.ENV_CLIENT_USERNAME)
 
       val jobManagerWebPort = configuration.getInteger(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY,
         ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT)
@@ -284,7 +284,7 @@ trait YarnJobManager extends ActorLogMessages {
     // Setup classpath for container ( = TaskManager )
     val containerEnv = new java.util.HashMap[String, String]()
     Utils.setupEnv(yarnConf, containerEnv)
-    containerEnv.put(Client.ENV_CLIENT_USERNAME, yarnClientUsername)
+    containerEnv.put(FlinkYarnClient.ENV_CLIENT_USERNAME, yarnClientUsername)
     ctx.setEnvironment(containerEnv)
 
     val user = UserGroupInformation.getCurrentUser

@@ -87,8 +87,8 @@ import scala.concurrent.duration.FiniteDuration;
  * by YARN into their local fs.
  *
  */
-public class Client {
-	private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+public class FlinkYarnClient {
+	private static final Logger LOG = LoggerFactory.getLogger(FlinkYarnClient.class);
 
 	/**
 	 * Command Line argument options
@@ -202,7 +202,7 @@ public class Client {
 			}
 			localJarPath = new Path(userPath);
 		} else {
-			localJarPath = new Path("file://"+Client.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+			localJarPath = new Path("file://"+FlinkYarnClient.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		}
 
 		if(cmd.hasOption(GEN_CONF.getOpt())) {
@@ -496,18 +496,18 @@ public class Client {
 		Map<String, String> appMasterEnv = new HashMap<String, String>();
 		Utils.setupEnv(conf, appMasterEnv);
 		// set configuration values
-		appMasterEnv.put(Client.ENV_TM_COUNT, String.valueOf(taskManagerCount));
-		appMasterEnv.put(Client.ENV_TM_CORES, String.valueOf(tmCores));
-		appMasterEnv.put(Client.ENV_TM_MEMORY, String.valueOf(tmMemory));
-		appMasterEnv.put(Client.FLINK_JAR_PATH, remotePathJar.toString() );
-		appMasterEnv.put(Client.ENV_APP_ID, appId.toString());
-		appMasterEnv.put(Client.ENV_CLIENT_HOME_DIR, fs.getHomeDirectory().toString());
-		appMasterEnv.put(Client.ENV_CLIENT_SHIP_FILES, envShipFileList.toString() );
-		appMasterEnv.put(Client.ENV_CLIENT_USERNAME, UserGroupInformation.getCurrentUser().getShortUserName());
-		appMasterEnv.put(Client.ENV_SLOTS, String.valueOf(slots));
-		appMasterEnv.put(Client.ENV_APP_NUMBER, String.valueOf(appNumber));
+		appMasterEnv.put(FlinkYarnClient.ENV_TM_COUNT, String.valueOf(taskManagerCount));
+		appMasterEnv.put(FlinkYarnClient.ENV_TM_CORES, String.valueOf(tmCores));
+		appMasterEnv.put(FlinkYarnClient.ENV_TM_MEMORY, String.valueOf(tmMemory));
+		appMasterEnv.put(FlinkYarnClient.FLINK_JAR_PATH, remotePathJar.toString() );
+		appMasterEnv.put(FlinkYarnClient.ENV_APP_ID, appId.toString());
+		appMasterEnv.put(FlinkYarnClient.ENV_CLIENT_HOME_DIR, fs.getHomeDirectory().toString());
+		appMasterEnv.put(FlinkYarnClient.ENV_CLIENT_SHIP_FILES, envShipFileList.toString() );
+		appMasterEnv.put(FlinkYarnClient.ENV_CLIENT_USERNAME, UserGroupInformation.getCurrentUser().getShortUserName());
+		appMasterEnv.put(FlinkYarnClient.ENV_SLOTS, String.valueOf(slots));
+		appMasterEnv.put(FlinkYarnClient.ENV_APP_NUMBER, String.valueOf(appNumber));
 		if(dynamicPropertiesEncoded != null) {
-			appMasterEnv.put(Client.ENV_DYNAMIC_PROPERTIES, dynamicPropertiesEncoded);
+			appMasterEnv.put(FlinkYarnClient.ENV_DYNAMIC_PROPERTIES, dynamicPropertiesEncoded);
 		}
 
 		amContainer.setEnvironment(appMasterEnv);
@@ -707,7 +707,7 @@ public class Client {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Client c = new Client();
+		FlinkYarnClient c = new FlinkYarnClient();
 		c.run(args);
 	}
 }
