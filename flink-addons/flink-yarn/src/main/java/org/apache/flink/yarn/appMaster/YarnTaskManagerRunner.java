@@ -28,7 +28,7 @@ import akka.actor.ActorSystem;
 import org.apache.flink.yarn.YarnUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.flink.yarn.Client;
+import org.apache.flink.yarn.FlinkYarnClient;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
@@ -42,7 +42,7 @@ public class YarnTaskManagerRunner {
 
 	public static void main(final String[] args) throws IOException {
 		Map<String, String> envs = System.getenv();
-		final String yarnClientUsername = envs.get(Client.ENV_CLIENT_USERNAME);
+		final String yarnClientUsername = envs.get(FlinkYarnClient.ENV_CLIENT_USERNAME);
 		final String localDirs = envs.get(Environment.LOCAL_DIRS.key());
 
 		// configure local directory
