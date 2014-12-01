@@ -465,7 +465,6 @@ public class ExecutionVertexCancelTest {
 					final ExecutionJobVertex ejv = getExecutionVertex(jid);
 
 					final ExecutionVertex vertex = new ExecutionVertex(ejv, 0, new IntermediateResult[0]);
-					final ExecutionAttemptID execId = vertex.getCurrentExecutionAttempt().getAttemptId();
 
 					final ActorRef taskManager = system.actorOf(Props.create(new CancelSequenceTaskManagerCreator()));
 

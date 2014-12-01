@@ -318,7 +318,7 @@ public class Client {
 		}
 
 		try {
-
+			System.out.println("wait="+wait+" printStatusDuringExecution="+printStatusDuringExecution);
 			if (wait) {
 				return JobClient.submitJobAndWait(jobGraph, printStatusDuringExecution, client,
 						timeout);

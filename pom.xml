@@ -308,7 +308,8 @@ under the License.
 				<artifactId>hadoop-core</artifactId>
 				<version>${hadoop.version}</version>
 			</dependency>
-			<!-- YARN -->
+
+			<!-- Hadoop 2 Dependencies -->
 			<dependency>
 				<groupId>org.apache.hadoop</groupId>
 				<artifactId>hadoop-common</artifactId>
@@ -332,6 +333,23 @@ under the License.
 			<dependency>
 				<groupId>org.apache.hadoop</groupId>
 				<artifactId>hadoop-yarn-client</artifactId>
+				<version>${hadoop.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-yarn-common</artifactId>
+				<version>${hadoop.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-yarn-server-tests</artifactId>
+				<scope>test</scope>
+				<version>${hadoop.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-minicluster</artifactId>
+				<scope>test</scope>
 				<version>${hadoop.version}</version>
 			</dependency>
 		</dependencies>
@@ -363,6 +381,19 @@ under the License.
 			</properties>
 		</profile>
 
+		<profile>
+			<id>include-yarn</id>
+			<activation>
+				<property>
+				<!-- Please do not remove the 'hadoop1' comment. See ./tools/generate_specific_pom.sh -->
+				<!--hadoop2--><name>!hadoop.profile</name>
+				</property>
+			</activation>
+			<modules>
+				<module>flink-yarn</module>
+				<module>flink-yarn-tests</module>
+			</modules>
+		</profile>
 		<profile>
 			<id>hadoop-2.0.0-alpha</id>
 			<activation>
