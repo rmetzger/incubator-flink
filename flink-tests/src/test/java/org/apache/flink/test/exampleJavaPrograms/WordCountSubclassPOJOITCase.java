@@ -28,6 +28,7 @@ import org.apache.flink.test.util.JavaProgramTestBase;
 import org.apache.flink.util.Collector;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 
 @SuppressWarnings("serial")
 public class WordCountSubclassPOJOITCase extends JavaProgramTestBase implements Serializable {
@@ -106,8 +107,22 @@ public class WordCountSubclassPOJOITCase extends JavaProgramTestBase implements 
 		}
 	}
 
-	public static class WC extends WCBase {
+	public static interface CrazyCounter {
+		public BigInteger getCount();
+	}
+	public class CrazyCounterImpl implements CrazyCounter {
+		private BigInteger countz;
 
+		public CrazyCounterImpl(BigInteger c) {
+			this.countz = c;
+		}
+		@Override
+		public BigInteger getCount() {
+			return countz;
+		}
+	}
+	public static class WC extends WCBase {
+		public CrazyCounter cnt;
 		public int secretCount;
 
 		public WC() {
