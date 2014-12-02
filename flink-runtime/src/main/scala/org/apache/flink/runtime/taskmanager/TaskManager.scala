@@ -232,7 +232,7 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
       val taskIndex = tdd.getIndexInSubtaskGroup
       val numSubtasks = tdd.getCurrentNumberOfSubtasks
       var jarsRegistered = false
-      var startRegisteringTask = 0l
+      var startRegisteringTask = 0L
 
       try {
         if(log.isDebugEnabled){
