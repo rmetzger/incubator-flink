@@ -106,7 +106,9 @@ public class Utils {
 	 * 
 	 */
 	public static int calculateHeapSize(int memory) {
-		int heapLimit = (int)((float)memory*0.80);
+		float memoryCutoffRatio = GlobalConfiguration.getFloat("", 0.8f);
+
+		int heapLimit = (int)((float)memory * memoryCutoffRatio);
 		if( (memory - heapLimit) > HEAP_LIMIT_CAP) {
 			heapLimit = memory-HEAP_LIMIT_CAP;
 		}

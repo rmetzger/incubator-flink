@@ -17,32 +17,21 @@
  */
 package org.apache.flink.yarn;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.io.PrintStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.jar.JarFile;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.MissingOptionException;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.runtime.execution.RuntimeEnvironment;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
+import org.apache.flink.runtime.yarn.FlinkYarnCluster;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +61,6 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.Records;
-import scala.concurrent.duration.FiniteDuration;
 
 /**
  * All classes in this package contain code taken from
@@ -87,31 +75,9 @@ import scala.concurrent.duration.FiniteDuration;
  * by YARN into their local fs.
  *
  */
-public class FlinkYarnClient {
+public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkYarnClient.class);
 
-	/**
-	 * Command Line argument options
-	 */
-	private static final Option QUERY = new Option("q","query",false, "Display available YARN resources (memory, cores)");
-	// --- or ---
-	private static final Option VERBOSE = new Option("v","verbose",false, "Verbose debug mode");
-	private static final Option GEN_CONF = new Option("g","generateConf",false, "Place default configuration file in current directory");
-	private static final Option QUEUE = new Option("qu","queue",true, "Specify YARN queue.");
-	private static final Option SHIP_PATH = new Option("t","ship",true, "Ship files in the specified directory (t for transfer)");
-	private static final Option FLINK_CONF_DIR = new Option("c","confDir",true, "Path to Flink configuration directory");
-	private static final Option FLINK_JAR = new Option("j","jar",true, "Path to Flink jar file");
-	private static final Option JM_MEMORY = new Option("jm","jobManagerMemory",true, "Memory for JobManager Container [in MB]");
-	private static final Option TM_MEMORY = new Option("tm","taskManagerMemory",true, "Memory per TaskManager Container [in MB]");
-	private static final Option TM_CORES = new Option("tmc","taskManagerCores",true, "Virtual CPU cores per TaskManager");
-	private static final Option CONTAINER = new Option("n","container",true, "Number of Yarn container to allocate (=Number of"
-			+ " Task Managers)");
-	private static final Option SLOTS = new Option("s","slots",true, "Number of slots per TaskManager");
-	/**
-	 * Dynamic properties allow the user to specify additional configuration values with -D, such as
-	 *  -Dfs.overwrite-files=true  -Dtaskmanager.network.numberOfBuffers=16368
-	 */
-	private static final Option DYNAMIC_PROPERTIES = new Option("D", true, "Dynamic properties");
 
 	/**
 	 * Constants,
@@ -130,8 +96,7 @@ public class FlinkYarnClient {
 	public static final String ENV_SLOTS = "_SLOTS";
 	public static final String ENV_DYNAMIC_PROPERTIES = "_DYNAMIC_PROPERTIES";
 
-	private static final String CONFIG_FILE_NAME = "flink-conf.yaml";
-	
+
 	/**
 	 * Minimum memory requirements, checked by the Client.
 	 */
@@ -140,6 +105,7 @@ public class FlinkYarnClient {
 
 	private Configuration conf;
 	private YarnClient yarnClient;
+	private YarnClientApplication yarnApplication;
 
 	private ActorSystem actorSystem;
 
@@ -157,187 +123,93 @@ public class FlinkYarnClient {
 	 * If the user has specified a different number of slots, we store them here
 	 */
 	private int slots = -1;
-	
-	public void run(String[] args) throws Exception {
 
+	private int jobManagerMemoryMb = 512;
+
+	private int taskManagerMemoryMb = 512;
+
+	private int taskManagerCount = 1;
+
+	private String yarnQueue;
+
+	private Path flinkConfigurationPath;
+
+	private Path flinkJarPath;
+
+
+	public FlinkYarnClient() {
+		// Check if security is enabled
 		if(UserGroupInformation.isSecurityEnabled()) {
 			throw new RuntimeException("Flink YARN client does not have security support right now."
 					+ "File a bug, we will fix it asap");
 		}
-		//Utils.logFilesInCurrentDirectory(LOG);
-		//
-		//	Command Line Options
-		//
-		Options options = new Options();
-		options.addOption(VERBOSE);
-		options.addOption(FLINK_CONF_DIR);
-		options.addOption(FLINK_JAR);
-		options.addOption(JM_MEMORY);
-		options.addOption(TM_MEMORY);
-		options.addOption(TM_CORES);
-		options.addOption(CONTAINER);
-		options.addOption(GEN_CONF);
-		options.addOption(QUEUE);
-		options.addOption(QUERY);
-		options.addOption(SHIP_PATH);
-		options.addOption(SLOTS);
-		options.addOption(DYNAMIC_PROPERTIES);
-
-		CommandLineParser parser = new PosixParser();
-		CommandLine cmd = null;
-		try {
-			cmd = parser.parse( options, args);
-		} catch(MissingOptionException moe) {
-			System.out.println(moe.getMessage());
-			printUsage();
-			System.exit(1);
-		}
-
-		// Jar Path
-		Path localJarPath;
-		if(cmd.hasOption(FLINK_JAR.getOpt())) {
-			String userPath = cmd.getOptionValue(FLINK_JAR.getOpt());
-			if(!userPath.startsWith("file://")) {
-				userPath = "file://" + userPath;
-			}
-			localJarPath = new Path(userPath);
-		} else {
-			localJarPath = new Path("file://"+FlinkYarnClient.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-		}
-
-		if(cmd.hasOption(GEN_CONF.getOpt())) {
-			LOG.info("Placing default configuration in current directory");
-			File outFile = generateDefaultConf(localJarPath);
-			LOG.info("File written to "+outFile.getAbsolutePath());
-			System.exit(0);
-		}
-
-		// Conf Path
-		Path confPath = null;
-		String confDirPath = "";
-		if(cmd.hasOption(FLINK_CONF_DIR.getOpt())) {
-			confDirPath = cmd.getOptionValue(FLINK_CONF_DIR.getOpt())+"/";
-			File confFile = new File(confDirPath+CONFIG_FILE_NAME);
-			if(!confFile.exists()) {
-				LOG.error("Unable to locate configuration file in "+confFile);
-				System.exit(1);
-			}
-			confPath = new Path(confFile.getAbsolutePath());
-		} else {
-			System.out.println("No configuration file has been specified");
-
-			// no configuration path given.
-			// -> see if there is one in the current directory
-			File currDir = new File(".");
-			File[] candidates = currDir.listFiles(new FilenameFilter() {
-				@Override
-				public boolean accept(final File dir, final String name) {
-					return name != null && name.endsWith(".yaml");
-				}
-			});
-			if(candidates == null || candidates.length == 0) {
-				System.out.println("No configuration file has been found in current directory.\n"
-						+ "Copying default.");
-				File outFile = generateDefaultConf(localJarPath);
-				confPath = new Path(outFile.toURI());
-			} else {
-				if(candidates.length > 1) {
-					System.out.println("Multiple .yaml configuration files were found in the current directory\n"
-							+ "Please specify one explicitly");
-					System.exit(1);
-				} else if(candidates.length == 1) {
-					confPath = new Path(candidates[0].toURI());
-				}
-			}
-		}
-		List<File> shipFiles = new ArrayList<File>();
-		// path to directory to ship
-		if(cmd.hasOption(SHIP_PATH.getOpt())) {
-			String shipPath = cmd.getOptionValue(SHIP_PATH.getOpt());
-			File shipDir = new File(shipPath);
-			if(shipDir.isDirectory()) {
-				shipFiles = new ArrayList<File>(Arrays.asList(shipDir.listFiles(new FilenameFilter() {
-					@Override
-					public boolean accept(File dir, String name) {
-						return !(name.equals(".") || name.equals("..") );
-					}
-				})));
-			} else {
-				LOG.warn("Ship directory is not a directory!");
-			}
-		}
-		boolean hasLogback = false;
-		boolean hasLog4j = false;
-		//check if there is a logback or log4j file
-		if(confDirPath.length() > 0) {
-			File logback = new File(confDirPath+"/logback.xml");
-			if(logback.exists()) {
-				shipFiles.add(logback);
-				hasLogback = true;
-			}
-			File log4j = new File(confDirPath+"/log4j.properties");
-			if(log4j.exists()) {
-				shipFiles.add(log4j);
-				hasLog4j = true;
-			}
-		}
-
-		// queue
-		String queue = "default";
-		if(cmd.hasOption(QUEUE.getOpt())) {
-			queue = cmd.getOptionValue(QUEUE.getOpt());
-		}
-
-		// JobManager Memory
-		int jmMemory = 512;
-		if(cmd.hasOption(JM_MEMORY.getOpt())) {
-			jmMemory = Integer.valueOf(cmd.getOptionValue(JM_MEMORY.getOpt()));
-		}
-		if(jmMemory < MIN_JM_MEMORY) {
-			System.out.println("The JobManager memory is below the minimum required memory amount "
-					+ "of "+MIN_JM_MEMORY+" MB");
-			System.exit(1);
-		}
-		// Task Managers memory
-		int tmMemory = 1024;
-		if(cmd.hasOption(TM_MEMORY.getOpt())) {
-			tmMemory = Integer.valueOf(cmd.getOptionValue(TM_MEMORY.getOpt()));
-		}
-		if(tmMemory < MIN_TM_MEMORY) {
-			System.out.println("The TaskManager memory is below the minimum required memory amount "
-					+ "of "+MIN_TM_MEMORY+" MB");
-			System.exit(1);
-		}
-
-		if(cmd.hasOption(SLOTS.getOpt())) {
-			slots = Integer.valueOf(cmd.getOptionValue(SLOTS.getOpt()));
-		}
-
-		String[] dynamicProperties = null;
-		if(cmd.hasOption(DYNAMIC_PROPERTIES.getOpt())) {
-			dynamicProperties = cmd.getOptionValues(DYNAMIC_PROPERTIES.getOpt());
-		}
-		String dynamicPropertiesEncoded = StringUtils.join(dynamicProperties, CliFrontend.YARN_DYNAMIC_PROPERTIES_SEPARATOR);
-
-		// Task Managers vcores
-		int tmCores = 1;
-		if(cmd.hasOption(TM_CORES.getOpt())) {
-			tmCores = Integer.valueOf(cmd.getOptionValue(TM_CORES.getOpt()));
-		}
-		Utils.getFlinkConfiguration(confPath.toUri().getPath());
-		int jmPort = GlobalConfiguration.getInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, 0);
-		if(jmPort == 0) {
-			LOG.warn("Unable to find job manager port in configuration!");
-			jmPort = ConfigConstants.DEFAULT_JOB_MANAGER_IPC_PORT;
-		}
-		FiniteDuration timeout = new FiniteDuration(GlobalConfiguration.getInteger
-				(ConfigConstants.AKKA_ASK_TIMEOUT, ConfigConstants.DEFAULT_AKKA_ASK_TIMEOUT),
-				TimeUnit.SECONDS);
-
 		conf = Utils.initializeYarnConfiguration();
+	}
+
+	@Override
+	public void setJobManagerMemory(int memoryMb) {
+		if(memoryMb < MIN_JM_MEMORY) {
+			throw new IllegalArgumentException("The JobManager memory is below the minimum required memory amount "
+					+ "of "+MIN_JM_MEMORY+" MB");
+		}
+		this.jobManagerMemoryMb = memoryMb;
+	}
+
+	@Override
+	public void setTaskManagerMemory(int memoryMb) {
+		if(memoryMb < MIN_TM_MEMORY) {
+			throw new IllegalArgumentException("The TaskManager memory is below the minimum required memory amount "
+					+ "of "+MIN_TM_MEMORY+" MB");
+		}
+		this.taskManagerMemoryMb = memoryMb;
+	}
+
+	@Override
+	public void setTaskManagerSlots(int slots) {
+		if(slots <= 0) {
+			throw new IllegalArgumentException("Number of TaskManager slots must be positive");
+		}
+		this.slots = slots;
+	}
+
+	@Override
+	public void setQueue(String queue) {
+		this.yarnQueue = queue;
+	}
+
+	@Override
+	public void setLocalJarPath(Path localJarPath) {
+		this.flinkJarPath = localJarPath;
+	}
+
+	@Override
+	public void setConfigurationFilePath(Path confPath) {
+		flinkConfigurationPath = confPath;
+	}
+
+	private YarnClient getYarnClient() {
+		if(this.yarnClient == null) {
+			// Create yarnClient
+			yarnClient = YarnClient.createYarnClient();
+			yarnClient.init(conf);
+			yarnClient.start();
+		}
+		return yarnClient;
+	}
+
+	@Override
+	public void setTaskManagerCount(int tmCount) {
+		if(tmCount < 1) {
+			throw new IllegalArgumentException("The TaskManager count has to be at least 1.");
+		}
+		this.taskManagerCount = tmCount;
+	}
+
+
+	public FlinkYarnCluster deploy() throws Exception {
 
 		// intialize HDFS
-		LOG.info("Copy App Master jar from local filesystem and add to local environment");
+
 		// Copy the application master jar to the filesystem
 		// Create a local resource to point to the destination jar path
 		final FileSystem fs = FileSystem.get(conf);
@@ -350,68 +222,67 @@ public class FlinkYarnClient {
 					+ "The Flink YARN client needs to store its files in a distributed file system");
 		}
 
-		// Create yarnClient
-		yarnClient = YarnClient.createYarnClient();
-		yarnClient.init(conf);
-		yarnClient.start();
 
-		// Query cluster for metrics
-		if(cmd.hasOption(QUERY.getOpt())) {
-			showClusterMetrics(yarnClient);
-		}
-		if(!cmd.hasOption(CONTAINER.getOpt())) {
-			LOG.error("Missing required argument "+CONTAINER.getOpt());
-			printUsage();
-			yarnClient.stop();
-			System.exit(1);
-		}
-
-		// TM Count
-		final int taskManagerCount = Integer.valueOf(cmd.getOptionValue(CONTAINER.getOpt()));
-
-		System.out.println("Using values:");
-		System.out.println("\tContainer Count = "+taskManagerCount);
-		System.out.println("\tJar Path = "+localJarPath.toUri().getPath());
-		System.out.println("\tConfiguration file = "+confPath.toUri().getPath());
-		System.out.println("\tJobManager memory = "+jmMemory);
-		System.out.println("\tTaskManager memory = "+tmMemory);
-		System.out.println("\tTaskManager cores = "+tmCores);
+		LOG.info("Using values:");
+		LOG.info("\tTaskManager count = " + taskManagerCount);
+		LOG.info("\tJobManager memory = " + jobManagerMemoryMb);
+		LOG.info("\tTaskManager memory = " + taskManagerMemoryMb);
 
 		// Create application via yarnClient
-		YarnClientApplication app = yarnClient.createApplication();
-		GetNewApplicationResponse appResponse = app.getNewApplicationResponse();
+		yarnApplication = yarnClient.createApplication();
+		GetNewApplicationResponse appResponse = yarnApplication.getNewApplicationResponse();
+
+
+		// ------------------ Check if the YARN Cluster has the requested resources --------------
+
 		Resource maxRes = appResponse.getMaximumResourceCapability();
-		if(tmMemory > maxRes.getMemory() || tmCores > maxRes.getVirtualCores()) {
-			LOG.error("The cluster does not have the requested resources for the TaskManagers available!\n"
-					+ "Maximum Memory: "+maxRes.getMemory() +", Maximum Cores: "+tmCores);
-			yarnClient.stop();
-			System.exit(1);
-		}
-		if(jmMemory > maxRes.getMemory() ) {
-			LOG.error("The cluster does not have the requested resources for the JobManager available!\n"
+		if(jobManagerMemoryMb > maxRes.getMemory() ) {
+			failSession();
+			throw new YarnDeploymentException("The cluster does not have the requested resources for the JobManager available!\n"
 					+ "Maximum Memory: "+maxRes.getMemory());
-			yarnClient.stop();
-			System.exit(1);
 		}
-		int totalMemoryRequired = jmMemory + tmMemory * taskManagerCount;
+
+		if(taskManagerMemoryMb > maxRes.getMemory() ) {
+			failSession();
+			throw new YarnDeploymentException("The cluster does not have the requested resources for the TaskManagers available!\n"
+					+ "Maximum Memory: " + maxRes.getMemory());
+		}
+
+		int totalMemoryRequired = jobManagerMemoryMb + taskManagerMemoryMb * taskManagerCount;
 		ClusterResourceDescription freeClusterMem = getCurrentFreeClusterResources(yarnClient);
 		if(freeClusterMem.totalFreeMemory < totalMemoryRequired) {
-			LOG.error("This YARN session requires "+totalMemoryRequired+"MB of memory in the cluster. "
-					+ "There are currently only "+freeClusterMem.totalFreeMemory+"MB available.");
-			yarnClient.stop();
-			System.exit(1);
+			failSession();
+			throw new YarnDeploymentException("This YARN session requires " + totalMemoryRequired + "MB of memory in the cluster. "
+					+ "There are currently only " + freeClusterMem.totalFreeMemory+"MB available.");
+
 		}
-		if( tmMemory > freeClusterMem.containerLimit) {
-			LOG.error("The requested amount of memory for the TaskManagers ("+tmMemory+"MB) is more than "
+		if( taskManagerMemoryMb > freeClusterMem.containerLimit) {
+			failSession();
+			LOG.error("The requested amount of memory for the TaskManagers ("+taskManagerMemoryMb+"MB) is more than "
 					+ "the largest possible YARN container: "+freeClusterMem.containerLimit);
-			yarnClient.stop();
-			System.exit(1);
 		}
-		if( jmMemory > freeClusterMem.containerLimit) {
-			LOG.error("The requested amount of memory for the JobManager ("+jmMemory+"MB) is more than "
+		if( jobManagerMemoryMb > freeClusterMem.containerLimit) {
+			failSession();
+			LOG.error("The requested amount of memory for the JobManager ("+jobManagerMemoryMb+"MB) is more than "
 					+ "the largest possible YARN container: "+freeClusterMem.containerLimit);
-			yarnClient.stop();
-			System.exit(1);
+		}
+
+		// ------------------ Prepare Application Master Container  ------------------------------
+
+		boolean hasLogback = false;
+		boolean hasLog4j = false;
+		//check if there is a logback or log4j file
+		if(flinkConfigurationPath. > 0) {
+			File logback = new File(confDirPath+"/logback.xml");
+			if(logback.exists()) {
+				shipFiles.add(logback);
+				hasLogback = true;
+			}
+			File log4j = new File(confDirPath+"/log4j.properties");
+			if(log4j.exists()) {
+				shipFiles.add(log4j);
+				hasLog4j = true;
+			}
 		}
 
 		// respect custom JVM options in the YAML file
@@ -422,7 +293,7 @@ public class FlinkYarnClient {
 				.newRecord(ContainerLaunchContext.class);
 
 		String amCommand = "$JAVA_HOME/bin/java"
-					+ " -Xmx"+Utils.calculateHeapSize(jmMemory)+"M " +javaOpts;
+					+ " -Xmx"+Utils.calculateHeapSize(jobManagerMemoryMb)+"M " +javaOpts;
 		if(hasLogback || hasLog4j) {
 			amCommand += " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/jobmanager-main.log\"";
 		}
@@ -439,7 +310,7 @@ public class FlinkYarnClient {
 					+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/jobmanager-stderr.log";
 		amContainer.setCommands(Collections.singletonList(amCommand));
 
-		System.err.println("amCommand="+amCommand);
+		LOG.debug("Application Master start command: "+amCommand);
 
 		// Set-up ApplicationSubmissionContext for the application
 		ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
@@ -560,6 +431,24 @@ public class FlinkYarnClient {
 		}
 	}
 
+	/**
+	 * Kills YARN application and stops YARN client.
+	 *
+	 * Use this method to kill the App before it has been properly deployed
+	 */
+	private void failSession() {
+		LOG.info("Killing YARN application");
+		try {
+			yarnClient.killApplication(yarnApplication.getNewApplicationResponse().getApplicationId());
+		} catch (Exception e) {
+			LOG.error("Error while killing YARN application", e);
+		}
+		yarnClient.stop();
+	}
+
+	/**
+	 * Stop the YARN Session.
+	 */
 	private void stopSession() {
 		if(actorSystem != null){
 			LOG.info("Sending shutdown request to the Application Master");
@@ -594,6 +483,7 @@ public class FlinkYarnClient {
 		LOG.info("Deleting files in "+sessionFilesDir );
 	}
 
+
 	public class ClientShutdownHook extends Thread {
 		@Override
 		public void run() {
@@ -621,93 +511,54 @@ public class FlinkYarnClient {
 		return crd;
 	}
 
-	private void printUsage() {
-		System.out.println("Usage:");
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.setWidth(200);
-		formatter.setLeftPadding(5);
-		formatter.setSyntaxPrefix("   Required");
-		Options req = new Options();
-		req.addOption(CONTAINER);
-		formatter.printHelp(" ", req);
 
-		formatter.setSyntaxPrefix("   Optional");
-		Options opt = new Options();
-		opt.addOption(VERBOSE);
-		opt.addOption(JM_MEMORY);
-		opt.addOption(TM_MEMORY);
-		opt.addOption(TM_CORES);
-		opt.addOption(QUERY);
-		opt.addOption(QUEUE);
-		opt.addOption(SLOTS);
-		opt.addOption(DYNAMIC_PROPERTIES);
-		formatter.printHelp(" ", opt);
-	}
 
-	private void showClusterMetrics(YarnClient yarnClient)
-			throws YarnException, IOException {
+	public String getClusterDescription() throws Exception {
+		YarnClient yarnClient = getYarnClient();
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream(baos);
+
 		YarnClusterMetrics metrics = yarnClient.getYarnClusterMetrics();
-		System.out.println("NodeManagers in the Cluster " + metrics.getNumNodeManagers());
+
+		ps.append("NodeManagers in the Cluster " + metrics.getNumNodeManagers());
 		List<NodeReport> nodes = yarnClient.getNodeReports(NodeState.RUNNING);
 		final String format = "|%-16s |%-16s %n";
-		System.out.printf("|Property         |Value          %n");
-		System.out.println("+---------------------------------------+");
+		ps.printf("|Property         |Value          %n");
+		ps.println("+---------------------------------------+");
 		int totalMemory = 0;
 		int totalCores = 0;
 		for(NodeReport rep : nodes) {
 			final Resource res = rep.getCapability();
 			totalMemory += res.getMemory();
 			totalCores += res.getVirtualCores();
-			System.out.format(format, "NodeID", rep.getNodeId());
-			System.out.format(format, "Memory", res.getMemory()+" MB");
-			System.out.format(format, "vCores", res.getVirtualCores());
-			System.out.format(format, "HealthReport", rep.getHealthReport());
-			System.out.format(format, "Containers", rep.getNumContainers());
-			System.out.println("+---------------------------------------+");
+			ps.format(format, "NodeID", rep.getNodeId());
+			ps.format(format, "Memory", res.getMemory()+" MB");
+			ps.format(format, "vCores", res.getVirtualCores());
+			ps.format(format, "HealthReport", rep.getHealthReport());
+			ps.format(format, "Containers", rep.getNumContainers());
+			ps.println("+---------------------------------------+");
 		}
-		System.out.println("Summary: totalMemory "+totalMemory+" totalCores "+totalCores);
+		ps.println("Summary: totalMemory "+totalMemory+" totalCores "+totalCores);
 		List<QueueInfo> qInfo = yarnClient.getAllQueues();
 		for(QueueInfo q : qInfo) {
-			System.out.println("Queue: "+q.getQueueName()+", Current Capacity: "+q.getCurrentCapacity()+" Max Capacity: "+q.getMaximumCapacity()+" Applications: "+q.getApplications().size());
+			ps.println("Queue: "+q.getQueueName()+", Current Capacity: "+q.getCurrentCapacity()+" Max Capacity: "+q.getMaximumCapacity()+" Applications: "+q.getApplications().size());
 		}
 		yarnClient.stop();
-		System.exit(0);
+		return baos.toString();
 	}
 
-	private File generateDefaultConf(Path localJarPath) throws IOException,
-			FileNotFoundException {
-		JarFile jar = null;
-		try {
-			jar = new JarFile(localJarPath.toUri().getPath());
-		} catch(FileNotFoundException fne) {
-			LOG.error("Unable to access jar file. Specify jar file or configuration file.", fne);
-			System.exit(1);
+	public static class YarnDeploymentException extends RuntimeException {
+		public YarnDeploymentException() {
 		}
-		InputStream confStream = jar.getInputStream(jar.getEntry("flink-conf.yaml"));
 
-		if(confStream == null) {
-			LOG.warn("Given jar file does not contain yaml conf.");
-			confStream = this.getClass().getResourceAsStream("flink-conf.yaml");
-			if(confStream == null) {
-				throw new RuntimeException("Unable to find flink-conf in jar file");
-			}
+		public YarnDeploymentException(String message) {
+			super(message);
 		}
-		File outFile = new File("flink-conf.yaml");
-		if(outFile.exists()) {
-			throw new RuntimeException("File unexpectedly exists");
+
+		public YarnDeploymentException(String message, Throwable cause) {
+			super(message, cause);
 		}
-		FileOutputStream outputStream = new FileOutputStream(outFile);
-		int read = 0;
-		byte[] bytes = new byte[1024];
-		while ((read = confStream.read(bytes)) != -1) {
-			outputStream.write(bytes, 0, read);
-		}
-		confStream.close(); outputStream.close(); jar.close();
-		return outFile;
 	}
 
-	public static void main(String[] args) throws Exception {
-		FlinkYarnClient c = new FlinkYarnClient();
-		c.run(args);
-	}
 }

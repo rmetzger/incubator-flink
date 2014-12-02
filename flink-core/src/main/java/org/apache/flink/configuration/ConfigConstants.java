@@ -193,6 +193,13 @@ public final class ConfigConstants {
 	 */
 	public static final String JOBCLIENT_POLLING_INTERVAL_KEY = "jobclient.polling.interval";
 
+	// ------------------------ YARN Configuration ------------------------
+
+	/**
+	 * Percentage of heap space to remove from containers started by YARN.
+	 */
+	public static final String YARN_HEAP_CUTOFF_RATIO = "yarn.heap-cutoff-ratio";
+
 	// ------------------------ Hadoop Configuration ------------------------
 
 	/**

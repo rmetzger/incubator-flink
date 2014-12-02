@@ -203,6 +203,7 @@ heartbeats to the JobManager.
 - `jobmanager.max-heartbeat-delay-before-failure.msecs`: The maximum time that a
 TaskManager hearbeat may be missing before the TaskManager is considered failed.
 
+
 ### JobManager Web Frontend
 
 - `jobmanager.web.port`: Port of the JobManager's web interface that displays
@@ -262,7 +263,6 @@ input format's parameters (DEFAULT: 2097152 (= 2 MiBytes)).
 Please note that all ports used by Flink in a YARN session are offsetted by the YARN application ID
 to avoid duplicate port allocations when running multiple YARN sessions in parallel. 
 
-So if `yarn.am.rpc.port` is configured to `10245` and the session's application ID is `application_1406629969999_0002`, then the actual port being used is 10245 + 2 = 10247
 
-- `yarn.am.rpc.port`: The port that is being opened by the Application Master (AM) to 
-let the YARN client connect for an RPC serice. (DEFAULT: Port 10245)
+- `yarn.heap-cutoff-ratio`: Percentage of heap space to remove from containers started by YARN.
+
