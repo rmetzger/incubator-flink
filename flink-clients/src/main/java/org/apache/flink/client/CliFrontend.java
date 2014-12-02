@@ -56,6 +56,7 @@ import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.akka.AkkaUtils;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.jobgraph.JobID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
@@ -63,6 +64,7 @@ import org.apache.flink.runtime.jobmanager.JobManager;
 import org.apache.flink.runtime.messages.JobManagerMessages.CancelJob;
 import org.apache.flink.runtime.messages.JobManagerMessages.RequestRunningJobs$;
 import org.apache.flink.runtime.messages.JobManagerMessages.RunningJobs;
+import org.apache.flink.runtime.yarn.FlinkYarnCluster;
 import org.apache.flink.util.StringUtils;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -140,6 +142,12 @@ public class CliFrontend {
 	private boolean yarnPropertiesLoaded = false;
 	
 	private Properties yarnProperties;
+
+	// this flag indicates if the given Job is executed using a YARN cluster,
+	// started for this purpose.
+	private boolean runInYarnCluster = false;
+
+	private FlinkYarnCluster yarnCluster = null;
 
 	/**
 	 * Initializes the class
@@ -335,7 +343,12 @@ public class CliFrontend {
 				}
 			}
 		
-			return executeProgram(program, client, parallelism);
+			int programResult = executeProgram(program, client, parallelism);
+			// check if the program has been executed in a "job only" YARN cluster.
+			if(runInYarnCluster) {
+				yarnCluster.shutdown();
+			}
+			return programResult;
 		}
 		catch (Throwable t) {
 			return handleError(t);
@@ -764,7 +777,7 @@ public class CliFrontend {
 	}
 	
 	
-	protected String getConfigurationDirectory() {
+	public static String getConfigurationDirectory() {
 		String location = null;
 		if (System.getenv(ENV_CONFIG_DIRECTORY) != null) {
 			location = System.getenv(ENV_CONFIG_DIRECTORY);
@@ -863,11 +876,20 @@ public class CliFrontend {
 	
 	protected Client getClient(CommandLine line, ClassLoader classLoader) throws IOException {
 		String jmAddrString = getJobManagerAddressString(line);
+		InetSocketAddress jobManagerAddress = null;
 		if(jmAddrString.equals(YARN_DEPLOY_JOBMANAGER)) {
-			// user wants to Flink to run in YARN cluster.
-			
+			this.runInYarnCluster = true;
+			// user wants to run Flink in YARN cluster.
+			AbstractFlinkYarnClient flinkYarnClient = FlinkYarnSessionCli.createFlinkYarnClient(line);
+			try {
+				yarnCluster = flinkYarnClient.deploy();
+			} catch(Exception e) {
+				throw new RuntimeException("Error deploying the YARN cluster", e);
+			}
+			jobManagerAddress = yarnCluster.getJobManagerAddress();
+		} else {
+			jobManagerAddress = RemoteExecutor.getInetFromHostport(jmAddrString);
 		}
-		InetSocketAddress jobManagerAddress = RemoteExecutor.getInetFromHostport(jmAddrString);
 		return new Client(jobManagerAddress, getGlobalConfiguration(), classLoader);
 	}
 
