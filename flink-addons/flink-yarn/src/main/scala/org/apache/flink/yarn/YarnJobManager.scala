@@ -104,7 +104,6 @@ trait YarnJobManager extends ActorLogMessages {
       numTaskManager = env.get(FlinkYarnClient.ENV_TM_COUNT).toInt
       log.info(s"Requesting ${numTaskManager} task managers.")
 
-      val coresPerTaskManager = env.get(FlinkYarnClient.ENV_TM_CORES).toInt
       val remoteFlinkJarPath = env.get(FlinkYarnClient.FLINK_JAR_PATH)
       val fs = FileSystem.get(conf)
       val appId = env.get(FlinkYarnClient.ENV_APP_ID)
@@ -142,7 +141,7 @@ trait YarnJobManager extends ActorLogMessages {
       // Resource requirements for worker containers
       val capability = Records.newRecord(classOf[Resource])
       capability.setMemory(memoryPerTaskManager)
-      capability.setVirtualCores(coresPerTaskManager)
+      capability.setVirtualCores(1) // hard-code that number for now (YARN is not accunting for CPUs)
 
       // Make container requests to ResourceManager
       for (i <- 0 until numTaskManager) {

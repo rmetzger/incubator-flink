@@ -22,8 +22,10 @@ import java.net.InetSocketAddress;
 
 public class FlinkYarnCluster {
 	public InetSocketAddress getJobManagerAddress() {
+		return null;
 	}
 
 	public void shutdown() {
+
 	}
 }
