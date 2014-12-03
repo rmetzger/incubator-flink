@@ -23,7 +23,6 @@ import java.util.concurrent.Callable
 
 import akka.actor.{ActorSelection, ActorRef, ActorSystem}
 import akka.pattern.{Patterns, ask => akkaAsk}
-import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.configuration.{ConfigConstants, Configuration}
 import scala.concurrent.{ExecutionContext, Future, Await}
@@ -81,8 +80,8 @@ object AkkaUtils {
     val configString =
       s"""
          |akka {
-         |  loglevel = "$logLevel"
-         |  stdout-loglevel = "$logLevel"
+         |  loglevel = "DEBUG"
+         |  stdout-loglevel = "DEBUG"
          |
          |  log-dead-letters = $logLifecycleEvents
          |  log-dead-letters-during-shutdown = $logLifecycleEvents
@@ -119,28 +118,6 @@ object AkkaUtils {
          |    default-dispatcher{
          |      throughput = $akkaThroughput
          |    }
-         |
-         |    kryo{
-         |      type = "nograph"
-         |      idstrategy = "default"
-         |      serializer-pool-size = 16
-         |      buffer-size = 4096
-         |      max-buffer-size = -1
-         |      use-manifests = false
-         |      compression = off
-         |      implicit-registration-logging = true
-         |      kryo-trace = true
-         |      kryo-custom-serializer-init = "org.apache.flink.runtime.akka.KryoInitializer"
-         |    }
-         |
-         |    serialize-messages = on
-         |
-         |    serializers{
-         |      kryo = "com.romix.akka.serialization.kryo.KryoSerializer"
-         |    }
-         |
-         |    serialization-bindings {
-         |    }
          |  }
          |}
        """.stripMargin
@@ -149,7 +126,7 @@ object AkkaUtils {
   }
 
   def getDefaultActorSystemConfigString: String = {
-    s"""
+    """
        |akka {
        |  daemonic = on
        |
@@ -162,7 +139,166 @@ object AkkaUtils {
        |
        |  actor {
        |    provider = "akka.remote.RemoteActorRefProvider"
+       |
+       |    kryo{
+       |      type = "nograph"
+       |      idstrategy = "explicit"
+       |      serializer-pool-size = 16
+       |      buffer-size = 4096
+       |      max-buffer-size = -1
+       |      use-manifests = false
+       |      compression = off
+       |      implicit-registration-logging = true
+       |      kryo-trace = false
+       |      kryo-custom-serializer-init = "org.apache.flink.runtime.akka.KryoInitializer"
+       |    }
+       |
+       |    serialize-messages = on
+       |
+       |    serializers{
+       |      kryo = "com.romix.akka.serialization.kryo.KryoSerializer"
+       |      java = "akka.serialization.JavaSerializer"
+       |    }
+       |
+       |    serialization-bindings {
+       |      "java.io.Serializable" = none
+       |
+       |      "java.lang.Throwable" = java
+       |      "akka.event.Logging$Error" = java
+       |      "java.lang.Integer" = kryo
+       |      "java.lang.Long" = kryo
+       |      "java.lang.Float" = kryo
+       |      "java.lang.Double" = kryo
+       |      "java.lang.Boolean" = kryo
+       |      "java.lang.Short" = kryo
+       |
+       |      "scala.Tuple2" = kryo
+       |      "scala.Tuple3" = kryo
+       |      "scala.Tuple4" = kryo
+       |      "scala.Tuple5" = kryo
+       |      "scala.Tuple6" = kryo
+       |      "scala.Tuple7" = kryo
+       |      "scala.Tuple8" = kryo
+       |      "scala.Tuple9" = kryo
+       |      "scala.Tuple10" = kryo
+       |      "scala.Tuple11" = kryo
+       |      "scala.Tuple12" = kryo
+       |      "scala.collection.BitSet" = kryo
+       |      "scala.collection.SortedSet" = kryo
+       |      "scala.util.Left" = kryo
+       |      "scala.util.Right" = kryo
+       |      "scala.collection.SortedMap" = kryo
+       |      "scala.Int" = kryo
+       |      "scala.Long" = kryo
+       |      "scala.Float" = kryo
+       |      "scala.Double" = kryo
+       |      "scala.Boolean" = kryo
+       |      "scala.Short" = kryo
+       |      "java.lang.String" = kryo
+       |      "scala.Option" = kryo
+       |      "scala.collection.immutable.Map" = kryo
+       |      "scala.collection.Traversable" = kryo
+       |      "scala.runtime.BoxedUnit" = kryo
+       |
+       |      "akka.actor.SystemGuardian$RegisterTerminationHook$" = kryo
+       |      "akka.actor.Address" = kryo
+       |      "akka.actor.Terminated" = kryo
+       |      "akka.actor.LocalActorRef" = kryo
+       |      "akka.actor.RepointableActorRef" = kryo
+       |      "akka.actor.Identify" = kryo
+       |      "akka.actor.ActorIdentity" = kryo
+       |      "akka.actor.PoisonPill$" = kryo
+       |      "akka.actor.SystemGuardian$TerminationHook$" = kryo
+       |      "akka.actor.SystemGuardian$TerminationHookDone$" = kryo
+       |      "akka.actor.AddressTerminated" = kryo
+       |      "akka.actor.Status$Failure" = kryo
+       |      "akka.remote.RemoteWatcher$ReapUnreachableTick$" = kryo
+       |      "akka.remote.RemoteWatcher$HeartbeatTick$" = kryo
+       |      "akka.remote.ReliableDeliverySupervisor$GotUid" = kryo
+       |      "akka.remote.EndpointWriter$AckIdleCheckTimer$" = kryo
+       |      "akka.remote.EndpointWriter$StoppedReading" = kryo
+       |      "akka.remote.ReliableDeliverySupervisor$Ungate$" = kryo
+       |      "akka.remote.EndpointWriter$StopReading" = kryo
+       |      "akka.remote.EndpointWriter$OutboundAck" = kryo
+       |      "akka.remote.Ack" = kryo
+       |      "akka.remote.SeqNo" = kryo
+       |      "akka.remote.EndpointWriter$FlushAndStop$" = kryo
+       |      "akka.remote.ReliableDeliverySupervisor$AttemptSysMsgRedelivery$" = kryo
+       |      "akka.remote.RemoteWatcher$WatchRemote" = kryo
+       |      "akka.remote.RemoteWatcher$UnwatchRemote" = kryo
+       |      "akka.remote.RemoteWatcher$RewatchRemote" = kryo
+       |      "akka.remote.RemoteWatcher$Heartbeat$" = kryo
+       |      "akka.remote.RemoteWatcher$HeartbeatRsp" = kryo
+       |      "akka.dispatch.sysmsg.Terminate" = kryo
+       |      "akka.dispatch.sysmsg.Unwatch" = kryo
+       |      "akka.dispatch.sysmsg.Watch" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.ArchiveMessages$ArchiveExecutionGraph" = kryo
+       |      "org.apache.flink.runtime.messages.ArchiveMessages$ArchivedJobs" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.ExecutionGraphMessages$ExecutionStateChanged" = kryo
+       |      "org.apache.flink.runtime.messages.ExecutionGraphMessages$JobStatusChanged" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.JobClientMessages$SubmitJobAndWait" = kryo
+       |      "org.apache.flink.runtime.messages.JobClientMessages$SubmitJobDetached" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$SubmitJob" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$SubmissionSuccess" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$SubmissionFailure" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$CancellationSuccess" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$CancellationFailure" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$CancelJob" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$UpdateTaskExecutionState" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestNextInputSplit" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$LookupConnectionInformation" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$ConnectionInformation" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$ReportAccumulatorResult" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestAccumulatorResults" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$AccumulatorResultsFound" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$AccumulatorResultsNotFound" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestJobStatus" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$CurrentJobStatus" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestNumberRegisteredTaskManager$" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestTotalNumberOfSlots$" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestBlobManagerPort$" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestFinalJobStatus" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobResultSuccess" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobResultCanceled" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobResultFailed" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestRunningJobs$" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RunningJobs" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestJob" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobFound" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobNotFound" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestRegisteredTaskManagers$" = kryo
+       |      "org.apache.flink.runtime.messages.JobManagerMessages$RegisteredTaskManagers" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.JobManagerProfilerMessages$ReportProfilingData" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$NotifyWhenRegisteredAtJobManager$" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$RegisterAtJobManager$" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$CancelTask" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$SubmitTask" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$NextInputSplit" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$UnregisterTask" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$TaskOperationResult" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$Heartbeat" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$RegisteredAtJobManager$" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$RegisterAtJobManager$" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$SendHeartbeat$" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerMessages$LogMemoryUsage$" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$MonitorTask" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$UnmonitorTask" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$RegisterProfilingListener$" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$UnregisterProfilingListener$" = kryo
+       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$ProfileTasks$" = kryo
+       |
+       |      "org.apache.flink.runtime.messages.RegistrationMessages$RegisterTaskManager" = kryo
+       |      "org.apache.flink.runtime.messages.RegistrationMessages$AcknowledgeRegistration" = kryo
+       |    }
        |  }
+       |
        |
        |  remote{
        |    netty{
