@@ -112,7 +112,7 @@ class KryoInitializer {
     register("akka.dispatch.sysmsg.Watch")
     register("akka.dispatch.sysmsg.DeathWatchNotification")
 
-    register("java.util.Collections$UnmodifiableRandomAccessList")
+//    register("java.util.Collections$UnmodifiableRandomAccessList")
 
 
     //Register Flink messages
