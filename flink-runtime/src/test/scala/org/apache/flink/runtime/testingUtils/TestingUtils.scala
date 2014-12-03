@@ -59,6 +59,7 @@ object TestingUtils {
   }
 
 
+  // scalastyle:off line.size.limit
   val getTestingSerializationBindings =
   """
     |akka {
@@ -85,6 +86,8 @@ object TestingUtils {
     |  }
     |}
   """.stripMargin
+  // scalastyle:on line.size.limit
+
 
   def startTestingTaskManagerWithConfiguration(hostname: String, config: Configuration)
                                               (implicit system: ActorSystem) = {

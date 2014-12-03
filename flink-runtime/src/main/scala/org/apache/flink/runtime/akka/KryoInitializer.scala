@@ -98,13 +98,19 @@ class KryoInitializer {
     register("akka.remote.EndpointWriter$FlushAndStop$")
     register("akka.remote.RemoteWatcher$WatchRemote")
     register("akka.remote.RemoteWatcher$UnwatchRemote")
+    register("akka.remote.RemoteWatcher$Rewatch")
     register("akka.remote.RemoteWatcher$RewatchRemote")
     register("akka.remote.ReliableDeliverySupervisor$AttemptSysMsgRedelivery$")
     register("akka.remote.RemoteActorRef")
     register("akka.remote.RemoteWatcher$Heartbeat$")
+    register("akka.remote.EndpointWriter$FlushAndStopTimeout$")
+    register("akka.remote.RemoteWatcher$ExpectedFirstHeartbeat")
+    register("akka.remote.transport.Transport$InvalidAssociationException")
+    register("akka.remote.transport.AkkaProtocolException")
     register("akka.dispatch.sysmsg.Terminate")
     register("akka.dispatch.sysmsg.Unwatch")
     register("akka.dispatch.sysmsg.Watch")
+    register("akka.dispatch.sysmsg.DeathWatchNotification")
 
 
     //Register Flink messages
@@ -125,7 +131,7 @@ class KryoInitializer {
     registerClass(classOf[ChannelID])
     registerClass(classOf[ConnectionInfoLookupResponse])
     registerClass(classOf[RemoteReceiver])
-    registerClass(classOf[AccumulatorEvent])
+    registerClass(classOf[AccumulatorEvent], new JavaSerializer)
     registerClass(classOf[Instance], new JavaSerializer())
     registerClass(classOf[JobGraph], new JavaSerializer())
     registerClass(classOf[TaskDeploymentDescriptor], new JavaSerializer())
@@ -135,6 +141,7 @@ class KryoInitializer {
     registerClass(classOf[GenericInputSplit], new JavaSerializer)
     registerClass(classOf[LocatableInputSplit], new JavaSerializer)
     registerClass(classOf[FileInputSplit], new JavaSerializer)
+    registerClass(classOf[Array[StackTraceElement]])
 
     //Archive messages
     registerClass(classOf[ArchiveExecutionGraph])

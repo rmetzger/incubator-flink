@@ -72,10 +72,13 @@ object AkkaUtils {
     val lifecycleEvents = configuration.getBoolean(ConfigConstants.AKKA_LOG_LIFECYCLE_EVENTS,
       ConfigConstants.DEFAULT_AKKA_LOG_LIFECYCLE_EVENTS)
 
-    val logLifecycleEvents = if (lifecycleEvents) "on" else "off"
+//    val logLifecycleEvents = if (lifecycleEvents) "on" else "off"
+    val logLifecycleEvents = "on"
 
     val logLevel = configuration.getString(ConfigConstants.AKKA_LOG_LEVEL,
       ConfigConstants.DEFAULT_AKKA_LOG_LEVEL)
+
+    // scalastyle:off line.size.limit
 
     val configString =
       s"""
@@ -161,7 +164,7 @@ object AkkaUtils {
        |    }
        |
        |    serialization-bindings {
-       |      "java.io.Serializable" = none
+       |      "java.io.Serializable" = java
        |
        |      "java.lang.Throwable" = java
        |      "akka.event.Logging$Error" = java
@@ -227,11 +230,16 @@ object AkkaUtils {
        |      "akka.remote.RemoteWatcher$WatchRemote" = kryo
        |      "akka.remote.RemoteWatcher$UnwatchRemote" = kryo
        |      "akka.remote.RemoteWatcher$RewatchRemote" = kryo
+       |      "akka.remote.RemoteWatcher$Rewatch" = kryo
        |      "akka.remote.RemoteWatcher$Heartbeat$" = kryo
        |      "akka.remote.RemoteWatcher$HeartbeatRsp" = kryo
+       |      "akka.remote.EndpointWriter$FlushAndStopTimeout$" = kryo
+       |      "akka.remote.RemoteWatcher$ExpectedFirstHeartbeat" = kryo
+       |      "akka.remote.transport.Transport$InvalidAssociationException" = kryo
        |      "akka.dispatch.sysmsg.Terminate" = kryo
        |      "akka.dispatch.sysmsg.Unwatch" = kryo
        |      "akka.dispatch.sysmsg.Watch" = kryo
+       |      "akka.dispatch.sysmsg.DeathWatchNotification" = kryo
        |
        |      "org.apache.flink.runtime.messages.ArchiveMessages$ArchiveExecutionGraph" = kryo
        |      "org.apache.flink.runtime.messages.ArchiveMessages$ArchivedJobs" = kryo
@@ -314,6 +322,8 @@ object AkkaUtils {
        |}
      """.stripMargin
   }
+
+  // scalastyle:on line.size.limit
 
   def getDefaultActorSystemConfig = {
     ConfigFactory.parseString(getDefaultActorSystemConfigString)
