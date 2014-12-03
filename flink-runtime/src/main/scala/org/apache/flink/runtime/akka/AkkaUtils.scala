@@ -82,8 +82,8 @@ object AkkaUtils {
     val configString =
       s"""
          |akka {
-         |  loglevel = "DEBUG"
-         |  stdout-loglevel = "DEBUG"
+         |  loglevel = $logLevel
+         |  stdout-loglevel = $logLevel
          |
          |  log-dead-letters = $logLifecycleEvents
          |  log-dead-letters-during-shutdown = $logLifecycleEvents
