@@ -72,8 +72,7 @@ object AkkaUtils {
     val lifecycleEvents = configuration.getBoolean(ConfigConstants.AKKA_LOG_LIFECYCLE_EVENTS,
       ConfigConstants.DEFAULT_AKKA_LOG_LIFECYCLE_EVENTS)
 
-//    val logLifecycleEvents = if (lifecycleEvents) "on" else "off"
-    val logLifecycleEvents = "on"
+    val logLifecycleEvents = if (lifecycleEvents) "on" else "off"
 
     val logLevel = configuration.getString(ConfigConstants.AKKA_LOG_LEVEL,
       ConfigConstants.DEFAULT_AKKA_LOG_LEVEL)
@@ -83,8 +82,8 @@ object AkkaUtils {
     val configString =
       s"""
          |akka {
-         |  loglevel = "DEBUG"
-         |  stdout-loglevel = "DEBUG"
+         |  loglevel = $logLevel
+         |  stdout-loglevel = $logLevel
          |
          |  log-dead-letters = $logLifecycleEvents
          |  log-dead-letters-during-shutdown = $logLifecycleEvents
@@ -145,7 +144,7 @@ object AkkaUtils {
        |
        |    kryo{
        |      type = "nograph"
-       |      idstrategy = "explicit"
+       |      idstrategy = "incremental"
        |      serializer-pool-size = 16
        |      buffer-size = 4096
        |      max-buffer-size = -1
