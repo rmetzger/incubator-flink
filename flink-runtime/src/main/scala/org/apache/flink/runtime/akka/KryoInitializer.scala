@@ -141,6 +141,7 @@ class KryoInitializer {
     registerClass(classOf[GenericInputSplit], new JavaSerializer)
     registerClass(classOf[LocatableInputSplit], new JavaSerializer)
     registerClass(classOf[FileInputSplit], new JavaSerializer)
+    registerClass(classOf[StackTraceElement])
     registerClass(classOf[Array[StackTraceElement]])
 
     //Archive messages
