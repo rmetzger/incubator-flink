@@ -149,11 +149,15 @@ public class CliFrontend {
 
 	private FlinkYarnCluster yarnCluster = null;
 
+	protected String configurationDirectory = null;
+
+
 	/**
 	 * Initializes the class
 	 */
 	public CliFrontend() {
 		parser = new PosixParser();
+		configurationDirectory = getConfigurationDirectoryFromEnv();
 	}
 	
 	// --------------------------------------------------------------------------------------------
@@ -740,7 +744,7 @@ public class CliFrontend {
 				
 				// verify that there is a jobmanager address and port in the configuration
 				if (jobManagerAddress == null) {
-					System.out.println("Error: Found no configuration in the config directory '" + 
+					System.out.println("Error: Found no configuration in the config directory '" +
 							getConfigurationDirectory() + "' that specifies the JobManager address.");
 					return null;
 				}
@@ -755,7 +759,7 @@ public class CliFrontend {
 				}
 				
 				if (jobManagerPort == -1) {
-					System.out.println("Error: Found no configuration in the config directory '" + 
+					System.out.println("Error: Found no configuration in the config directory '" +
 							getConfigurationDirectory() + "' that specifies the JobManager port.");
 					return null;
 				}
@@ -776,8 +780,12 @@ public class CliFrontend {
 						.getDefaultActorSystemConfig()),getAkkaTimeout());
 	}
 	
-	
-	public static String getConfigurationDirectory() {
+
+	public String getConfigurationDirectory() {
+		return configurationDirectory;
+	}
+
+	public static String getConfigurationDirectoryFromEnv() {
 		String location = null;
 		if (System.getenv(ENV_CONFIG_DIRECTORY) != null) {
 			location = System.getenv(ENV_CONFIG_DIRECTORY);

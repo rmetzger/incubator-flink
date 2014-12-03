@@ -25,10 +25,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.flink.runtime.execution.RuntimeEnvironment;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
 import org.apache.flink.runtime.yarn.FlinkYarnCluster;
@@ -61,6 +63,7 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.Records;
+import scala.concurrent.duration.FiniteDuration;
 
 /**
  * All classes in this package contain code taken from
@@ -85,7 +88,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	 * to the Application Master.
 	 */
 	public final static String ENV_TM_MEMORY = "_CLIENT_TM_MEMORY";
-	public final static String ENV_TM_CORES = "_CLIENT_TM_CORES";
 	public final static String ENV_TM_COUNT = "_CLIENT_TM_COUNT";
 	public final static String ENV_APP_ID = "_APP_ID";
 	public final static String ENV_APP_NUMBER = "_APP_NUMBER";
@@ -134,7 +136,13 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 	private Path flinkConfigurationPath;
 
+	private Path flinkLoggingConfigurationPath; // optional
+
 	private Path flinkJarPath;
+
+	private String dynamicPropertiesEncoded;
+
+	private List<File> shipFiles;
 
 
 	public FlinkYarnClient() {
@@ -187,6 +195,17 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		flinkConfigurationPath = confPath;
 	}
 
+	@Override
+	public void setFlinkLoggingConfigurationPath(Path logConfPath) {
+		flinkLoggingConfigurationPath = logConfPath;
+	}
+
+	@Override
+	public Path getFlinkLoggingConfigurationPath() {
+		return flinkLoggingConfigurationPath;
+	}
+
+
 	private YarnClient getYarnClient() {
 		if(this.yarnClient == null) {
 			// Create yarnClient
@@ -203,6 +222,15 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 			throw new IllegalArgumentException("The TaskManager count has to be at least 1.");
 		}
 		this.taskManagerCount = tmCount;
+	}
+
+	@Override
+	public void setShipFiles(List<File> shipFiles) {
+		this.shipFiles = shipFiles;
+	}
+
+	public void setDynamicPropertiesEncoded(String dynamicPropertiesEncoded) {
+		this.dynamicPropertiesEncoded = dynamicPropertiesEncoded;
 	}
 
 
@@ -269,24 +297,13 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 		// ------------------ Prepare Application Master Container  ------------------------------
 
-		boolean hasLogback = false;
-		boolean hasLog4j = false;
-		//check if there is a logback or log4j file
-		if(flinkConfigurationPath. > 0) {
-			File logback = new File(confDirPath+"/logback.xml");
-			if(logback.exists()) {
-				shipFiles.add(logback);
-				hasLogback = true;
-			}
-			File log4j = new File(confDirPath+"/log4j.properties");
-			if(log4j.exists()) {
-				shipFiles.add(log4j);
-				hasLog4j = true;
-			}
-		}
+
 
 		// respect custom JVM options in the YAML file
 		final String javaOpts = GlobalConfiguration.getString(ConfigConstants.FLINK_JVM_OPTIONS, "");
+
+		boolean hasLogback = Utils.hasLogback(flinkConfigurationPath);
+		boolean hasLog4j = Utils.hasLog4j(flinkConfigurationPath);
 
 		// Set up the container launch context for the application master
 		ContainerLaunchContext amContainer = Records
@@ -294,14 +311,16 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 		String amCommand = "$JAVA_HOME/bin/java"
 					+ " -Xmx"+Utils.calculateHeapSize(jobManagerMemoryMb)+"M " +javaOpts;
+
 		if(hasLogback || hasLog4j) {
 			amCommand += " -Dlog.file=\""+ApplicationConstants.LOG_DIR_EXPANSION_VAR +"/jobmanager-main.log\"";
 		}
+
 		if(hasLogback) {
-			amCommand += " -Dlogback.configurationFile=file:logback.xml";
+			amCommand += " -Dlogback.configurationFile=file:" + FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME;
 		}
 		if(hasLog4j) {
-			amCommand += " -Dlog4j.configuration=file:log4j.properties";
+			amCommand += " -Dlog4j.configuration=file:" + FlinkYarnSessionCli.CONFIG_FILE_LOG4J_NAME;
 		}
 
 		amCommand 	+= " "+ApplicationMaster.class.getName()+" "
@@ -313,7 +332,7 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		LOG.debug("Application Master start command: "+amCommand);
 
 		// Set-up ApplicationSubmissionContext for the application
-		ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
+		ApplicationSubmissionContext appContext = yarnApplication.getApplicationSubmissionContext();
 		final ApplicationId appId = appContext.getApplicationId();
 		/**
 		 * All network ports are offsetted by the application number
@@ -322,13 +341,22 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		 */
 		int appNumber = appId.getId();
 
+		int jmPort = GlobalConfiguration.getInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, 0);
+		if(jmPort == 0) {
+			LOG.warn("Unable to find job manager port in configuration!");
+			jmPort = ConfigConstants.DEFAULT_JOB_MANAGER_IPC_PORT;
+		}
+		FiniteDuration timeout = new FiniteDuration(GlobalConfiguration.getInteger
+				(ConfigConstants.AKKA_ASK_TIMEOUT, ConfigConstants.DEFAULT_AKKA_ASK_TIMEOUT),
+				TimeUnit.SECONDS);
+
 		jmPort = Utils.offsetPort(jmPort, appNumber);
 
 		// Setup jar for ApplicationMaster
 		LocalResource appMasterJar = Records.newRecord(LocalResource.class);
 		LocalResource flinkConf = Records.newRecord(LocalResource.class);
-		Path remotePathJar = Utils.setupLocalResource(conf, fs, appId.toString(), localJarPath, appMasterJar, fs.getHomeDirectory());
-		Path remotePathConf = Utils.setupLocalResource(conf, fs, appId.toString(), confPath, flinkConf, fs.getHomeDirectory());
+		Path remotePathJar = Utils.setupLocalResource(conf, fs, appId.toString(), flinkJarPath, appMasterJar, fs.getHomeDirectory());
+		Path remotePathConf = Utils.setupLocalResource(conf, fs, appId.toString(), flinkConfigurationPath, flinkConf, fs.getHomeDirectory());
 		Map<String, LocalResource> localResources = new HashMap<String, LocalResource>(2);
 		localResources.put("flink.jar", appMasterJar);
 		localResources.put("flink-conf.yaml", flinkConf);
@@ -368,8 +396,7 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		Utils.setupEnv(conf, appMasterEnv);
 		// set configuration values
 		appMasterEnv.put(FlinkYarnClient.ENV_TM_COUNT, String.valueOf(taskManagerCount));
-		appMasterEnv.put(FlinkYarnClient.ENV_TM_CORES, String.valueOf(tmCores));
-		appMasterEnv.put(FlinkYarnClient.ENV_TM_MEMORY, String.valueOf(tmMemory));
+		appMasterEnv.put(FlinkYarnClient.ENV_TM_MEMORY, String.valueOf(taskManagerMemoryMb));
 		appMasterEnv.put(FlinkYarnClient.FLINK_JAR_PATH, remotePathJar.toString() );
 		appMasterEnv.put(FlinkYarnClient.ENV_APP_ID, appId.toString());
 		appMasterEnv.put(FlinkYarnClient.ENV_CLIENT_HOME_DIR, fs.getHomeDirectory().toString());
@@ -385,19 +412,20 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 		// Set up resource type requirements for ApplicationMaster
 		Resource capability = Records.newRecord(Resource.class);
-		capability.setMemory(jmMemory);
+		capability.setMemory(jobManagerMemoryMb);
 		capability.setVirtualCores(1);
 
 		appContext.setApplicationName("Flink"); // application name
 		appContext.setAMContainerSpec(amContainer);
 		appContext.setResource(capability);
-		appContext.setQueue(queue);
+		appContext.setQueue(yarnQueue);
 
-		// file that we write into the conf/ dir containing the jobManager address and the dop.
-		yarnPropertiesFile = new File(confDirPath + CliFrontend.YARN_PROPERTIES_FILE);
 
 		LOG.info("Submitting application master " + appId);
 		yarnClient.submitApplication(appContext);
+
+		// file that we write into the conf/ dir containing the jobManager address and the dop.
+		yarnPropertiesFile = new File(conf + CliFrontend.YARN_PROPERTIES_FILE);
 
 		Runtime.getRuntime().addShutdownHook(new ClientShutdownHook());
 
@@ -408,8 +436,8 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		// start application client
 		LOG.info("Start application client.");
 		applicationClient = actorSystem.actorOf(Props.create(ApplicationClient.class, appId, jmPort,
-				yarnClient, confDirPath, slots, taskManagerCount, dynamicPropertiesEncoded,
-				timeout));
+				yarnClient, null, slots, taskManagerCount, dynamicPropertiesEncoded,
+				timeout)); // TODO check the arguments here.
 
 		actorSystem.awaitTermination();
 
@@ -429,6 +457,8 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 					+ "\tyarn logs -applicationId "+appReport.getApplicationId()+"\n"
 					+ "(It sometimes takes a few seconds until the logs are aggregated)");
 		}
+
+		return null; // TODO properly return a FlinkYarnCluster.
 	}
 
 	/**

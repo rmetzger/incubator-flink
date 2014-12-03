@@ -21,6 +21,9 @@ package org.apache.flink.runtime.yarn;
 
 import org.apache.hadoop.fs.Path;
 
+import java.io.File;
+import java.util.List;
+
 public abstract class AbstractFlinkYarnClient {
 
 	// ---- Setter for YARN Cluster properties ----- //
@@ -30,10 +33,17 @@ public abstract class AbstractFlinkYarnClient {
 	public abstract void setQueue(String queue);
 	public abstract void setLocalJarPath(Path localJarPath);
 	public abstract void setConfigurationFilePath(Path confPath);
+	public abstract void setFlinkLoggingConfigurationPath(Path logConfPath);
+	public abstract Path getFlinkLoggingConfigurationPath();
 	public abstract void setTaskManagerCount(int tmCount);
+	// List of files to transfer to the YARN containers.
+	public abstract void setShipFiles(List<File> shipFiles);
+	public abstract void setDynamicPropertiesEncoded(String dynamicPropertiesEncoded);
 
 	// ---- Operations on the YARN cluster ----- //
 	public abstract String getClusterDescription() throws Exception;
 
 	public abstract FlinkYarnCluster deploy() throws Exception;
+
+
 }

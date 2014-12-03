@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.flink.client.FlinkYarnSessionCli;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.flink.configuration.ConfigConstants;
@@ -62,7 +64,9 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 public class Utils {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
-	private static final int HEAP_LIMIT_CAP = 500;
+
+	private static final int DEFAULT_HEAP_LIMIT_CAP = 500;
+	private static final float DEFAULT_YARN_HEAP_CUTOFF_RATIO = 0.8f;
 	
 
 	public static void copyJarContents(String prefix, String pathToJar) throws IOException {
@@ -106,11 +110,12 @@ public class Utils {
 	 * 
 	 */
 	public static int calculateHeapSize(int memory) {
-		float memoryCutoffRatio = GlobalConfiguration.getFloat("", 0.8f);
+		float memoryCutoffRatio = GlobalConfiguration.getFloat(ConfigConstants.YARN_HEAP_CUTOFF_RATIO, DEFAULT_YARN_HEAP_CUTOFF_RATIO);
+		int heapLimitCap = GlobalConfiguration.getInteger(ConfigConstants.YARN_HEAP_LIMIT_CAP, DEFAULT_HEAP_LIMIT_CAP);
 
 		int heapLimit = (int)((float)memory * memoryCutoffRatio);
-		if( (memory - heapLimit) > HEAP_LIMIT_CAP) {
-			heapLimit = memory-HEAP_LIMIT_CAP;
+		if( (memory - heapLimit) > heapLimitCap) {
+			heapLimit = memory-heapLimitCap;
 		}
 		return heapLimit;
 	}
@@ -286,5 +291,15 @@ public class Utils {
 			port = port - 1000;
 		}
 		return port + (appId % 1000);
+	}
+
+	public static boolean hasLogback(Path path) {
+		String asString = path.toString();
+		return asString.substring(asString.lastIndexOf(File.separator) + 1, asString.length()).equals(FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME);
+	}
+
+	public static boolean hasLog4j(Path path) {
+		String asString = path.toString();
+		return asString.substring(asString.lastIndexOf(File.separator) + 1, asString.length()).equals(FlinkYarnSessionCli.CONFIG_FILE_LOG4J_NAME);
 	}
 }

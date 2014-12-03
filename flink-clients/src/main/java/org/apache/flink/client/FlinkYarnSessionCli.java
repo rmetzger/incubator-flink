@@ -47,11 +47,16 @@ import java.util.concurrent.TimeUnit;
 public class FlinkYarnSessionCli {
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkYarnSessionCli.class);
 
-	private static final String CONFIG_FILE_NAME = "flink-conf.yaml";
 
-	/**
-	 * Command Line argument options
-	 */
+	//------------------------------------ Constants   -------------------------
+
+	private static final String CONFIG_FILE_NAME = "flink-conf.yaml";
+	public static final String CONFIG_FILE_LOGBACK_NAME = "logback.xml";
+	public static final String CONFIG_FILE_LOG4J_NAME = "log4j.properties";
+
+	private static final String DEFAULT_QUEUE_NAME = "default";
+
+	//------------------------------------ Command Line argument options -------------------------
 	private static final Option QUERY = new Option("q","query",false, "Display available YARN resources (memory, cores)");
 	// --- or ---
 	private static final Option VERBOSE = new Option("v","verbose",false, "Verbose debug mode");
@@ -64,12 +69,13 @@ public class FlinkYarnSessionCli {
 			+ " Task Managers)");
 	private static final Option SLOTS = new Option("s","slots",true, "Number of slots per TaskManager");
 
-
 	/**
 	 * Dynamic properties allow the user to specify additional configuration values with -D, such as
 	 *  -Dfs.overwrite-files=true  -Dtaskmanager.network.numberOfBuffers=16368
 	 */
 	private static final Option DYNAMIC_PROPERTIES = new Option("D", true, "Dynamic properties");
+
+
 
 
 
@@ -100,7 +106,7 @@ public class FlinkYarnSessionCli {
 		flinkYarnClient.setLocalJarPath(localJarPath);
 
 		// Conf Path
-		String confDirPath = CliFrontend.getConfigurationDirectory();
+		String confDirPath = CliFrontend.getConfigurationDirectoryFromEnv();
 		File confFile = new File(confDirPath + File.separator + CONFIG_FILE_NAME);
 		if(!confFile.exists()) {
 			LOG.error("Unable to locate configuration file in "+confFile);
@@ -126,10 +132,31 @@ public class FlinkYarnSessionCli {
 				LOG.warn("Ship directory is not a directory. Ignoring it.");
 			}
 		}
-	/*	 */
+
+		//check if there is a logback or log4j file
+		if(confDirPath.length() > 0) {
+			File logback = new File(confDirPath + File.pathSeparator + CONFIG_FILE_LOGBACK_NAME);
+			if(logback.exists()) {
+				shipFiles.add(logback);
+				flinkYarnClient.setConfigurationFilePath(new Path(logback.toURI()));
+			}
+			File log4j = new File(confDirPath + File.pathSeparator + CONFIG_FILE_LOG4J_NAME);
+			if(log4j.exists()) {
+				shipFiles.add(log4j);
+				if(flinkYarnClient.getFlinkLoggingConfigurationPath() != null) {
+					// this means there is already a logback configuration file --> fail
+					LOG.error("The configuration directory ('"+confDirPath+"') contains both LOG4J and Logback configuration files." +
+							"Please delete or rename one of them.");
+					return null;
+				} // else
+				flinkYarnClient.setConfigurationFilePath(new Path(log4j.toURI()));
+			}
+		}
+
+		flinkYarnClient.setShipFiles(shipFiles);
 
 		// queue
-		String queue = "default";
+		String queue = DEFAULT_QUEUE_NAME;
 		if(cmd.hasOption(QUEUE.getOpt())) {
 			queue = cmd.getOptionValue(QUEUE.getOpt());
 		}
@@ -160,15 +187,11 @@ public class FlinkYarnSessionCli {
 		}
 		String dynamicPropertiesEncoded = StringUtils.join(dynamicProperties, CliFrontend.YARN_DYNAMIC_PROPERTIES_SEPARATOR);
 
-		Utils.getFlinkConfiguration(confPath.toUri().getPath());
-		int jmPort = GlobalConfiguration.getInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, 0);
-		if(jmPort == 0) {
-			LOG.warn("Unable to find job manager port in configuration!");
-			jmPort = ConfigConstants.DEFAULT_JOB_MANAGER_IPC_PORT;
-		}
-		FiniteDuration timeout = new FiniteDuration(GlobalConfiguration.getInteger
-				(ConfigConstants.AKKA_ASK_TIMEOUT, ConfigConstants.DEFAULT_AKKA_ASK_TIMEOUT),
-				TimeUnit.SECONDS);
+		flinkYarnClient.setDynamicPropertiesEncoded(dynamicPropertiesEncoded);
+
+		// Utils.getFlinkConfiguration(confPath.toUri().getPath());
+
+		return flinkYarnClient;
 	}
 
 
@@ -237,6 +260,11 @@ public class FlinkYarnSessionCli {
 		FlinkYarnSessionCli yarnSessionCli = new FlinkYarnSessionCli();
 
 		AbstractFlinkYarnClient flinkYarnClient = yarnSessionCli.createFlinkYarnClient(cmd);
+
+		if(flinkYarnClient == null) {
+			System.err.println("Error while starting the YARN Client. Please check log output!");
+			return 1;
+		}
 
 		// Query cluster for metrics
 		if(cmd.hasOption(QUERY.getOpt())) {
