@@ -79,6 +79,33 @@ object AkkaUtils {
 
     // scalastyle:off line.size.limit
 
+    // akka.remote
+//
+//    |    transport-failure-detector{
+//      |      acceptable-heartbeat-pause = $transportHeartbeatPause
+//      |      threshold = $transportThreshold
+//      |      heartbeat-interval = $transportHeartbeatInterval
+//      |    }
+//    |
+//    |    watch-failure-detector{
+//      |      heartbeat-interval = $watchHeartbeatInterval
+//      |      acceptable-heartbeat-pause = $watchHeartbeatPause
+//      |      threshold = $watchThreshold
+//      |    }
+
+    // akka
+
+//    |  actor{
+//      |    default-dispatcher{
+//        |      throughput = $akkaThroughput
+//        |    }
+//      |  }
+
+    // akka.remote.netty.tcp
+//
+//    |        connection-timeout = $akkaTCPTimeout
+//    |        maximum-frame-size = $akkaFramesize
+
     val configString =
       s"""
          |akka {
@@ -91,36 +118,16 @@ object AkkaUtils {
          |  extensions = ["com.romix.akka.serialization.kryo.KryoSerializationExtension$$"]
          |
          |  remote {
-         |    transport-failure-detector{
-         |      acceptable-heartbeat-pause = $transportHeartbeatPause
-         |      threshold = $transportThreshold
-         |      heartbeat-interval = $transportHeartbeatInterval
-         |    }
-         |
-         |    watch-failure-detector{
-         |      heartbeat-interval = $watchHeartbeatInterval
-         |      acceptable-heartbeat-pause = $watchHeartbeatPause
-         |      threshold = $watchThreshold
-         |    }
-         |
          |    netty{
          |      tcp{
          |        hostname = $host
          |        port = $port
-         |        connection-timeout = $akkaTCPTimeout
-         |        maximum-frame-size = $akkaFramesize
          |      }
          |    }
          |
          |    log-remote-lifecycle-events = $logLifecycleEvents
-         |
          |  }
          |
-         |  actor{
-         |    default-dispatcher{
-         |      throughput = $akkaThroughput
-         |    }
-         |  }
          |}
        """.stripMargin
 
@@ -136,14 +143,14 @@ object AkkaUtils {
        |  loglevel = "WARNING"
        |  logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
        |  stdout-loglevel = "WARNING"
-       |  jvm-exit-on-fatal-error = off
-       |  log-config-on-start = off
+       |  jvm-exit-on-fatal-error = on
+       |  log-config-on-start = on
        |
        |  actor {
        |    provider = "akka.remote.RemoteActorRefProvider"
        |
        |    kryo{
-       |      type = "nograph"
+       |      type = "graph"
        |      idstrategy = "incremental"
        |      serializer-pool-size = 16
        |      buffer-size = 4096
@@ -310,16 +317,18 @@ object AkkaUtils {
        |  remote{
        |    netty{
        |      tcp{
-       |        transport-class = "akka.remote.transport.netty.NettyTransport"
-       |        tcp-nodelay = on
        |
        |        port = 0
-       |        maximum-frame-size = 1MB
        |      }
        |    }
        |  }
        |}
      """.stripMargin
+
+    //akka.remote.netty.tcp
+//    transport-class = "akka.remote.transport.netty.NettyTransport"
+//    tcp-nodelay = on
+//    maximum-frame-size = 1MB
   }
 
   // scalastyle:on line.size.limit
