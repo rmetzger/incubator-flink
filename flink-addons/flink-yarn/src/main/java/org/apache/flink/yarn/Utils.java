@@ -15,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.flink.yarn;
 
 import java.io.File;
@@ -67,39 +65,7 @@ public class Utils {
 
 	private static final int DEFAULT_HEAP_LIMIT_CAP = 500;
 	private static final float DEFAULT_YARN_HEAP_CUTOFF_RATIO = 0.8f;
-	
 
-	public static void copyJarContents(String prefix, String pathToJar) throws IOException {
-		LOG.info("Copying jar (location: "+pathToJar+") to prefix "+prefix);
-		
-		JarFile jar = null;
-		jar = new JarFile(pathToJar);
-		Enumeration<JarEntry> enumr = jar.entries();
-		byte[] bytes = new byte[1024];
-		while(enumr.hasMoreElements()) {
-			JarEntry entry = enumr.nextElement();
-			if(entry.getName().startsWith(prefix)) {
-				if(entry.isDirectory()) {
-					File cr = new File(entry.getName());
-					cr.mkdirs();
-					continue;
-				}
-				InputStream inStream = jar.getInputStream(entry);
-				File outFile = new File(entry.getName());
-				if(outFile.exists()) {
-					throw new RuntimeException("File unexpectedly exists");
-				}
-				FileOutputStream outputStream = new FileOutputStream(outFile);
-				int read = 0;
-				while ((read = inStream.read(bytes)) != -1) {
-					outputStream.write(bytes, 0, read);
-				}
-				inStream.close(); outputStream.close(); 
-			}
-		}
-		jar.close();
-	}
-	
 	/**
 	 * Calculate the heap size for the JVMs to start in the containers.
 	 * Since JVMs are allocating more than just the heap space, and YARN is very

@@ -21,6 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,15 +31,17 @@ import java.util.concurrent.TimeUnit;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.Props;
+import akka.actor.TypedActor;
+import akka.actor.TypedProps;
+import akka.japi.Creator;
 import org.apache.flink.client.FlinkYarnSessionCli;
-import org.apache.flink.runtime.execution.RuntimeEnvironment;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
-import org.apache.flink.runtime.yarn.FlinkYarnCluster;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.flink.client.CliFrontend;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -49,7 +53,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.GetNewApplicationResponse;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.LocalResource;
@@ -57,13 +60,11 @@ import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.NodeState;
 import org.apache.hadoop.yarn.api.records.QueueInfo;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.hadoop.yarn.api.records.YarnClusterMetrics;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.Records;
-import scala.concurrent.duration.FiniteDuration;
 
 /**
  * All classes in this package contain code taken from
@@ -109,11 +110,8 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	private YarnClient yarnClient;
 	private YarnClientApplication yarnApplication;
 
-	private ActorSystem actorSystem;
+	private ApplicationClient applicationClient = null;
 
-	private ActorRef applicationClient = ActorRef.noSender();
-
-	private File yarnPropertiesFile;
 
 	/**
 	 * Files (usually in a distributed file system) used for the YARN session of Flink.
@@ -234,22 +232,12 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	}
 
 
-	public FlinkYarnCluster deploy() throws Exception {
-
-		// intialize HDFS
-
-		// Copy the application master jar to the filesystem
-		// Create a local resource to point to the destination jar path
-		final FileSystem fs = FileSystem.get(conf);
-
-		// hard coded check for the GoogleHDFS client because its not overriding the getScheme() method.
-		if( !fs.getClass().getSimpleName().equals("GoogleHadoopFileSystem") &&
-				fs.getScheme().startsWith("file")) {
-			LOG.warn("The file system scheme is '" + fs.getScheme() + "'. This indicates that the "
-					+ "specified Hadoop configuration path is wrong and the sytem is using the default Hadoop configuration values."
-					+ "The Flink YARN client needs to store its files in a distributed file system");
-		}
-
+	/**
+	 * This method will block until the ApplicationMaster/JobManager have been
+	 * deployed on YARN.
+	 */
+	@Override
+	public AbstractFlinkYarnCluster deploy(String clusterName) throws Exception {
 
 		LOG.info("Using values:");
 		LOG.info("\tTaskManager count = " + taskManagerCount);
@@ -265,39 +253,48 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 		Resource maxRes = appResponse.getMaximumResourceCapability();
 		if(jobManagerMemoryMb > maxRes.getMemory() ) {
-			failSession();
+			failSessionDuringDeployment();
 			throw new YarnDeploymentException("The cluster does not have the requested resources for the JobManager available!\n"
 					+ "Maximum Memory: "+maxRes.getMemory());
 		}
 
 		if(taskManagerMemoryMb > maxRes.getMemory() ) {
-			failSession();
+			failSessionDuringDeployment();
 			throw new YarnDeploymentException("The cluster does not have the requested resources for the TaskManagers available!\n"
 					+ "Maximum Memory: " + maxRes.getMemory());
 		}
 
+
 		int totalMemoryRequired = jobManagerMemoryMb + taskManagerMemoryMb * taskManagerCount;
 		ClusterResourceDescription freeClusterMem = getCurrentFreeClusterResources(yarnClient);
 		if(freeClusterMem.totalFreeMemory < totalMemoryRequired) {
-			failSession();
+			failSessionDuringDeployment();
 			throw new YarnDeploymentException("This YARN session requires " + totalMemoryRequired + "MB of memory in the cluster. "
 					+ "There are currently only " + freeClusterMem.totalFreeMemory+"MB available.");
 
 		}
 		if( taskManagerMemoryMb > freeClusterMem.containerLimit) {
-			failSession();
+			failSessionDuringDeployment();
 			LOG.error("The requested amount of memory for the TaskManagers ("+taskManagerMemoryMb+"MB) is more than "
 					+ "the largest possible YARN container: "+freeClusterMem.containerLimit);
 		}
 		if( jobManagerMemoryMb > freeClusterMem.containerLimit) {
-			failSession();
+			failSessionDuringDeployment();
 			LOG.error("The requested amount of memory for the JobManager ("+jobManagerMemoryMb+"MB) is more than "
 					+ "the largest possible YARN container: "+freeClusterMem.containerLimit);
 		}
 
+		// the yarnMinAllocationMB specifies the smallest possible container allocation size.
+		// all allocations below this value are automatically set to this value.
+		final int yarnMinAllocationMB = conf.getInt("yarn.scheduler.minimum-allocation-mb", 0);
+		if(jobManagerMemoryMb < yarnMinAllocationMB || taskManagerMemoryMb < yarnMinAllocationMB) {
+			LOG.warn("The JobManager or TaskManager memory is below the smallest possible YARN Container size. "
+					+ "The value of 'yarn.scheduler.minimum-allocation-mb' is '"+yarnMinAllocationMB+"'. Please increase the memory size." +
+					"YARN will allocate the smaller containers but the scheduler will account for the minimum-allocation-mb, maybe not all instances " +
+					"you requested will start.");
+		}
+
 		// ------------------ Prepare Application Master Container  ------------------------------
-
-
 
 		// respect custom JVM options in the YAML file
 		final String javaOpts = GlobalConfiguration.getString(ConfigConstants.FLINK_JVM_OPTIONS, "");
@@ -331,26 +328,24 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 		LOG.debug("Application Master start command: "+amCommand);
 
+		// intialize HDFS
+		// Copy the application master jar to the filesystem
+		// Create a local resource to point to the destination jar path
+		final FileSystem fs = FileSystem.get(conf);
+
+		// hard coded check for the GoogleHDFS client because its not overriding the getScheme() method.
+		if( !fs.getClass().getSimpleName().equals("GoogleHadoopFileSystem") &&
+				fs.getScheme().startsWith("file")) {
+			LOG.warn("The file system scheme is '" + fs.getScheme() + "'. This indicates that the "
+					+ "specified Hadoop configuration path is wrong and the sytem is using the default Hadoop configuration values."
+					+ "The Flink YARN client needs to store its files in a distributed file system");
+		}
+
 		// Set-up ApplicationSubmissionContext for the application
 		ApplicationSubmissionContext appContext = yarnApplication.getApplicationSubmissionContext();
 		final ApplicationId appId = appContext.getApplicationId();
-		/**
-		 * All network ports are offsetted by the application number
-		 * to avoid version port clashes when running multiple Flink sessions
-		 * in parallel
-		 */
+
 		int appNumber = appId.getId();
-
-		int jmPort = GlobalConfiguration.getInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, 0);
-		if(jmPort == 0) {
-			LOG.warn("Unable to find job manager port in configuration!");
-			jmPort = ConfigConstants.DEFAULT_JOB_MANAGER_IPC_PORT;
-		}
-		FiniteDuration timeout = new FiniteDuration(GlobalConfiguration.getInteger
-				(ConfigConstants.AKKA_ASK_TIMEOUT, ConfigConstants.DEFAULT_AKKA_ASK_TIMEOUT),
-				TimeUnit.SECONDS);
-
-		jmPort = Utils.offsetPort(jmPort, appNumber);
 
 		// Setup jar for ApplicationMaster
 		LocalResource appMasterJar = Records.newRecord(LocalResource.class);
@@ -415,7 +410,12 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		capability.setMemory(jobManagerMemoryMb);
 		capability.setVirtualCores(1);
 
-		appContext.setApplicationName("Flink"); // application name
+		if(clusterName == null) {
+			clusterName = "Flink session with "+taskManagerCount+" TaskManagers";
+		}
+
+		appContext.setApplicationName(clusterName); // application name
+		appContext.setApplicationType("Apache Flink");
 		appContext.setAMContainerSpec(amContainer);
 		appContext.setResource(capability);
 		appContext.setQueue(yarnQueue);
@@ -424,41 +424,31 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		LOG.info("Submitting application master " + appId);
 		yarnClient.submitApplication(appContext);
 
-		// file that we write into the conf/ dir containing the jobManager address and the dop.
-		yarnPropertiesFile = new File(conf + CliFrontend.YARN_PROPERTIES_FILE);
+		LOG.info("Waiting for the cluster to be allocated");
+		loop: while( true ) {
+			ApplicationReport report = yarnClient.getApplicationReport(appId);
+			YarnApplicationState appState = report.getYarnApplicationState();
+			switch(appState) {
+				case FAILED:
+				case FINISHED:
+				case KILLED:
+					throw new YarnDeploymentException("The YARN application unexpectedly switched to state "
+							+ appState +" during deployment. \n" +
+							"Diagnostics from YARN: "+report.getDiagnostics() + "\n" +
+							"If log aggregation is enabled on your cluster, use this command to further invesitage the issue:\n" +
+							"yarn logs -applicationId "+appId);
+					//break ..
+				case RUNNING:
+					LOG.info("YARN application has been deployed successfully.");
+					break loop;
+				default:
+					LOG.info("Deploying cluster, current state "+appState);
 
-		Runtime.getRuntime().addShutdownHook(new ClientShutdownHook());
-
-		// start actor system
-		LOG.info("Start actor system.");
-		actorSystem = YarnUtils.createActorSystem();
-
-		// start application client
-		LOG.info("Start application client.");
-		applicationClient = actorSystem.actorOf(Props.create(ApplicationClient.class, appId, jmPort,
-				yarnClient, null, slots, taskManagerCount, dynamicPropertiesEncoded,
-				timeout)); // TODO check the arguments here.
-
-		actorSystem.awaitTermination();
-
-		actorSystem = null;
-
-		ApplicationReport appReport = yarnClient.getApplicationReport(appId);
-
-		LOG.info("Application " + appId + " finished with state " + appReport
-				.getYarnApplicationState() + " and final state " + appReport
-				.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
-
-		if(appReport.getYarnApplicationState() == YarnApplicationState.FAILED || appReport.getYarnApplicationState()
-				== YarnApplicationState.KILLED	) {
-			LOG.warn("Application failed. Diagnostics "+appReport.getDiagnostics());
-			LOG.warn("If log aggregation is activated in the Hadoop cluster, we recommend to retreive "
-					+ "the full application log using this command:\n"
-					+ "\tyarn logs -applicationId "+appReport.getApplicationId()+"\n"
-					+ "(It sometimes takes a few seconds until the logs are aggregated)");
+			}
+			Thread.sleep(500);
 		}
-
-		return null; // TODO properly return a FlinkYarnCluster.
+		// the Flink cluster is deployed in YARN. Represent cluster
+		return new FlinkYarnCluster(yarnClient, appId, conf, sessionFilesDir);
 	}
 
 	/**
@@ -466,7 +456,7 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	 *
 	 * Use this method to kill the App before it has been properly deployed
 	 */
-	private void failSession() {
+	private void failSessionDuringDeployment() {
 		LOG.info("Killing YARN application");
 		try {
 			yarnClient.killApplication(yarnApplication.getNewApplicationResponse().getApplicationId());
@@ -476,50 +466,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		yarnClient.stop();
 	}
 
-	/**
-	 * Stop the YARN Session.
-	 */
-	private void stopSession() {
-		if(actorSystem != null){
-			LOG.info("Sending shutdown request to the Application Master");
-			if(applicationClient != ActorRef.noSender()) {
-				applicationClient.tell(new Messages.StopYarnSession(FinalApplicationStatus.KILLED),
-						ActorRef.noSender());
-				applicationClient = ActorRef.noSender();
-			}
-
-			actorSystem.shutdown();
-			actorSystem.awaitTermination();
-
-			actorSystem = null;
-		}
-
-		try {
-			FileSystem shutFS = FileSystem.get(conf);
-			shutFS.delete(sessionFilesDir, true); // delete conf and jar file.
-			shutFS.close();
-		}catch(IOException e){
-			LOG.error("Could not delete the conf and jar files.", e);
-		}
-
-		try {
-			yarnPropertiesFile.delete();
-		} catch (Exception e) {
-			LOG.warn("Exception while deleting the JobManager address file", e);
-		}
-		LOG.info("YARN Client is shutting down");
-		yarnClient.stop();
-
-		LOG.info("Deleting files in "+sessionFilesDir );
-	}
-
-
-	public class ClientShutdownHook extends Thread {
-		@Override
-		public void run() {
-			stopSession();
-		}
-	}
 
 	private static class ClusterResourceDescription {
 		public int totalFreeMemory;

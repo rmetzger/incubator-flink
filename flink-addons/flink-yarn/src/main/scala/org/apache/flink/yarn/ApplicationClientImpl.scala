@@ -20,10 +20,12 @@ package org.apache.flink.yarn
 
 import java.io.{File, FileOutputStream}
 import java.util.Properties
+import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.camel.{Consumer, CamelMessage}
 import org.apache.flink.client.CliFrontend
+import org.apache.flink.configuration.{ConfigConstants, GlobalConfiguration}
 import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.akka.AkkaUtils
 import org.apache.flink.runtime.jobmanager.JobManager
@@ -33,22 +35,23 @@ ApplicationId}
 import org.apache.hadoop.yarn.client.api.YarnClient
 import scala.concurrent.duration._
 
-class ApplicationClient(appId: ApplicationId, port: Int, yarnClient: YarnClient,
+class ApplicationClientImpl(appId: ApplicationId, jobManagerPort: Int, yarnClient: YarnClient,
                         confDirPath: String, slots: Int, numTaskManagers: Int,
-                        dynamicPropertiesEncoded: String, timeout: FiniteDuration)
-  extends Actor with Consumer with ActorLogMessages with ActorLogging {
+                        dynamicPropertiesEncoded: String)
+
+  extends Actor with Consumer with ActorLogMessages with ActorLogging with ApplicationClient {
   import context._
 
   val INITIAL_POLLING_DELAY = 0 seconds
   val WAIT_FOR_YARN_INTERVAL = 500 milliseconds
   val POLLING_INTERVAL = 3 seconds
 
-  val waitingChars = Array[Char]('/', '|', '\\', '-')
-
   var jobManager: Option[ActorRef] = None
   var pollingTimer: Option[Cancellable] = None
+  var timeout: FiniteDuration = 0 seconds
   var running = false
   var waitingCharsIndex = 0
+
 
   def endpointUri = "stream:in"
 
@@ -56,6 +59,9 @@ class ApplicationClient(appId: ApplicationId, port: Int, yarnClient: YarnClient,
     super.preStart()
     pollingTimer = Some(context.system.scheduler.schedule(INITIAL_POLLING_DELAY,
       WAIT_FOR_YARN_INTERVAL, self, PollYarnReport))
+
+    timeout = new FiniteDuration(GlobalConfiguration.getInteger(ConfigConstants.AKKA_ASK_TIMEOUT,
+      ConfigConstants.DEFAULT_AKKA_ASK_TIMEOUT), TimeUnit.SECONDS)
   }
 
   override def postStop(): Unit = {
@@ -79,11 +85,11 @@ class ApplicationClient(appId: ApplicationId, port: Int, yarnClient: YarnClient,
           context.system.shutdown()
         }
         case YarnApplicationState.RUNNING if !running => {
-          val address = s"${report.getHost}:$port"
+          val address = s"${report.getHost}:$jobManagerPort"
           log.info(s"Flink JobManager is now running on $address")
           log.info(s"JobManager Web Interface: ${report.getTrackingUrl}")
 
-          writeYarnProperties(address)
+        //  writeYarnProperties(address)
 
           jobManager = Some(AkkaUtils.getReference(JobManager.getAkkaURL(address))(system, timeout))
           jobManager.get ! RegisterMessageListener
@@ -99,20 +105,11 @@ class ApplicationClient(appId: ApplicationId, port: Int, yarnClient: YarnClient,
         }
         case _ =>
       }
-
-      if(!running){
-        print(waitingChars(waitingCharsIndex) + "\r")
-        waitingCharsIndex += 1
-
-        if(waitingCharsIndex >= waitingChars.length){
-          waitingCharsIndex = 0
-        }
-      }
     }
     case msg: YarnMessage => {
       println(msg)
     }
-    case msg: StopYarnSession => {
+    /*case msg: StopYarnSession => {
       log.info("Stop yarn session.")
       jobManager foreach {
         _ forward msg
@@ -124,7 +121,12 @@ class ApplicationClient(appId: ApplicationId, port: Int, yarnClient: YarnClient,
         case "help" => printHelp
         case msg => println(s"Unknown command ${msg}.")
       }
-    }
+    } */
+  }
+
+  // method defined in ApplicationClient interface.
+  override def stopCluster = {
+    akka.japi.Option.some(true)
   }
 
   def printHelp: Unit = {
@@ -134,7 +136,7 @@ class ApplicationClient(appId: ApplicationId, port: Int, yarnClient: YarnClient,
       """.stripMargin)
   }
 
-  def writeYarnProperties(address: String): Unit = {
+  /*def writeYarnProperties(address: String): Unit = {
     val yarnProps = new Properties()
     yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_JOBMANAGER_KEY, address)
 
@@ -153,5 +155,9 @@ class ApplicationClient(appId: ApplicationId, port: Int, yarnClient: YarnClient,
     yarnProps.store(out, "Generated YARN properties file")
     out.close()
     yarnPropertiesFile.setReadable(true, false)
-  }
+  } */
+
+ /* override def stopCluster(): akka.japi.Option[Boolean] = {
+    akka.japi.Option.some(true)
+  } */
 }

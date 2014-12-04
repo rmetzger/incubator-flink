@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory
 
 import scala.io.Source
 
-object ApplicationMaster{
+object ApplicationMaster {
   import scala.collection.JavaConversions._
 
   val LOG = LoggerFactory.getLogger(this.getClass)
@@ -75,26 +75,30 @@ object ApplicationMaster{
 
           val appNumber = env.get(FlinkYarnClient.ENV_APP_NUMBER).toInt
 
-          val jobManagerPort = GlobalConfiguration.getInteger(
+         /* val jobManagerPort = GlobalConfiguration.getInteger(
             ConfigConstants.JOB_MANAGER_IPC_PORT_KEY,
             ConfigConstants.DEFAULT_JOB_MANAGER_IPC_PORT) match {
             case x if x <= 0 => x
             case x => x + appNumber
-          }
+          } */
 
           val jobManagerWebPort = GlobalConfiguration.getInteger(ConfigConstants
             .JOB_MANAGER_WEB_PORT_KEY, ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT)
-
-          generateConfigurationFile(currDir, ownHostname, jobManagerPort, jobManagerWebPort,
-            logDirs, slots, taskManagerCount, dynamicPropertiesEncodedString)
 
           val (system, actor) = startJobManager(currDir)
 
           actorSystem = system
           jobManager = actor
+          val extActor = actor.asInstanceOf[ExtendedActorSystem]
+          val jobManagerPort = extActor.provider.getDefaultAddress.port.get
 
+          generateConfigurationFile(currDir, ownHostname, jobManagerPort, jobManagerWebPort,
+            logDirs, slots, taskManagerCount, dynamicPropertiesEncodedString)
+
+
+          // send "start yarn session" message to YarnJobManager.
           LOG.info("Start yarn session on job manager.")
-          jobManager ! StartYarnSession(conf)
+          jobManager ! StartYarnSession(conf, jobManagerPort)
 
           LOG.info("Await termination of actor system.")
           actorSystem.awaitTermination()
@@ -159,9 +163,10 @@ object ApplicationMaster{
     val args = Array[String]("--configDir", pathToConfig)
 
     LOG.info(s"Config path: ${pathToConfig}.")
-    val (hostname, port, configuration, _) = JobManager.parseArgs(args)
+    val (hostname, _, configuration, _) = JobManager.parseArgs(args)
 
-    implicit val jobManagerSystem = YarnUtils.createActorSystem(hostname, port, configuration)
+    // set port to 0 to let Akka automatically determine the port.
+    implicit val jobManagerSystem = YarnUtils.createActorSystem(hostname, port = 0, configuration)
 
     LOG.info("Start job manager actor.")
     (jobManagerSystem, JobManager.startActor(Props(new JobManager(configuration) with

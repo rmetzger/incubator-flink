@@ -15,23 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.flink.yarn;
 
-package org.apache.flink.yarn
 
-import java.util.Date
+import akka.japi.Option;
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.yarn.api.records.FinalApplicationStatus
-
-object Messages {
-  case class YarnMessage(message: String, date: Date = new Date())
-  case class ApplicationMasterStatus(numTaskManagers: Int, numSlots: Int)
-  case object RegisterMessageListener
-
-  case class StopYarnSession(status: FinalApplicationStatus)
-  case class StartYarnSession(configuration: Configuration, actorSystemPort: Int)
-
-  case object PollContainerCompletion
-  case object PollYarnReport
-  case object CheckForUserCommand
+/**
+ * Interface for the local communication with the Actor between the Client and Application Master.
+ */
+public interface ApplicationClient {
+	/**
+	 * @return true if the cluster has been stopped successfully.
+	 */
+	public Option<Boolean> stopCluster();
 }

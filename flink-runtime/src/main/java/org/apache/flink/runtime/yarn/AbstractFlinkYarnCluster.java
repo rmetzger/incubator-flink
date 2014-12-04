@@ -20,12 +20,11 @@ package org.apache.flink.runtime.yarn;
 
 import java.net.InetSocketAddress;
 
-public class FlinkYarnCluster {
-	public InetSocketAddress getJobManagerAddress() {
-		return null;
-	}
+public abstract class AbstractFlinkYarnCluster {
 
-	public void shutdown() {
+	public abstract InetSocketAddress getJobManagerAddress();
 
-	}
+	public abstract String getWebInterfaceURL();
+
+	public abstract void shutdown();
 }
