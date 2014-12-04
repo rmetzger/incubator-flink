@@ -93,7 +93,7 @@ trait YarnJobManager extends ActorLogMessages {
     case RegisterMessageListener =>
       messageListener = Some(sender())
 
-    case StartYarnSession(conf) => {
+    case StartYarnSession(conf, actorSystemPort: Int) => {
       log.info("Start yarn session.")
       val memoryPerTaskManager = env.get(FlinkYarnClient.ENV_TM_MEMORY).toInt
       val heapLimit = Utils.calculateHeapSize(memoryPerTaskManager)
@@ -131,7 +131,7 @@ trait YarnJobManager extends ActorLogMessages {
       // Register with ResourceManager
       val url = s"http://$applicationMasterHost:$jobManagerWebPort"
       log.info(s"Registering ApplicationMaster with tracking url $url.")
-      rm.registerApplicationMaster(applicationMasterHost, 0, url)
+      rm.registerApplicationMaster(applicationMasterHost, actorSystemPort, url)
 
 
       // Priority for worker containers - priorities are intra-application

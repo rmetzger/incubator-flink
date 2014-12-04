@@ -24,22 +24,18 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
-import org.apache.flink.runtime.yarn.FlinkYarnCluster;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Class handling the command line interface to the YARN session.
@@ -279,12 +275,26 @@ public class FlinkYarnSessionCli {
 			System.out.println(description);
 			return 0;
 		} else {
+			AbstractFlinkYarnCluster yarnCluster = null;
 			try {
-				FlinkYarnCluster yarnCluster = flinkYarnClient.deploy();
+				yarnCluster = flinkYarnClient.deploy(null);
 			} catch (Exception e) {
 				System.err.println("Error while deploying YARN cluster: "+e.getMessage());
 				e.printStackTrace(System.err);
 				return 1;
+			}
+
+			System.err.println("Flink JobManager is now running on "+yarnCluster.getJobManagerAddress());
+			System.err.println("JobManager Web Interface: "+yarnCluster.getWebInterfaceURL());
+			// file that we write into the conf/ dir containing the jobManager address and the dop.
+			String confDirPath = CliFrontend.getConfigurationDirectoryFromEnv();
+			File yarnPropertiesFile = new File(confDirPath + File.separator + CliFrontend.YARN_PROPERTIES_FILE);
+
+			// TODO: take care of yarnPropertiesFile!!
+			try {
+				yarnPropertiesFile.delete();
+			} catch (Exception e) {
+				LOG.warn("Exception while deleting the JobManager address file", e);
 			}
 		}
 		return 0;

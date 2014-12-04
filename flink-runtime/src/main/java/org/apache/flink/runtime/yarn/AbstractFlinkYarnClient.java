@@ -43,7 +43,7 @@ public abstract class AbstractFlinkYarnClient {
 	// ---- Operations on the YARN cluster ----- //
 	public abstract String getClusterDescription() throws Exception;
 
-	public abstract FlinkYarnCluster deploy() throws Exception;
+	public abstract AbstractFlinkYarnCluster deploy(String clusterName) throws Exception;
 
 
 }

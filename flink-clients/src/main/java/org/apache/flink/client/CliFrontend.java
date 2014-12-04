@@ -64,7 +64,7 @@ import org.apache.flink.runtime.jobmanager.JobManager;
 import org.apache.flink.runtime.messages.JobManagerMessages.CancelJob;
 import org.apache.flink.runtime.messages.JobManagerMessages.RequestRunningJobs$;
 import org.apache.flink.runtime.messages.JobManagerMessages.RunningJobs;
-import org.apache.flink.runtime.yarn.FlinkYarnCluster;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.flink.util.StringUtils;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -147,7 +147,7 @@ public class CliFrontend {
 	// started for this purpose.
 	private boolean runInYarnCluster = false;
 
-	private FlinkYarnCluster yarnCluster = null;
+	private AbstractFlinkYarnCluster yarnCluster = null;
 
 	protected String configurationDirectory = null;
 
@@ -323,7 +323,7 @@ public class CliFrontend {
 				return 1;
 			}
 			
-			Client client = getClient(line, program.getUserCodeClassLoader());
+			Client client = getClient(line, program.getUserCodeClassLoader(), program.getMainClassName());
 			if (client == null) {
 				printHelpForRun();
 				return 1;
@@ -462,7 +462,7 @@ public class CliFrontend {
 		try {
 			// check for json plan request
 			if (plan) {
-				Client client = getClient(line, program.getUserCodeClassLoader());
+				Client client = getClient(line, program.getUserCodeClassLoader(), program.getMainClassName());
 				String jsonPlan = client.getOptimizedPlanAsJson(program, parallelism);
 				
 				if (jsonPlan != null) {
@@ -882,7 +882,7 @@ public class CliFrontend {
 		return yarnProperties;
 	}
 	
-	protected Client getClient(CommandLine line, ClassLoader classLoader) throws IOException {
+	protected Client getClient(CommandLine line, ClassLoader classLoader, String programName) throws IOException {
 		String jmAddrString = getJobManagerAddressString(line);
 		InetSocketAddress jobManagerAddress = null;
 		if(jmAddrString.equals(YARN_DEPLOY_JOBMANAGER)) {
@@ -890,11 +890,13 @@ public class CliFrontend {
 			// user wants to run Flink in YARN cluster.
 			AbstractFlinkYarnClient flinkYarnClient = FlinkYarnSessionCli.createFlinkYarnClient(line);
 			try {
-				yarnCluster = flinkYarnClient.deploy();
+				yarnCluster = flinkYarnClient.deploy("Flink Application: "+programName);
 			} catch(Exception e) {
 				throw new RuntimeException("Error deploying the YARN cluster", e);
 			}
 			jobManagerAddress = yarnCluster.getJobManagerAddress();
+			System.out.println("YARN cluster started");
+			System.out.println("JobManager web interface address "+yarnCluster.getWebInterfaceURL());
 		} else {
 			jobManagerAddress = RemoteExecutor.getInetFromHostport(jmAddrString);
 		}
