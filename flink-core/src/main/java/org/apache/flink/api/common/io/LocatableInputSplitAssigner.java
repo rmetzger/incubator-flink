@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.flink.metrics.VertexMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.flink.core.io.InputSplitAssigner;
@@ -64,7 +65,7 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 	// --------------------------------------------------------------------------------------------
 
 	@Override
-	public LocatableInputSplit getNextInputSplit(String host) {
+	public LocatableInputSplit getNextInputSplit(String host, VertexMetrics vertexMetrics) {
 		// for a null host, we return an arbitrary split
 		if (host == null) {
 			
@@ -77,7 +78,8 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 					if (LOG.isInfoEnabled()) {
 						LOG.info("Assigning split to null host (random assignment).");
 					}
-					
+
+					vertexMetrics.inputSplits++;
 					remoteAssignments++;
 					return next;
 				} else {
@@ -146,6 +148,8 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 							}
 							
 							localAssignments++;
+							vertexMetrics.inputSplits++;
+							vertexMetrics.localizedInputSplits++;
 							return split;
 						}
 					} while (size > 0);
@@ -163,7 +167,8 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 				if (LOG.isInfoEnabled()) {
 					LOG.info("Assigning remote split to host " + host);
 				}
-				
+
+				vertexMetrics.inputSplits++;
 				remoteAssignments++;
 				return next;
 			} else {

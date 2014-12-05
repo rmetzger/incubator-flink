@@ -52,6 +52,7 @@ AcknowledgeRegistration}
 import org.apache.flink.runtime.messages.TaskManagerMessages._
 import org.apache.flink.runtime.messages.TaskManagerProfilerMessages.{UnmonitorTask, MonitorTask,
 RegisterProfilingListener}
+import org.apache.flink.runtime.metrics.LocalMetricsServer
 import org.apache.flink.runtime.net.NetUtils
 import org.apache.flink.runtime.profiling.ProfilingUtils
 import org.apache.flink.runtime.util.EnvironmentInformation
@@ -88,9 +89,10 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
   val hardwareDescription = HardwareDescription.extractFromSystem(memoryManager.getMemorySize)
   val fileCache = new FileCache()
   val runningTasks = scala.collection.mutable.HashMap[ExecutionAttemptID, Task]()
+  val metricsServer = new LocalMetricsServer()
 
   // Actors which want to be notified once this task manager has been registered at the job manager
-  val waitForRegistration = scala.collection.mutable.Set[ActorRef]();
+  val waitForRegistration = scala.collection.mutable.Set[ActorRef]()
 
   val profiler = profilingInterval match {
     case Some(interval) => Some(TaskManager.startProfiler(self.path.toSerializationFormat,
@@ -104,10 +106,11 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
   var registrationAttempts: Int = 0
   var registered: Boolean = false
   var currentJobManager = ActorRef.noSender
-  var instanceID: InstanceID = null;
+  var instanceID: InstanceID = null
   var memoryMXBean: Option[MemoryMXBean] = None
   var gcMXBeans: Option[Iterable[GarbageCollectorMXBean]] = None
   var heartbeatScheduler: Option[Cancellable] = None
+  var metricsReportScheduler: Option[Cancellable] = None
 
   if (log.isDebugEnabled) {
     memoryLogggingIntervalMs.foreach {
@@ -130,6 +133,9 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
     cancelAndClearEverything(new Exception("Task Manager is shutting down."))
 
     heartbeatScheduler foreach {
+      _.cancel()
+    }
+    metricsReportScheduler foreach {
       _.cancel()
     }
 
@@ -194,10 +200,15 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
 
         setupChannelManager()
         setupLibraryCacheManager(blobPort)
+        metricsServer.setInstanceId(instanceID)
 
         heartbeatScheduler = Some(context.system.scheduler.schedule(HEARTBEAT_INTERVAL,
           HEARTBEAT_INTERVAL, self,
           SendHeartbeat))
+
+        metricsReportScheduler = Some(context.system.scheduler.schedule(HEARTBEAT_INTERVAL,
+          HEARTBEAT_INTERVAL, self,
+          SendMetrics))
 
         profiler foreach {
           _.tell(RegisterProfilingListener, JobManager.getProfiler(currentJobManager))
@@ -322,7 +333,9 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
     case SendHeartbeat => {
       currentJobManager ! Heartbeat(instanceID)
     }
-
+    case SendMetrics => {
+      currentJobManager ! metricsServer.sendMetricsToMain()
+    }
     case LogMemoryUsage => {
       memoryMXBean foreach {
         mxbean => log.debug(TaskManager.getMemoryUsageStatsAsString(mxbean))

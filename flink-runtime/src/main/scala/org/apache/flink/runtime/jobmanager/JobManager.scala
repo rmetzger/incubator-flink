@@ -30,6 +30,7 @@ import org.apache.flink.core.io.InputSplitAssigner
 import org.apache.flink.runtime.blob.BlobServer
 import org.apache.flink.runtime.executiongraph.{Execution, ExecutionJobVertex, ExecutionGraph}
 import org.apache.flink.runtime.io.network.ConnectionInfoLookupResponse
+import org.apache.flink.runtime.metrics.MainMetricsServer
 import org.apache.flink.runtime.messages.ArchiveMessages.ArchiveExecutionGraph
 import org.apache.flink.runtime.messages.ExecutionGraphMessages.JobStatusChanged
 import org.apache.flink.runtime.taskmanager.TaskManager
@@ -83,6 +84,7 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
   val instanceManager = new InstanceManager()
   val scheduler = new FlinkScheduler()
   val libraryCacheManager = new BlobLibraryCacheManager(new BlobServer(), cleanupInterval)
+  val metricsServer = new MainMetricsServer()
 
   // List of current jobs running
   val currentJobs = scala.collection.mutable.HashMap[JobID, (ExecutionGraph, JobInfo)]()
@@ -261,7 +263,7 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
       val nextInputSplit = currentJobs.get(jobID) match {
         case Some((executionGraph,_)) => executionGraph.getJobVertex(vertexID) match {
           case vertex: ExecutionJobVertex => vertex.getSplitAssigner match {
-            case splitAssigner: InputSplitAssigner => splitAssigner.getNextInputSplit(null)
+            case splitAssigner: InputSplitAssigner => splitAssigner.getNextInputSplit(null, metricsServer.getVertexMetrics(vertexID))
             case _ =>
               log.error(s"No InputSplitAssigner for vertex ID ${vertexID}.")
               null

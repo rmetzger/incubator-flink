@@ -18,6 +18,8 @@
 
 package org.apache.flink.core.io;
 
+import org.apache.flink.metrics.VertexMetrics;
+
 /**
  * An input split assigner distributes the {@link InputSplit}s among the instances on which a
  * data source exists.
@@ -31,5 +33,5 @@ public interface InputSplitAssigner {
 	 * @param host The address of the host to assign the split to.
 	 * @return the next input split to be consumed, or <code>null</code> if no more splits remain.
 	 */
-	InputSplit getNextInputSplit(String host);
+	InputSplit getNextInputSplit(String host, VertexMetrics metrics);
 }

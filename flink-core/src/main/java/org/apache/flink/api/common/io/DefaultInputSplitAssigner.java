@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.flink.metrics.JobMetrics;
+import org.apache.flink.metrics.VertexMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.flink.core.io.InputSplit;
@@ -51,7 +53,7 @@ public class DefaultInputSplitAssigner implements InputSplitAssigner {
 	
 	
 	@Override
-	public InputSplit getNextInputSplit(String host) {
+	public InputSplit getNextInputSplit(String host, VertexMetrics vertexMetrics) {
 		InputSplit next = null;
 		
 		// keep the synchronized part short
@@ -68,6 +70,7 @@ public class DefaultInputSplitAssigner implements InputSplitAssigner {
 				LOG.debug("Assigning split " + next + " to " + host);
 			}
 		}
+		vertexMetrics.inputSplits++;
 		return next;
 	}
 }

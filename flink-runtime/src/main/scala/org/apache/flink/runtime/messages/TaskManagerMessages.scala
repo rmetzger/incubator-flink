@@ -19,9 +19,11 @@
 package org.apache.flink.runtime.messages
 
 import org.apache.flink.core.io.InputSplit
+import org.apache.flink.metrics.{VertexMetrics, InstanceMetrics}
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID
 import org.apache.flink.runtime.instance.InstanceID
+import org.apache.flink.runtime.jobgraph.JobVertexID
 
 object TaskManagerMessages {
 
@@ -100,6 +102,19 @@ object TaskManagerMessages {
    * Makes the task manager sending a heartbeat message to the job manager.
    */
   case object SendHeartbeat
+
+  /**
+   * Asks the TM to send the current metrics to the JobManager
+   */
+  case object SendMetrics
+
+  /**
+   * Metrics report to the JobManager
+   *
+   * @param instanceMetrics
+   * @param vertexMetrics
+   */
+  case class MetricsReport(instanceMetrics: InstanceMetrics, vertexMetrics: Map[JobVertexID, VertexMetrics])
 
   /**
    * Logs the current memory usage as debug level output.
