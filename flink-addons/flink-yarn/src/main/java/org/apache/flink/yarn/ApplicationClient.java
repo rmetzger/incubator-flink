@@ -19,6 +19,7 @@ package org.apache.flink.yarn;
 
 
 import akka.japi.Option;
+import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 
 /**
  * Interface for the local communication with the Actor between the Client and Application Master.
@@ -27,5 +28,5 @@ public interface ApplicationClient {
 	/**
 	 * @return true if the cluster has been stopped successfully.
 	 */
-	public Option<Boolean> stopCluster();
+	public Option<Boolean> stopCluster(FinalApplicationStatus status);
 }

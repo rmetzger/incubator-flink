@@ -24,6 +24,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.runtime.operators.sort.ExceptionHandler;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.flink.util.InstantiationUtil;
@@ -31,11 +32,17 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Class handling the command line interface to the YARN session.
@@ -51,6 +58,8 @@ public class FlinkYarnSessionCli {
 	public static final String CONFIG_FILE_LOG4J_NAME = "log4j.properties";
 
 	private static final String DEFAULT_QUEUE_NAME = "default";
+
+	private static final int CLIENT_POLLING_INTERVALL = 3;
 
 	//------------------------------------ Command Line argument options -------------------------
 	private static final Option QUERY = new Option("q","query",false, "Display available YARN resources (memory, cores)");
@@ -225,6 +234,61 @@ public class FlinkYarnSessionCli {
 		return yarnClient;
 	}
 
+	private static void writeYarnProperties(Properties properties, File propertiesFile) {
+		try {
+			OutputStream out = new FileOutputStream(propertiesFile);
+			properties.store(out, "Generated YARN properties file");
+			out.close();
+		} catch (IOException e) {
+			throw new RuntimeException("Error writing the properties file", e);
+		}
+		propertiesFile.setReadable(true, false); // readable for all.
+	}
+
+	public static void runInteractiveCli(AbstractFlinkYarnCluster yarnCluster) {
+		final String HELP = "Available commands:\n" +
+				"help - show these commands\n" +
+				"stop - stop the YARN session";
+		int numTaskmanagers = 0;
+		try {
+			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+			while (true) {
+				// ------------------ check if there are updates by the cluster -----------
+
+				int newTmCount = yarnCluster.getNumberOfConnectedTaskManagers();
+				if(numTaskmanagers != newTmCount) {
+					System.err.println("Number of connected TaskManagers changed to "+newTmCount+". "
+							+ "Slots available: "+yarnCluster.getNumberOfAvailableSlots());
+					numTaskmanagers = newTmCount;
+				}
+				if(yarnCluster.hasFailed()) {
+					System.err.println("The YARN cluster has failed");
+				}
+
+				// wait until CLIENT_POLLING_INTERVALL is over or the user entered something.
+				long startTime = System.currentTimeMillis();
+				while ((System.currentTimeMillis() - startTime) < CLIENT_POLLING_INTERVALL * 1000
+						&& !in.ready()) {
+					Thread.sleep(200);
+				}
+				//------------- handle interactive command by user. ----------------------
+
+				if (in.ready()) {
+					String command = in.readLine();
+					if(command.equals("quit") || command.equals("stop")) {
+						break; // leave loop, cli will stop cluster.
+					} else if(command.equals("help"))  {
+						System.err.println(HELP);
+					} else {
+						System.err.println("Unknown command '"+command+"'. Showing help: \n"+HELP);
+					}
+				}
+			}
+		} catch(Exception e) {
+			LOG.warn("Exception while running the interactive command line interface", e);
+			return;
+		}
+	}
 
 	public static int main(String[] args) {
 
@@ -283,14 +347,32 @@ public class FlinkYarnSessionCli {
 				e.printStackTrace(System.err);
 				return 1;
 			}
-
-			System.err.println("Flink JobManager is now running on "+yarnCluster.getJobManagerAddress());
-			System.err.println("JobManager Web Interface: "+yarnCluster.getWebInterfaceURL());
+			//------------------ Cluster deployed, handle connection details
+			String jobManagerAddress = yarnCluster.getJobManagerAddress().toString();
+			System.err.println("Flink JobManager is now running on " + jobManagerAddress);
+			System.err.println("JobManager Web Interface: " + yarnCluster.getWebInterfaceURL());
 			// file that we write into the conf/ dir containing the jobManager address and the dop.
 			String confDirPath = CliFrontend.getConfigurationDirectoryFromEnv();
 			File yarnPropertiesFile = new File(confDirPath + File.separator + CliFrontend.YARN_PROPERTIES_FILE);
 
-			// TODO: take care of yarnPropertiesFile!!
+			Properties yarnProps = new Properties();
+			yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_JOBMANAGER_KEY, jobManagerAddress);
+			if(flinkYarnClient.getTaskManagerSlots() != -1) {
+				yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_DOP, Integer.toString(flinkYarnClient.getTaskManagerSlots() * flinkYarnClient.getTaskManagerCount()) );
+			}
+			// add dynamic properties
+			if(flinkYarnClient.getDynamicPropertiesEncoded() != null) {
+				yarnProps.setProperty(CliFrontend.YARN_PROPERTIES_DYNAMIC_PROPERTIES_STRING, flinkYarnClient.getDynamicPropertiesEncoded());
+			}
+			writeYarnProperties(yarnProps, yarnPropertiesFile);
+
+			//------------------ Cluster running, let user control it ------------
+
+			runInteractiveCli(yarnCluster);
+
+			LOG.info("Command Line Interface requested session shutdown");
+			yarnCluster.shutdown();
+
 			try {
 				yarnPropertiesFile.delete();
 			} catch (Exception e) {
