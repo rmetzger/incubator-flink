@@ -67,7 +67,7 @@ trait YarnJobManager extends ActorLogMessages {
 
   def receiveYarnMessages: Receive = {
     case StopYarnSession(status) =>
-      log.info("Stopping Yarn Session.")
+      log.info("Stopping YARN Session.")
 
       instanceManager.getAllRegisteredInstances foreach {
         instance =>
@@ -90,8 +90,10 @@ trait YarnJobManager extends ActorLogMessages {
 
       context.system.shutdown()
 
-    case RegisterMessageListener =>
+    case RegisterClient =>
       messageListener = Some(sender())
+      //context.system.scheduler.schedule
+
 
     case StartYarnSession(conf, actorSystemPort: Int) => {
       log.info("Start yarn session.")

@@ -19,10 +19,16 @@ package org.apache.flink.yarn;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.TypedActor;
-import akka.actor.TypedProps;
-import akka.japi.Creator;
+
+import static akka.pattern.Patterns.ask;
+
+import akka.actor.Inbox;
+import akka.actor.Props;
+import akka.actor.UntypedActor;
+import akka.util.Timeout;
 import org.apache.flink.configuration.GlobalConfiguration;
+import org.apache.flink.runtime.akka.AkkaUtils;
+import org.apache.flink.runtime.jobmanager.JobManager;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -35,16 +41,25 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkYarnCluster.class);
 
+	private static final int POLLING_THREAD_INTERVAL_MS = 1000;
+
 	private YarnClient yarnClient;
-	private Thread clusterRunner;
+	private Thread actorRunner;
+	private PollingThread pollingRunner;
 	private Configuration hadoopConfig;
 	// (HDFS) location of the files required to run on YARN. Needed here to delete them on shutdown.
 	private Path sessionFilesDir;
@@ -53,8 +68,11 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	//---------- Class internal fields -------------------
 
 	private ActorSystem actorSystem;
-	private ApplicationClient applicationClient;
+//	private ApplicationClient applicationClient;
 	private ApplicationReport intialAppReport;
+	private ActorRef applicationMaster = ActorRef.noSender();
+	private FiniteDuration akkaDuration = Duration.apply(5, TimeUnit.SECONDS);
+	private Timeout akkaTimeout = Timeout.durationToTimeout(akkaDuration);
 
 	public FlinkYarnCluster(final YarnClient yarnClient, final ApplicationId appId,
 							Configuration hadoopConfig, Path sessionFilesDir) throws IOException, YarnException {
@@ -75,19 +93,30 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		// start application client
 		LOG.info("Start application client.");
 
-		applicationClient = TypedActor.get(actorSystem).typedActorOf(
+	//	applicationMaster = actorSystem.actorOf(Props.create())
+
+		String jmAkkaUrl = JobManager.getAkkaURL(jobManagerAddress.toString());
+		applicationMaster = AkkaUtils.getReference(jmAkkaUrl, actorSystem, akkaDuration);
+
+		ActorRef clientInbox = actorSystem.actorOf(Props.create(ClientInbox.class));
+
+
+		// send message to register this actor
+		applicationMaster.tell(Messages.RegisterClient$.MODULE$, clientInbox);
+
+		/*applicationClient = TypedActor.get(actorSystem).typedActorOf(
 			new TypedProps<ApplicationClientImpl>(ApplicationClient.class,
 				new Creator<ApplicationClientImpl>() {
 					@Override
 					public ApplicationClientImpl create() throws Exception {
 						return new ApplicationClientImpl(null, 0, null, null, 0, 0, null);
 					}
-				}));
+				})); */
 
 		// add hook to ensure proper shutdown
 		Runtime.getRuntime().addShutdownHook(new ClientShutdownHook());
 
-		clusterRunner = new Thread(new Runnable() {
+		actorRunner = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				// blocks until ApplicationMaster has been stopped
@@ -114,9 +143,15 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 				}
 			}
 		});
-		clusterRunner.setDaemon(true);
-		clusterRunner.start();
+		actorRunner.setDaemon(true);
+		actorRunner.start();
+
+		pollingRunner = new PollingThread(yarnClient, applicationMaster, appId);
+		pollingRunner.setDaemon(true);
+		pollingRunner.start();
 	}
+
+	// -------------------------- Interaction with the cluster ------------------------
 
 	@Override
 	public InetSocketAddress getJobManagerAddress() {
@@ -128,17 +163,36 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		return this.intialAppReport.getTrackingUrl();
 	}
 
+
+	@Override
+	public int getNumberOfConnectedTaskManagers() {
+		return pollingRunner.getNumberOfConnectedTaskManagers();
+	}
+
+	@Override
+	public int getNumberOfAvailableSlots() {
+		return pollingRunner.getNumberOfAvailableSlots();
+	}
+
+	@Override
+	public boolean hasFailed() {
+		return false;
+	}
+
+
 	// -------------------------- Shutdown handling ------------------------
 
 	@Override
 	public void shutdown() {
 		if(actorSystem != null){
 			LOG.info("Sending shutdown request to the Application Master");
-			if(applicationClient != null) {
-				/*applicationClient.tell(new Messages.StopYarnSession(FinalApplicationStatus.KILLED),
-						ActorRef.noSender()); */
-				applicationClient.stopCluster();
-				applicationClient = null;
+			if(applicationMaster != ActorRef.noSender()) {
+				Future<Object> future = ask(applicationMaster, new Messages.StopYarnSession(FinalApplicationStatus.SUCCEEDED), akkaTimeout);
+				try {
+					Await.result(future, akkaDuration);
+				} catch (Exception e) {
+					throw new RuntimeException("Error while stopping Application master", e);
+				}
 			}
 
 			actorSystem.shutdown();
@@ -157,16 +211,24 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		}
 
 		try {
-			clusterRunner.join(1000); // wait for 1 second
+			actorRunner.join(1000); // wait for 1 second
 		} catch (InterruptedException e) {
-			LOG.warn("Shutdown of the cluster runner was interrupted", e);
+			LOG.warn("Shutdown of the actor runner was interrupted", e);
+			Thread.currentThread().interrupt();
+		}
+		try {
+			pollingRunner.stopRunner();
+			pollingRunner.join(1000);
+		} catch(InterruptedException e) {
+			LOG.warn("Shutdown of the polling runner was interrupted", e);
 			Thread.currentThread().interrupt();
 		}
 
 		LOG.info("YARN Client is shutting down");
-		yarnClient.stop(); // clusterRunner is using the yarnClient.
+		yarnClient.stop(); // actorRunner is using the yarnClient.
 		yarnClient = null; // set null to clearly see if somebody wants to access it afterwards.
 	}
+
 
 	public class ClientShutdownHook extends Thread {
 		@Override
@@ -174,4 +236,76 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 			shutdown();
 		}
 	}
+
+	// -------------------------- Polling ------------------------
+
+	public static class PollingThread extends Thread {
+
+		AtomicBoolean running = new AtomicBoolean(true);
+		private YarnClient yarnClient;
+		private ActorRef applicationMaster;
+		private ApplicationId appId;
+
+		// ------- status information stored in the polling thread
+		private Object lock = new Object();
+		private int numberOfAvailableSlots;
+		private int numberOfConnectedTaskManagers;
+		private ApplicationReport lastReport;
+
+
+		public PollingThread(YarnClient yarnClient, ActorRef applicationMaster, ApplicationId appId) {
+			this.yarnClient = yarnClient;
+			this.applicationMaster = applicationMaster;
+			this.appId = appId;
+		}
+
+		public void stopRunner() {
+			if(!running.compareAndSet(false, true)) {
+				LOG.warn("Polling thread was already stopped");
+			}
+		}
+
+		@Override
+		public void run() {
+			while(running.get()) {
+				try {
+					ApplicationReport report = yarnClient.getApplicationReport(appId);
+					synchronized (lock) {
+						lastReport = report;
+					}
+				} catch (Exception e) {
+					LOG.warn("Error while getting application report", e);
+					// TODO: do more here.
+				}
+				try {
+					Thread.sleep(FlinkYarnCluster.POLLING_THREAD_INTERVAL_MS);
+				} catch (InterruptedException e) {
+					LOG.error("Polling thread got interrupted",e);
+					Thread.currentThread().interrupt(); // pass interrupt.
+				}
+			}
+		}
+
+		public int getNumberOfAvailableSlots() {
+			synchronized (lock) {
+				return numberOfAvailableSlots;
+			}
+		}
+
+		public int getNumberOfConnectedTaskManagers() {
+			synchronized (lock) {
+				return numberOfConnectedTaskManagers;
+			}
+		}
+
+	}
+
+	public static class ClientInbox extends UntypedActor {
+
+		@Override
+		public void onReceive(Object message) throws Exception {
+
+		}
+	}
+
 }

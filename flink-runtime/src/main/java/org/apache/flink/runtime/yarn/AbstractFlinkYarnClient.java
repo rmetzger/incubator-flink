@@ -30,20 +30,22 @@ public abstract class AbstractFlinkYarnClient {
 	public abstract void setJobManagerMemory(int memoryMB);
 	public abstract void setTaskManagerMemory(int memoryMB);
 	public abstract void setTaskManagerSlots(int slots);
+	public abstract int getTaskManagerSlots();
 	public abstract void setQueue(String queue);
 	public abstract void setLocalJarPath(Path localJarPath);
 	public abstract void setConfigurationFilePath(Path confPath);
 	public abstract void setFlinkLoggingConfigurationPath(Path logConfPath);
 	public abstract Path getFlinkLoggingConfigurationPath();
 	public abstract void setTaskManagerCount(int tmCount);
+	public abstract int getTaskManagerCount();
 	// List of files to transfer to the YARN containers.
 	public abstract void setShipFiles(List<File> shipFiles);
 	public abstract void setDynamicPropertiesEncoded(String dynamicPropertiesEncoded);
+	public abstract String getDynamicPropertiesEncoded();
 
 	// ---- Operations on the YARN cluster ----- //
 	public abstract String getClusterDescription() throws Exception;
 
 	public abstract AbstractFlinkYarnCluster deploy(String clusterName) throws Exception;
-
 
 }

@@ -179,6 +179,11 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	}
 
 	@Override
+	public int getTaskManagerSlots() {
+		return this.slots;
+	}
+
+	@Override
 	public void setQueue(String queue) {
 		this.yarnQueue = queue;
 	}
@@ -223,12 +228,22 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	}
 
 	@Override
+	public int getTaskManagerCount() {
+		return this.taskManagerCount;
+	}
+
+	@Override
 	public void setShipFiles(List<File> shipFiles) {
 		this.shipFiles = shipFiles;
 	}
 
 	public void setDynamicPropertiesEncoded(String dynamicPropertiesEncoded) {
 		this.dynamicPropertiesEncoded = dynamicPropertiesEncoded;
+	}
+
+	@Override
+	public String getDynamicPropertiesEncoded() {
+		return this.dynamicPropertiesEncoded;
 	}
 
 

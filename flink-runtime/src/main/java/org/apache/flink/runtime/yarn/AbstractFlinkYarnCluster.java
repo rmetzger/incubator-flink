@@ -27,4 +27,10 @@ public abstract class AbstractFlinkYarnCluster {
 	public abstract String getWebInterfaceURL();
 
 	public abstract void shutdown();
+
+	public abstract int getNumberOfConnectedTaskManagers();
+
+	public abstract int getNumberOfAvailableSlots();
+
+	public abstract boolean hasFailed();
 }
