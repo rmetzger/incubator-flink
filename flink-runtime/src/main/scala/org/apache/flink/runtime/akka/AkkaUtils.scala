@@ -143,8 +143,8 @@ object AkkaUtils {
        |  loglevel = "WARNING"
        |  logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
        |  stdout-loglevel = "WARNING"
-       |  jvm-exit-on-fatal-error = on
-       |  log-config-on-start = on
+       |  jvm-exit-on-fatal-error = off
+       |  log-config-on-start = off
        |
        |  actor {
        |    provider = "akka.remote.RemoteActorRefProvider"
