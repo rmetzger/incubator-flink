@@ -329,8 +329,9 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
         case Some((executionGraph, _)) =>
           val originalSender = sender()
           Future {
-            originalSender ! ConnectionInformation(executionGraph.lookupConnectionInfoAndDeployReceivers
-              (connectionInformation, sourceChannelID))
+            originalSender ! ConnectionInformation(
+              executionGraph.lookupConnectionInfoAndDeployReceivers
+                (connectionInformation, sourceChannelID))
           }
         case None =>
           log.error(s"Cannot find execution graph for job ID ${jobID}.")
