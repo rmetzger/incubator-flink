@@ -29,6 +29,7 @@ import java.util.Set;
 import akka.actor.ActorRef;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.GlobalConfiguration;
+import org.apache.flink.metrics.MetricsReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,7 +119,7 @@ public class InstanceManager {
 		}
 	}
 
-	public boolean reportHeartBeat(InstanceID instanceId) {
+	public boolean reportHeartBeat(InstanceID instanceId, MetricsReport metrics) {
 		if (instanceId == null) {
 			throw new IllegalArgumentException("InstanceID may not be null.");
 		}
@@ -139,7 +140,7 @@ public class InstanceManager {
 				return false;
 			}
 
-			host.reportHeartBeat();
+			host.reportHeartBeat(metrics);
 			return true;
 		}
 	}
@@ -182,7 +183,7 @@ public class InstanceManager {
 						taskManager.path(), id, registeredHostsById.size()));
 			}
 
-			host.reportHeartBeat();
+			host.reportHeartBeat(null); // no metrics at this time
 			
 			// notify all listeners (for example the scheduler)
 			notifyNewInstance(host);

@@ -44,7 +44,7 @@ interface ReadRequest extends IORequest {
 	 * 
 	 * @throws IOException My be thrown by the method to indicate an I/O problem.
 	 */
-	public void read() throws IOException;
+	public int read() throws IOException;
 }
 
 
@@ -58,5 +58,5 @@ interface WriteRequest extends IORequest {
 	 * 
 	 * @throws IOException My be thrown by the method to indicate an I/O problem.
 	 */
-	public void write() throws IOException;
+	public int write() throws IOException;
 }

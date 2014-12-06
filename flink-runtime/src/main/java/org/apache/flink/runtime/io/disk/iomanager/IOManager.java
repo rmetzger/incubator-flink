@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.flink.metrics.IOMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.flink.core.memory.MemorySegment;
@@ -180,7 +181,9 @@ public abstract class IOManager {
 	 */
 	public abstract BulkBlockChannelReader createBulkBlockChannelReader(FileIOChannel.ID channelID, 
 			List<MemorySegment> targetSegments, int numBlocks) throws IOException;
-	
+
+	public abstract IOMetrics getIOMetrics();
+
 	// ------------------------------------------------------------------------
 	//                          Utilities
 	// ------------------------------------------------------------------------

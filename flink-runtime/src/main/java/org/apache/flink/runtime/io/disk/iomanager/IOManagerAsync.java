@@ -19,11 +19,13 @@
 package org.apache.flink.runtime.io.disk.iomanager;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.flink.core.memory.MemorySegment;
+import org.apache.flink.metrics.IOMetrics;
 import org.apache.flink.runtime.util.EnvironmentInformation;
 
 import com.google.common.base.Preconditions;
@@ -44,6 +46,8 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 	
 	/** Flag to mark the I/O manager as alive or shut down */
 	private volatile boolean shutdown;
+
+	private IOMetrics metrics = new IOMetrics();
 	
 	// -------------------------------------------------------------------------
 	//               Constructors / Destructors
@@ -76,7 +80,7 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		// start a write worker thread for each directory
 		this.writers = new WriterThread[tempDirs.length];
 		for (int i = 0; i < this.writers.length; i++) {
-			final WriterThread t = new WriterThread();
+			final WriterThread t = new WriterThread(metrics);
 			this.writers[i] = t;
 			t.setName("IOManager writer thread #" + (i + 1));
 			t.setDaemon(true);
@@ -87,7 +91,7 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		// start a reader worker thread for each directory
 		this.readers = new ReaderThread[tempDirs.length];
 		for (int i = 0; i < this.readers.length; i++) {
-			final ReaderThread t = new ReaderThread();
+			final ReaderThread t = new ReaderThread(metrics);
 			this.readers[i] = t;
 			t.setName("IOManager reader thread #" + (i + 1));
 			t.setDaemon(true);
@@ -232,6 +236,11 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		return new AsynchronousBulkBlockReader(channelID, this.readers[channelID.getThreadNum()].requestQueue, targetSegments, numBlocks);
 	}
 
+	@Override
+	public IOMetrics getIOMetrics() {
+		return metrics;
+	}
+
 	// -------------------------------------------------------------------------
 	//                           I/O Worker Threads
 	// -------------------------------------------------------------------------
@@ -245,13 +254,16 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 
 		private volatile boolean alive;
 
+		private IOMetrics metrics;
+
 		// ---------------------------------------------------------------------
 		// Constructors / Destructors
 		// ---------------------------------------------------------------------
 		
-		protected ReaderThread() {
+		protected ReaderThread(IOMetrics metrics) {
 			this.requestQueue = new RequestQueue<ReadRequest>();
 			this.alive = true;
+			this.metrics = metrics;
 		}
 		
 		/**
@@ -319,7 +331,7 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 
 				try {
 					// read buffer from the specified channel
-					request.read();
+					this.metrics.bytesRead += request.read();
 				}
 				catch (IOException e) {
 					ioex = e;
@@ -350,13 +362,16 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 
 		private volatile boolean alive;
 
+		private IOMetrics metrics;
+
 		// ---------------------------------------------------------------------
 		// Constructors / Destructors
 		// ---------------------------------------------------------------------
 
-		protected WriterThread() {
+		protected WriterThread(IOMetrics metrics) {
 			this.requestQueue = new RequestQueue<WriteRequest>();
 			this.alive = true;
+			this.metrics = metrics;
 		}
 
 		/**
@@ -425,7 +440,7 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 				
 				try {
 					// write buffer to the specified channel
-					request.write();
+					metrics.bytesWritten += request.write();
 				}
 				catch (IOException e) {
 					ioex = e;

@@ -90,6 +90,7 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
   val fileCache = new FileCache()
   val runningTasks = scala.collection.mutable.HashMap[ExecutionAttemptID, Task]()
   val metricsServer = new LocalMetricsServer()
+  metricsServer.registerIOManager(ioManager)
 
   // Actors which want to be notified once this task manager has been registered at the job manager
   val waitForRegistration = scala.collection.mutable.Set[ActorRef]()
@@ -331,10 +332,10 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
     }
 
     case SendHeartbeat => {
-      currentJobManager ! Heartbeat(instanceID)
+      currentJobManager ! Heartbeat(instanceID, metricsServer.sendMetricsToMain())
     }
     case SendMetrics => {
-      currentJobManager ! metricsServer.sendMetricsToMain()
+      // TODO: maybe inplement per-job / per-vertex metrics here.
     }
     case LogMemoryUsage => {
       memoryMXBean foreach {

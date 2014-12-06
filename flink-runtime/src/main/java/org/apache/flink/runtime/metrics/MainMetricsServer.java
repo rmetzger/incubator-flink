@@ -4,6 +4,7 @@ package org.apache.flink.runtime.metrics;
 
 import org.apache.flink.metrics.InstanceMetrics;
 import org.apache.flink.metrics.JobMetrics;
+import org.apache.flink.metrics.MetricsReport;
 import org.apache.flink.metrics.VertexMetrics;
 import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.jobgraph.JobID;
@@ -20,6 +21,10 @@ import java.util.Map;
  */
 
 public class MainMetricsServer {
+
+	private MetricsReport latestReport;
+	private MetricsReport accumulatedReport;
+
 	Map<JobVertexID, VertexMetrics> vertexMetrics = new HashMap<JobVertexID, VertexMetrics>();
 	Map<JobID, JobMetrics> jobMetrics = new HashMap<JobID, JobMetrics>();
 	Map<InstanceID, InstanceMetrics> instanceMetrics = new HashMap<InstanceID, InstanceMetrics>();
@@ -36,6 +41,18 @@ public class MainMetricsServer {
 		return getTypedMetrics(job, jobMetrics, JobMetrics.class);
 	}
 
+	public void addReport(MetricsReport report) {
+		this.latestReport = report;
+		mergeIntoAccumulated(report);
+	}
+
+	private void mergeIntoAccumulated(MetricsReport report) {
+		if(accumulatedReport == null) {
+			accumulatedReport = new MetricsReport();
+		}
+		// TODO ...
+	}
+
 	private static <TYPE, TYPE_METRICS> TYPE_METRICS getTypedMetrics(TYPE type, Map<TYPE, TYPE_METRICS> map, Class<? extends TYPE_METRICS> typeMetricsType) {
 		TYPE_METRICS typeMetrics = map.get(type);
 		if(typeMetrics == null) {
@@ -44,5 +61,6 @@ public class MainMetricsServer {
 		}
 		return typeMetrics;
 	}
+
 }
 

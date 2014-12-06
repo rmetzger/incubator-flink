@@ -19,7 +19,7 @@
 package org.apache.flink.runtime.messages
 
 import org.apache.flink.core.io.InputSplit
-import org.apache.flink.metrics.{VertexMetrics, InstanceMetrics}
+import org.apache.flink.metrics.{MetricsReport, VertexMetrics, InstanceMetrics}
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID
 import org.apache.flink.runtime.instance.InstanceID
@@ -78,7 +78,7 @@ object TaskManagerMessages {
    *
    * @param instanceID
    */
-  case class Heartbeat(instanceID: InstanceID)
+  case class Heartbeat(instanceID: InstanceID, metrics: MetricsReport)
 
   /**
    * Requests a notification from the task manager as soon as the task manager has been
@@ -114,7 +114,9 @@ object TaskManagerMessages {
    * @param instanceMetrics
    * @param vertexMetrics
    */
-  case class MetricsReport(instanceMetrics: InstanceMetrics, vertexMetrics: Map[JobVertexID, VertexMetrics])
+ /* case class MetricsReport(instanceId: InstanceID,
+                           instanceMetrics: InstanceMetrics,
+                           vertexMetrics: java.util.Map[JobVertexID, VertexMetrics]) */
 
   /**
    * Logs the current memory usage as debug level output.

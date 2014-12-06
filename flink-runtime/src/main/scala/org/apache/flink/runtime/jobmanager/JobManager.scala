@@ -27,6 +27,7 @@ import akka.pattern.Patterns
 import akka.pattern.{ask, pipe}
 import org.apache.flink.configuration.{ConfigConstants, GlobalConfiguration, Configuration}
 import org.apache.flink.core.io.InputSplitAssigner
+import org.apache.flink.metrics.MetricsReport
 import org.apache.flink.runtime.blob.BlobServer
 import org.apache.flink.runtime.executiongraph.{Execution, ExecutionJobVertex, ExecutionGraph}
 import org.apache.flink.runtime.io.network.ConnectionInfoLookupResponse
@@ -384,9 +385,12 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
       sender() ! RegisteredTaskManagers(instanceManager.getAllRegisteredInstances.asScala)
     }
 
-    case Heartbeat(instanceID) => {
-      instanceManager.reportHeartBeat(instanceID)
+    case Heartbeat(instanceID, metrics) => {
+      instanceManager.reportHeartBeat(instanceID, metrics)
     }
+  /*  case MetricsReport => {
+      metricsServer.addReport(_)
+    } */
 
     case Terminated(taskManager) => {
       log.info(s"Task manager ${taskManager.path} terminated.")

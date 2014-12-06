@@ -212,17 +212,18 @@ final class SegmentReadRequest implements ReadRequest {
 	}
 
 	@Override
-	public void read() throws IOException {
+	public int read() throws IOException {
 		final FileChannel c = this.channel.fileChannel;
 		if (c.size() - c.position() > 0) {
 			try {
 				final ByteBuffer wrapper = this.segment.wrap(0, this.segment.size());
-				this.channel.fileChannel.read(wrapper);
+				return this.channel.fileChannel.read(wrapper);
 			}
 			catch (NullPointerException npex) {
 				throw new IOException("Memory segment has been released.");
 			}
 		}
+		return 0;
 	}
 
 	@Override
@@ -248,9 +249,9 @@ final class SegmentWriteRequest implements WriteRequest {
 	}
 
 	@Override
-	public void write() throws IOException {
+	public int write() throws IOException {
 		try {
-			this.channel.fileChannel.write(this.segment.wrap(0, this.segment.size()));
+			return this.channel.fileChannel.write(this.segment.wrap(0, this.segment.size()));
 		}
 		catch (NullPointerException npex) {
 			throw new IOException("Memory segment has been released.");

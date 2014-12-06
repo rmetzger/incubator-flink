@@ -211,7 +211,7 @@ public class IOManagerTest {
 
 
 		@Override
-		public void read() throws IOException {
+		public int read() throws IOException {
 			throw new TestIOException();
 		}
 
@@ -239,7 +239,7 @@ public class IOManagerTest {
 		}
 
 		@Override
-		public void write() throws IOException {
+		public int write() throws IOException {
 			throw new TestIOException();
 		}
 

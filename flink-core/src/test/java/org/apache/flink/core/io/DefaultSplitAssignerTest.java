@@ -27,10 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.flink.api.common.io.DefaultInputSplitAssigner;
 import org.apache.flink.core.io.GenericInputSplit;
 import org.apache.flink.core.io.InputSplit;
+import org.apache.flink.metrics.VertexMetrics;
 import org.junit.Test;
 
 
 public class DefaultSplitAssignerTest {
+	private VertexMetrics vMetrics = new VertexMetrics();
 
 	@Test
 	public void testSerialSplitAssignment() {
@@ -44,12 +46,12 @@ public class DefaultSplitAssignerTest {
 			
 			DefaultInputSplitAssigner ia = new DefaultInputSplitAssigner(splits);
 			InputSplit is = null;
-			while ((is = ia.getNextInputSplit("")) != null) {
+			while ((is = ia.getNextInputSplit("", vMetrics)) != null) {
 				assertTrue(splits.remove(is));
 			}
 			
 			assertTrue(splits.isEmpty());
-			assertNull(ia.getNextInputSplit(""));
+			assertNull(ia.getNextInputSplit("", vMetrics));
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -80,7 +82,7 @@ public class DefaultSplitAssignerTest {
 				public void run() {
 					String host = "";
 					GenericInputSplit split;
-					while ((split = (GenericInputSplit) ia.getNextInputSplit(host)) != null) {
+					while ((split = (GenericInputSplit) ia.getNextInputSplit(host, vMetrics)) != null) {
 						splitsRetrieved.incrementAndGet();
 						sumOfIds.addAndGet(split.getSplitNumber());
 					}
@@ -115,7 +117,7 @@ public class DefaultSplitAssignerTest {
 			assertEquals(SUM_OF_IDS, sumOfIds.get());
 			
 			// nothing left
-			assertNull(ia.getNextInputSplit(""));
+			assertNull(ia.getNextInputSplit("", vMetrics));
 		}
 		catch (Exception e) {
 			e.printStackTrace();

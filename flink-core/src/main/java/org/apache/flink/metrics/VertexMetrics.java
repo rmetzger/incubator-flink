@@ -6,8 +6,4 @@ public class VertexMetrics extends Metrics<VertexMetrics> {
 
 	public int localizedInputSplits;
 
-	@Override
-	public void merge(VertexMetrics otherMetrics) {
-
-	}
 }

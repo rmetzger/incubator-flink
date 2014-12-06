@@ -7,5 +7,4 @@ package org.apache.flink.metrics;
 public abstract class Metrics<T extends Metrics> {
 
 
-	public abstract void merge(T otherMetrics);
 }
