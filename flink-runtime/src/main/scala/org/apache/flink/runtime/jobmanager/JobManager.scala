@@ -85,7 +85,7 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
   val instanceManager = new InstanceManager()
   val scheduler = new FlinkScheduler()
   val libraryCacheManager = new BlobLibraryCacheManager(new BlobServer(), cleanupInterval)
-  val metricsServer = new MainMetricsServer()
+  val metricsServer = new MainMetricsServer() // NOT IN USE RIGHT NOW. THIS MIGHT BE USEFUL FOR PER-JOB metrics.
 
   // List of current jobs running
   val currentJobs = scala.collection.mutable.HashMap[JobID, (ExecutionGraph, JobInfo)]()

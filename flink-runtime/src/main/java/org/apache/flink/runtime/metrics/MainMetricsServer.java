@@ -26,20 +26,20 @@ public class MainMetricsServer {
 	private MetricsReport accumulatedReport;
 
 	Map<JobVertexID, VertexMetrics> vertexMetrics = new HashMap<JobVertexID, VertexMetrics>();
-	Map<JobID, JobMetrics> jobMetrics = new HashMap<JobID, JobMetrics>();
-	Map<InstanceID, InstanceMetrics> instanceMetrics = new HashMap<InstanceID, InstanceMetrics>();
+//	Map<JobID, JobMetrics> jobMetrics = new HashMap<JobID, JobMetrics>();
+//	Map<InstanceID, InstanceMetrics> instanceMetrics = new HashMap<InstanceID, InstanceMetrics>();
 
-	public Map<InstanceID, InstanceMetrics> getInstanceMetrics() {
+/*	public Map<InstanceID, InstanceMetrics> getInstanceMetrics() {
 		return instanceMetrics;
-	}
+	}*/
 
 	public VertexMetrics getVertexMetrics(JobVertexID vertexId) {
 		return getTypedMetrics(vertexId, vertexMetrics, VertexMetrics.class);
 	}
 
-	public JobMetrics getJobMetrics(JobID job) {
+	/*public JobMetrics getJobMetrics(JobID job) {
 		return getTypedMetrics(job, jobMetrics, JobMetrics.class);
-	}
+	}  */
 
 	public void addReport(MetricsReport report) {
 		this.latestReport = report;

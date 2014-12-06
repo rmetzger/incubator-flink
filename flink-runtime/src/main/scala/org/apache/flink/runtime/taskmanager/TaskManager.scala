@@ -337,6 +337,7 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
     case SendMetrics => {
       // TODO: maybe inplement per-job / per-vertex metrics here.
     }
+
     case LogMemoryUsage => {
       memoryMXBean foreach {
         mxbean => log.debug(TaskManager.getMemoryUsageStatsAsString(mxbean))

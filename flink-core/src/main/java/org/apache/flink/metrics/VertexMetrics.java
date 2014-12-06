@@ -1,6 +1,6 @@
 package org.apache.flink.metrics;
 
-public class VertexMetrics extends Metrics<VertexMetrics> {
+public class VertexMetrics{
 
 	public int inputSplits;
 
