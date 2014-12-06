@@ -31,11 +31,29 @@ function loadTaskmanagers(json) {
 			"<th>Number of Slots</th><th>Available Slots</th><th>CPU Cores</th><th>Physical Memory (mb)</th><th>TaskManager Heapsize (mb)</th><th>Managed Memory (mb)</th></tr>";
 	for (var i = 0; i < json.taskmanagers.length; i++) {
 		var tm = json.taskmanagers[i]
-		table += "<tr><td>"+tm.inetAdress+"</td><td>"+tm.ipcPort+"</td><td>"+tm.dataPort+"</td><td>"+tm.timeSinceLastHeartbeat+"</td>" +
-				"<td>"+tm.slotsNumber+"</td><td>"+tm.freeSlots+"</td><td>"+tm.cpuCores+"</td><td>"+tm.physicalMemory+"</td><td>"+tm.freeMemory+"</td><td>"+tm.managedMemory+"</td></tr>";
+		table += "<tr><td>"+tm.inetAdress+"</td><td>"+tm.ipcPort+"</td><td>"+tm.dataPort+"</td>"+
+		         "<td>"+tm.timeSinceLastHeartbeat+" <a href=\"#\" onclick=\"toggleMetricsTable("+i+")\">Show metrics</a><div class=\"metrics-table\" style=\"display:none;\" id=\"metrics-"+i+"\">"+renderMetrics(tm.metrics)+"</div></td>" +
+				 "<td>"+tm.slotsNumber+"</td><td>"+tm.freeSlots+"</td><td>"+tm.cpuCores+"</td><td>"+tm.physicalMemory+"</td><td>"+tm.freeMemory+"</td><td>"+tm.managedMemory+"</td></tr>";
 	}
 	table += "</table>";
 	$("#taskmanagerTable").append(table);
+}
+
+function renderMetrics(metrics) {
+    var ret = "<table><tr><th>Key</th><th>Value</th></tr>";
+    for(key in metrics){
+        ret += "<tr><td>"+key+"</td><td>"+metrics[key]+"</td></tr>";
+    }
+    ret += "</table>";
+    return ret;
+}
+
+function toggleMetricsTable(id) {
+    $("#metrics-"+id).toggle();
+}
+
+function toggleMetricsAllMetricsTables() {
+    $(".metrics-table").toggle();
 }
 
 function pollTaskmanagers() {

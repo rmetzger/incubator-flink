@@ -1,13 +1,11 @@
 package org.apache.flink.metrics;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
-* Created by robert on 12/6/14.
-*/
-public class MetricsReport {
-	Map<String, Object> metrics = new HashMap<String, Object>();
+public class MetricsReport implements Serializable {
+	private Map<String, Object> metrics = new HashMap<String, Object>();
 	public void addLongMetric(String name, long value) {
 		this.metrics.put(name, value);
 	}
