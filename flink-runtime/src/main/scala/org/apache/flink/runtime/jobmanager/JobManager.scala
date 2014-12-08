@@ -247,9 +247,7 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
         currentJobs.get(taskExecutionState.getJobID) match {
           case Some((executionGraph, _)) =>
             val originalSender = sender()
-            Future {
-              originalSender ! executionGraph.updateState(taskExecutionState)
-            }
+            originalSender ! executionGraph.updateState(taskExecutionState)
           case None => log.error(s"Cannot find execution graph for ID ${taskExecutionState
             .getJobID} to change state to ${taskExecutionState.getExecutionState}.")
             sender() ! false
@@ -344,11 +342,9 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
       currentJobs.get(jobID) match {
         case Some((executionGraph, _)) =>
           val originalSender = sender()
-          Future {
-            originalSender ! ConnectionInformation(
-              executionGraph.lookupConnectionInfoAndDeployReceivers
-                (connectionInformation, sourceChannelID))
-          }
+          originalSender ! ConnectionInformation(
+            executionGraph.lookupConnectionInfoAndDeployReceivers
+              (connectionInformation, sourceChannelID))
         case None =>
           log.error(s"Cannot find execution graph for job ID ${jobID}.")
           sender() ! ConnectionInformation(ConnectionInfoLookupResponse.createReceiverNotFound())

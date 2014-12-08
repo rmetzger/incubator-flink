@@ -42,7 +42,7 @@ public class TaskInputSplitProvider implements InputSplitProvider {
 	private final FiniteDuration timeout;
 	
 	public TaskInputSplitProvider(ActorRef jobManager, JobID jobId, JobVertexID vertexId,
-								  ExecutionAttemptID executionID, FiniteDuration timeout) {
+								ExecutionAttemptID executionID, FiniteDuration timeout) {
 		this.jobManager = jobManager;
 		this.jobId = jobId;
 		this.vertexId = vertexId;
