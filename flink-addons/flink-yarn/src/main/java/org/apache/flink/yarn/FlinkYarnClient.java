@@ -130,6 +130,8 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 	private String yarnQueue;
 
+	private String configurationDirectory;
+
 	private Path flinkConfigurationPath;
 
 	private Path flinkLoggingConfigurationPath; // optional
@@ -148,6 +150,12 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 					+ "File a bug, we will fix it asap");
 		}
 		conf = Utils.initializeYarnConfiguration();
+		if(this.yarnClient == null) {
+			// Create yarnClient
+			yarnClient = YarnClient.createYarnClient();
+			yarnClient.init(conf);
+			yarnClient.start();
+		}
 	}
 
 	@Override
@@ -196,6 +204,10 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		flinkConfigurationPath = confPath;
 	}
 
+	public void setConfigurationDirectory(String configurationDirectory) {
+		this.configurationDirectory = configurationDirectory;
+	}
+
 	@Override
 	public void setFlinkLoggingConfigurationPath(Path logConfPath) {
 		flinkLoggingConfigurationPath = logConfPath;
@@ -204,17 +216,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	@Override
 	public Path getFlinkLoggingConfigurationPath() {
 		return flinkLoggingConfigurationPath;
-	}
-
-
-	private YarnClient getYarnClient() {
-		if(this.yarnClient == null) {
-			// Create yarnClient
-			yarnClient = YarnClient.createYarnClient();
-			yarnClient.init(conf);
-			yarnClient.start();
-		}
-		return yarnClient;
 	}
 
 	@Override
@@ -312,8 +313,8 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		// respect custom JVM options in the YAML file
 		final String javaOpts = GlobalConfiguration.getString(ConfigConstants.FLINK_JVM_OPTIONS, "");
 
-		boolean hasLogback = Utils.hasLogback(flinkConfigurationPath);
-		boolean hasLog4j = Utils.hasLog4j(flinkConfigurationPath);
+		boolean hasLogback = Utils.hasLogback(configurationDirectory + File.separator + FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME);
+		boolean hasLog4j = Utils.hasLog4j(configurationDirectory + File.separator + FlinkYarnSessionCli.CONFIG_FILE_LOG4J_NAME);
 
 		// Set up the container launch context for the application master
 		ContainerLaunchContext amContainer = Records
@@ -503,7 +504,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 
 	public String getClusterDescription() throws Exception {
-		YarnClient yarnClient = getYarnClient();
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);

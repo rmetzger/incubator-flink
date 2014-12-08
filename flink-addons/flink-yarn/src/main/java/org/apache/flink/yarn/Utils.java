@@ -259,13 +259,11 @@ public class Utils {
 		return port + (appId % 1000);
 	}
 
-	public static boolean hasLogback(Path path) {
-		String asString = path.toString();
+	public static boolean hasLogback(String asString) {
 		return asString.substring(asString.lastIndexOf(File.separator) + 1, asString.length()).equals(FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME);
 	}
 
-	public static boolean hasLog4j(Path path) {
-		String asString = path.toString();
+	public static boolean hasLog4j(String asString) {
 		return asString.substring(asString.lastIndexOf(File.separator) + 1, asString.length()).equals(FlinkYarnSessionCli.CONFIG_FILE_LOG4J_NAME);
 	}
 }
