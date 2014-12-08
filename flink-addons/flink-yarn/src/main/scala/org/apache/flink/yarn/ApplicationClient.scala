@@ -31,34 +31,33 @@ import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.akka.AkkaUtils
 import org.apache.flink.runtime.jobmanager.JobManager
 import org.apache.flink.runtime.messages.JobManagerMessages.{RequestTotalNumberOfSlots, RequestNumberRegisteredTaskManager}
+import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus
 import org.apache.flink.yarn.Messages._
 import org.apache.hadoop.yarn.api.records.{FinalApplicationStatus, YarnApplicationState, ApplicationId}
 import org.apache.hadoop.yarn.client.api.YarnClient
+import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ApplicationClientImpl(appId: ApplicationId, jobManagerPort: Int, yarnClient: YarnClient,
-                        confDirPath: String, slots: Int, numTaskManagers: Int,
-                        dynamicPropertiesEncoded: String)
+class ApplicationClient
 
-  extends Actor with ActorLogMessages with ActorLogging with ApplicationClient {
+  extends Actor with ActorLogMessages with ActorLogging {
   import context._
 
   val INITIAL_POLLING_DELAY = 0 seconds
   val WAIT_FOR_YARN_INTERVAL = 500 milliseconds
   val POLLING_INTERVAL = 3 seconds
 
-  var applicationMaster: Option[ActorRef] = None
+  var yarnJobManager: Option[ActorRef] = None
   var pollingTimer: Option[Cancellable] = None
   implicit var timeout: FiniteDuration = 0 seconds
   var running = false
+  var messagesQueue : mutable.Queue[YarnMessage] = mutable.Queue[YarnMessage]()
+  var latestClusterStatus : Option[FlinkYarnClusterStatus] = None
 
   override def preStart(): Unit = {
     super.preStart()
 
-    // permanently? schedule a yarn poll report
-    pollingTimer = Some(context.system.scheduler.schedule(INITIAL_POLLING_DELAY,
-      WAIT_FOR_YARN_INTERVAL, self, PollYarnReport))
 
     timeout = new FiniteDuration(GlobalConfiguration.getInteger(ConfigConstants.AKKA_ASK_TIMEOUT,
       ConfigConstants.DEFAULT_AKKA_ASK_TIMEOUT), TimeUnit.SECONDS)
@@ -74,41 +73,54 @@ class ApplicationClientImpl(appId: ApplicationId, jobManagerPort: Int, yarnClien
   }
 
   override def receiveWithLogMessages: Receive = {
-    // request the number of task managers and slots from the job manager
-    case PollYarnReport => {
-        applicationMaster.get ! RequestNumberRegisteredTaskManager
-        applicationMaster.get ! RequestTotalNumberOfSlots
-      }
-      case _ =>
-    }
+    // ----------------------------- Registration -> Status updates -> shutdown ----------------
+    case LocalRegisterClient(address: String) => {
+      yarnJobManager = Some(AkkaUtils.getReference(JobManager.getAkkaURL(address))(system, timeout))
+      yarnJobManager match {
+        case Some(jm) => {
+          // the message came from the FlinkYarnCluster. We send the message to the JobManager.
+          // it is important not to forward the message because the JobManager is storing the
+          // sender as the Application Client (this class).
+          jm ! RegisterClient
 
-  /*  case msg: YarnMessage => {
-      println(msg)
-    } */
-    /*case msg: StopYarnSession => {
+          // schedule a periodic status report from the JobManager
+          // request the number of task managers and slots from the job manager
+          pollingTimer = Some(context.system.scheduler.schedule(INITIAL_POLLING_DELAY,
+            WAIT_FOR_YARN_INTERVAL, yarnJobManager.get, PollYarnClusterStatus))
+        }
+        case None => throw new RuntimeException("Registration at JobManager/ApplicationMaster failed." +
+          "Job Manager RPC connection has not properly been initialized");
+      }
+    }
+    case msg: StopYarnSession => {
       log.info("Stop yarn session.")
-      jobManager foreach {
+      yarnJobManager foreach {
         _ forward msg
       }
-    }
-    case msg: CamelMessage => {
-      msg.bodyAs[String] match {
-        case "stop" | "quit" | "exit" => self ! StopYarnSession(FinalApplicationStatus.KILLED)
-        case "help" => printHelp
-        case msg => println(s"Unknown command ${msg}.")
-      }
-    } */
-
-  // method defined in ApplicationClient interface.
-  override def stopCluster(status: FinalApplicationStatus) = {
-    implicit val to = Timeout.durationToTimeout(timeout)
-    val future = applicationMaster.get ask StopYarnSession(status)
-    Await.result(future, timeout)
-
-    pollingTimer foreach {
-      _ cancel()
+      // stop ourselves
+      context.system.shutdown()
     }
 
-    akka.japi.Option.some(true)
+    // handle the responses from the PollYarnClusterStatus messages to the yarn job mgr
+    case status: FlinkYarnClusterStatus => {
+      latestClusterStatus = Some(status)
+    }
+
+    // locally get cluster status
+    case LocalGetYarnClusterStatus => {
+      sender() ! latestClusterStatus
+    }
+
+    // -----------------  handle messages from the cluster -------------------
+    // receive remote messages
+    case msg: YarnMessage => {
+      messagesQueue.enqueue(msg)
+    }
+    // locally forward messages
+    case LocalGetYarnMessage => {
+      sender() ! messagesQueue.dequeue // return first from queue
+    }
+    case _ =>
   }
+
 }

@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.yarn;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 public abstract class AbstractFlinkYarnCluster {
 
@@ -28,9 +29,14 @@ public abstract class AbstractFlinkYarnCluster {
 
 	public abstract void shutdown();
 
-	public abstract int getNumberOfConnectedTaskManagers();
-
-	public abstract int getNumberOfAvailableSlots();
+	public abstract FlinkYarnClusterStatus getClusterStatus();
 
 	public abstract boolean hasFailed();
+
+	/**
+	 * @return Diagnostics if the Cluster is in "failed" state.
+	 */
+	public abstract String getDiagnostics();
+
+	public abstract List<String> getNewMessages();
 }

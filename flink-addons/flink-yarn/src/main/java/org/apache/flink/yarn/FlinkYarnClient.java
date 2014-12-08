@@ -110,8 +110,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	private YarnClient yarnClient;
 	private YarnClientApplication yarnApplication;
 
-	private ApplicationClient applicationClient = null;
-
 
 	/**
 	 * Files (usually in a distributed file system) used for the YARN session of Flink.

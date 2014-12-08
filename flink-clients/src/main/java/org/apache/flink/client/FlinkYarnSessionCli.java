@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.runtime.operators.sort.ExceptionHandler;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
+import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -79,10 +80,6 @@ public class FlinkYarnSessionCli {
 	 *  -Dfs.overwrite-files=true  -Dtaskmanager.network.numberOfBuffers=16368
 	 */
 	private static final Option DYNAMIC_PROPERTIES = new Option("D", true, "Dynamic properties");
-
-
-
-
 
 	public static AbstractFlinkYarnClient createFlinkYarnClient(CommandLine cmd) {
 
@@ -255,12 +252,21 @@ public class FlinkYarnSessionCli {
 			while (true) {
 				// ------------------ check if there are updates by the cluster -----------
 
-				int newTmCount = yarnCluster.getNumberOfConnectedTaskManagers();
-				if(numTaskmanagers != newTmCount) {
-					System.err.println("Number of connected TaskManagers changed to "+newTmCount+". "
-							+ "Slots available: "+yarnCluster.getNumberOfAvailableSlots());
-					numTaskmanagers = newTmCount;
+				FlinkYarnClusterStatus status = yarnCluster.getClusterStatus();
+				if(numTaskmanagers != status.getNumberOfTaskManagers()) {
+					System.err.println("Number of connected TaskManagers changed to "+status.getNumberOfTaskManagers()+". "
+							+ "Slots available: "+status.getNumberOfSlots());
+					numTaskmanagers = status.getNumberOfTaskManagers();
 				}
+
+				List<String> messages = yarnCluster.getNewMessages();
+				if(messages != null && messages.size() > 0) {
+					System.err.println("New messages from the YARN cluster: ");
+					for(String msg : messages) {
+						System.err.println(msg);
+					}
+				}
+
 				if(yarnCluster.hasFailed()) {
 					System.err.println("The YARN cluster has failed");
 				}

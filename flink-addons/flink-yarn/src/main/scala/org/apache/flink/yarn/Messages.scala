@@ -32,6 +32,12 @@ object Messages {
   case class StartYarnSession(configuration: Configuration, actorSystemPort: Int)
 
   case object PollContainerCompletion
-  case object PollYarnReport
+  case object PollYarnClusterStatus // see org.apache.flink.runtime.yarn.FlinkYarnClusterStatus for
+                                    // the response
   case object CheckForUserCommand
+
+  // Client-local messages
+  case class LocalRegisterClient(jobManagerAddress: String)
+  case object LocalGetYarnMessage // request new message
+  case object LocalGetYarnClusterStatus // request the latest cluster status
 }
