@@ -316,6 +316,14 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		boolean hasLogback = Utils.hasLogback(configurationDirectory + File.separator + FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME);
 		boolean hasLog4j = Utils.hasLog4j(configurationDirectory + File.separator + FlinkYarnSessionCli.CONFIG_FILE_LOG4J_NAME);
 
+		2. NEXT STEPS:
+		- Don't delete hdfs files once the cluster is shutting down (Just for debuggin)
+		- make shure that we ship the log4j and logback configuration files
+
+		Once that is working, I can further invesitage:
+		a) why the client is not able to correctly connect (may be resolveD)
+		b) why taskmanagers are not connecting to the jobmhr
+
 		// Set up the container launch context for the application master
 		ContainerLaunchContext amContainer = Records
 				.newRecord(ContainerLaunchContext.class);
