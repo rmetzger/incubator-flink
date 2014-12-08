@@ -84,11 +84,14 @@ public class FlinkYarnSessionCli {
 	public static AbstractFlinkYarnClient createFlinkYarnClient(CommandLine cmd) {
 
 		AbstractFlinkYarnClient flinkYarnClient = getFlinkYarnClient();
+		if(flinkYarnClient == null) {
+			return null;
+		}
 
-
-		if(!cmd.hasOption(CONTAINER.getOpt())) {
+		if(!cmd.hasOption(CONTAINER.getOpt())) { // number of containers is required option!
 			LOG.error("Missing required argument " + CONTAINER.getOpt());
 			printUsage();
+			return null;
 		}
 		flinkYarnClient.setTaskManagerCount(Integer.valueOf(cmd.getOptionValue(CONTAINER.getOpt())));
 
@@ -109,6 +112,7 @@ public class FlinkYarnSessionCli {
 
 		// Conf Path
 		String confDirPath = CliFrontend.getConfigurationDirectoryFromEnv();
+		flinkYarnClient.setConfigurationDirectory(confDirPath);
 		File confFile = new File(confDirPath + File.separator + CONFIG_FILE_NAME);
 		if(!confFile.exists()) {
 			LOG.error("Unable to locate configuration file in "+confFile);
@@ -227,6 +231,7 @@ public class FlinkYarnSessionCli {
 		} catch (ClassNotFoundException e) {
 			System.err.println("Unable to locate the Flink YARN Client. Please ensure that you are using a Flink build with Hadoop2/YARN support. Message: "+e.getMessage());
 			e.printStackTrace(System.err);
+			return null; // make it obvious
 		}
 		return yarnClient;
 	}
@@ -296,7 +301,11 @@ public class FlinkYarnSessionCli {
 		}
 	}
 
-	public static int main(String[] args) {
+	public static void main(String[] args) {
+		System.exit(run(args));
+	}
+
+	public static int run(String[] args) {
 
 		//
 		//	Command Line Options

@@ -25,6 +25,7 @@ import static akka.pattern.Patterns.ask;
 import akka.actor.Props;
 import akka.util.Timeout;
 import org.apache.flink.configuration.GlobalConfiguration;
+import org.apache.flink.runtime.net.NetUtils;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
 import org.apache.hadoop.conf.Configuration;
@@ -47,6 +48,7 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,7 +92,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 		// start actor system
 		LOG.info("Start actor system.");
-		actorSystem = YarnUtils.createActorSystem(jobManagerHost, jobManagerPort, GlobalConfiguration.getConfiguration());
+		InetAddress ownHostname = NetUtils.resolveAddress(jobManagerAddress); // find name of own public interface, able to connect to the JM
+		actorSystem = YarnUtils.createActorSystem(ownHostname.getCanonicalHostName(), 0, GlobalConfiguration.getConfiguration()); // detect port automatically.
 
 		// start application client
 		LOG.info("Start application client.");

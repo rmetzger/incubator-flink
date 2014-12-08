@@ -24,19 +24,19 @@ import org.junit.Test;
 public class UtilsTests {
 	@Test
 	public void testPaths() {
-		Assert.assertTrue(Utils.hasLog4j(new Path("file:///home/hadoop/flink-yarn/log4j.properties")));
-		Assert.assertTrue(Utils.hasLog4j(new Path("hdfs:///conf/log4j.properties")));
+		Assert.assertTrue(Utils.hasLog4j("file:///home/hadoop/flink-yarn/log4j.properties"));
+		Assert.assertTrue(Utils.hasLog4j("hdfs:///conf/log4j.properties"));
 
-		Assert.assertFalse(Utils.hasLog4j(new Path("hdfs:///conf/lasdog4j.properties")));
-		Assert.assertFalse(Utils.hasLog4j(new Path("log4j")));
-		Assert.assertFalse(Utils.hasLog4j(new Path("properties")));
-		Assert.assertFalse(Utils.hasLog4j(new Path("jiojweflog4j.propertieshsauodhuiohuiwehg")));
+		Assert.assertFalse(Utils.hasLog4j("hdfs:///conf/lasdog4j.properties"));
+		Assert.assertFalse(Utils.hasLog4j("log4j"));
+		Assert.assertFalse(Utils.hasLog4j("properties"));
+		Assert.assertFalse(Utils.hasLog4j("jiojweflog4j.propertieshsauodhuiohuiwehg"));
 
-		Assert.assertTrue(Utils.hasLogback(new Path("file:///home/hadoop/flink-yarn/logback.xml")));
-		Assert.assertTrue(Utils.hasLogback(new Path("file:///home/logback.xml")));
+		Assert.assertTrue(Utils.hasLogback("file:///home/hadoop/flink-yarn/logback.xml"));
+		Assert.assertTrue(Utils.hasLogback("file:///home/logback.xml"));
 
-		Assert.assertFalse(Utils.hasLogback(new Path("file:///home/logback.xml.backup")));
-		Assert.assertFalse(Utils.hasLogback(new Path("file:///home/logback.xfml")));
+		Assert.assertFalse(Utils.hasLogback("file:///home/logback.xml.backup"));
+		Assert.assertFalse(Utils.hasLogback("file:///home/logback.xfml"));
 	}
 
 	@Test

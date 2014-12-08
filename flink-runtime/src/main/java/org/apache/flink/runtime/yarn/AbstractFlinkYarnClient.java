@@ -38,6 +38,7 @@ public abstract class AbstractFlinkYarnClient {
 	public abstract Path getFlinkLoggingConfigurationPath();
 	public abstract void setTaskManagerCount(int tmCount);
 	public abstract int getTaskManagerCount();
+	public abstract void setConfigurationDirectory(String confDirPath);
 	// List of files to transfer to the YARN containers.
 	public abstract void setShipFiles(List<File> shipFiles);
 	public abstract void setDynamicPropertiesEncoded(String dynamicPropertiesEncoded);
@@ -47,5 +48,6 @@ public abstract class AbstractFlinkYarnClient {
 	public abstract String getClusterDescription() throws Exception;
 
 	public abstract AbstractFlinkYarnCluster deploy(String clusterName) throws Exception;
+
 
 }

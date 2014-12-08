@@ -42,8 +42,8 @@ object ApplicationMaster {
 
   def main(args: Array[String]): Unit ={
     val yarnClientUsername = System.getenv(FlinkYarnClient.ENV_CLIENT_USERNAME)
-    LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName} " +
-      s"' setting user to execute Flink ApplicationMaster/JobManager to ${yarnClientUsername}'")
+    LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName}" +
+      s" setting user to execute Flink ApplicationMaster/JobManager to ${yarnClientUsername}")
 
     val ugi = UserGroupInformation.createRemoteUser(yarnClientUsername)
 
@@ -75,13 +75,6 @@ object ApplicationMaster {
 
           val appNumber = env.get(FlinkYarnClient.ENV_APP_NUMBER).toInt
 
-         /* val jobManagerPort = GlobalConfiguration.getInteger(
-            ConfigConstants.JOB_MANAGER_IPC_PORT_KEY,
-            ConfigConstants.DEFAULT_JOB_MANAGER_IPC_PORT) match {
-            case x if x <= 0 => x
-            case x => x + appNumber
-          } */
-
           val jobManagerWebPort = GlobalConfiguration.getInteger(ConfigConstants
             .JOB_MANAGER_WEB_PORT_KEY, ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT)
 
@@ -89,7 +82,7 @@ object ApplicationMaster {
 
           actorSystem = system
           jobManager = actor
-          val extActor = actor.asInstanceOf[ExtendedActorSystem]
+          val extActor = system.asInstanceOf[ExtendedActorSystem]
           val jobManagerPort = extActor.provider.getDefaultAddress.port.get
 
           generateConfigurationFile(currDir, ownHostname, jobManagerPort, jobManagerWebPort,
@@ -100,7 +93,7 @@ object ApplicationMaster {
           LOG.info("Start yarn session on job manager.")
           jobManager ! StartYarnSession(conf, jobManagerPort)
 
-          LOG.info("Await termination of actor system.")
+          LOG.info("Application Master properly initiated. Await termination of actor system.")
           actorSystem.awaitTermination()
         }catch{
           case t: Throwable =>
@@ -159,10 +152,9 @@ object ApplicationMaster {
 
   def startJobManager(currDir: String): (ActorSystem, ActorRef) = {
     LOG.info("Start job manager for yarn")
-    val pathToConfig = s"$currDir/$MODIFIED_CONF_FILE"
-    val args = Array[String]("--configDir", pathToConfig)
+    val args = Array[String]("--configDir", currDir)
 
-    LOG.info(s"Config path: ${pathToConfig}.")
+    LOG.info(s"Config path: ${currDir}.")
     val (hostname, _, configuration, _) = JobManager.parseArgs(args)
 
     // set port to 0 to let Akka automatically determine the port.

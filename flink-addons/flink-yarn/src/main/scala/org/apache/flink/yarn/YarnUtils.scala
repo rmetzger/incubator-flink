@@ -23,8 +23,10 @@ import com.typesafe.config.ConfigFactory
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.akka.AkkaUtils
 import org.apache.flink.runtime.taskmanager.TaskManager
+import org.slf4j.{LoggerFactory, Logger}
 
 object YarnUtils {
+
   def createActorSystem(hostname: String, port: Int, configuration: Configuration): ActorSystem = {
     val akkaConfig = ConfigFactory.parseString(AkkaUtils.getConfigString(hostname, port,
       configuration) + getConfigString)

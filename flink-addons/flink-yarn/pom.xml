@@ -76,7 +76,7 @@ under the License.
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>
-			<scope>provided</scope>
+			<!-- DEBUG ONLY!!!! DO NOT MAKE THIS PART OF THE PULL REQUEST!!! <scope>provided</scope> -->
 		</dependency>
 		
 		<dependency>
