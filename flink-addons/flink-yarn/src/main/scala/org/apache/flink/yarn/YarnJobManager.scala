@@ -26,6 +26,7 @@ import akka.actor.{PoisonPill, ActorRef}
 import org.apache.flink.configuration.ConfigConstants
 import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.jobmanager.JobManager
+import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus
 import org.apache.flink.yarn.Messages._
 import org.apache.flink.yarn.appMaster.YarnTaskManagerRunner
 import org.apache.hadoop.conf.Configuration
@@ -92,8 +93,10 @@ trait YarnJobManager extends ActorLogMessages {
 
     case RegisterClient =>
       messageListener = Some(sender())
-      //context.system.scheduler.schedule
 
+    case PollYarnClusterStatus =>
+      sender() ! new FlinkYarnClusterStatus(instanceManager.getNumberOfRegisteredTaskManagers,
+        instanceManager.getTotalNumberOfSlots)
 
     case StartYarnSession(conf, actorSystemPort: Int) => {
       log.info("Start yarn session.")

@@ -350,8 +350,21 @@ public class CliFrontend {
 			int programResult = executeProgram(program, client, parallelism);
 			// check if the program has been executed in a "job only" YARN cluster.
 			if(runInYarnCluster) {
+				List<String> msgs = yarnCluster.getNewMessages();
+				if(msgs != null && msgs.size() > 1) {
+					System.out.println("The following messages were created by the YARN cluster while running the Job:");
+					for(String msg : msgs) {
+						System.out.println(msg);
+					}
+				}
+				if(yarnCluster.hasFailed()) {
+					System.out.println("YARN cluster is in failed state!");
+					System.out.println("YARN Diagnostics: " + yarnCluster.getDiagnostics());
+				}
+				System.out.println("Shutting down YARN cluster");
 				yarnCluster.shutdown();
 			}
+
 			return programResult;
 		}
 		catch (Throwable t) {
