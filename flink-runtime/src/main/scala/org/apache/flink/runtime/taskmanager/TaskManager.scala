@@ -261,7 +261,8 @@ class TaskManager(val connectionInfo: InstanceConnectionInfo, val jobManagerAkka
           case None =>
         }
 
-        val splitProvider = new TaskInputSplitProvider(currentJobManager, jobID, vertexID, timeout)
+        val splitProvider = new TaskInputSplitProvider(currentJobManager, jobID, vertexID,
+          executionID, timeout)
         val env = new RuntimeEnvironment(task, tdd, userCodeClassLoader, memoryManager,
           ioManager, splitProvider, currentJobManager, bcVarManager)
 

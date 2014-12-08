@@ -257,18 +257,34 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
       }
     }
 
-    case RequestNextInputSplit(jobID, vertexID) => {
+    case RequestNextInputSplit(jobID, vertexID, executionAttempt) => {
       val nextInputSplit = currentJobs.get(jobID) match {
-        case Some((executionGraph,_)) => executionGraph.getJobVertex(vertexID) match {
-          case vertex: ExecutionJobVertex => vertex.getSplitAssigner match {
-            case splitAssigner: InputSplitAssigner => splitAssigner.getNextInputSplit(null)
-            case _ =>
-              log.error(s"No InputSplitAssigner for vertex ID ${vertexID}.")
-              null
-          }
-          case _ =>
-            log.error(s"Cannot find execution vertex for vertex ID ${vertexID}.")
+        case Some((executionGraph,_)) =>
+          val execution = executionGraph.getRegisteredExecutions().get(executionAttempt)
+
+          if(execution == null){
+            log.error("Can not find Execution for attempt " + executionAttempt)
             null
+          }else{
+            val slot = execution.getAssignedResource
+
+            val host = if(slot != null){
+              slot.getInstance().getInstanceConnectionInfo.getHostname
+            }else{
+              null
+            }
+
+            executionGraph.getJobVertex(vertexID) match {
+              case vertex: ExecutionJobVertex => vertex.getSplitAssigner match {
+                case splitAssigner: InputSplitAssigner => splitAssigner.getNextInputSplit(host)
+                case _ =>
+                  log.error(s"No InputSplitAssigner for vertex ID ${vertexID}.")
+                  null
+              }
+              case _ =>
+                log.error(s"Cannot find execution vertex for vertex ID ${vertexID}.")
+                null
+          }
         }
         case None =>
           log.error(s"Cannot find execution graph for job ID ${jobID}.")
