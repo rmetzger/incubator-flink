@@ -157,6 +157,7 @@ object AkkaUtils {
        |  }
        |}
      """.stripMargin
+    }
 
   // scalastyle:on line.size.limit
 
