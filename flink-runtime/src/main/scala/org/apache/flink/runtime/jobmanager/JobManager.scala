@@ -463,7 +463,6 @@ object JobManager {
       config =>
         GlobalConfiguration.loadConfiguration(config.configDir)
 
-        println("ConfigDir:" + config.configDir)
         val configuration = GlobalConfiguration.getConfiguration()
         if (config.configDir != null && new File(config.configDir).isDirectory) {
           configuration.setString(ConfigConstants.FLINK_BASE_DIR_PATH_KEY, config.configDir + "/..")
