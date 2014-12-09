@@ -151,12 +151,12 @@ object AkkaUtils {
        |        transport-class = "akka.remote.transport.netty.NettyTransport"
        |        tcp-nodelay = on
        |        maximum-frame-size = 1MB
-       |        execution-pool-size = 16
+       |        execution-pool-size = 4
        |      }
        |    }
        |  }
        |}
-     """.stripMargin
+     """.stripMargin + getKryoSerializerString
     }
 
   // scalastyle:on line.size.limit
