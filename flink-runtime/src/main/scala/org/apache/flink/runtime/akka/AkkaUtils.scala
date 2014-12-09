@@ -26,10 +26,13 @@ import akka.pattern.{Patterns, ask => akkaAsk}
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.configuration.{ConfigConstants, Configuration}
+import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future, Await}
 import scala.concurrent.duration._
 
 object AkkaUtils {
+  val LOG = LoggerFactory.getLogger(this.getClass)
+
   val DEFAULT_TIMEOUT: FiniteDuration = 1 minute
 
   val INF_TIMEOUT = 21474835 seconds
@@ -46,6 +49,9 @@ object AkkaUtils {
   }
 
   def createActorSystem(akkaConfig: Config): ActorSystem = {
+    if(LOG.isDebugEnabled) {
+      LOG.debug(s"Using akka config to create actor system: $akkaConfig")
+    }
     ActorSystem.create("flink", akkaConfig)
   }
 

@@ -66,8 +66,8 @@ object ApplicationMaster {
 
           val logDirs = env.get(Environment.LOG_DIRS.key())
 
-          val ownHostname = env.get(Environment.NM_HOST.key())
-          require(ownHostname != null, s"Own hostname not set.")
+          //val ownHostname = env.get(Environment.NM_HOST.key())
+          //require(ownHostname != null, s"Own hostname not set.")
 
           val taskManagerCount = env.get(FlinkYarnClient.ENV_TM_COUNT).toInt
           val slots = env.get(FlinkYarnClient.ENV_SLOTS).toInt
@@ -84,9 +84,11 @@ object ApplicationMaster {
           jobManager = actor
           val extActor = system.asInstanceOf[ExtendedActorSystem]
           val jobManagerPort = extActor.provider.getDefaultAddress.port.get
+          val ownHostname = extActor.provider.getDefaultAddress.host.get
+        //  val jobManagerAkkaUrl = extActor.provider.getDefaultAddress.toString
 
-          generateConfigurationFile(currDir, ownHostname, jobManagerPort, jobManagerWebPort,
-            logDirs, slots, taskManagerCount, dynamicPropertiesEncodedString)
+          generateConfigurationFile(currDir, ownHostname, jobManagerPort ,//jobManagerAkkaUrl,
+            jobManagerWebPort, logDirs, slots, taskManagerCount, dynamicPropertiesEncodedString)
 
 
           // send "start yarn session" message to YarnJobManager.
@@ -114,6 +116,7 @@ object ApplicationMaster {
   }
 
   def generateConfigurationFile(currDir: String, ownHostname: String, jobManagerPort: Int,
+                               //jobManagerAkkaUrl: String,
                                jobManagerWebPort: Int, logDirs: String, slots: Int,
                                taskManagerCount: Int, dynamicPropertiesEncodedString: String)
   : Unit = {
@@ -129,8 +132,11 @@ object ApplicationMaster {
 
     output.println(s"${ConfigConstants.JOB_MANAGER_IPC_ADDRESS_KEY}: $ownHostname")
     output.println(s"${ConfigConstants.JOB_MANAGER_IPC_PORT_KEY}: $jobManagerPort")
+   // output.println(s"${ConfigConstants.JOB_MANAGER_AKKA_URL}: $jobManagerAkkaUrl")
+
     output.println(s"${ConfigConstants.JOB_MANAGER_WEB_LOG_PATH_KEY}: $logDirs")
     output.println(s"${ConfigConstants.JOB_MANAGER_WEB_PORT_KEY}: $jobManagerWebPort")
+
 
     if(slots != -1){
       output.println(s"${ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS}: $slots")

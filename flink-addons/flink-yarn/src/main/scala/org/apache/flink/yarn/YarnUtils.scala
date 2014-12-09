@@ -27,10 +27,11 @@ import org.slf4j.{LoggerFactory, Logger}
 
 object YarnUtils {
 
+  val LOG = LoggerFactory.getLogger(this.getClass)
+
   def createActorSystem(hostname: String, port: Int, configuration: Configuration): ActorSystem = {
     val akkaConfig = ConfigFactory.parseString(AkkaUtils.getConfigString(hostname, port,
       configuration) + getConfigString)
-
     AkkaUtils.createActorSystem(akkaConfig)
   }
 
@@ -42,9 +43,7 @@ object YarnUtils {
   }
 
   def getConfigString: String = {
-    s"""akka.loglevel = "INFO"
-      |akka.stdout-loglevel = "INFO"
-      |akka.log-dead-letters-during-shutdown = off
+    s"""akka.log-dead-letters-during-shutdown = off
       |akka.log-dead-letters = off
       |akka.remote.log-remote-lifecycle-events=off
       |""".stripMargin
