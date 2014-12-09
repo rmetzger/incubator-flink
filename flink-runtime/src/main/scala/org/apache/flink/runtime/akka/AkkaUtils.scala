@@ -86,12 +86,6 @@ object AkkaUtils {
 //      |      threshold = $transportThreshold
 //      |      heartbeat-interval = $transportHeartbeatInterval
 //      |    }
-//    |
-//    |    watch-failure-detector{
-//      |      heartbeat-interval = $watchHeartbeatInterval
-//      |      acceptable-heartbeat-pause = $watchHeartbeatPause
-//      |      threshold = $watchThreshold
-//      |    }
 
     val configString =
       s"""
@@ -103,6 +97,12 @@ object AkkaUtils {
          |  log-dead-letters-during-shutdown = $logLifecycleEvents
          |
          |  remote {
+         |    watch-failure-detector{
+         |      heartbeat-interval = $watchHeartbeatInterval
+         |      acceptable-heartbeat-pause = $watchHeartbeatPause
+         |      threshold = $watchThreshold
+         |    }
+         |
          |    netty{
          |      tcp{
          |        hostname = $host
@@ -156,7 +156,7 @@ object AkkaUtils {
        |    }
        |  }
        |}
-     """.stripMargin + getKryoSerializerString
+     """.stripMargin
     }
 
   // scalastyle:off line.size.limit
