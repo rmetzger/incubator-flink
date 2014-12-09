@@ -29,6 +29,7 @@ object Messages {
   case object RegisterClient
 
   case class StopYarnSession(status: FinalApplicationStatus)
+  case object JobManagerStopped
   case class StartYarnSession(configuration: Configuration, actorSystemPort: Int)
 
   case object PollContainerCompletion
