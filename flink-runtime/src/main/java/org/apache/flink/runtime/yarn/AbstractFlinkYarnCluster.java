@@ -29,6 +29,8 @@ public abstract class AbstractFlinkYarnCluster {
 
 	public abstract void shutdown();
 
+	public abstract boolean hasBeenStopped();
+
 	public abstract FlinkYarnClusterStatus getClusterStatus();
 
 	public abstract boolean hasFailed();

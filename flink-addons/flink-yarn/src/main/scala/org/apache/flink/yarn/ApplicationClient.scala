@@ -102,7 +102,6 @@ class ApplicationClient
       yarnJobManager foreach {
         _ forward msg
       }
-      // context.system.shutdown()
     }
     case JobManagerStopped => {
       log.info("Remote JobManager has been stopped successfully. " +
