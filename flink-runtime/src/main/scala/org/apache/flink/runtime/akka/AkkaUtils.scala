@@ -121,7 +121,7 @@ object AkkaUtils {
          |        hostname = $host
          |        port = $port
          |        connection-timeout = $akkaTCPTimeout
-         |        maximum-frame-size = ${akkaFramesize}MB
+         |        maximum-frame-size = ${akkaFramesize}
          |      }
          |    }
          |
