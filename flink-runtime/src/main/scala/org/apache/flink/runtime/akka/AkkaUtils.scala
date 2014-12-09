@@ -77,7 +77,7 @@ object AkkaUtils {
     val logLevel = configuration.getString(ConfigConstants.AKKA_LOG_LEVEL,
       ConfigConstants.DEFAULT_AKKA_LOG_LEVEL)
 
-    // scalastyle:off line.size.limit
+
 
     // akka.remote
 //
@@ -159,7 +159,7 @@ object AkkaUtils {
      """.stripMargin + getKryoSerializerString
     }
 
-  // scalastyle:on line.size.limit
+  // scalastyle:off line.size.limit
 
   def getKryoSerializerString: String = {
     """
@@ -333,6 +333,8 @@ object AkkaUtils {
       |}
     """.stripMargin
   }
+
+  // scalastyle:on line.size.limit
 
   def getDefaultActorSystemConfig = {
     ConfigFactory.parseString(getDefaultActorSystemConfigString)
