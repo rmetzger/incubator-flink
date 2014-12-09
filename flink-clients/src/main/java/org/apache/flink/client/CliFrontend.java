@@ -30,7 +30,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -65,9 +67,11 @@ import org.apache.flink.runtime.messages.JobManagerMessages.CancelJob;
 import org.apache.flink.runtime.messages.JobManagerMessages.RequestRunningJobs$;
 import org.apache.flink.runtime.messages.JobManagerMessages.RunningJobs;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
+import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -134,6 +138,7 @@ public class CliFrontend {
 	public static final String YARN_PROPERTIES_DYNAMIC_PROPERTIES_STRING = "dynamicPropertiesString";
 	// this has to be a regex for String.split()
 	public static final String YARN_DYNAMIC_PROPERTIES_SEPARATOR = "@@";
+	private static final String DEFAULT_LOG4J_PATTERN_LAYOUT = "%d{HH:mm:ss,SSS} %-5p %-60c %x - %m%n";
 
 	
 
@@ -161,6 +166,7 @@ public class CliFrontend {
 	 * Initializes the class
 	 */
 	public CliFrontend() {
+	//	parser = new ExtendedPosixParser(true);; // ignore unrecognized options.
 		parser = new PosixParser();
 		configurationDirectory = getConfigurationDirectoryFromEnv();
 	}
@@ -212,6 +218,9 @@ public class CliFrontend {
 		options.addOption(CLASS_OPTION);
 		options.addOption(PARALLELISM_OPTION);
 		options.addOption(ARGS_OPTION);
+
+		// also add the YARN options so that the parser can parse them
+		FlinkYarnSessionCli.getYARNSessionCLIOptions(options);
 		return options;
 	}
 	
@@ -788,6 +797,7 @@ public class CliFrontend {
 	}
 	
 	protected ActorRef getJobManager(CommandLine line) throws IOException {
+		//TODO: Get ActorRef from YarnCluster if we are in YARN mode.
 		String jobManagerAddressStr = getJobManagerAddressString(line);
 		if (jobManagerAddressStr == null) {
 			return null;
@@ -905,8 +915,8 @@ public class CliFrontend {
 		InetSocketAddress jobManagerAddress = null;
 		if(jmAddrString.equals(YARN_DEPLOY_JOBMANAGER)) {
 			System.out.println("YARN cluster mode detected. Switching Log4j output to console");
-			LogManager.getRootLogger().addAppender(new ConsoleAppender(new PatternLayout()));
-			
+			LogManager.getRootLogger().addAppender(new ConsoleAppender(new PatternLayout(DEFAULT_LOG4J_PATTERN_LAYOUT)));
+
 			this.runInYarnCluster = true;
 			// user wants to run Flink in YARN cluster.
 			AbstractFlinkYarnClient flinkYarnClient = FlinkYarnSessionCli.createFlinkYarnClient(line);
@@ -921,6 +931,25 @@ public class CliFrontend {
 			jobManagerAddress = yarnCluster.getJobManagerAddress();
 			System.out.println("YARN cluster started");
 			System.out.println("JobManager web interface address "+yarnCluster.getWebInterfaceURL());
+			System.out.println("Waiting until all TaskManagers have connected");
+			while(true) {
+				FlinkYarnClusterStatus status = yarnCluster.getClusterStatus();
+				if(status != null) {
+					if (status.getNumberOfTaskManagers() < flinkYarnClient.getTaskManagerCount()) {
+						System.out.println("TaskManager status  (" + status.getNumberOfTaskManagers()+"/"+flinkYarnClient.getTaskManagerCount()+")");
+					} else {
+						System.out.println("Enough TaskManagers are connected");
+						break;
+					}
+				} else {
+					System.out.println("No status updates from YARN cluster received so far. Waiting ...");
+				}
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					System.err.println("Thread as interrupted"); Thread.currentThread().interrupt();
+				}
+			}
 		} else {
 			jobManagerAddress = RemoteExecutor.getInetFromHostport(jmAddrString);
 		}
@@ -1063,4 +1092,28 @@ public class CliFrontend {
 		int retCode = cli.parseParameters(args);
 		System.exit(retCode);
 	}
+
+
+
+	// ---------------------------- Utils
+
+	// Source: http://stackoverflow.com/questions/6049470/can-apache-commons-cli-options-parser-ignore-unknown-command-line-options
+/*	public class ExtendedPosixParser extends PosixParser {
+
+		private boolean ignoreUnrecognizedOption;
+
+		public ExtendedPosixParser(final boolean ignoreUnrecognizedOption) {
+			this.ignoreUnrecognizedOption = ignoreUnrecognizedOption;
+		}
+
+		@Override
+		protected void processOption(final String arg, final ListIterator iter) throws ParseException {
+			boolean hasOption = getOptions().hasOption(arg);
+
+			if (hasOption || !ignoreUnrecognizedOption) {
+				super.processOption(arg, iter);
+			}
+		}
+
+	} */
 }
