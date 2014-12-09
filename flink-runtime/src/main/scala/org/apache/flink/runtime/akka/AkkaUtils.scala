@@ -77,16 +77,6 @@ object AkkaUtils {
     val logLevel = configuration.getString(ConfigConstants.AKKA_LOG_LEVEL,
       ConfigConstants.DEFAULT_AKKA_LOG_LEVEL)
 
-
-
-    // akka.remote
-//
-//    |    transport-failure-detector{
-//      |      acceptable-heartbeat-pause = $transportHeartbeatPause
-//      |      threshold = $transportThreshold
-//      |      heartbeat-interval = $transportHeartbeatInterval
-//      |    }
-
     val configString =
       s"""
          |akka {
@@ -97,6 +87,12 @@ object AkkaUtils {
          |  log-dead-letters-during-shutdown = $logLifecycleEvents
          |
          |  remote {
+         |    transport-failure-detector{
+         |      acceptable-heartbeat-pause = $transportHeartbeatPause
+         |      heartbeat-interval = $transportHeartbeatInterval
+         |      threshold = $transportThreshold
+         |    }
+         |
          |    watch-failure-detector{
          |      heartbeat-interval = $watchHeartbeatInterval
          |      acceptable-heartbeat-pause = $watchHeartbeatPause
