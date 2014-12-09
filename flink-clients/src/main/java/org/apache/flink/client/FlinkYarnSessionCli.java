@@ -258,7 +258,7 @@ public class FlinkYarnSessionCli {
 				// ------------------ check if there are updates by the cluster -----------
 
 				FlinkYarnClusterStatus status = yarnCluster.getClusterStatus();
-				if(numTaskmanagers != status.getNumberOfTaskManagers()) {
+				if(status != null && numTaskmanagers != status.getNumberOfTaskManagers()) {
 					System.err.println("Number of connected TaskManagers changed to "+status.getNumberOfTaskManagers()+". "
 							+ "Slots available: "+status.getNumberOfSlots());
 					numTaskmanagers = status.getNumberOfTaskManagers();

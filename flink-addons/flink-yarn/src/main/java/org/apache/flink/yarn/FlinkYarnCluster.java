@@ -39,7 +39,7 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.None;
+import scala.None$;
 import scala.Some;
 import scala.concurrent.Await;
 import scala.concurrent.Awaitable;
@@ -159,12 +159,12 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	public FlinkYarnClusterStatus getClusterStatus() {
 		Future<Object> clusterStatusOption = ask(applicationClient, Messages.LocalGetYarnClusterStatus$.MODULE$, akkaTimeout);
 		Object clusterStatus = awaitUtil(clusterStatusOption, "Unable to get Cluster status from Application Client");
-		if(clusterStatus instanceof None) {
+		if(clusterStatus instanceof None$) {
 			return null;
 		} else if(clusterStatus instanceof Some) {
 			return (FlinkYarnClusterStatus) (((Some) clusterStatus).get());
 		} else {
-			throw new RuntimeException("Unexpected type: "+clusterStatus);
+			throw new RuntimeException("Unexpected type: "+clusterStatus.getClass().getCanonicalName());
 		}
 	}
 
@@ -206,7 +206,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		while(true) {
 			Future<Object> messageOptionFuture = ask(applicationClient, Messages.LocalGetYarnMessage$.MODULE$, akkaTimeout);
 			Object messageOption = awaitUtil(messageOptionFuture, "Error getting new messages from Appliation Client");
-			if(messageOption instanceof None) {
+			if(messageOption instanceof None$) {
 				break;
 			} else if(messageOption instanceof Some) {
 				Messages.YarnMessage msg = (Messages.YarnMessage) ((Some) messageOption).get();
@@ -228,8 +228,12 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	// -------------------------- Shutdown handling ------------------------
 
+	private AtomicBoolean hasBeenShutDown = new AtomicBoolean(false);
 	@Override
 	public void shutdown() {
+		if(hasBeenShutDown.compareAndSet(true, true)) {
+			return;
+		}
 		if(actorSystem != null){
 			LOG.info("Sending shutdown request to the Application Master");
 			if(applicationMaster != ActorRef.noSender()) {
@@ -246,7 +250,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		LOG.info("Deleting files in "+sessionFilesDir );
 		try {
 			FileSystem shutFS = FileSystem.get(hadoopConfig);
-			shutFS.delete(sessionFilesDir, true); // delete conf and jar file.
+		// TODO ACTIVATE AGAIN	shutFS.delete(sessionFilesDir, true); // delete conf and jar file.
 			shutFS.close();
 		}catch(IOException e){
 			LOG.error("Could not delete the Flink jar and configuration files in HDFS..", e);
