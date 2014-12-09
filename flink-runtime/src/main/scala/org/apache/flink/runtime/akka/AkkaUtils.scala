@@ -93,19 +93,6 @@ object AkkaUtils {
 //      |      threshold = $watchThreshold
 //      |    }
 
-    // akka
-
-//    |  actor{
-//      |    default-dispatcher{
-//        |      throughput = $akkaThroughput
-//        |    }
-//      |  }
-
-    // akka.remote.netty.tcp
-//
-//    |        connection-timeout = $akkaTCPTimeout
-//    |        maximum-frame-size = $akkaFramesize
-
     val configString =
       s"""
          |akka {
@@ -164,18 +151,12 @@ object AkkaUtils {
        |        transport-class = "akka.remote.transport.netty.NettyTransport"
        |        tcp-nodelay = on
        |        maximum-frame-size = 1MB
-       |        execution-pool-size = 4
+       |        execution-pool-size = 16
        |      }
        |    }
        |  }
        |}
      """.stripMargin
-
-    //akka.remote.netty.tcp
-//    transport-class = "akka.remote.transport.netty.NettyTransport"
-//    tcp-nodelay = on
-//    maximum-frame-size = 1MB
-  }
 
   // scalastyle:on line.size.limit
 
