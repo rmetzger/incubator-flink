@@ -32,6 +32,7 @@ import org.apache.flink.runtime.akka.AkkaUtils
 import org.apache.flink.runtime.jobmanager.JobManager
 import org.apache.flink.runtime.messages.JobManagerMessages.{RequestTotalNumberOfSlots, RequestNumberRegisteredTaskManager}
 import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus
+import org.apache.flink.yarn.Messages
 import org.apache.flink.yarn.Messages._
 import org.apache.hadoop.yarn.api.records.{FinalApplicationStatus, YarnApplicationState, ApplicationId}
 import org.apache.hadoop.yarn.client.api.YarnClient
@@ -54,6 +55,7 @@ class ApplicationClient
   var running = false
   var messagesQueue : mutable.Queue[YarnMessage] = mutable.Queue[YarnMessage]()
   var latestClusterStatus : Option[FlinkYarnClusterStatus] = None
+  var stopMessageReceiver : Option[ActorRef] = None
 
   override def preStart(): Unit = {
     super.preStart()
@@ -96,8 +98,17 @@ class ApplicationClient
     }
     case msg: StopYarnSession => {
       log.info("Stop yarn session.")
+      stopMessageReceiver = Some(sender())
       yarnJobManager foreach {
         _ forward msg
+      }
+      // context.system.shutdown()
+    }
+    case JobManagerStopped => {
+      log.info("Remote JobManager has been stopped successfully. " +
+        "Stopping local application client")
+      stopMessageReceiver foreach {
+        _ ! JobManagerStopped
       }
       // stop ourselves
       context.system.shutdown()

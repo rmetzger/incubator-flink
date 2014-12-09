@@ -88,7 +88,9 @@ trait YarnJobManager extends ActorLogMessages {
       }
 
       nmClientOption = None
-
+      messageListener foreach {
+        _ ! JobManagerStopped
+      }
       context.system.shutdown()
 
     case RegisterClient =>

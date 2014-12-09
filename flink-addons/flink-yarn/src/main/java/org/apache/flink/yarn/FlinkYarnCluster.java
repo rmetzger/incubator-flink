@@ -75,7 +75,6 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	private ActorSystem actorSystem;
 	private ActorRef applicationClient;
 	private ApplicationReport intialAppReport;
-	private ActorRef applicationMaster = ActorRef.noSender();
 	private static FiniteDuration akkaDuration = Duration.apply(5, TimeUnit.SECONDS);
 	private static Timeout akkaTimeout = Timeout.durationToTimeout(akkaDuration);
 
@@ -237,7 +236,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		}
 		if(actorSystem != null){
 			LOG.info("Sending shutdown request to the Application Master");
-			if(applicationMaster != ActorRef.noSender()) {
+			if(applicationClient != ActorRef.noSender()) {
 				Future<Object> future = ask(applicationClient, new Messages.StopYarnSession(FinalApplicationStatus.SUCCEEDED), akkaTimeout);
 				awaitUtil(future, "Error while stopping Application Client");
 			}
