@@ -590,9 +590,9 @@ public final class ConfigConstants {
 
 	public static double DEFAULT_AKKA_WATCH_THRESHOLD = 300.0;
 
-	public static String DEFAULT_AKKA_TCP_TIMEOUT = "15 s";
+	public static String DEFAULT_AKKA_TCP_TIMEOUT = "100 s";
 
-	public static int DEFAULT_AKKA_DISPATCHER_THROUGHPUT = 10;
+	public static int DEFAULT_AKKA_DISPATCHER_THROUGHPUT = 15;
 
 	public static boolean DEFAULT_AKKA_LOG_LIFECYCLE_EVENTS = false;
 

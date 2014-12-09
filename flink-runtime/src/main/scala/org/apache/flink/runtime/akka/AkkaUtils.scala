@@ -120,10 +120,18 @@ object AkkaUtils {
          |      tcp{
          |        hostname = $host
          |        port = $port
+         |        connection-timeout = $akkaTCPTimeout
+         |        maximum-frame-size = ${akkaFramesize}MB
          |      }
          |    }
          |
          |    log-remote-lifecycle-events = $logLifecycleEvents
+         |  }
+         |
+         |  actor{
+         |    default-dispatcher{
+         |      throughput = ${akkaThroughput}
+         |    }
          |  }
          |
          |}
@@ -153,6 +161,10 @@ object AkkaUtils {
        |    netty{
        |      tcp{
        |        port = 0
+       |        transport-class = "akka.remote.transport.netty.NettyTransport"
+       |        tcp-nodelay = on
+       |        maximum-frame-size = 1MB
+       |        execution-pool-size = 4
        |      }
        |    }
        |  }
