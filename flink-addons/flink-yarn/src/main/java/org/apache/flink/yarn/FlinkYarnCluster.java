@@ -64,6 +64,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	private YarnClient yarnClient;
 	private Thread actorRunner;
+	private Thread clientShutdownHook = new ClientShutdownHook();
 	private PollingThread pollingRunner;
 	private Configuration hadoopConfig;
 	// (HDFS) location of the files required to run on YARN. Needed here to delete them on shutdown.
@@ -105,7 +106,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 
 		// add hook to ensure proper shutdown
-		Runtime.getRuntime().addShutdownHook(new ClientShutdownHook());
+		Runtime.getRuntime().addShutdownHook(clientShutdownHook);
 
 		actorRunner = new Thread(new Runnable() {
 			@Override
@@ -157,6 +158,9 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	@Override
 	public FlinkYarnClusterStatus getClusterStatus() {
+		if(hasBeenStopped()) {
+			throw new RuntimeException("The FlinkYarnCluster has alread been stopped");
+		}
 		Future<Object> clusterStatusOption = ask(applicationClient, Messages.LocalGetYarnClusterStatus$.MODULE$, akkaTimeout);
 		Object clusterStatus = awaitUtil(clusterStatusOption, "Unable to get Cluster status from Application Client");
 		if(clusterStatus instanceof None$) {
@@ -201,6 +205,9 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	@Override
 	public List<String> getNewMessages() {
+		if(hasBeenStopped()) {
+			throw new RuntimeException("The FlinkYarnCluster has alread been stopped");
+		}
 		List<String> ret = new ArrayList<String>();
 		// get messages from ApplicationClient (locally)
 		while(true) {
@@ -231,8 +238,16 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	private AtomicBoolean hasBeenShutDown = new AtomicBoolean(false);
 	@Override
 	public void shutdown() {
+		shutdownInternal(true);
+	}
+
+	private void shutdownInternal(boolean removeShutdownHook) {
 		if(hasBeenShutDown.getAndSet(true)) {
 			return;
+		}
+		// the session is being stopped explicitly.
+		if(removeShutdownHook) {
+			Runtime.getRuntime().removeShutdownHook(clientShutdownHook);
 		}
 		if(actorSystem != null){
 			LOG.info("Sending shutdown request to the Application Master");
@@ -275,12 +290,16 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		yarnClient = null; // set null to clearly see if somebody wants to access it afterwards.
 	}
 
+	@Override
+	public boolean hasBeenStopped() {
+		return hasBeenShutDown.get();
+	}
 
 
 	public class ClientShutdownHook extends Thread {
 		@Override
 		public void run() {
-			shutdown();
+			shutdownInternal(false);
 		}
 	}
 
@@ -303,10 +322,12 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		}
 
 		public void stopRunner() {
-			if (!running.compareAndSet(false, true)) {
+			if(!running.get()) {
 				LOG.warn("Polling thread was already stopped");
 			}
+			running.set(false);
 		}
+
 		public ApplicationReport getLastReport() {
 			synchronized (lock) {
 				return lastReport;
@@ -332,7 +353,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 					Thread.currentThread().interrupt(); // pass interrupt.
 				}
 			}
-			if(!yarnClient.isInState(Service.STATE.STARTED)) {
+			if(running.get() && !yarnClient.isInState(Service.STATE.STARTED)) {
+				// == if the polling thread is still running but the yarn client is stopped.
 				LOG.warn("YARN client is unexpected in state "+yarnClient.getServiceState());
 			}
 		}

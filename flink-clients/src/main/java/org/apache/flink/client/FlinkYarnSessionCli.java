@@ -296,6 +296,9 @@ public class FlinkYarnSessionCli {
 						System.err.println("Unknown command '"+command+"'. Showing help: \n"+HELP);
 					}
 				}
+				if(yarnCluster.hasBeenStopped()) {
+					LOG.info("Stopping interactive command line interface, YARN cluster has been stopped.");
+				}
 			}
 		} catch(Exception e) {
 			LOG.warn("Exception while running the interactive command line interface", e);
