@@ -45,7 +45,7 @@ class ApplicationClient
   import context._
 
   val INITIAL_POLLING_DELAY = 0 seconds
-  val WAIT_FOR_YARN_INTERVAL = 500 milliseconds
+  val WAIT_FOR_YARN_INTERVAL = 2 seconds
   val POLLING_INTERVAL = 3 seconds
 
   var yarnJobManager: Option[ActorRef] = None
@@ -57,7 +57,6 @@ class ApplicationClient
 
   override def preStart(): Unit = {
     super.preStart()
-
 
     timeout = new FiniteDuration(GlobalConfiguration.getInteger(ConfigConstants.AKKA_ASK_TIMEOUT,
       ConfigConstants.DEFAULT_AKKA_ASK_TIMEOUT), TimeUnit.SECONDS)
@@ -75,7 +74,10 @@ class ApplicationClient
   override def receiveWithLogMessages: Receive = {
     // ----------------------------- Registration -> Status updates -> shutdown ----------------
     case LocalRegisterClient(address: String) => {
-      yarnJobManager = Some(AkkaUtils.getReference(JobManager.getAkkaURL(address))(system, timeout))
+      val jmAkkaUrl = JobManager.getAkkaURL(address)
+      println(s"jmAkkaUrl=$jmAkkaUrl")
+
+      yarnJobManager = Some(AkkaUtils.getReference(jmAkkaUrl)(system, timeout))
       yarnJobManager match {
         case Some(jm) => {
           // the message came from the FlinkYarnCluster. We send the message to the JobManager.
@@ -118,7 +120,7 @@ class ApplicationClient
     }
     // locally forward messages
     case LocalGetYarnMessage => {
-      sender() ! messagesQueue.dequeue // return first from queue
+      sender() ! (if( messagesQueue.size == 0) None else messagesQueue.dequeue)
     }
     case _ =>
   }

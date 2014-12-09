@@ -66,8 +66,11 @@ object ApplicationMaster {
 
           val logDirs = env.get(Environment.LOG_DIRS.key())
 
-          //val ownHostname = env.get(Environment.NM_HOST.key())
-          //require(ownHostname != null, s"Own hostname not set.")
+          // Note that we use the "ownHostname" given by YARN here, to make sure
+          // we use the hostnames given by YARN consitently throuout akka.
+          // for akka "localhost" and "localhost.localdomain" are different actors.
+          val ownHostname = env.get(Environment.NM_HOST.key())
+          require(ownHostname != null, s"Own hostname not set.")
 
           val taskManagerCount = env.get(FlinkYarnClient.ENV_TM_COUNT).toInt
           val slots = env.get(FlinkYarnClient.ENV_SLOTS).toInt
@@ -78,13 +81,13 @@ object ApplicationMaster {
           val jobManagerWebPort = GlobalConfiguration.getInteger(ConfigConstants
             .JOB_MANAGER_WEB_PORT_KEY, ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT)
 
-          val (system, actor) = startJobManager(currDir)
+          val (system, actor) = startJobManager(currDir, ownHostname)
 
           actorSystem = system
           jobManager = actor
           val extActor = system.asInstanceOf[ExtendedActorSystem]
           val jobManagerPort = extActor.provider.getDefaultAddress.port.get
-          val ownHostname = extActor.provider.getDefaultAddress.host.get
+       //   val ownHostname = extActor.provider.getDefaultAddress.host.get
         //  val jobManagerAkkaUrl = extActor.provider.getDefaultAddress.toString
 
           generateConfigurationFile(currDir, ownHostname, jobManagerPort ,//jobManagerAkkaUrl,
@@ -156,12 +159,12 @@ object ApplicationMaster {
     output.close()
   }
 
-  def startJobManager(currDir: String): (ActorSystem, ActorRef) = {
+  def startJobManager(currDir: String, hostname: String): (ActorSystem, ActorRef) = {
     LOG.info("Start job manager for yarn")
     val args = Array[String]("--configDir", currDir)
 
     LOG.info(s"Config path: ${currDir}.")
-    val (hostname, _, configuration, _) = JobManager.parseArgs(args)
+    val (_, _, configuration, _) = JobManager.parseArgs(args)
 
     // set port to 0 to let Akka automatically determine the port.
     implicit val jobManagerSystem = YarnUtils.createActorSystem(hostname, port = 0, configuration)

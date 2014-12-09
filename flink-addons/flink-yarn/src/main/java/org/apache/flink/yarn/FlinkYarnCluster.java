@@ -31,6 +31,7 @@ import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
@@ -93,7 +94,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		// start actor system
 		LOG.info("Start actor system.");
 		InetAddress ownHostname = NetUtils.resolveAddress(jobManagerAddress); // find name of own public interface, able to connect to the JM
-		actorSystem = YarnUtils.createActorSystem(ownHostname.getCanonicalHostName(), 0, GlobalConfiguration.getConfiguration()); // detect port automatically.
+		actorSystem = YarnUtils.createActorSystem(ownHostname.getCanonicalHostName(), 0, GlobalConfiguration.getConfiguration()); // set port automatically.
 
 		// start application client
 		LOG.info("Start application client.");
@@ -101,7 +102,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		applicationClient = actorSystem.actorOf(Props.create(ApplicationClient.class));
 
 		// instruct ApplicationClient to start a periodical status polling
-		applicationClient.tell(new Messages.LocalRegisterClient(jobManagerAddress.toString()), applicationClient);
+		applicationClient.tell(new Messages.LocalRegisterClient(jobManagerHost + ":" + jobManagerPort), applicationClient);
 
 
 		// add hook to ensure proper shutdown
@@ -231,7 +232,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	private AtomicBoolean hasBeenShutDown = new AtomicBoolean(false);
 	@Override
 	public void shutdown() {
-		if(hasBeenShutDown.compareAndSet(true, true)) {
+		if(hasBeenShutDown.getAndSet(true)) {
 			return;
 		}
 		if(actorSystem != null){
@@ -315,7 +316,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 		@Override
 		public void run() {
-			while (running.get()) {
+			while (running.get() && yarnClient.isInState(Service.STATE.STARTED)) {
 				try {
 					ApplicationReport report = yarnClient.getApplicationReport(appId);
 					synchronized (lock) {
@@ -331,6 +332,9 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 					LOG.error("Polling thread got interrupted", e);
 					Thread.currentThread().interrupt(); // pass interrupt.
 				}
+			}
+			if(!yarnClient.isInState(Service.STATE.STARTED)) {
+				LOG.warn("YARN client is unexpected in state "+yarnClient.getServiceState());
 			}
 		}
 	}
