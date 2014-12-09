@@ -310,12 +310,7 @@ public class FlinkYarnSessionCli {
 		System.exit(run(args));
 	}
 
-	public static int run(String[] args) {
-
-		//
-		//	Command Line Options
-		//
-		Options options = new Options();
+	public static void getYARNSessionCLIOptions(Options options) {
 		options.addOption(VERBOSE);
 		options.addOption(FLINK_JAR);
 		options.addOption(JM_MEMORY);
@@ -326,6 +321,15 @@ public class FlinkYarnSessionCli {
 		options.addOption(SHIP_PATH);
 		options.addOption(SLOTS);
 		options.addOption(DYNAMIC_PROPERTIES);
+	}
+
+	public static int run(String[] args) {
+
+		//
+		//	Command Line Options
+		//
+		Options options = new Options();
+		getYARNSessionCLIOptions(options);
 
 		CommandLineParser parser = new PosixParser();
 		CommandLine cmd = null;
