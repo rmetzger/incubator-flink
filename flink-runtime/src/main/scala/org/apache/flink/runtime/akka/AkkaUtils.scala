@@ -282,20 +282,16 @@ object AkkaUtils {
       |      "org.apache.flink.runtime.messages.JobManagerMessages$CancelJob" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$UpdateTaskExecutionState" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestNextInputSplit" = kryo
-      |      "org.apache.flink.runtime.messages.JobManagerMessages$LookupConnectionInformation" =
-      |       kryo
+      |      "org.apache.flink.runtime.messages.JobManagerMessages$LookupConnectionInformation" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$ConnectionInformation" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$ReportAccumulatorResult" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestAccumulatorResults" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$AccumulatorResultsFound" = kryo
-      |      "org.apache.flink.runtime.messages.JobManagerMessages$AccumulatorResultsNotFound" =
-      |      kryo
+      |      "org.apache.flink.runtime.messages.JobManagerMessages$AccumulatorResultsNotFound" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestJobStatus" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$CurrentJobStatus" = kryo
-      |      "org.apache.flink.runtime.messages
-      |      .JobManagerMessages$RequestNumberRegisteredTaskManager$" = kryo
-      |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestTotalNumberOfSlots$" =
-      |      kryo
+      |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestNumberRegisteredTaskManager$" = kryo
+      |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestTotalNumberOfSlots$" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestBlobManagerPort$" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestFinalJobStatus" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobResultSuccess" = kryo
@@ -306,15 +302,12 @@ object AkkaUtils {
       |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestJob" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobFound" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$JobNotFound" = kryo
-      |      "org.apache.flink.runtime.messages
-      |      .JobManagerMessages$RequestRegisteredTaskManagers$" = kryo
+      |      "org.apache.flink.runtime.messages.JobManagerMessages$RequestRegisteredTaskManagers$" = kryo
       |      "org.apache.flink.runtime.messages.JobManagerMessages$RegisteredTaskManagers" = kryo
       |
-      |      "org.apache.flink.runtime.messages.JobManagerProfilerMessages$ReportProfilingData" =
-      |       kryo
+      |      "org.apache.flink.runtime.messages.JobManagerProfilerMessages$ReportProfilingData" = kryo
       |
-      |      "org.apache.flink.runtime.messages
-      |      .TaskManagerMessages$NotifyWhenRegisteredAtJobManager$" = kryo
+      |      "org.apache.flink.runtime.messages.TaskManagerMessages$NotifyWhenRegisteredAtJobManager$" = kryo
       |      "org.apache.flink.runtime.messages.TaskManagerMessages$RegisterAtJobManager$" = kryo
       |      "org.apache.flink.runtime.messages.TaskManagerMessages$CancelTask" = kryo
       |      "org.apache.flink.runtime.messages.TaskManagerMessages$SubmitTask" = kryo
@@ -329,10 +322,8 @@ object AkkaUtils {
       |
       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$MonitorTask" = kryo
       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$UnmonitorTask" = kryo
-      |      "org.apache.flink.runtime.messages
-      |      .TaskManagerProfilerMessages$RegisterProfilingListener$" = kryo
-      |      "org.apache.flink.runtime.messages
-      |      .TaskManagerProfilerMessages$UnregisterProfilingListener$" = kryo
+      |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$RegisterProfilingListener$" = kryo
+      |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$UnregisterProfilingListener$" = kryo
       |      "org.apache.flink.runtime.messages.TaskManagerProfilerMessages$ProfileTasks$" = kryo
       |
       |      "org.apache.flink.runtime.messages.RegistrationMessages$RegisterTaskManager" = kryo
