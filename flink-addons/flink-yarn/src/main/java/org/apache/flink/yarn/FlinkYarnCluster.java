@@ -215,8 +215,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 			Object messageOption = awaitUtil(messageOptionFuture, "Error getting new messages from Appliation Client");
 			if(messageOption instanceof None$) {
 				break;
-			} else if(messageOption instanceof Some) {
-				Messages.YarnMessage msg = (Messages.YarnMessage) ((Some) messageOption).get();
+			} else if(messageOption instanceof org.apache.flink.yarn.Messages.YarnMessage) {
+				Messages.YarnMessage msg = (Messages.YarnMessage) messageOption;
 				ret.add("["+msg.date()+"] "+msg.message());
 			} else {
 				LOG.warn("LocalGetYarnMessage returned unexpected type: "+messageOption);

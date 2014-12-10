@@ -372,7 +372,7 @@ public class FlinkYarnSessionCli {
 				return 1;
 			}
 			//------------------ Cluster deployed, handle connection details
-			String jobManagerAddress = yarnCluster.getJobManagerAddress().toString();
+			String jobManagerAddress = yarnCluster.getJobManagerAddress().getHostName() + ":" +yarnCluster.getJobManagerAddress().getPort();
 			System.err.println("Flink JobManager is now running on " + jobManagerAddress);
 			System.err.println("JobManager Web Interface: " + yarnCluster.getWebInterfaceURL());
 			// file that we write into the conf/ dir containing the jobManager address and the dop.
