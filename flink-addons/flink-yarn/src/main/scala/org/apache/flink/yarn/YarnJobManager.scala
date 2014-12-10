@@ -25,7 +25,7 @@ import java.util.{ Collections}
 import akka.actor.{PoisonPill, ActorRef}
 import org.apache.flink.configuration.ConfigConstants
 import org.apache.flink.runtime.ActorLogMessages
-import org.apache.flink.runtime.jobmanager.JobManager
+import org.apache.flink.runtime.jobmanager.{WithWebServer, JobManager}
 import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus
 import org.apache.flink.yarn.Messages._
 import org.apache.flink.yarn.appMaster.YarnTaskManagerRunner
@@ -44,7 +44,7 @@ import scala.concurrent.duration._
 
 
 trait YarnJobManager extends ActorLogMessages {
-  that: JobManager =>
+  that: JobManager with WithWebServer =>
 
   import context._
   import scala.collection.JavaConverters._
@@ -119,8 +119,9 @@ trait YarnJobManager extends ActorLogMessages {
       val shipListString = env.get(FlinkYarnClient.ENV_CLIENT_SHIP_FILES)
       val yarnClientUsername = env.get(FlinkYarnClient.ENV_CLIENT_USERNAME)
 
-      val jobManagerWebPort = configuration.getInteger(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY,
-        ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT)
+      val jobManagerWebPort = that.webServer.getServer.getConnectors()(0).getLocalPort;
+      /*configuration.getInteger(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY,
+        ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT) */
 
       val rm = AMRMClient.createAMRMClient[ContainerRequest]()
       rm.init(conf)

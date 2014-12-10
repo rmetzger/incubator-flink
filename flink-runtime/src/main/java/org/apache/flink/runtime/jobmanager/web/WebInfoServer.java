@@ -205,4 +205,8 @@ public class WebInfoServer {
 		server.stop();
 	}
 
+	public Server getServer() {
+		return server;
+	}
+
 }

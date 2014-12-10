@@ -339,17 +339,9 @@ public class FlinkYarnSessionCli {
 			return 1;
 		}
 
-		FlinkYarnSessionCli yarnSessionCli = new FlinkYarnSessionCli();
-
-		AbstractFlinkYarnClient flinkYarnClient = yarnSessionCli.createFlinkYarnClient(cmd);
-
-		if(flinkYarnClient == null) {
-			System.err.println("Error while starting the YARN Client. Please check log output!");
-			return 1;
-		}
-
 		// Query cluster for metrics
 		if(cmd.hasOption(QUERY.getOpt())) {
+			AbstractFlinkYarnClient flinkYarnClient = getFlinkYarnClient();
 			String description = null;
 			try {
 				description = flinkYarnClient.getClusterDescription();
@@ -361,6 +353,14 @@ public class FlinkYarnSessionCli {
 			System.out.println(description);
 			return 0;
 		} else {
+			FlinkYarnSessionCli yarnSessionCli = new FlinkYarnSessionCli();
+			AbstractFlinkYarnClient flinkYarnClient = yarnSessionCli.createFlinkYarnClient(cmd);
+
+			if(flinkYarnClient == null) {
+				System.err.println("Error while starting the YARN Client. Please check log output!");
+				return 1;
+			}
+
 			AbstractFlinkYarnCluster yarnCluster = null;
 			try {
 				yarnCluster = flinkYarnClient.deploy(null);

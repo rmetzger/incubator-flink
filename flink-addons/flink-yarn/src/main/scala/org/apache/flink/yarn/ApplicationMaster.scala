@@ -76,22 +76,21 @@ object ApplicationMaster {
           val slots = env.get(FlinkYarnClient.ENV_SLOTS).toInt
           val dynamicPropertiesEncodedString = env.get(FlinkYarnClient.ENV_DYNAMIC_PROPERTIES)
 
-          val appNumber = env.get(FlinkYarnClient.ENV_APP_NUMBER).toInt
+          val jobManagerWebPort = 0 // atomatic assignment.
+          /* GlobalConfiguration.getInteger(ConfigConstants
+            .JOB_MANAGER_WEB_PORT_KEY, ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT) */
 
-          val jobManagerWebPort = GlobalConfiguration.getInteger(ConfigConstants
-            .JOB_MANAGER_WEB_PORT_KEY, ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT)
-
-          val (system, actor) = startJobManager(currDir, ownHostname)
+          val (system, actor) = startJobManager(currDir, ownHostname,dynamicPropertiesEncodedString)
 
           actorSystem = system
           jobManager = actor
           val extActor = system.asInstanceOf[ExtendedActorSystem]
           val jobManagerPort = extActor.provider.getDefaultAddress.port.get
-       //   val ownHostname = extActor.provider.getDefaultAddress.host.get
-        //  val jobManagerAkkaUrl = extActor.provider.getDefaultAddress.toString
 
-          generateConfigurationFile(currDir, ownHostname, jobManagerPort ,//jobManagerAkkaUrl,
-            jobManagerWebPort, logDirs, slots, taskManagerCount, dynamicPropertiesEncodedString)
+          // generate configuration file for TaskManagers
+          generateConfigurationFile(s"$currDir/$MODIFIED_CONF_FILE", currDir, ownHostname,
+            jobManagerPort, jobManagerWebPort, logDirs, slots, taskManagerCount,
+            dynamicPropertiesEncodedString)
 
 
           // send "start yarn session" message to YarnJobManager.
@@ -118,14 +117,14 @@ object ApplicationMaster {
 
   }
 
-  def generateConfigurationFile(currDir: String, ownHostname: String, jobManagerPort: Int,
-                               //jobManagerAkkaUrl: String,
+  def generateConfigurationFile(fileName: String, currDir: String, ownHostname: String,
+                               jobManagerPort: Int,
                                jobManagerWebPort: Int, logDirs: String, slots: Int,
                                taskManagerCount: Int, dynamicPropertiesEncodedString: String)
   : Unit = {
     LOG.info("Generate configuration file for application master.")
     val output = new PrintWriter(new BufferedWriter(
-      new FileWriter(s"$currDir/$MODIFIED_CONF_FILE"))
+      new FileWriter(fileName))
     )
 
     for (line <- Source.fromFile(s"$currDir/$CONF_FILE").getLines() if !(line.contains
@@ -159,12 +158,20 @@ object ApplicationMaster {
     output.close()
   }
 
-  def startJobManager(currDir: String, hostname: String): (ActorSystem, ActorRef) = {
+  def startJobManager(currDir: String, hostname: String, dynamicPropertiesEncodedString: String):
+    (ActorSystem, ActorRef) = {
     LOG.info("Start job manager for yarn")
     val args = Array[String]("--configDir", currDir)
 
     LOG.info(s"Config path: ${currDir}.")
     val (_, _, configuration, _) = JobManager.parseArgs(args)
+
+    // add dynamic properties to JobManager configuration.
+    val dynamicProperties = CliFrontend.getDynamicProperties(dynamicPropertiesEncodedString)
+    import scala.collection.JavaConverters._
+    for(property <- dynamicProperties.asScala){
+      configuration.setString(property.f0, property.f1)
+    }
 
     // set port to 0 to let Akka automatically determine the port.
     implicit val jobManagerSystem = YarnUtils.createActorSystem(hostname, port = 0, configuration)
