@@ -99,7 +99,7 @@ public class CliFrontend {
 	private static final Option PARALLELISM_OPTION = new Option("p", "parallelism", true, "The parallelism with which to run the program. Optional flag to override the default value specified in the configuration.");
 	private static final Option ARGS_OPTION = new Option("a", "arguments", true, "Program arguments. Arguments can also be added without -a, simply as trailing parameters.");
 
-	private static final Option ADDRESS_OPTION = new Option("m", "jobmanager", true, "Address of the JobManager (master) to which to connect. Specify '"+YARN_DEPLOY_JOBMANAGER+" as the JobManager to deploy a YARN cluster for the job. Use this flag to connect to a different JobManager than the one specified in the configuration.");
+	private static final Option ADDRESS_OPTION = new Option("m", "jobmanager", true, "Address of the JobManager (master) to which to connect. Specify '"+YARN_DEPLOY_JOBMANAGER+"' as the JobManager to deploy a YARN cluster for the job. Use this flag to connect to a different JobManager than the one specified in the configuration.");
 
 	// info specific options
 	private static final Option PLAN_OPTION = new Option("e", "executionplan", false, "Show optimized execution plan of the program (JSON)");
@@ -921,7 +921,7 @@ public class CliFrontend {
 			// user wants to run Flink in YARN cluster.
 			AbstractFlinkYarnClient flinkYarnClient = FlinkYarnSessionCli.createFlinkYarnClient(line);
 			if(flinkYarnClient == null) {
-				System.out.println("Unable to create Flink YARN Client. Check previous log messages");
+				throw new RuntimeException("Unable to create Flink YARN Client. Check previous log messages");
 			}
 			try {
 				yarnCluster = flinkYarnClient.deploy("Flink Application: "+programName);

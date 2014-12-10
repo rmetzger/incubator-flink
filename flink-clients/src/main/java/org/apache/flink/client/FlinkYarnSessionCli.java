@@ -66,7 +66,6 @@ public class FlinkYarnSessionCli {
 	//------------------------------------ Command Line argument options -------------------------
 	private static final Option QUERY = new Option("q","query",false, "Display available YARN resources (memory, cores)");
 	// --- or ---
-	private static final Option VERBOSE = new Option("v","verbose",false, "Verbose debug mode");
 	private static final Option QUEUE = new Option("qu","queue",true, "Specify YARN queue.");
 	private static final Option SHIP_PATH = new Option("t","ship",true, "Ship files in the specified directory (t for transfer)");
 	private static final Option FLINK_JAR = new Option("j","jar",true, "Path to Flink jar file");
@@ -215,7 +214,6 @@ public class FlinkYarnSessionCli {
 
 		formatter.setSyntaxPrefix("   Optional");
 		Options opt = new Options();
-		opt.addOption(VERBOSE);
 		opt.addOption(JM_MEMORY);
 		opt.addOption(TM_MEMORY);
 		opt.addOption(QUERY);
@@ -298,6 +296,7 @@ public class FlinkYarnSessionCli {
 				}
 				if(yarnCluster.hasBeenStopped()) {
 					LOG.info("Stopping interactive command line interface, YARN cluster has been stopped.");
+					break;
 				}
 			}
 		} catch(Exception e) {
@@ -311,7 +310,6 @@ public class FlinkYarnSessionCli {
 	}
 
 	public static void getYARNSessionCLIOptions(Options options) {
-		options.addOption(VERBOSE);
 		options.addOption(FLINK_JAR);
 		options.addOption(JM_MEMORY);
 		options.addOption(TM_MEMORY);

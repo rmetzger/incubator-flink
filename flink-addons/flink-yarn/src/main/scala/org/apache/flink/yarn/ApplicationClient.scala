@@ -77,7 +77,6 @@ class ApplicationClient
     // ----------------------------- Registration -> Status updates -> shutdown ----------------
     case LocalRegisterClient(address: String) => {
       val jmAkkaUrl = JobManager.getAkkaURL(address)
-      println(s"jmAkkaUrl=$jmAkkaUrl")
 
       yarnJobManager = Some(AkkaUtils.getReference(jmAkkaUrl)(system, timeout))
       yarnJobManager match {
