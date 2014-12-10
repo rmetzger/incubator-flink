@@ -92,7 +92,7 @@ public class WebInfoServer {
 
 		// if no explicit configuration is given, use the global configuration
 		if (config == null) {
-			config = GlobalConfiguration.getConfiguration();
+			throw new IllegalArgumentException("No Configuration has been passed to the web server");
 		}
 
 		// get base path of Flink installation
@@ -132,7 +132,7 @@ public class WebInfoServer {
 		servletContext.addServlet(new ServletHolder(new JobmanagerInfoServlet(jobmanager,
 				archive, timeout)), "/jobsInfo");
 		servletContext.addServlet(new ServletHolder(new LogfileInfoServlet(logDirFiles)), "/logInfo");
-		servletContext.addServlet(new ServletHolder(new SetupInfoServlet(jobmanager, timeout)),
+		servletContext.addServlet(new ServletHolder(new SetupInfoServlet(config, jobmanager, timeout)),
 				"/setupInfo");
 		servletContext.addServlet(new ServletHolder(new MenuServlet()), "/menu");
 

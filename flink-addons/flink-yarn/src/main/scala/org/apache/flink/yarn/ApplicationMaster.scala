@@ -172,6 +172,8 @@ object ApplicationMaster {
     for(property <- dynamicProperties.asScala){
       configuration.setString(property.f0, property.f1)
     }
+    println(s"dynprops=$dynamicPropertiesEncodedString conf="+configuration)
+    GlobalConfiguration.getConfiguration.addAll(configuration) // make part of globalConf.
 
     // set port to 0 to let Akka automatically determine the port.
     implicit val jobManagerSystem = YarnUtils.createActorSystem(hostname, port = 0, configuration)
