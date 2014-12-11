@@ -22,7 +22,7 @@ import java.io.{IOException, File}
 import java.nio.ByteBuffer
 import java.util.{ Collections}
 
-import akka.actor.{PoisonPill, ActorRef}
+import akka.actor.ActorRef
 import org.apache.flink.configuration.ConfigConstants
 import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.jobmanager.{WithWebServer, JobManager}
@@ -147,7 +147,7 @@ trait YarnJobManager extends ActorLogMessages {
       // Resource requirements for worker containers
       val capability = Records.newRecord(classOf[Resource])
       capability.setMemory(memoryPerTaskManager)
-      capability.setVirtualCores(1) // hard-code that number for now (YARN is not accunting for CPUs)
+      capability.setVirtualCores(1) // hard-code that number (YARN is not accunting for CPUs)
 
       // Make container requests to ResourceManager
       for (i <- 0 until numTaskManager) {

@@ -110,8 +110,6 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
       // to be notified when the taskManager is no longer reachable
       context.watch(taskManager);
 
-      log.info("register TM. config = "+configuration) // TODO : DEBUGGING ONLY
-
       taskManager ! AcknowledgeRegistration(instanceID, libraryCacheManager.getBlobServerPort)
     }
 
@@ -419,7 +417,7 @@ Actor with ActorLogMessages with ActorLogging with WrapAsScala {
    * Handle unmatched messages with an exception.
    */
   override def unhandled(message: Any): Unit = {
-    throw new RuntimeException("Received unknown message "+message)
+    throw new RuntimeException("Received unknown message " + message)
   }
 
   private def removeJob(jobID: JobID): Unit = {

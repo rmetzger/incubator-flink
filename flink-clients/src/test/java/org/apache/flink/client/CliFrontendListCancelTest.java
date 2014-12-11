@@ -35,7 +35,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-//TODO: Update test case
 public class CliFrontendListCancelTest {
 
 	private static ActorSystem actorSystem;
@@ -63,7 +62,7 @@ public class CliFrontendListCancelTest {
 			// test unrecognized option
 			{
 				String[] parameters = {"-v", "-l"};
-				CliFrontend testFrontend = new CliFrontend();
+				CliFrontend testFrontend = new CliFrontendTestUtils.TestingCliFrontend();
 				int retCode = testFrontend.cancel(parameters);
 				assertTrue(retCode == 2);
 			}
@@ -71,7 +70,7 @@ public class CliFrontendListCancelTest {
 			// test missing job id
 			{
 				String[] parameters = {};
-				CliFrontend testFrontend = new CliFrontend();
+				CliFrontend testFrontend = new CliFrontendTestUtils.TestingCliFrontend();
 				int retCode = testFrontend.cancel(parameters);
 				assertTrue(retCode != 0);
 			}
@@ -105,7 +104,7 @@ public class CliFrontendListCancelTest {
 			// test unrecognized option
 			{
 				String[] parameters = {"-v", "-k"};
-				CliFrontend testFrontend = new CliFrontend();
+				CliFrontend testFrontend = new CliFrontendTestUtils.TestingCliFrontend();
 				int retCode = testFrontend.list(parameters);
 				assertTrue(retCode == 2);
 			}
@@ -113,7 +112,7 @@ public class CliFrontendListCancelTest {
 			// test missing flags
 			{
 				String[] parameters = {};
-				CliFrontend testFrontend = new CliFrontend();
+				CliFrontend testFrontend = new CliFrontendTestUtils.TestingCliFrontend();
 				int retCode = testFrontend.list(parameters);
 				assertTrue(retCode != 0);
 			}

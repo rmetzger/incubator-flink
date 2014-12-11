@@ -30,9 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +69,6 @@ import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
 import org.apache.flink.util.StringUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -166,9 +163,7 @@ public class CliFrontend {
 	 * Initializes the class
 	 */
 	public CliFrontend() {
-	//	parser = new ExtendedPosixParser(true);; // ignore unrecognized options.
 		parser = new PosixParser();
-		configurationDirectory = getConfigurationDirectoryFromEnv();
 	}
 	
 	// --------------------------------------------------------------------------------------------
@@ -810,6 +805,9 @@ public class CliFrontend {
 	
 
 	public String getConfigurationDirectory() {
+		if(configurationDirectory == null) {
+			configurationDirectory = getConfigurationDirectoryFromEnv();
+		}
 		return configurationDirectory;
 	}
 
@@ -1082,7 +1080,6 @@ public class CliFrontend {
 		}
 	}
 
-	
 
 	/**
 	 * Submits the job based on the arguments
@@ -1093,27 +1090,4 @@ public class CliFrontend {
 		System.exit(retCode);
 	}
 
-
-
-	// ---------------------------- Utils
-
-	// Source: http://stackoverflow.com/questions/6049470/can-apache-commons-cli-options-parser-ignore-unknown-command-line-options
-/*	public class ExtendedPosixParser extends PosixParser {
-
-		private boolean ignoreUnrecognizedOption;
-
-		public ExtendedPosixParser(final boolean ignoreUnrecognizedOption) {
-			this.ignoreUnrecognizedOption = ignoreUnrecognizedOption;
-		}
-
-		@Override
-		protected void processOption(final String arg, final ListIterator iter) throws ParseException {
-			boolean hasOption = getOptions().hasOption(arg);
-
-			if (hasOption || !ignoreUnrecognizedOption) {
-				super.processOption(arg, iter);
-			}
-		}
-
-	} */
 }
