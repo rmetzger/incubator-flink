@@ -22,7 +22,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.twitter.chill.ScalaKryoInstantiator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
@@ -31,10 +30,6 @@ import org.apache.flink.core.memory.DataOutputView;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 public class KryoSerializer<T> extends TypeSerializer<T> {
 	private static final long serialVersionUID = 2L;
@@ -112,7 +107,6 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			previousOut = target;
 		}
 		
-		//kryo.writeObject(output, record);
 		kryo.writeClassAndObject(output, record);
 		output.flush();
 	}

@@ -820,7 +820,6 @@ public class GroupReduceITCase extends JavaProgramTestBase {
 									out.collect(concat.toString());
 								}
 							});
-					reduceDs.print();
 					reduceDs.writeAsText(resultPath);
 					env.execute();
 
