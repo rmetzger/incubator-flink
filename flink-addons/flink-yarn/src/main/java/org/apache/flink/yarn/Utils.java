@@ -126,8 +126,7 @@ public class Utils {
 		try {
 			hadoopHome = Shell.getHadoopHome();
 		} catch (IOException e) {
-			LOG.error("Unable to get hadoop home. Please set HADOOP_HOME variable!", e);
-			System.exit(1);
+			throw new RuntimeException("Unable to get hadoop home. Please set HADOOP_HOME variable!", e);
 		}
 		File tryConf = new File(hadoopHome+"/etc/hadoop");
 		if(tryConf.exists()) {
