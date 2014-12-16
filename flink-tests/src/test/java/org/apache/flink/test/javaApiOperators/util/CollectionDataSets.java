@@ -618,7 +618,7 @@ public class CollectionDataSets {
 		pwc1.sqlDate = new java.sql.Date(2000000000000L); // 2033 ;)
 		pwc1.mixed = new ArrayList<Object>();
 		Map<String, Integer> map = new HashMap<String, Integer>();
-		map.put("someKey", 1); map.put("anotherKey", 2); map.put("third", 3);
+		map.put("someKey", 1); // map.put("anotherKey", 2); map.put("third", 3);
 		pwc1.mixed.add(map);
 		pwc1.mixed.add(new File("/this/is/wrong"));
 		pwc1.mixed.add("uhlala");

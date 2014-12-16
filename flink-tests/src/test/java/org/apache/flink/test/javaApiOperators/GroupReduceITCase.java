@@ -826,7 +826,7 @@ public class GroupReduceITCase extends JavaProgramTestBase {
 					// return expected result
 					return "call\n" +
 							"For key 92233720368547758070 we got:\n" +
-							"PojoWithCollection{pojos.size()=2, key=0, sqlDate=2033-05-18, bigInt=92233720368547758070, bigDecimalKeepItNull=null, scalaBigInt=10, mixed=[{anotherKey=2, third=3, someKey=1}, /this/is/wrong, uhlala]}\n" +
+							"PojoWithCollection{pojos.size()=2, key=0, sqlDate=2033-05-18, bigInt=92233720368547758070, bigDecimalKeepItNull=null, scalaBigInt=10, mixed=[{someKey=1}, /this/is/wrong, uhlala]}\n" +
 							"For key 92233720368547758070 we got:\n" +
 							"PojoWithCollection{pojos.size()=2, key=0, sqlDate=1976-05-03, bigInt=92233720368547758070, bigDecimalKeepItNull=null, scalaBigInt=31104000, mixed=null}\n";
 				}
