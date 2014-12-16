@@ -1117,7 +1117,11 @@ public class TypeExtractor {
 				fieldTypeHierarchy.add(fieldType);
 				pojoFields.add(new PojoField(field, createTypeInfoWithTypeHierarchy(fieldTypeHierarchy, fieldType, null, null) ));
 			} catch (InvalidTypesException e) {
-				pojoFields.add(new PojoField(field, new GenericTypeInfo( Object.class ))); // we need kryo to properly serialize this
+				Class<?> genericClass = Object.class;
+				if(isClassType(fieldType)) {
+					genericClass = typeToClass(fieldType);
+				}
+				pojoFields.add(new PojoField(field, new GenericTypeInfo( genericClass )));
 			}
 		}
 

@@ -84,6 +84,7 @@ public class PojoTypeExtractionTest {
 		public Tuple3<Long, Long, String> word; //Tuple Type with three basic types
 		public Object nothing; // generic type
 		public MyWritable hadoopCitizen;  // writableType
+		public List<String> collection;
 	}
 
 	// all public test
@@ -182,17 +183,31 @@ public class PojoTypeExtractionTest {
 	private void checkWCPojoAsserts(TypeInformation<?> typeInfo) {
 		Assert.assertFalse(typeInfo.isBasicType());
 		Assert.assertFalse(typeInfo.isTupleType());
-		Assert.assertEquals(9, typeInfo.getTotalFields());
+		Assert.assertEquals(10, typeInfo.getTotalFields());
 		Assert.assertTrue(typeInfo instanceof PojoTypeInfo);
 		PojoTypeInfo<?> pojoType = (PojoTypeInfo<?>) typeInfo;
 		
 		List<FlatFieldDescriptor> ffd = new ArrayList<FlatFieldDescriptor>();
-		String[] fields = {"count","complex.date", "complex.hadoopCitizen", "complex.nothing",
-				"complex.someFloat", "complex.someNumber", "complex.word.f0",
-				"complex.word.f1", "complex.word.f2"};
-		int[] positions = {8,0,1,2,
-				3,4,5,
-				6,7};
+		String[] fields = {"count",
+				"complex.date",
+				"complex.hadoopCitizen",
+				"complex.collection",
+				"complex.nothing",
+				"complex.someFloat",
+				"complex.someNumber",
+				"complex.word.f0",
+				"complex.word.f1",
+				"complex.word.f2"};
+		int[] positions = {9,
+				1,
+				2,
+				0,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8};
 		Assert.assertEquals(fields.length, positions.length);
 		for(int i = 0; i < fields.length; i++) {
 			pojoType.getKey(fields[i], 0, ffd);
@@ -206,15 +221,15 @@ public class PojoTypeExtractionTest {
 		// check if it returns 5,6,7
 		for(FlatFieldDescriptor ffdE : ffd) {
 			final int pos = ffdE.getPosition();
-			Assert.assertTrue(pos <= 7 );
-			Assert.assertTrue(5 <= pos );
-			if(pos == 5) {
-				Assert.assertEquals(Long.class, ffdE.getType().getTypeClass());
-			}
+			Assert.assertTrue(pos <= 8 );
+			Assert.assertTrue(6 <= pos );
 			if(pos == 6) {
 				Assert.assertEquals(Long.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 7) {
+				Assert.assertEquals(Long.class, ffdE.getType().getTypeClass());
+			}
+			if(pos == 8) {
 				Assert.assertEquals(String.class, ffdE.getType().getTypeClass());
 			}
 		}
@@ -226,46 +241,53 @@ public class PojoTypeExtractionTest {
 		ffd.clear();
 		
 		pojoType.getKey("complex.*", 0, ffd);
-		Assert.assertEquals(8, ffd.size());
+		Assert.assertEquals(9, ffd.size());
 		// check if it returns 0-7
 		for(FlatFieldDescriptor ffdE : ffd) {
 			final int pos = ffdE.getPosition();
-			Assert.assertTrue(ffdE.getPosition() <= 7 );
+			Assert.assertTrue(ffdE.getPosition() <= 8 );
 			Assert.assertTrue(0 <= ffdE.getPosition() );
+
 			if(pos == 0) {
-				Assert.assertEquals(Date.class, ffdE.getType().getTypeClass());
+				Assert.assertEquals(List.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 1) {
-				Assert.assertEquals(MyWritable.class, ffdE.getType().getTypeClass());
+				Assert.assertEquals(Date.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 2) {
-				Assert.assertEquals(Object.class, ffdE.getType().getTypeClass());
+				Assert.assertEquals(MyWritable.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 3) {
-				Assert.assertEquals(Float.class, ffdE.getType().getTypeClass());
+				Assert.assertEquals(Object.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 4) {
-				Assert.assertEquals(Integer.class, ffdE.getType().getTypeClass());
+				Assert.assertEquals(Float.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 5) {
-				Assert.assertEquals(Long.class, ffdE.getType().getTypeClass());
+				Assert.assertEquals(Integer.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 6) {
 				Assert.assertEquals(Long.class, ffdE.getType().getTypeClass());
 			}
 			if(pos == 7) {
+				Assert.assertEquals(Long.class, ffdE.getType().getTypeClass());
+			}
+			if(pos == 8) {
 				Assert.assertEquals(String.class, ffdE.getType().getTypeClass());
+			}
+			if(pos == 9) {
+				Assert.assertEquals(Integer.class, ffdE.getType().getTypeClass());
 			}
 		}
 		ffd.clear();
 		
 		pojoType.getKey("*", 0, ffd);
-		Assert.assertEquals(9, ffd.size());
+		Assert.assertEquals(10, ffd.size());
 		// check if it returns 0-8
 		for(FlatFieldDescriptor ffdE : ffd) {
-			Assert.assertTrue(ffdE.getPosition() <= 8 );
+			Assert.assertTrue(ffdE.getPosition() <= 9 );
 			Assert.assertTrue(0 <= ffdE.getPosition() );
-			if(ffdE.getPosition() == 8) {
+			if(ffdE.getPosition() == 9) {
 				Assert.assertEquals(Integer.class, ffdE.getType().getTypeClass());
 			}
 		}
@@ -274,12 +296,12 @@ public class PojoTypeExtractionTest {
 		TypeInformation<?> typeComplexNested = pojoType.getTypeAt(0); // ComplexNestedClass complex
 		Assert.assertTrue(typeComplexNested instanceof PojoTypeInfo);
 		
-		Assert.assertEquals(6, typeComplexNested.getArity());
-		Assert.assertEquals(8, typeComplexNested.getTotalFields());
+		Assert.assertEquals(7, typeComplexNested.getArity());
+		Assert.assertEquals(9, typeComplexNested.getTotalFields());
 		PojoTypeInfo<?> pojoTypeComplexNested = (PojoTypeInfo<?>) typeComplexNested;
 		
 		boolean dateSeen = false, intSeen = false, floatSeen = false,
-				tupleSeen = false, objectSeen = false, writableSeen = false;
+				tupleSeen = false, objectSeen = false, writableSeen = false, collectionSeen = false;
 		for(int i = 0; i < pojoTypeComplexNested.getArity(); i++) {
 			PojoField field = pojoTypeComplexNested.getPojoFieldAt(i);
 			String name = field.field.getName();
@@ -330,6 +352,13 @@ public class PojoTypeExtractionTest {
 				writableSeen = true;
 				Assert.assertEquals(new WritableTypeInfo<MyWritable>(MyWritable.class), field.type);
 				Assert.assertEquals(MyWritable.class, field.type.getTypeClass());
+			} else if(name.equals("collection")) {
+				if(collectionSeen) {
+					Assert.fail("already seen");
+				}
+				collectionSeen = true;
+				Assert.assertEquals(new GenericTypeInfo(List.class), field.type);
+
 			} else {
 				Assert.fail("field "+field+" is not expected");
 			}
@@ -340,6 +369,7 @@ public class PojoTypeExtractionTest {
 		Assert.assertTrue("Field was not present", tupleSeen);
 		Assert.assertTrue("Field was not present", objectSeen);
 		Assert.assertTrue("Field was not present", writableSeen);
+		Assert.assertTrue("Field was not present", collectionSeen);
 		
 		TypeInformation<?> typeAtOne = pojoType.getTypeAt(1); // int count
 		Assert.assertTrue(typeAtOne instanceof BasicTypeInfo);
@@ -360,8 +390,8 @@ public class PojoTypeExtractionTest {
 	
 	private void checkAllPublicAsserts(TypeInformation<?> typeInformation) {
 		Assert.assertTrue(typeInformation instanceof PojoTypeInfo);
-		Assert.assertEquals(9, typeInformation.getArity());
-		Assert.assertEquals(11, typeInformation.getTotalFields());
+		Assert.assertEquals(10, typeInformation.getArity());
+		Assert.assertEquals(12, typeInformation.getTotalFields());
 		// check if the three additional fields are identified correctly
 		boolean arrayListSeen = false, multisetSeen = false, strArraySeen = false;
 		PojoTypeInfo<?> pojoTypeForClass = (PojoTypeInfo<?>) typeInformation;
