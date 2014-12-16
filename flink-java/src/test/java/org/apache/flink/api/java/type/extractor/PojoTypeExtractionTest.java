@@ -349,7 +349,6 @@ public class PojoTypeExtractionTest {
 	}
 
 	// Kryo is required for this, so disable for now.
-	@Ignore
 	@Test
 	public void testPojoAllPublic() {
 		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(AllPublic.class);
@@ -459,7 +458,6 @@ public class PojoTypeExtractionTest {
 	 * making them GenericTypes
 	 */
 	@Test
-	@Ignore // kryo needed.
 	public void testPojoWithGenericsSomeFieldsGeneric() {
 		TypeInformation<?> typeForClass = TypeExtractor.createTypeInfo(PojoWithGenerics.class);
 		Assert.assertTrue(typeForClass instanceof PojoTypeInfo<?>);

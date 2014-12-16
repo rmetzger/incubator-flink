@@ -24,6 +24,7 @@ import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.runtime.AvroSerializer;
 import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
+import org.apache.flink.api.java.typeutils.runtime.KryoSerializer;
 
 import java.util.Collection;
 
@@ -31,17 +32,9 @@ import java.util.Collection;
 public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType<T> {
 
 	private final Class<T> typeClass;
-	private final static Class<?>[] unsupportedByAvro = new Class[] {Collection.class};
-	
+
 	public GenericTypeInfo(Class<T> typeClass) {
 		this.typeClass = typeClass;
-		for (Class<?> unsupported: unsupportedByAvro) {
-			if(unsupported.isAssignableFrom(typeClass)) {
-				throw new RuntimeException("The type '"+typeClass+"' is currently not supported " +
-						"by the Avro Serializer that Flink is using for serializing " +
-						"arbitrary objects");
-			}
-		}
 	}
 	
 	@Override
@@ -79,7 +72,8 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
 		// NOTE: The TypeExtractor / pojo logic is assuming that we are using a Avro Serializer here
 		// in particular classes implementing GenericContainer are handled as GenericTypeInfos 
 		// (this will probably not work with Kryo)
-		return new AvroSerializer<T>(this.typeClass);
+		//return new AvroSerializer<T>(this.typeClass);
+		return new KryoSerializer<T>(this.typeClass);
 	}
 
 	@SuppressWarnings("unchecked")
