@@ -419,7 +419,7 @@ public class PojoTypeExtractionTest {
 				strArraySeen = true;
 				Assert.assertEquals(BasicArrayTypeInfo.STRING_ARRAY_TYPE_INFO, field.type);
 				Assert.assertEquals(String[].class, field.type.getTypeClass());
-			} else if(Arrays.asList("date", "someNumber", "someFloat", "word", "nothing", "hadoopCitizen").contains(name)) {
+			} else if(Arrays.asList("date", "someNumber", "someFloat", "word", "nothing", "hadoopCitizen", "collection").contains(name)) {
 				// ignore these, they are inherited from the ComplexNestedClass
 			} 
 			else {
