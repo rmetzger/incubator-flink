@@ -123,17 +123,6 @@ class KryoGenericTypeSerializerTest {
 
     val instance = new SerializerTestInstance[T](serializer, typeClass, -1, objects: _*)
 
-    // we don't want to test the instantiation
-    instance.testGetLength
-    instance.testCopy
-    instance.testCopyIntoNewElements
-    instance.testCopyIntoReusedElements
-    instance.testSerializeIndividually
-    instance.testSerializeIndividuallyReusingValues
-    instance.testSerializeAsSequenceNoReuse
-    instance.testSerializeAsSequenceReusingValues
-    instance.testSerializedCopyIndividually
-    instance.testSerializedCopyAsSequence
-    instance.testSerializabilityAndEquals
+    instance.testAll()
   }
 }
