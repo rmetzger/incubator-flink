@@ -18,11 +18,14 @@
 
 package org.apache.flink.yarn;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.server.MiniYARNCluster;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,13 +44,13 @@ import java.util.concurrent.TimeoutException;
 
 public abstract class YarnTestBase {
 	private static final Logger LOG = LoggerFactory.getLogger(YarnClientIT.class);
-	protected static MiniYARNCluster yarnCluster = null;
-	protected static File flinkConfFile;
-	protected static File yarnSiteXML;
-	protected static String uberJarLocation;
-	protected static YarnConfManager yarnConfManager = new YarnConfManager();
+	protected MiniYARNCluster yarnCluster = null;
+	protected File flinkConfFile;
+	protected File yarnSiteXML;
+	protected String uberJarLocation;
+	protected YarnConfManager yarnConfManager = new YarnConfManager();
 
-	protected static void setEnv(Map<String, String> newenv) {
+	protected void setEnv(Map<String, String> newenv) {
 		try {
 			Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
 			Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
@@ -81,11 +84,12 @@ public abstract class YarnTestBase {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@BeforeClass
-	public static void setup() {
+	@Before
+	public void setup() {
+		// TODO: do something smarter here.
 		File uberjar = new File("../flink-dist/target/flink-dist-0.7-incubating-SNAPSHOT-yarn-uberjar.jar");
 		if (!uberjar.exists()) {
-			uberjar = new File("./flink-dist/target/flink-dist-0.7-incubating-SNAPSHOT-yarn-uberjar.jar");
+			uberjar = new File("./flink-dist/target/flink-dist-0.8-incubating-SNAPSHOT-yarn-uberjar.jar");
 		}
 
 		uberJarLocation = uberjar.getAbsolutePath();
@@ -93,7 +97,7 @@ public abstract class YarnTestBase {
 		try {
 			LOG.info("Starting up MiniYARN cluster");
 			if (yarnCluster == null) {
-				yarnCluster = new MiniYARNCluster(YarnClientIT.class.getName(), 1, 1, 1);
+				yarnCluster = new MiniYARNCluster(YarnClientIT.class.getName(), 2, 1, 1);
 				Configuration conf = yarnConfManager.getMiniClusterConf();
 				yarnCluster.init(conf);
 				yarnCluster.start();
@@ -106,6 +110,10 @@ public abstract class YarnTestBase {
 
 			yarnSiteXML = yarnConfManager.createYarnSiteConfig(miniyarn_conf);
 			flinkConfFile = yarnConfManager.createConfigFile(flink_conf);
+
+			File l4j = new File(flinkConfFile.getParentFile().getAbsolutePath()+ "/log4j.properties");
+			FileUtils.copyFile(new File("/home/robert/incubator-flink/flink-dist/src/main/flink-bin/conf/log4j.properties"), l4j);
+			System.out.println("Copying log4j to "+l4j);
 
 			Map<String, String> map = new HashMap<String, String>(System.getenv());
 			map.put("FLINK_CONF_DIR", flinkConfFile.getParentFile().getAbsolutePath());
@@ -121,8 +129,8 @@ public abstract class YarnTestBase {
 		}
 	}
 
-	@AfterClass
-	public static void tearDown() {
+	@After
+	public void tearDown() {
 		//shutdown YARN cluster
 		if (yarnCluster != null) {
 			LOG.info("shutdown MiniYarn cluster");
@@ -147,7 +155,7 @@ public abstract class YarnTestBase {
 		try {
 			ex = future.get(timeout, TimeUnit.MILLISECONDS);
 		} catch (TimeoutException e) {
-
+			throw new RuntimeException("Timeout", e);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

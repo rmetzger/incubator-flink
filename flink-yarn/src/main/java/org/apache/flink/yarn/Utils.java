@@ -230,7 +230,8 @@ public class Utils {
 	}
 
 	public static boolean hasLogback(String asString) {
-		return asString.substring(asString.lastIndexOf(File.separator) + 1, asString.length()).equals(FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME);
+		String name = asString.substring(asString.lastIndexOf(File.separator) + 1, asString.length());
+		return name.equals(FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME);
 	}
 
 	public static boolean hasLog4j(String asString) {

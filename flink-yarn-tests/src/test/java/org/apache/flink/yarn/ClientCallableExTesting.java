@@ -19,6 +19,9 @@
 
 package org.apache.flink.yarn;
 
+import org.apache.flink.client.FlinkYarnSessionCli;
+import org.apache.flink.client.program.Client;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -41,11 +44,14 @@ public class ClientCallableExTesting implements Callable<Exception>{
 
 	@Override
 	public Exception call() throws Exception {
-		Client client = new Client();
+		int ret = 0;
 		try {
-			client.run(clientArgs.toArray(new String[clientArgs.size()]));
+			ret = FlinkYarnSessionCli.run(clientArgs.toArray(new String[clientArgs.size()]));
 		} catch (Exception e) {
 			return e;
+		}
+		if(ret != 0) {
+			throw new RuntimeException("Flink YARN Session returned with non-null value: "+ret);
 		}
 		return null;
 	}

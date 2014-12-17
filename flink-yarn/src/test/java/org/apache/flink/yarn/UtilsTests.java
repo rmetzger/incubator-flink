@@ -27,11 +27,14 @@ public class UtilsTests {
 		Assert.assertTrue(Utils.hasLog4j("file:///home/hadoop/flink-yarn/log4j.properties"));
 		Assert.assertTrue(Utils.hasLog4j("hdfs:///conf/log4j.properties"));
 
+
+		Assert.assertFalse(Utils.hasLog4j(""));
 		Assert.assertFalse(Utils.hasLog4j("hdfs:///conf/lasdog4j.properties"));
 		Assert.assertFalse(Utils.hasLog4j("log4j"));
 		Assert.assertFalse(Utils.hasLog4j("properties"));
 		Assert.assertFalse(Utils.hasLog4j("jiojweflog4j.propertieshsauodhuiohuiwehg"));
 
+		Assert.assertFalse(Utils.hasLogback(""));
 		Assert.assertTrue(Utils.hasLogback("file:///home/hadoop/flink-yarn/logback.xml"));
 		Assert.assertTrue(Utils.hasLogback("file:///home/logback.xml"));
 

@@ -33,15 +33,15 @@ public class YarnClientIT extends YarnTestBase {
 	@Test
 	public void testClientStartup() {
 		ClientCallableExTesting client = new ClientCallableExTesting();
-		client.addParameter("-confDir", flinkConfFile.getParentFile().getAbsolutePath());
 		client.addParameter("-j", uberJarLocation);
 		client.addParameter("-n", "1");
-		client.addParameter("-jm", "128");
+		client.addParameter("-jm", "512");
 		client.addParameter("-tm", "1024");
 
-		Exception ex = executeExClient(client, 15000);
+		Exception ex = executeExClient(client, 150000);
 
 		if (ex != null) {
+			System.out.println("Got an exception");
 			ex.printStackTrace();
 			Assert.fail();
 		}

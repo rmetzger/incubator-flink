@@ -195,7 +195,6 @@ public class FlinkYarnSessionCli {
 
 		flinkYarnClient.setDynamicPropertiesEncoded(dynamicPropertiesEncoded);
 
-		// Utils.getFlinkConfiguration(confPath.toUri().getPath());
 
 		return flinkYarnClient;
 	}
@@ -352,8 +351,7 @@ public class FlinkYarnSessionCli {
 			System.out.println(description);
 			return 0;
 		} else {
-			FlinkYarnSessionCli yarnSessionCli = new FlinkYarnSessionCli();
-			AbstractFlinkYarnClient flinkYarnClient = yarnSessionCli.createFlinkYarnClient(cmd);
+			AbstractFlinkYarnClient flinkYarnClient = FlinkYarnSessionCli.createFlinkYarnClient(cmd);
 
 			if(flinkYarnClient == null) {
 				System.err.println("Error while starting the YARN Client. Please check log output!");

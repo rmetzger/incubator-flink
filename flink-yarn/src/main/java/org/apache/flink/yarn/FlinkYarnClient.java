@@ -73,7 +73,6 @@ import org.apache.hadoop.yarn.util.Records;
 public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkYarnClient.class);
 
-
 	/**
 	 * Constants,
 	 * all starting with ENV_ are used as environment variables to pass values from the Client
@@ -88,7 +87,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	public static final String ENV_CLIENT_USERNAME = "_CLIENT_USERNAME";
 	public static final String ENV_SLOTS = "_SLOTS";
 	public static final String ENV_DYNAMIC_PROPERTIES = "_DYNAMIC_PROPERTIES";
-
 
 	/**
 	 * Minimum memory requirements, checked by the Client.
@@ -236,12 +234,28 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	}
 
 
+	public void isReadyForDepoyment() throws YarnDeploymentException {
+		if(taskManagerCount <= 0) {
+			throw new YarnDeploymentException("Taskmanager count must be positive");
+		}
+		if(this.flinkJarPath == null) {
+			throw new YarnDeploymentException("The Flink jar path is null");
+		}
+		if(this.configurationDirectory == null) {
+			throw new YarnDeploymentException("Configuration directory not set");
+		}
+		if(this.flinkConfigurationPath == null) {
+			throw new YarnDeploymentException("Configuration path not set");
+		}
+
+	}
 	/**
 	 * This method will block until the ApplicationMaster/JobManager have been
 	 * deployed on YARN.
 	 */
 	@Override
 	public AbstractFlinkYarnCluster deploy(String clusterName) throws Exception {
+		isReadyForDepoyment();
 
 		LOG.info("Using values:");
 		LOG.info("\tTaskManager count = " + taskManagerCount);
@@ -304,23 +318,16 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		final String javaOpts = GlobalConfiguration.getString(ConfigConstants.FLINK_JVM_OPTIONS, "");
 
 		String logbackFile = configurationDirectory + File.separator + FlinkYarnSessionCli.CONFIG_FILE_LOGBACK_NAME;
-		boolean hasLogback = Utils.hasLogback(logbackFile);
+		boolean hasLogback = new File(logbackFile).exists();
 		String log4jFile = configurationDirectory + File.separator + FlinkYarnSessionCli.CONFIG_FILE_LOG4J_NAME;
-		boolean hasLog4j = Utils.hasLog4j(log4jFile);
+		System.out.println("Searching for log4j here "+log4jFile);
+		boolean hasLog4j = new File(log4jFile).exists();
 		if(hasLogback) {
 			shipFiles.add(new File(logbackFile));
 		}
 		if(hasLog4j) {
 			shipFiles.add(new File(log4jFile));
 		}
-
-//		2. NEXT STEPS:
-//		- Don't delete hdfs files once the cluster is shutting down (Just for debuggin)
-//		- make shure that we ship the log4j and logback configuration files
-//
-//		Once that is working, I can further invesitage:
-//		a) why the client is not able to correctly connect (may be resolveD)
-//		b) why taskmanagers are not connecting to the jobmhr
 
 		// Set up the container launch context for the application master
 		ContainerLaunchContext amContainer = Records
