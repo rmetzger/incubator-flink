@@ -23,10 +23,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.server.MiniYARNCluster;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +33,6 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -43,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public abstract class YarnTestBase {
-	private static final Logger LOG = LoggerFactory.getLogger(YarnClientIT.class);
+	private static final Logger LOG = LoggerFactory.getLogger(YARNSessionIT.class);
 	protected MiniYARNCluster yarnCluster = null;
 	protected File flinkConfFile;
 	protected File yarnSiteXML;
@@ -97,7 +94,7 @@ public abstract class YarnTestBase {
 		try {
 			LOG.info("Starting up MiniYARN cluster");
 			if (yarnCluster == null) {
-				yarnCluster = new MiniYARNCluster(YarnClientIT.class.getName(), 2, 1, 1);
+				yarnCluster = new MiniYARNCluster(YARNSessionIT.class.getName(), 2, 1, 1);
 				Configuration conf = yarnConfManager.getMiniClusterConf();
 				yarnCluster.init(conf);
 				yarnCluster.start();
@@ -105,11 +102,11 @@ public abstract class YarnTestBase {
 
 			Thread.sleep(5000);
 
-			Configuration miniyarn_conf = yarnCluster.getConfig();
-			Map flink_conf = yarnConfManager.getDefaultFlinkConfig();
+			Configuration miniyarnConf = yarnCluster.getConfig();
+			Map flinkConf = yarnConfManager.getDefaultFlinkConfig();
 
-			yarnSiteXML = yarnConfManager.createYarnSiteConfig(miniyarn_conf);
-			flinkConfFile = yarnConfManager.createConfigFile(flink_conf);
+			yarnSiteXML = yarnConfManager.createYarnSiteConfig(miniyarnConf);
+			flinkConfFile = yarnConfManager.createConfigFile(flinkConf);
 
 			File l4j = new File(flinkConfFile.getParentFile().getAbsolutePath()+ "/log4j.properties");
 			FileUtils.copyFile(new File("/home/robert/incubator-flink/flink-dist/src/main/flink-bin/conf/log4j.properties"), l4j);
@@ -145,21 +142,5 @@ public abstract class YarnTestBase {
 		if (yarnSiteXML != null && yarnSiteXML.exists()) {
 			yarnSiteXML.delete();
 		}
-	}
-
-	protected Exception executeExClient(ClientCallableExTesting client, int timeout) {
-		ExecutorService serv = Executors.newFixedThreadPool(1);
-		Future<Exception> future = serv.submit(client);
-
-		Exception ex = null;
-		try {
-			ex = future.get(timeout, TimeUnit.MILLISECONDS);
-		} catch (TimeoutException e) {
-			throw new RuntimeException("Timeout", e);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		serv.shutdown();
-		return ex;
 	}
 }

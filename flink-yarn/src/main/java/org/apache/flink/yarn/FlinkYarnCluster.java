@@ -253,7 +253,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 			LOG.info("Sending shutdown request to the Application Master");
 			if(applicationClient != ActorRef.noSender()) {
 				Future<Object> future = ask(applicationClient, new Messages.StopYarnSession(FinalApplicationStatus.SUCCEEDED), akkaTimeout);
-				awaitUtil(future, "Error while stopping Application Client");
+				awaitUtil(future, "Error while stopping YARN Application Client");
 			}
 
 			actorSystem.shutdown();

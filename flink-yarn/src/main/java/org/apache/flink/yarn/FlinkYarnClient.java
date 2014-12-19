@@ -372,8 +372,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		ApplicationSubmissionContext appContext = yarnApplication.getApplicationSubmissionContext();
 		final ApplicationId appId = appContext.getApplicationId();
 
-		int appNumber = appId.getId();
-
 		// Setup jar for ApplicationMaster
 		LocalResource appMasterJar = Records.newRecord(LocalResource.class);
 		LocalResource flinkConf = Records.newRecord(LocalResource.class);
