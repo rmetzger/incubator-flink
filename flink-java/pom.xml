@@ -81,7 +81,7 @@ under the License.
 		</dependency>
 	</dependencies>
 
-	<!-- Because flink-scala uses it in tests -->
+	<!-- Because flink-scala and flink-avro uses it in tests -->
 	<build>
 		<plugins>
 			<plugin>

@@ -31,6 +31,9 @@ import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.util.Utf8;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeutils.ComparatorTestBase;
+import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.io.avro.generated.Colors;
 import org.apache.flink.api.io.avro.generated.User;
 import org.apache.flink.api.java.io.AvroInputFormat;
@@ -38,6 +41,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileInputSplit;
 import org.apache.flink.core.fs.Path;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -65,6 +69,8 @@ public class AvroRecordInputFormatTest {
 	final static String TEST_MAP_KEY2 = "KEY 2";
 	final static long TEST_MAP_VALUE2 = 17554L;
 
+	private User user1;
+
 	@Before
 	public void createFiles() throws IOException {
 		testFile = File.createTempFile("AvroInputFormatTest", null);
@@ -82,7 +88,7 @@ public class AvroRecordInputFormatTest {
 		longMap.put(TEST_MAP_KEY2, TEST_MAP_VALUE2);
 		
 		
-		User user1 = new User();
+		user1 = new User();
 		user1.setName(TEST_NAME);
 		user1.setFavoriteNumber(256);
 		user1.setTypeDoubleTest(123.45d);
@@ -114,7 +120,25 @@ public class AvroRecordInputFormatTest {
 		dataFileWriter.append(user2);
 		dataFileWriter.close();
 	}
-	
+
+	@Test
+	public void testTypeSerialisation() throws IOException {
+		AvroInputFormat<User> format = new AvroInputFormat<User>(new Path(testFile.getAbsolutePath()), User.class);
+		TypeInformation<User> te = format.getProducedType();
+		System.out.println("te = "+te);
+		ComparatorTestBase.TestOutputView target = new ComparatorTestBase.TestOutputView();
+		TypeSerializer<User> serializer = te.createSerializer();
+		List<CharSequence> values = new ArrayList<CharSequence>(2);
+		values.add("hello"); values.add("world");
+		user1.setTypeNullableArray(values);
+
+		serializer.serialize(user1, target);
+
+		User newUser = serializer.deserialize(target.getInputView());
+
+		Assert.assertNotNull(newUser);
+		Assert.assertEquals(2, newUser.getTypeNullableArray().size());
+	}
 	@Test
 	public void testDeserialisation() throws IOException {
 		Configuration parameters = new Configuration();
