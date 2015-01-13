@@ -17,6 +17,9 @@
  */
 package org.apache.flink.api.java.io;
 
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.ComparatorTestBase;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -41,6 +44,9 @@ public class AvroInputFormatTest {
 		authors.add(new PersonName("aa", "bb", "cc", "dd", "ee", "ff"));
 
 		org.apache.flink.api.java.avro.generated.Test test = new org.apache.flink.api.java.avro.generated.Test(authors);
+		GenericRecordBuilder testGenBuilder = new GenericRecordBuilder(test.getSchema());
+		testGenBuilder.set("authors", authors);
+		GenericData.Record testRecord = testGenBuilder.build();
 
 		AvroInputFormat<org.apache.flink.api.java.avro.generated.Test> format =
 				new AvroInputFormat<org.apache.flink.api.java.avro.generated.Test>(new Path(testFile.getAbsolutePath()), org.apache.flink.api.java.avro.generated.Test.class);
@@ -50,6 +56,8 @@ public class AvroInputFormatTest {
 		TypeSerializer<org.apache.flink.api.java.avro.generated.Test> serializer = te.createSerializer();
 
 		serializer.serialize(test, target);
+
+		serializer.serialize(testRecord, target);
 
 		org.apache.flink.api.java.avro.generated.Test newTest = serializer.deserialize(target.getInputView());
 
