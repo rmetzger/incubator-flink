@@ -19,8 +19,8 @@ package org.apache.flink.api.scala.runtime
 
 import org.apache.flink.api.common.typeutils.SerializerTestInstance
 import org.apache.flink.api.java.typeutils.GenericTypeInfo
-import org.joda.time.DateTime
 import org.junit.Test
+
 import scala.reflect._
 import org.joda.time.LocalDate
 import org.apache.flink.api.java.typeutils.runtime.KryoSerializer
@@ -40,9 +40,7 @@ class KryoGenericTypeSerializerTest {
 
   @Test
   def jodaSerialization: Unit = {
-    val a = List(new LocalDate(1), new LocalDate(2))
-    
-    KryoSerializer.registerSerializer(classOf[LocalDate], new LocalDateSerializer())
+    val a = List(new DateTime(1), new DateTime(2))
 
     runTests(a)
   }

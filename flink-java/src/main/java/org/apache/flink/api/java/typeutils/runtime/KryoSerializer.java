@@ -29,6 +29,8 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.google.protobuf.Message;
 import com.twitter.chill.ScalaKryoInstantiator;
 
+import de.javakaffee.kryoserializers.jodatime.JodaDateTimeSerializer;
+import org.joda.time.DateTime;
 import com.twitter.chill.protobuf.ProtobufSerializer;
 import com.twitter.chill.thrift.TBaseSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -253,6 +255,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
 			// Throwable and all subclasses should be serialized via java serialization
 			kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
+
+			kryo.register(DateTime.class, new JodaDateTimeSerializer());
 
 			// add serializers for popular other serialization frameworks
 			// Google Protobuf (FLINK-1392)
