@@ -69,8 +69,6 @@ public class AvroRecordInputFormatTest {
 	final static String TEST_MAP_KEY2 = "KEY 2";
 	final static long TEST_MAP_VALUE2 = 17554L;
 
-	private User user1;
-
 	@Before
 	public void createFiles() throws IOException {
 		testFile = File.createTempFile("AvroInputFormatTest", null);
@@ -86,9 +84,9 @@ public class AvroRecordInputFormatTest {
 		HashMap<CharSequence, Long> longMap = new HashMap<CharSequence, Long>();
 		longMap.put(TEST_MAP_KEY1, TEST_MAP_VALUE1);
 		longMap.put(TEST_MAP_KEY2, TEST_MAP_VALUE2);
-		
-		
-		user1 = new User();
+
+
+		User user1 = new User();
 		user1.setName(TEST_NAME);
 		user1.setFavoriteNumber(256);
 		user1.setTypeDoubleTest(123.45d);
@@ -121,24 +119,7 @@ public class AvroRecordInputFormatTest {
 		dataFileWriter.close();
 	}
 
-	@Test
-	public void testTypeSerialisation() throws IOException {
-		AvroInputFormat<User> format = new AvroInputFormat<User>(new Path(testFile.getAbsolutePath()), User.class);
-		TypeInformation<User> te = format.getProducedType();
-		System.out.println("te = "+te);
-		ComparatorTestBase.TestOutputView target = new ComparatorTestBase.TestOutputView();
-		TypeSerializer<User> serializer = te.createSerializer();
-		List<CharSequence> values = new ArrayList<CharSequence>(2);
-		values.add("hello"); values.add("world");
-		user1.setTypeNullableArray(values);
 
-		serializer.serialize(user1, target);
-
-		User newUser = serializer.deserialize(target.getInputView());
-
-		Assert.assertNotNull(newUser);
-		Assert.assertEquals(2, newUser.getTypeNullableArray().size());
-	}
 	@Test
 	public void testDeserialisation() throws IOException {
 		Configuration parameters = new Configuration();

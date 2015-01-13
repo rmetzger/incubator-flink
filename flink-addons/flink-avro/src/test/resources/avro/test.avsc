@@ -1,0 +1,8 @@
+{"namespace": "org.apache.flink.api.java.avro.generated",
+ "type": "record",
+ "name": "Test",
+ "fields": [
+    {"name":"authors","type":["null",{"type":"array","items":{"type":"record","name":"PersonName","fields":[{"name":"fullName","type":"string"},{"name":"prefix","type":["null","string"]},{"name":"firstName","type":["null","string"]},{"name":"middleName","type":["null","string"]},{"name":"lastName","type":["null","string"]},{"name":"suffix","type":["null","string"]}]}}]}
+ ]
+}
+

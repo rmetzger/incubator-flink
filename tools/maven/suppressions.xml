@@ -24,4 +24,6 @@ under the License.
 
 <suppressions>
 		<suppress files="org[\\/]apache[\\/]flink[\\/]api[\\/]io[\\/]avro[\\/]example[\\/]User.java" checks="[a-zA-Z0-9]*"/>
+		<suppress files="org[\\/]apache[\\/]flink[\\/]api[\\/]java[\\/]avro[\\/]generated[\\/]PersonName.java" checks="[a-zA-Z0-9]*"/>
+		<suppress files="org[\\/]apache[\\/]flink[\\/]api[\\/]java[\\/]avro[\\/]generated[\\/]Test.java" checks="[a-zA-Z0-9]*"/>
 </suppressions>
