@@ -225,6 +225,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
 			this.kryo.setRegistrationRequired(false);
 			this.kryo.register(type);
+
 			this.kryo.setClassLoader(Thread.currentThread().getContextClassLoader());
 		}
 	}

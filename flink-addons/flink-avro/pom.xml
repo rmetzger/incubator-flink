@@ -139,7 +139,6 @@ under the License.
 						<configuration>
 							<testSourceDirectory>${project.basedir}/src/test/resources/avro</testSourceDirectory>
 							<testOutputDirectory>${project.basedir}/src/test/java/</testOutputDirectory>
-							<excludes><exclude>user.avsc</exclude></excludes>
 						</configuration>
 					</execution>
 				</executions>

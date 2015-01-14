@@ -284,7 +284,7 @@ public class EncoderDecoderTest {
 		try {
 			
 			// serialize
-			ByteArrayOutputStream baos = new ByteArrayOutputStream(1024 * 16 * 1024);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream(512);
 			{
 				DataOutputStream dataOut = new DataOutputStream(baos);
 				DataOutputEncoder encoder = new DataOutputEncoder();
