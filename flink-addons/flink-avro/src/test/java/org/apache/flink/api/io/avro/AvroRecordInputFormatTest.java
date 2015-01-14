@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.twitter.chill.avro.AvroSerializer$;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.DataFileWriter;
@@ -36,14 +37,23 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.avro.util.Utf8;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.ComparatorTestBase;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.io.avro.generated.Colors;
 import org.apache.flink.api.io.avro.generated.User;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.AvroInputFormat;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.operators.MapOperator;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.api.java.typeutils.runtime.KryoSerializer;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileInputSplit;
 import org.apache.flink.core.fs.Path;
@@ -51,6 +61,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import scala.reflect.ClassTag;
 
 /**
  * Test the avro input format.
@@ -59,7 +70,7 @@ import org.junit.Test;
  */
 public class AvroRecordInputFormatTest {
 	
-	private File testFile;
+	public File testFile;
 	
 	final static String TEST_NAME = "Alyssa";
 	
@@ -176,6 +187,8 @@ public class AvroRecordInputFormatTest {
 	}
 	@Test
 	public void testReadToGenericType() throws IOException {
+		KryoSerializer.addDefaultAvroSerializer(GenericData.Record.class, userSchema);
+
 		DatumReader<GenericData.Record> datumReader = new GenericDatumReader<GenericData.Record>(userSchema);
 
 		FileReader<GenericData.Record> dataFileReader = DataFileReader.openReader(testFile, datumReader);
@@ -199,8 +212,36 @@ public class AvroRecordInputFormatTest {
 		assertEquals("name not equal", TEST_NAME, newRec.get("name").toString() );
 		assertEquals("enum not equal", TEST_ENUM_COLOR.toString(), newRec.get("type_enum").toString());
 	}
+
+
 	@After
 	public void deleteFiles() {
 		testFile.delete();
 	}
+
+	public static void main(String[] args) throws Exception {
+		AvroRecordInputFormatTest t = new AvroRecordInputFormatTest();
+		t.createFiles();
+		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+
+		Path in = new Path(t.testFile.getAbsoluteFile().toURI());
+
+		DataSet<User> pubs = new DataSource<User>(env,
+				new AvroInputFormat<User>(in, User.class),
+				new GenericTypeInfo<User>(User.class), "someloc");
+
+		MapOperator<User, Tuple2<Long, User>> mapResult = pubs.map(new MapFunction<User, Tuple2<Long, User>>() {
+			@Override
+			public Tuple2<Long, User> map(User value) throws Exception {
+				return new Tuple2<Long, User>(value.getTypeLongTest(), value);
+			}
+		});
+
+
+		pubs.print();
+
+		env.execute("Trivial Publication Job");
+
+	}
+
 }
