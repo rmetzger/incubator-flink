@@ -1,4 +1,4 @@
-{"namespace": "org.apache.flink.api.java.avro.generated",
+{"namespace": "org.apache.flink.api.io.avro.generated",
  "type": "record",
  "name": "Test",
  "fields": [

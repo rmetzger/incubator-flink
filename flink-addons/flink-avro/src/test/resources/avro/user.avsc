@@ -1,5 +1,5 @@
 
-{"namespace": "org.apache.flink.api.java.record.io.avro.generated",
+{"namespace": "org.apache.flink.api.io.avro.generated",
  "type": "record",
  "name": "User",
  "fields": [
@@ -14,7 +14,10 @@
      {"name": "type_array_boolean", "type" : {"type" : "array", "items" : "boolean"}}, 
      {"name": "type_nullable_array", "type": ["null", {"type":"array", "items":"string"}], "default":null},
      {"name": "type_enum", "type": {"type": "enum", "name": "Colors", "symbols" : ["RED", "GREEN", "BLUE"]}},
-     {"name": "type_map", "type": {"type": "map", "values": "long"}}
-     {"name": "type_fixed", type": "fixed", "size": "16"}}
+     {"name": "type_map", "type": {"type": "map", "values": "long"}},
+     {"name": "type_fixed",
+                 "size": 16,
+                 "type": ["null", {"name": "Fixed16", "size": 16, "type": "fixed"}] },
+     {"name": "type_union", "type": ["null", "boolean", "long", "double"]}
  ]
 }

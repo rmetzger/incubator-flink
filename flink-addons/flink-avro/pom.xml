@@ -137,8 +137,8 @@ under the License.
 							<goal>schema</goal>
 						</goals>
 						<configuration>
-							<sourceDirectory>${project.basedir}/src/test/resources/avro</sourceDirectory>
-							<outputDirectory>${project.basedir}/src/test/java/</outputDirectory>
+							<testSourceDirectory>${project.basedir}/src/test/resources/avro</testSourceDirectory>
+							<testOutputDirectory>${project.basedir}/src/test/java/</testOutputDirectory>
 							<excludes><exclude>user.avsc</exclude></excludes>
 						</configuration>
 					</execution>
