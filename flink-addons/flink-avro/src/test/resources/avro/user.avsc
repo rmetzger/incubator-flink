@@ -14,6 +14,7 @@
      {"name": "type_array_boolean", "type" : {"type" : "array", "items" : "boolean"}}, 
      {"name": "type_nullable_array", "type": ["null", {"type":"array", "items":"string"}], "default":null},
      {"name": "type_enum", "type": {"type": "enum", "name": "Colors", "symbols" : ["RED", "GREEN", "BLUE"]}},
-     {"name": "type_map", "type": {"type": "map", "values": "long"}} 
+     {"name": "type_map", "type": {"type": "map", "values": "long"}}
+     {"name": "type_fixed", type": "fixed", "size": "16"}}
  ]
 }

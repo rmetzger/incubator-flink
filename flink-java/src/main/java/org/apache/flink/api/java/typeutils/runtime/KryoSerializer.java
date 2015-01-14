@@ -20,9 +20,11 @@ package org.apache.flink.api.java.typeutils.runtime;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.twitter.chill.ScalaKryoInstantiator;
 
@@ -40,6 +42,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -213,7 +217,11 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			if(SpecificRecordBase.class.isAssignableFrom(type)) {
 				ClassTag<SpecificRecordBase> tag = scala.reflect.ClassTag$.MODULE$.apply(type);
 				this.kryo.addDefaultSerializer(type, com.twitter.chill.avro.AvroSerializer.SpecificRecordSerializer(tag));
+
 			}
+
+			this.kryo.addDefaultSerializer(GenericData.Array.class, new SpecificInstanceCollectionSerializer(ArrayList.class));
+			this.kryo.register(GenericData.Array.class);
 
 			this.kryo.setRegistrationRequired(false);
 			this.kryo.register(type);
@@ -221,6 +229,25 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		}
 	}
 
+	public static void listSerializers(Kryo k) {
+		System.out.println("Listing Serializers of kryo instance = "+k);
+		for(int i = 0; i < k.getNextRegistrationId() -1 ; i++) {
+			Registration r = k.getClassResolver().getRegistration(i);
+			System.out.println("Type=" + r.getType() + " Serializer=" + r.getSerializer() + " Instantiator=" + r.getInstantiator());
+		}
+	}
+
+	public static class SpecificInstanceCollectionSerializer<T extends Collection> extends CollectionSerializer {
+		Class<T> type;
+		public SpecificInstanceCollectionSerializer(Class<T> type) {
+			this.type = type;
+		}
+
+		@Override
+		protected Collection create(Kryo kryo, Input input, Class<Collection> type) {
+			return kryo.newInstance(this.type);
+		}
+	}
 	/**
 	 * Registers the given Serializer as a default serializer for the given class at the Kryo
 	 * instance.
@@ -238,7 +265,6 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	}
 
 	/**
-	 * This
 	 * @param clazz Subtype of the GenericRecord implementation of Avro
 	 * @param avroSchema Schema
 	 * @param <T>
