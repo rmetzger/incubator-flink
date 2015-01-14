@@ -27,7 +27,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.file.FileReader;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.util.Utf8;
@@ -37,6 +43,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.io.avro.generated.Colors;
 import org.apache.flink.api.io.avro.generated.User;
 import org.apache.flink.api.java.io.AvroInputFormat;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileInputSplit;
 import org.apache.flink.core.fs.Path;
@@ -69,6 +76,8 @@ public class AvroRecordInputFormatTest {
 	final static String TEST_MAP_KEY2 = "KEY 2";
 	final static long TEST_MAP_VALUE2 = 17554L;
 
+	private Schema userSchema;
+
 	@Before
 	public void createFiles() throws IOException {
 		testFile = File.createTempFile("AvroInputFormatTest", null);
@@ -87,6 +96,7 @@ public class AvroRecordInputFormatTest {
 
 
 		User user1 = new User();
+		userSchema = user1.getSchema();
 		user1.setName(TEST_NAME);
 		user1.setFavoriteNumber(256);
 		user1.setTypeDoubleTest(123.45d);
@@ -164,7 +174,31 @@ public class AvroRecordInputFormatTest {
 		
 		format.close();
 	}
-	
+	@Test
+	public void testReadToGenericType() throws IOException {
+		DatumReader<GenericData.Record> datumReader = new GenericDatumReader<GenericData.Record>(userSchema);
+
+		FileReader<GenericData.Record> dataFileReader = DataFileReader.openReader(testFile, datumReader);
+		GenericData.Record rec = new GenericData.Record(userSchema);
+		dataFileReader.next(rec);
+		// check if record has been read correctly
+		assertNotNull(rec);
+		assertEquals("name not equal", TEST_NAME, rec.get("name").toString() );
+		assertEquals("enum not equal", TEST_ENUM_COLOR.toString(), rec.get("type_enum").toString());
+
+		// now serialize it with our framework:
+		TypeInformation<GenericData.Record> te = (TypeInformation<GenericData.Record>) TypeExtractor.createTypeInfo(GenericData.Record.class);
+		TypeSerializer<GenericData.Record> tser = te.createSerializer();
+		ComparatorTestBase.TestOutputView target = new ComparatorTestBase.TestOutputView();
+		tser.serialize(rec, target);
+
+		GenericData.Record newRec = tser.deserialize(target.getInputView());
+
+		// check if it is still the same
+		assertNotNull(newRec);
+		assertEquals("name not equal", TEST_NAME, newRec.get("name").toString() );
+		assertEquals("enum not equal", TEST_ENUM_COLOR.toString(), newRec.get("type_enum").toString());
+	}
 	@After
 	public void deleteFiles() {
 		testFile.delete();

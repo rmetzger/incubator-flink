@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.twitter.chill.ScalaKryoInstantiator;
 
+import org.apache.avro.generic.GenericRecord;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
@@ -182,6 +183,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		if (this.kryo == null) {
 			this.kryo = new ScalaKryoInstantiator().newKryo();
 			this.kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
+			todo here tomorrow: add avro serializers with their schema on the fly
 			this.kryo.setRegistrationRequired(false);
 			this.kryo.register(type);
 			this.kryo.setClassLoader(Thread.currentThread().getContextClassLoader());
