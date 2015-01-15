@@ -17,6 +17,7 @@
  */
 package org.apache.flink.api.io.avro;
 
+import org.apache.avro.Schema;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.io.avro.generated.User;
 import org.apache.flink.api.java.DataSet;
@@ -24,6 +25,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.AvroInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.runtime.operators.chaining.ExceptionInChainedStubException;
 import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 import org.junit.After;
@@ -35,6 +37,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.util.List;
 
 @RunWith(Parameterized.class)
 public class AvroPojoTest extends MultipleProgramsTestBase {
@@ -96,9 +99,43 @@ public class AvroPojoTest extends MultipleProgramsTestBase {
 		});
 
 		res.writeAsText(resultPath);
-		env.execute("Simple Avro read job");
+		env.execute("Avro Key selection");
 
 
 		expected = "(Alyssa,1)\n(Charlie,1)\n";
+	}
+
+	@Test
+	public void testAllFields() throws Exception {
+		Schema userSchema = new User().getSchema();
+		List<Schema.Field> fields = userSchema.getFields();
+		for(Schema.Field field : fields) {
+			String fieldName = field.name();
+
+			before();
+
+			final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+			Path in = new Path(inFile.getAbsoluteFile().toURI());
+
+			AvroInputFormat<User> users = new AvroInputFormat<User>(in, User.class);
+			DataSet<User> usersDS = env.createInput(users);
+
+			DataSet<Tuple2<String, Integer>> res = usersDS.groupBy(fieldName).reduceGroup(new GroupReduceFunction<User, Tuple2<String, Integer>>() {
+				@Override
+				public void reduce(Iterable<User> values, Collector<Tuple2<String, Integer>> out) throws Exception {
+					for(User u : values) {
+						u.
+						out.collect(new Tuple2<String, Integer>(u.getName().toString(), 1));
+					}
+				}
+			});
+
+			res.writeAsText(resultPath);
+			env.execute("Simple Avro read job");
+			expected = "acb";
+
+			after();
+
+		}
 	}
 }
