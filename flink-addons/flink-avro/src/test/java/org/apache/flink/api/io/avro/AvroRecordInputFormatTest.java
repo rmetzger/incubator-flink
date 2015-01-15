@@ -43,10 +43,7 @@ import org.apache.flink.api.common.typeutils.ComparatorTestBase;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.io.avro.generated.Colors;
 import org.apache.flink.api.io.avro.generated.User;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.AvroInputFormat;
-import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileInputSplit;
@@ -79,27 +76,25 @@ public class AvroRecordInputFormatTest {
 	final static String TEST_MAP_KEY2 = "KEY 2";
 	final static long TEST_MAP_VALUE2 = 17554L;
 
-	private Schema userSchema;
+	private Schema userSchema = new User().getSchema();
 
-	@Before
-	public void createFiles() throws IOException {
-		testFile = File.createTempFile("AvroInputFormatTest", null);
-		
+
+	public static void writeTestFile(File testFile) throws IOException {
 		ArrayList<CharSequence> stringArray = new ArrayList<CharSequence>();
 		stringArray.add(TEST_ARRAY_STRING_1);
 		stringArray.add(TEST_ARRAY_STRING_2);
-		
+
 		ArrayList<Boolean> booleanArray = new ArrayList<Boolean>();
 		booleanArray.add(TEST_ARRAY_BOOLEAN_1);
 		booleanArray.add(TEST_ARRAY_BOOLEAN_2);
-		
+
 		HashMap<CharSequence, Long> longMap = new HashMap<CharSequence, Long>();
 		longMap.put(TEST_MAP_KEY1, TEST_MAP_VALUE1);
 		longMap.put(TEST_MAP_KEY2, TEST_MAP_VALUE2);
 
 
 		User user1 = new User();
-		userSchema = user1.getSchema();
+
 		user1.setName(TEST_NAME);
 		user1.setFavoriteNumber(256);
 		user1.setTypeDoubleTest(123.45d);
@@ -108,24 +103,24 @@ public class AvroRecordInputFormatTest {
 		user1.setTypeArrayBoolean(booleanArray);
 		user1.setTypeEnum(TEST_ENUM_COLOR);
 		user1.setTypeMap(longMap);
-		
+
 		// Construct via builder
 		User user2 = User.newBuilder()
-			.setName("Charlie")
-			.setFavoriteColor("blue")
-			.setFavoriteNumber(null)
-			.setTypeBoolTest(false)
-			.setTypeDoubleTest(1.337d)
-			.setTypeNullTest(null)
-			.setTypeLongTest(1337L)
-			.setTypeArrayString(new ArrayList<CharSequence>())
-			.setTypeArrayBoolean(new ArrayList<Boolean>())
-			.setTypeNullableArray(null)
-			.setTypeEnum(Colors.RED)
-			.setTypeMap(new HashMap<CharSequence, Long>())
-			.setTypeFixed(null)
-			.setTypeUnion(null)
-			.build();
+				.setName("Charlie")
+				.setFavoriteColor("blue")
+				.setFavoriteNumber(null)
+				.setTypeBoolTest(false)
+				.setTypeDoubleTest(1.337d)
+				.setTypeNullTest(null)
+				.setTypeLongTest(1337L)
+				.setTypeArrayString(new ArrayList<CharSequence>())
+				.setTypeArrayBoolean(new ArrayList<Boolean>())
+				.setTypeNullableArray(null)
+				.setTypeEnum(Colors.RED)
+				.setTypeMap(new HashMap<CharSequence, Long>())
+				.setTypeFixed(null)
+				.setTypeUnion(null)
+				.build();
 		DatumWriter<User> userDatumWriter = new SpecificDatumWriter<User>(User.class);
 		DataFileWriter<User> dataFileWriter = new DataFileWriter<User>(userDatumWriter);
 		dataFileWriter.create(user1.getSchema(), testFile);
@@ -133,8 +128,17 @@ public class AvroRecordInputFormatTest {
 		dataFileWriter.append(user2);
 		dataFileWriter.close();
 	}
+	@Before
+	public void createFiles() throws IOException {
+		testFile = File.createTempFile("AvroInputFormatTest", null);
+		writeTestFile(testFile);
+	}
 
 
+	/**
+	 * Test if the AvroInputFormat is able to properly read data from an avro file.
+	 * @throws IOException
+	 */
 	@Test
 	public void testDeserialisation() throws IOException {
 		Configuration parameters = new Configuration();
@@ -180,19 +184,27 @@ public class AvroRecordInputFormatTest {
 		format.close();
 	}
 
+	/**
+	 * Test if the Flink serialization is able to properly process GenericData.Record types.
+	 * Usually users of Avro generate classes (POJOs) from Avro schemas.
+	 * However, if generated classes are not available, one can also use GenericData.Record.
+	 * It is an untyped key-value record which is using a schema to validate the correctness of the data.
+	 *
+	 * It is not recommended to use GenericData.Record with Flink. Use generated POJOs instead.
+	 */
 	@Test
 	public void testDeserializeToGenericType() throws IOException {
-		// KryoSerializer.addDefaultAvroSerializer(GenericData.Record.class, userSchema);
-
 		DatumReader<GenericData.Record> datumReader = new GenericDatumReader<GenericData.Record>(userSchema);
 
 		FileReader<GenericData.Record> dataFileReader = DataFileReader.openReader(testFile, datumReader);
+		// initialize Record by reading it from disk (thats easier than creating it by hand)
 		GenericData.Record rec = new GenericData.Record(userSchema);
 		dataFileReader.next(rec);
 		// check if record has been read correctly
 		assertNotNull(rec);
 		assertEquals("name not equal", TEST_NAME, rec.get("name").toString() );
 		assertEquals("enum not equal", TEST_ENUM_COLOR.toString(), rec.get("type_enum").toString());
+		assertEquals(null, rec.get("type_long_test")); // it is null for the first record.
 
 		// now serialize it with our framework:
 		TypeInformation<GenericData.Record> te = (TypeInformation<GenericData.Record>) TypeExtractor.createTypeInfo(GenericData.Record.class);
@@ -206,9 +218,13 @@ public class AvroRecordInputFormatTest {
 		assertNotNull(newRec);
 		assertEquals("enum not equal", TEST_ENUM_COLOR.toString(), newRec.get("type_enum").toString());
 		assertEquals("name not equal", TEST_NAME, newRec.get("name").toString() );
+		assertEquals(null, newRec.get("type_long_test"));
 
 	}
 
+	/**
+	 * This test validates proper serialization with specific (generated POJO) types.
+	 */
 	@Test
 	public void testDeserializeToSpecificType() throws IOException {
 
@@ -240,23 +256,6 @@ public class AvroRecordInputFormatTest {
 	@After
 	public void deleteFiles() {
 		testFile.delete();
-	}
-
-
-	public static void main(String[] args) throws Exception {
-		AvroRecordInputFormatTest t = new AvroRecordInputFormatTest();
-		t.createFiles();
-		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-
-		Path in = new Path(t.testFile.getAbsoluteFile().toURI());
-
-		DataSet<User> pubs = new DataSource<User>(env,
-				new AvroInputFormat<User>(in, User.class), (TypeInformation<User>) TypeExtractor.createTypeInfo(User.class), "ab" );
-
-		pubs.print();
-
-		env.execute("Trivial Publication Job");
-
 	}
 
 }

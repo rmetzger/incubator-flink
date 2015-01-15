@@ -221,6 +221,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			}
 
 			this.kryo.addDefaultSerializer(GenericData.Array.class, new SpecificInstanceCollectionSerializer(ArrayList.class));
+			this.kryo.addDefaultSerializer(Schema.class, new AvroSchemaSerializer());
+
 			this.kryo.register(GenericData.Array.class);
 
 			this.kryo.setRegistrationRequired(false);
@@ -230,13 +232,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		}
 	}
 
-	public static void listSerializers(Kryo k) {
-		System.out.println("Listing Serializers of kryo instance = "+k);
-		for(int i = 0; i < k.getNextRegistrationId() -1 ; i++) {
-			Registration r = k.getClassResolver().getRegistration(i);
-			System.out.println("Type=" + r.getType() + " Serializer=" + r.getSerializer() + " Instantiator=" + r.getInstantiator());
-		}
-	}
+
 
 	public static class SpecificInstanceCollectionSerializer<T extends Collection> extends CollectionSerializer {
 		Class<T> type;
@@ -247,6 +243,32 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		@Override
 		protected Collection create(Kryo kryo, Input input, Class<Collection> type) {
 			return kryo.newInstance(this.type);
+		}
+
+		@Override
+		protected Collection createCopy(Kryo kryo, Collection original) {
+			return kryo.newInstance(this.type);
+		}
+	}
+
+	/**
+	 * Slow serialization approach for Avro schemas.
+	 * This is only used with {{@link org.apache.avro.generic.GenericData.Record}} types.
+	 * Having this serializer, we are able to handle avro Records.
+	 */
+	public static class AvroSchemaSerializer extends Serializer<Schema> {
+		@Override
+		public void write(Kryo kryo, Output output, Schema object) {
+			String schemaAsString = object.toString(false);
+			output.writeString(schemaAsString);
+		}
+
+		@Override
+		public Schema read(Kryo kryo, Input input, Class<Schema> type) {
+			String schemaAsString = input.readString();
+			// the parser seems to be stateful, to we need a new one for every type.
+			Schema.Parser sParser = new Schema.Parser();
+			return sParser.parse(schemaAsString);
 		}
 	}
 	/**
@@ -265,16 +287,6 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		staticRegisteredSerializersClasses.put(clazz, serializer);
 	}
 
-	/**
-	 * @param clazz Subtype of the GenericRecord implementation of Avro
-	 * @param avroSchema Schema
-	 * @param <T>
-	 */
-	public static <T extends GenericRecord> void addDefaultAvroSerializer(Class<T> clazz, Schema avroSchema) {
-		ClassTag<SpecificRecordBase> tag = scala.reflect.ClassTag$.MODULE$.apply(clazz);
-		KryoSerializer.addDefaultSerializer(GenericData.Record.class, AvroSerializer$.MODULE$.GenericRecordSerializer(avroSchema, tag));
-	}
-
 	// --------------------------------------------------------------------------------------------
 	// for testing
 	// --------------------------------------------------------------------------------------------
@@ -283,4 +295,17 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		checkKryoInitialized();
 		return this.kryo;
 	}
+
+	/**
+	 * DEBUG ONLY
+	 * lists all registered classes and their serializers
+	 */
+	public static void listSerializers(Kryo k) {
+		System.out.println("Listing Serializers of kryo instance = "+k);
+		for(int i = 0; i < k.getNextRegistrationId() -1 ; i++) {
+			Registration r = k.getClassResolver().getRegistration(i);
+			System.out.println("Type=" + r.getType() + " Serializer=" + r.getSerializer() + " Instantiator=" + r.getInstantiator());
+		}
+	}
+
 }
