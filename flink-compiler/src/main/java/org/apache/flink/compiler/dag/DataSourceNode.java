@@ -30,10 +30,14 @@ import org.apache.flink.api.common.io.NonParallelInput;
 import org.apache.flink.api.common.io.statistics.BaseStatistics;
 import org.apache.flink.api.common.operators.GenericDataSourceBase;
 import org.apache.flink.api.common.operators.Operator;
+import org.apache.flink.api.common.operators.util.FieldList;
+import org.apache.flink.api.common.operators.util.FieldSet;
 import org.apache.flink.compiler.DataStatistics;
 import org.apache.flink.compiler.PactCompiler;
 import org.apache.flink.compiler.costs.CostEstimator;
 import org.apache.flink.compiler.costs.Costs;
+import org.apache.flink.compiler.dataproperties.InterestingProperties;
+import org.apache.flink.compiler.dataproperties.RequestedGlobalProperties;
 import org.apache.flink.compiler.plan.PlanNode;
 import org.apache.flink.compiler.plan.SourcePlanNode;
 import org.apache.flink.configuration.Configuration;
@@ -161,6 +165,21 @@ public class DataSourceNode extends OptimizerNode {
 		// no children, so nothing to compute
 	}
 
+/**	@Override
+	public InterestingProperties getInterestingProperties() {
+		InterestingProperties superIP = super.getInterestingProperties();
+		System.out.println("super IP = " + superIP);
+		if (superIP == null) {
+			superIP = new InterestingProperties();
+		}
+		RequestedGlobalProperties rgp = new RequestedGlobalProperties();
+		rgp.setHashPartitioned(new FieldSet(0));
+		superIP.addGlobalProperties(rgp);
+		System.out.println("Outgoing sip = "+superIP);
+		return superIP;
+	} **/
+
+
 	@Override
 	public void computeUnclosedBranchStack() {
 		// because there are no inputs, there are no unclosed branches.
@@ -183,6 +202,8 @@ public class DataSourceNode extends OptimizerNode {
 			estimator.addFileInputCost(this.estimatedOutputSize, costs);
 		}
 		candidate.setCosts(costs);
+
+		candidate.getGlobalProperties().setHashPartitioned(new FieldList(0));
 
 		// since there is only a single plan for the data-source, return a list with that element only
 		List<PlanNode> plans = new ArrayList<PlanNode>(1);

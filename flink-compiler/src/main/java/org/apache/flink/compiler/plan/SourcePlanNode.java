@@ -85,6 +85,10 @@ public class SourcePlanNode extends PlanNode {
 		}
 	}
 
+	@Override
+	public GlobalProperties getGlobalProperties() {
+		return super.getGlobalProperties();
+	}
 
 	@Override
 	public Iterable<PlanNode> getPredecessors() {
