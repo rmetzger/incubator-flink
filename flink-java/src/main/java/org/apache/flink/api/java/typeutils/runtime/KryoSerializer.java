@@ -92,7 +92,6 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
 			ByteArrayInputStream bain = new ByteArrayInputStream(baout.toByteArray());
 			Input input = new Input(bain);
-
 			return (T)kryo.readObject(input, from.getClass());
 		}
 	}
