@@ -165,20 +165,6 @@ public class DataSourceNode extends OptimizerNode {
 		// no children, so nothing to compute
 	}
 
-/**	@Override
-	public InterestingProperties getInterestingProperties() {
-		InterestingProperties superIP = super.getInterestingProperties();
-		System.out.println("super IP = " + superIP);
-		if (superIP == null) {
-			superIP = new InterestingProperties();
-		}
-		RequestedGlobalProperties rgp = new RequestedGlobalProperties();
-		rgp.setHashPartitioned(new FieldSet(0));
-		superIP.addGlobalProperties(rgp);
-		System.out.println("Outgoing sip = "+superIP);
-		return superIP;
-	} **/
-
 
 	@Override
 	public void computeUnclosedBranchStack() {
@@ -203,7 +189,10 @@ public class DataSourceNode extends OptimizerNode {
 		}
 		candidate.setCosts(costs);
 
-		candidate.getGlobalProperties().setHashPartitioned(new FieldList(0));
+		List<Integer> optionalHashPartKeys = getPactContract().getHashPartitionKeys();
+		if(optionalHashPartKeys != null) {
+			candidate.getGlobalProperties().setHashPartitioned(new FieldList(optionalHashPartKeys));
+		}
 
 		// since there is only a single plan for the data-source, return a list with that element only
 		List<PlanNode> plans = new ArrayList<PlanNode>(1);

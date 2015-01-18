@@ -13,22 +13,25 @@ import org.apache.flink.api.java.operators.JoinOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 
+import java.util.Arrays;
+
 public class Join {
 
 	public static void main(String[] args) throws Exception {
-		two();
+		one();
+	//	two();
 	}
 	private static void one() throws Exception {
 		ExecutionEnvironment ee = ExecutionEnvironment.getExecutionEnvironment();
 
-		DataSet<Tuple2<Integer, String>> ds1 = ee.readTextFile("/home/robert/incubator-flink/README.md").map(new MapFunction<String, Tuple2<Integer, String>>() {
+		DataSet<Tuple2<Integer, String>> ds1 = ee.readTextFile("/home/robert/incubator-flink/README.md").setHashPartitionKeys(Arrays.asList(0)).map(new MapFunction<String, Tuple2<Integer, String>>() {
 			@Override
 			public Tuple2<Integer, String> map(String value) throws Exception {
 				return new Tuple2<Integer, String>(1, value);
 			}
 		}).withConstantSet("0");
 
-		DataSet<Tuple2<Integer, String>> ds2 = ee.readTextFile("/home/robert/incubator-flink/NOTICE").map(new MapFunction<String, Tuple2<Integer, String>>() {
+		DataSet<Tuple2<Integer, String>> ds2 = ee.readTextFile("/home/robert/incubator-flink/NOTICE").setHashPartitionKeys(Arrays.asList(0)).map(new MapFunction<String, Tuple2<Integer, String>>() {
 			@Override
 			public Tuple2<Integer, String> map(String value) throws Exception {
 				return new Tuple2<Integer, String>(1, value);
@@ -39,13 +42,13 @@ public class Join {
 
 		join.print();
 		System.out.println("Plan : " + ee.getExecutionPlan());
-		ee.execute();
+		//	ee.execute();
 	}
 
 	private static void two() throws Exception {
 		ExecutionEnvironment ee = ExecutionEnvironment.getExecutionEnvironment();
 
-		DataSet<Tuple2<Integer, Integer>> ds1 = ee.readCsvFile("ab").fieldDelimiter('|').types(Integer.class, Integer.class);
+		DataSet<Tuple2<Integer, Integer>> ds1 = ee.readCsvFile("ab").fieldDelimiter('|').types(Integer.class, Integer.class).setHashPartitionKeys(Arrays.asList(0));
 		DataSet<Integer> a = ds1.groupBy(0).reduceGroup(new RichGroupReduceFunction<Tuple2<Integer,Integer>, Integer>() {
 			@Override
 			public void reduce(Iterable<Tuple2<Integer, Integer>> values, Collector<Integer> out) throws Exception {

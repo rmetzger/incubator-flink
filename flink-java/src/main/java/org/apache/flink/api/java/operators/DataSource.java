@@ -26,6 +26,8 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.configuration.Configuration;
 
+import java.util.List;
+
 /**
  * An operation that creates a new data set (data source). The operation acts as the
  * data set on which to apply further transformations. It encapsulates additional
@@ -40,6 +42,8 @@ public class DataSource<OUT> extends Operator<OUT, DataSource<OUT>> {
 	private final String dataSourceLocationName;
 
 	private Configuration parameters;
+
+	private List<Integer> hashPartitionKeys;
 
 	// --------------------------------------------------------------------------------------------
 	
@@ -90,7 +94,16 @@ public class DataSource<OUT> extends Operator<OUT, DataSource<OUT>> {
 	public Configuration getParameters() {
 		return this.parameters;
 	}
-	
+
+	/**
+	 * Tell the optimizer that the data read from this source is hash-partitioned on the given keys.
+	 * This parameter is optional and experimental. Be careful when using it!
+	 */
+	public DataSource<OUT> setHashPartitionKeys(List<Integer> hashPartitionKeys) {
+		this.hashPartitionKeys = hashPartitionKeys;
+		return this;
+	}
+
 	// --------------------------------------------------------------------------------------------
 	
 	protected GenericDataSourceBase<OUT, ?> translateToDataFlow() {
@@ -105,6 +118,9 @@ public class DataSource<OUT> extends Operator<OUT, DataSource<OUT>> {
 		source.setDegreeOfParallelism(dop);
 		if(this.parameters != null) {
 			source.getParameters().addAll(this.parameters);
+		}
+		if(this.hashPartitionKeys != null) {
+			source.setHashPartitionKeys(hashPartitionKeys);
 		}
 		return source;
 	}

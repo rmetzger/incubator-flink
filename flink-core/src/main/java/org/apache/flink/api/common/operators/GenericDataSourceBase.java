@@ -45,6 +45,11 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	protected String statisticsKey;
 
 	/**
+	 * Optional field for users to hint hash-partitioned input data on that data source
+	 */
+	private List<Integer> hashPartitionKeys;
+
+	/**
 	 * Creates a new instance for the given file using the given input format.
 	 *
 	 * @param format The {@link org.apache.flink.api.common.io.InputFormat} implementation used to read the data.
@@ -156,7 +161,15 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	public void setStatisticsKey(String statisticsKey) {
 		this.statisticsKey = statisticsKey;
 	}
-	
+
+	public List<Integer> getHashPartitionKeys() {
+		return hashPartitionKeys;
+	}
+
+	public void setHashPartitionKeys(List<Integer> hashPartitionKeys) {
+		this.hashPartitionKeys = hashPartitionKeys;
+	}
+
 	// --------------------------------------------------------------------------------------------
 	
 	/**

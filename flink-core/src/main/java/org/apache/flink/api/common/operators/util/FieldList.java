@@ -49,7 +49,7 @@ public class FieldList extends FieldSet {
 		super (fromInts(columnIndexes));
 	}
 	
-	private FieldList(List<Integer> fields) {
+	public FieldList(List<Integer> fields) {
 		super(fields);
 	}
 	
