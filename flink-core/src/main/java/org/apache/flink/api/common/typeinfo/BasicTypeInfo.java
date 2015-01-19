@@ -176,7 +176,6 @@ public class BasicTypeInfo<T> extends TypeInformation<T> implements AtomicType<T
 	
 	static {
 		TYPES.put(String.class, STRING_TYPE_INFO);
-		TYPES.put(CharSequence.class, STRING_TYPE_INFO);
 		TYPES.put(Boolean.class, BOOLEAN_TYPE_INFO);
 		TYPES.put(boolean.class, BOOLEAN_TYPE_INFO);
 		TYPES.put(Byte.class, BYTE_TYPE_INFO);
