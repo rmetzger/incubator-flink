@@ -17,7 +17,6 @@
  */
 package org.apache.flink.api.io.avro;
 
-import org.apache.avro.Schema;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.io.avro.generated.User;
 import org.apache.flink.api.java.DataSet;
@@ -25,10 +24,10 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.AvroInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.Path;
-import org.apache.flink.runtime.operators.chaining.ExceptionInChainedStubException;
 import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.apache.flink.util.Collector;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +36,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.util.List;
+import java.util.Arrays;
 
 @RunWith(Parameterized.class)
 public class AvroPojoTest extends MultipleProgramsTestBase {
@@ -105,37 +104,45 @@ public class AvroPojoTest extends MultipleProgramsTestBase {
 		expected = "(Alyssa,1)\n(Charlie,1)\n";
 	}
 
+	/**
+	 * Test some know fields for grouping on
+	 */
 	@Test
 	public void testAllFields() throws Exception {
-		Schema userSchema = new User().getSchema();
-		List<Schema.Field> fields = userSchema.getFields();
-		for(Schema.Field field : fields) {
-			String fieldName = field.name();
-
-			before();
-
-			final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-			Path in = new Path(inFile.getAbsoluteFile().toURI());
-
-			AvroInputFormat<User> users = new AvroInputFormat<User>(in, User.class);
-			DataSet<User> usersDS = env.createInput(users);
-
-			DataSet<Tuple2<String, Integer>> res = usersDS.groupBy(fieldName).reduceGroup(new GroupReduceFunction<User, Tuple2<String, Integer>>() {
-				@Override
-				public void reduce(Iterable<User> values, Collector<Tuple2<String, Integer>> out) throws Exception {
-					for(User u : values) {
-						u.
-						out.collect(new Tuple2<String, Integer>(u.getName().toString(), 1));
-					}
-				}
-			});
-
-			res.writeAsText(resultPath);
-			env.execute("Simple Avro read job");
-			expected = "acb";
-
-			after();
-
+		for(String fieldName : Arrays.asList("name", "type_enum", "type_double_test")) {
+			testField(fieldName);
 		}
+	}
+
+	private void testField(final String fieldName) throws Exception {
+		before();
+
+		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		Path in = new Path(inFile.getAbsoluteFile().toURI());
+
+		AvroInputFormat<User> users = new AvroInputFormat<User>(in, User.class);
+		DataSet<User> usersDS = env.createInput(users);
+
+		DataSet<Object> res = usersDS.groupBy(fieldName).reduceGroup(new GroupReduceFunction<User, Object>() {
+			@Override
+			public void reduce(Iterable<User> values, Collector<Object> out) throws Exception {
+				for(User u : values) {
+					out.collect(u.get(fieldName));
+				}
+			}
+		});
+		res.writeAsText(resultPath);
+		env.execute("Simple Avro read job");
+		if(fieldName.equals("name")) {
+			expected = "Alyssa\nCharlie";
+		} else if(fieldName.equals("type_enum")) {
+			expected = "GREEN\nRED\n";
+		} else if(fieldName.equals("type_double_test")) {
+			expected = "123.45\n1.337\n";
+		} else {
+			Assert.fail("Unknown field");
+		}
+
+		after();
 	}
 }

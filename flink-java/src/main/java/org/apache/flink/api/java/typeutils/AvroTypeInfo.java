@@ -64,11 +64,6 @@ public class AvroTypeInfo<T extends SpecificRecordBase> extends PojoTypeInfo<T> 
 			PojoField newField = new PojoField(f.field, newType);
 			newFields.add(newField);
 		}
-		System.out.println("te = "+ti);
-		//SpecificRecordBase rb = InstantiationUtil.instantiate(typeClass, SpecificRecordBase.class);
-	//	Schema schema = rb.getSchema();
-
-	//	System.out.println("Schema = "+schema);
 		return newFields;
 	}
 
