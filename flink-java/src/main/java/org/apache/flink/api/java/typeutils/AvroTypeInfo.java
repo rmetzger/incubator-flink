@@ -19,12 +19,9 @@
 
 package org.apache.flink.api.java.typeutils;
 
-import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.util.InstantiationUtil;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
