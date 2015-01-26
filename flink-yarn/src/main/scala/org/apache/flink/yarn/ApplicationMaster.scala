@@ -177,8 +177,6 @@ object ApplicationMaster {
     }
     configuration.setInteger(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY, jobManagerWebPort);
 
-    println("configuration " + configuration)
-
     // set port to 0 to let Akka automatically determine the port.
     implicit val jobManagerSystem = YarnUtils.createActorSystem(hostname, port = 0, configuration)
 
