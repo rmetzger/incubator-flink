@@ -112,7 +112,6 @@ under the License.
 		<dependency>
 			<groupId>joda-time</groupId>
 			<artifactId>joda-time</artifactId>
-			<version>2.7</version>
 		</dependency>
 
 		<!--  guava needs to be in "provided" scope, to make sure it is not included into the jars by the shading -->
@@ -130,13 +129,6 @@ under the License.
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
-		
-		<dependency>
-			<groupId>joda-time</groupId>
-			<artifactId>joda-time</artifactId>
-			<scope>test</scope>
-		</dependency>
-		
 	</dependencies>
 
 	<!-- Because flink-scala and flink-avro uses it in tests -->

@@ -30,13 +30,17 @@ import com.google.protobuf.Message;
 import com.twitter.chill.ScalaKryoInstantiator;
 
 import de.javakaffee.kryoserializers.jodatime.JodaDateTimeSerializer;
-import org.joda.time.DateTime;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.specific.SpecificRecordBase;
 import com.twitter.chill.protobuf.ProtobufSerializer;
 import com.twitter.chill.thrift.TBaseSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.thrift.TBase;
+import org.joda.time.DateTime;
+import scala.reflect.ClassTag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

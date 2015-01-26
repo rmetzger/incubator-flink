@@ -22,8 +22,7 @@ import org.apache.flink.api.java.typeutils.GenericTypeInfo
 import org.junit.Test
 
 import scala.reflect._
-import org.joda.time.LocalDate
-import org.apache.flink.api.java.typeutils.runtime.KryoSerializer
+import org.joda.time.{DateTime, LocalDate}
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Output

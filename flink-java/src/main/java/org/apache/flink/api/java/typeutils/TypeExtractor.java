@@ -1227,7 +1227,7 @@ public class TypeExtractor {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <OUT, IN1, IN2> TypeInformation<OUT> analyzePojo(Class<OUT> clazz, ArrayList<Type> typeHierarchy,
+	protected <OUT, IN1, IN2> TypeInformation<OUT> analyzePojo(Class<OUT> clazz, ArrayList<Type> typeHierarchy,
 			ParameterizedType parameterizedType, TypeInformation<IN1> in1Type, TypeInformation<IN2> in2Type) {
 		// add the hierarchy of the POJO itself if it is generic
 		if (parameterizedType != null) {
