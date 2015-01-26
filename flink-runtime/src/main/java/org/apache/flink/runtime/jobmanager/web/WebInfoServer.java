@@ -92,6 +92,8 @@ public class WebInfoServer {
 		
 		this.port = config.getInteger(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY,
 				ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT);
+		System.out.println("config in info server "+config);
+		System.out.println("Port = "+port);
 		
 		this.timeout = timeout;
 
