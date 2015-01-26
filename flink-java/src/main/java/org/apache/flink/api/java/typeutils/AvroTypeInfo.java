@@ -40,7 +40,7 @@ public class AvroTypeInfo<T extends SpecificRecordBase> extends PojoTypeInfo<T> 
 
 	private static <T extends SpecificRecordBase> List<PojoField> generateFieldsFromAvroSchema(Class<T> typeClass) {
 		PojoTypeExtractor pte = new PojoTypeExtractor();
-		TypeInformation ti = pte.analyzePojo(typeClass, new ArrayList<Type>(), null);
+		TypeInformation ti = pte.analyzePojo(typeClass, new ArrayList<Type>(), null, null, null);
 
 		if(!(ti instanceof PojoTypeInfo)) {
 			throw new IllegalStateException("Expecting type to be a PojoTypeInfo");
