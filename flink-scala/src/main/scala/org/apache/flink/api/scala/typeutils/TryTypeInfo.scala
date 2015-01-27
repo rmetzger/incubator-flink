@@ -19,7 +19,7 @@ package org.apache.flink.api.scala.typeutils
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
-import org.apache.flink.api.java.typeutils.runtime.KryoSerializer
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer
 
 import scala.util.Try
 

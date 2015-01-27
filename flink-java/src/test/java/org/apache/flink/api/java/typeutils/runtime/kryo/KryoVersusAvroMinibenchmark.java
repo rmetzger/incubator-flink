@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.java.typeutils.runtime;
+package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.runtime.AvroSerializer;
+import org.apache.flink.api.java.typeutils.runtime.TestDataOutputSerializer;
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.MemoryUtils;
 

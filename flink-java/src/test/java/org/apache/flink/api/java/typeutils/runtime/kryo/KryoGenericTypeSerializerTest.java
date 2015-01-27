@@ -16,10 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.java.typeutils.runtime;
+package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import static org.junit.Assert.*;
 
+import org.apache.flink.api.java.typeutils.runtime.AbstractGenericTypeSerializerTest;
+import org.apache.flink.api.java.typeutils.runtime.TestDataOutputSerializer;
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.apache.flink.api.common.typeutils.TypeSerializer;

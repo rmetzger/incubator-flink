@@ -16,9 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.java.typeutils.runtime;
+package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.runtime.AbstractGenericTypeComparatorTest;
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 
 public class KryoGenericTypeComparatorTest extends AbstractGenericTypeComparatorTest {
 	@Override

@@ -21,6 +21,7 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.typeutils.runtime.kryo.Serializers;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -36,6 +37,9 @@ import java.util.List;
 public class AvroTypeInfo<T extends SpecificRecordBase> extends PojoTypeInfo<T> {
 	public AvroTypeInfo(Class<T> typeClass) {
 		super(typeClass, generateFieldsFromAvroSchema(typeClass));
+		// since the program is apparently using an Avro Type, we
+		// register the Avro serialization utils with Kryo.
+		Serializers.registerGenericAvro();
 	}
 
 	private static <T extends SpecificRecordBase> List<PojoField> generateFieldsFromAvroSchema(Class<T> typeClass) {

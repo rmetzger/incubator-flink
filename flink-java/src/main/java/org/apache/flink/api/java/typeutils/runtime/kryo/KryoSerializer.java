@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.java.typeutils.runtime;
+package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -24,30 +24,20 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
-import com.google.protobuf.Message;
 import com.twitter.chill.ScalaKryoInstantiator;
 
-import de.javakaffee.kryoserializers.jodatime.JodaDateTimeSerializer;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.specific.SpecificRecordBase;
-import com.twitter.chill.protobuf.ProtobufSerializer;
-import com.twitter.chill.thrift.TBaseSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.runtime.DataInputViewStream;
+import org.apache.flink.api.java.typeutils.runtime.DataOutputViewStream;
+import org.apache.flink.api.java.typeutils.runtime.NoFetchingInput;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
-import org.apache.thrift.TBase;
-import org.joda.time.DateTime;
-import scala.reflect.ClassTag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,19 +56,35 @@ import java.util.Set;
  */
 public class KryoSerializer<T> extends TypeSerializer<T> {
 	
-	private static final long serialVersionUID = 3L;
+	private static final long serialVersionUID = 4L;
 
-	private static Map<Class<?>, Serializer<?>> staticRegisteredSerializers = new HashMap<Class<?>, Serializer<?>>();
-	private static Map<Class<?>, Class<? extends Serializer<?>>> staticRegisteredSerializersClasses = new HashMap<Class<?>, Class<? extends Serializer<?>>>();
-	
+	// static registered types
 	private static Set<Class<?>> staticRegisteredTypes = new HashSet<Class<?>>();
+
+	// static registered types with serializers
+	private static Map<Class<?>, Serializer<?>> staticRegisteredTypesWithSerializers = new HashMap<Class<?>, Serializer<?>>();
+	private static Map<Class<?>, Class<? extends Serializer<?>>> staticRegisteredTypesWithSerializerClasses = new HashMap<Class<?>, Class<? extends Serializer<?>>>();
+
+	// static default serializers
+	private static Map<Class<?>, Serializer<?>> staticRegisteredDefaultSerializers = new HashMap<Class<?>, Serializer<?>>();
+	private static Map<Class<?>, Class<? extends Serializer<?>>> staticRegisteredDefaultSerializerClasses = new HashMap<Class<?>, Class<? extends Serializer<?>>>();
+
+
 	
 	// ------------------------------------------------------------------------
-	
-	private final Map<Class<?>, Serializer<?>> registeredSerializers;
-	private final Map<Class<?>, Class<? extends Serializer<?>>> registeredSerializersClasses;
+
+	// registered types
 	private final Set<Class<?>> registeredTypes;
 
+	// registered types with serializers
+	private final Map<Class<?>, Serializer<?>> registeredTypesWithSerializers;
+	private final Map<Class<?>, Class<? extends Serializer<?>>> registeredTypesWithSerializerClasses;
+
+	// static default serializers
+	private final Map<Class<?>, Serializer<?>> registeredDefaultSerializers;
+	private final Map<Class<?>, Class<? extends Serializer<?>>> registeredDefaultSerializerClasses;
+
+	// the type this KryoSerializer has been created for.
 	private final Class<T> type;
 	
 	// ------------------------------------------------------------------------
@@ -105,17 +111,29 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		// we use static synchronization to safeguard against concurrent use
 		// of the static collections.
 		synchronized (KryoSerializer.class) {
-			this.registeredSerializers = staticRegisteredSerializers.isEmpty() ?
-				Collections.<Class<?>, Serializer<?>>emptyMap() :
-				new HashMap<Class<?>, Serializer<?>>(staticRegisteredSerializers);
-		
-			this.registeredSerializersClasses = staticRegisteredSerializersClasses.isEmpty() ?
-				Collections.<Class<?>, Class<? extends Serializer<?>>>emptyMap() :
-				new HashMap<Class<?>, Class<? extends Serializer<?>>>(staticRegisteredSerializersClasses);
-				
+
+			// registered types
 			this.registeredTypes = staticRegisteredTypes.isEmpty() ?
-				Collections.<Class<?>>emptySet() :
-				new HashSet<Class<?>>(staticRegisteredTypes);
+					Collections.<Class<?>>emptySet() :
+					new HashSet<Class<?>>(staticRegisteredTypes);
+
+			// registered types with serializers
+			this.registeredTypesWithSerializers = staticRegisteredTypesWithSerializers.isEmpty() ?
+					Collections.<Class<?>, Serializer<?>>emptyMap() :
+					new HashMap<Class<?>, Serializer<?>>(staticRegisteredTypesWithSerializers);
+
+			this.registeredTypesWithSerializerClasses = staticRegisteredTypesWithSerializerClasses.isEmpty() ?
+					Collections.<Class<?>, Class<? extends Serializer<?>>>emptyMap() :
+					new HashMap<Class<?>, Class<? extends Serializer<?>>>(staticRegisteredTypesWithSerializerClasses);
+
+			// static default serializers
+			this.registeredDefaultSerializers = staticRegisteredDefaultSerializers.isEmpty() ?
+					Collections.<Class<?>, Serializer<?>>emptyMap() :
+					new HashMap<Class<?>, Serializer<?>>(staticRegisteredDefaultSerializers);
+
+			this.registeredDefaultSerializerClasses = staticRegisteredDefaultSerializerClasses.isEmpty() ?
+					Collections.<Class<?>, Class<? extends Serializer<?>>>emptyMap() :
+					new HashMap<Class<?>, Class<? extends Serializer<?>>>(staticRegisteredDefaultSerializerClasses);
 		}
 		
 	}
@@ -260,44 +278,25 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			// Throwable and all subclasses should be serialized via java serialization
 			kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
 
-			kryo.register(DateTime.class, new JodaDateTimeSerializer());
-
-			// add serializers for popular other serialization frameworks
-			// Google Protobuf (FLINK-1392)
-			this.kryo.addDefaultSerializer(Message.class, ProtobufSerializer.class);
-			// thrift
-			this.kryo.addDefaultSerializer(TBase.class, TBaseSerializer.class);
-
-			// If the type we have to serialize as a GenricType is implementing SpecificRecordBase,
-			// we have to register the avro serializer
-			// This rule only applies if users explicitly use the GenericTypeInformation for the avro types
-			// usually, we are able to handle Avro POJOs with the POJO serializer.
-			if(SpecificRecordBase.class.isAssignableFrom(type)) {
-				ClassTag<SpecificRecordBase> tag = scala.reflect.ClassTag$.MODULE$.apply(type);
-				this.kryo.register(type, com.twitter.chill.avro.AvroSerializer.SpecificRecordSerializer(tag));
-
+			// add default serializers
+			for(Map.Entry<Class<?>, Serializer<?>> e : registeredDefaultSerializers.entrySet()) {
+				kryo.addDefaultSerializer(e.getKey(), e.getValue());
 			}
-			// Avro POJOs contain java.util.List which have GenericData.Array as their runtime type
-			// because Kryo is not able to serialize them properly, we use this serializer for them
-			this.kryo.register(GenericData.Array.class, new SpecificInstanceCollectionSerializer(ArrayList.class));
-			// We register this serializer for users who want to use untyped Avro records (GenericData.Record).
-			// Kryo is able to serialize everything in there, except for the Schema.
-			// This serializer is very slow, but using the GenericData.Records of Kryo is in general a bad idea.
-			// we add the serializer as a default serializer because Avro is using a private sub-type at runtime.
-			this.kryo.addDefaultSerializer(Schema.class, new AvroSchemaSerializer());
+			for(Map.Entry<Class<?>, Class<? extends Serializer<?>>> e : registeredDefaultSerializerClasses.entrySet()) {
+				kryo.addDefaultSerializer(e.getKey(), e.getValue());
+			}
 
-
-			// register the type of our class
+			// registerTypeWithSerializer the type of our class
 			kryo.register(type);
 			
-			// register given types. we do this first so that any registration of a
+			// registerTypeWithSerializer given types. we do this first so that any registration of a
 			// more specific serializer overrides this
 			for (Class<?> type : registeredTypes) {
 				kryo.register(type);
 			}
 			
-			// register given serializer classes
-			for (Map.Entry<Class<?>, Class<? extends Serializer<?>>> e : registeredSerializersClasses.entrySet()) {
+			// registerTypeWithSerializer given serializer classes
+			for (Map.Entry<Class<?>, Class<? extends Serializer<?>>> e : registeredTypesWithSerializerClasses.entrySet()) {
 				Class<?> typeClass = e.getKey();
 				Class<? extends Serializer<?>> serializerClass = e.getValue();
 				
@@ -306,11 +305,11 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 				kryo.register(typeClass, serializer);
 			}
 
-			// register given serializers
-			for (Map.Entry<Class<?>, Serializer<?>> e : registeredSerializers.entrySet()) {
+			// registerTypeWithSerializer given serializers
+			for (Map.Entry<Class<?>, Serializer<?>> e : registeredTypesWithSerializers.entrySet()) {
 				kryo.register(e.getKey(), e.getValue());
 			}
-			
+
 			kryo.setRegistrationRequired(false);
 			kryo.setClassLoader(Thread.currentThread().getContextClassLoader());
 		}
@@ -320,9 +319,14 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	// For registering custom serializers and types
 	// --------------------------------------------------------------------------------------------
 
+
+	//
+	// Type with Serializer
+	//
+
 	/**
-	 * Registers the given Serializer as a default serializer for the given class at the Kryo
-	 * instance.
+	 * Registers the given class with a serializer for the class at the Kryo instance.
+	 *
 	 * Note that the serializer instance must be serializable (as defined by java.io.Serializable),
 	 * because it may be distributed to the worker nodes by java serialization.
 	 * 
@@ -330,48 +334,97 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	 * @param serializer The serializer to use.
 	 * @throws IllegalArgumentException Thrown, if the serializer is not serializable.
 	 */
-	public static void registerSerializer(Class<?> clazz, Serializer<?> serializer) {
+	public static void registerTypeWithSerializer(Class<?> clazz, Serializer<?> serializer) {
 		if (clazz == null || serializer == null) {
-			throw new NullPointerException("Cannot register null class or serializer.");
+			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
 		}
 		if (!(serializer instanceof java.io.Serializable)) {
 			throw new IllegalArgumentException("The serializer instance must be serializable, (for distributing it in the cluster), "
 					+ "as defined by java.io.Serializable. For stateless serializers, you can use the "
-					+ "'registerSerializer(Class, Class)' method to register the serializer via its class.");
+					+ "'registerTypeWithSerializer(Class, Class)' method to registerTypeWithSerializer the serializer via its class.");
 		}
 		
 		synchronized (KryoSerializer.class) {
-			staticRegisteredSerializers.put(clazz, serializer);
+			staticRegisteredTypesWithSerializers.put(clazz, serializer);
 		}
 	}
 
 	/**
-	 * Registers a serializer via its class as a default serializer for the given class at the Kryo
-	 * instance.
+	 * Registers the given class with a serializer class at the Kryo instance.
 	 * 
 	 * @param clazz The class of the types serialized with the given serializer.
 	 * @param serializerClass The serializer to use.
 	 */
-	public static void registerSerializer(Class<?> clazz, Class<? extends Serializer<?>> serializerClass) {
+	public static void registerTypeWithSerializer(Class<?> clazz, Class<? extends Serializer<?>> serializerClass) {
 		if (clazz == null || serializerClass == null) {
-			throw new NullPointerException("Cannot register null class or serializer.");
+			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
 		}
 		
 		synchronized (KryoSerializer.class) {
-			staticRegisteredSerializersClasses.put(clazz, serializerClass);
+			staticRegisteredTypesWithSerializerClasses.put(clazz, serializerClass);
 		}
 	}
+
+	//
+	// Default Serializers
+	//
+
+	/**
+	 * Registers a default serializer for the given class and its sub-classes at Kryo.
+	 *
+	 * @param clazz The class of the types serialized with the given serializer.
+	 * @param serializerClass The serializer to use.
+	 */
+	public static void registerDefaultSerializer(Class<?> clazz, Class<? extends Serializer<?>> serializerClass) {
+		if (clazz == null || serializerClass == null) {
+			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
+		}
+
+		synchronized (KryoSerializer.class) {
+			staticRegisteredDefaultSerializerClasses.put(clazz, serializerClass);
+		}
+	}
+
+	/**
+	 * Registers a default serializer for the given class and its sub-classes at Kryo.
+	 *
+	 * Note that the serializer instance must be serializable (as defined by java.io.Serializable),
+	 * because it may be distributed to the worker nodes by java serialization.
+	 *
+	 * @param clazz The class of the types serialized with the given serializer.
+	 * @param serializer The serializer to use.
+	 * @throws IllegalArgumentException Thrown, if the serializer is not serializable.
+	 */
+	public static void registerDefaultSerializer(Class<?> clazz, Serializer<?> serializer) {
+		if (clazz == null || serializer == null) {
+			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
+		}
+		if (!(serializer instanceof java.io.Serializable)) {
+			throw new IllegalArgumentException("The serializer instance must be serializable, (for distributing it in the cluster), "
+					+ "as defined by java.io.Serializable. For stateless serializers, you can use the "
+					+ "'registerTypeWithSerializer(Class, Class)' method to registerTypeWithSerializer the serializer via its class.");
+		}
+
+		synchronized (KryoSerializer.class) {
+			staticRegisteredDefaultSerializers.put(clazz, serializer);
+		}
+	}
+
+
+	//
+	// Type without Serializer
+	//
 	
 	/**
 	 * Registers the given type with Kryo. Registering the type allows Kryo to write abbreviated
 	 * name tags, rather than full class names, thereby vastly increasing the serialization
 	 * performance in many cases.
 	 *  
-	 * @param type The class of the type to register.
+	 * @param type The class of the type to registerTypeWithSerializer.
 	 */
 	public static void registerType(Class<?> type) {
 		if (type == null) {
-			throw new NullPointerException("Cannot register null type class.");
+			throw new NullPointerException("Cannot registerTypeWithSerializer null type class.");
 		}
 		
 		synchronized (KryoSerializer.class) {
@@ -379,52 +432,6 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		}
 	}
 
-	// --------------------------------------------------------------------------------------------
-	// Custom Serializers
-	// --------------------------------------------------------------------------------------------
-
-	/**
-	 * Special serializer for Java collections enforcing certain instance types.
-	 * Avro is serializing collections with an "GenericData.Array" type. Kryo is not able to handle
-	 * this type, so we use ArrayLists.
-	 */
-	public static class SpecificInstanceCollectionSerializer<T extends Collection> extends CollectionSerializer {
-		Class<T> type;
-		public SpecificInstanceCollectionSerializer(Class<T> type) {
-			this.type = type;
-		}
-
-		@Override
-		protected Collection create(Kryo kryo, Input input, Class<Collection> type) {
-			return kryo.newInstance(this.type);
-		}
-
-		@Override
-		protected Collection createCopy(Kryo kryo, Collection original) {
-			return kryo.newInstance(this.type);
-		}
-	}
-
-	/**
-	 * Slow serialization approach for Avro schemas.
-	 * This is only used with {{@link org.apache.avro.generic.GenericData.Record}} types.
-	 * Having this serializer, we are able to handle avro Records.
-	 */
-	public static class AvroSchemaSerializer extends Serializer<Schema> {
-		@Override
-		public void write(Kryo kryo, Output output, Schema object) {
-			String schemaAsString = object.toString(false);
-			output.writeString(schemaAsString);
-		}
-
-		@Override
-		public Schema read(Kryo kryo, Input input, Class<Schema> type) {
-			String schemaAsString = input.readString();
-			// the parser seems to be stateful, to we need a new one for every type.
-			Schema.Parser sParser = new Schema.Parser();
-			return sParser.parse(schemaAsString);
-		}
-	}
 	// --------------------------------------------------------------------------------------------
 	// For testing
 	// --------------------------------------------------------------------------------------------
