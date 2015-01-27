@@ -757,7 +757,7 @@ public abstract class ExecutionEnvironment {
 	 * Registers all files that were registered at this execution environment's cache registry of the
 	 * given plan's cache registry.
 	 * 
-	 * @param p The plan to registerTypeWithSerializer files at.
+	 * @param p The plan to register files at.
 	 * @throws IOException Thrown if checks for existence and sanity fail.
 	 */
 	protected void registerCachedFilesWithPlan(Plan p) throws IOException {

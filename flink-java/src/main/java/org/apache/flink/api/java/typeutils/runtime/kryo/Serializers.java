@@ -79,8 +79,11 @@ public class Serializers {
 			if(fieldType instanceof ParameterizedType) { // field has generics
 				ParameterizedType parameterizedFieldType = (ParameterizedType) fieldType;
 				for(Type t: parameterizedFieldType.getActualTypeArguments()) {
-					if(TypeExtractor.isClassType(t)) {
-						recursivelyRegisterType(TypeExtractor.typeToClass(t));
+					if(TypeExtractor.isClassType(t) ) {
+						Class clazz = TypeExtractor.typeToClass(t);
+						if(!alreadySeen.contains(clazz)) {
+							recursivelyRegisterType(TypeExtractor.typeToClass(t));
+						}
 					}
 				}
 			}
@@ -142,12 +145,6 @@ public class Serializers {
 		env.registerDefaultKryoSerializer(Schema.class, new AvroSchemaSerializer());
 	}
 
-	/**
-	 * Directly register with Kryo
-	 */
-	public static void registerGenericAvro() {
-		KryoSerializer.registerTypeWithSerializer(GenericData.Array.class, new SpecificInstanceCollectionSerializer(ArrayList.class));
-	}
 
 	public static void registerSpecificAvro(ExecutionEnvironment env, Class<? extends SpecificRecordBase> avroType) {
 		registerGenericAvro(env);
