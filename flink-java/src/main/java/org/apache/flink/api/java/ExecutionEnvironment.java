@@ -261,11 +261,11 @@ public abstract class ExecutionEnvironment {
 	 * type ends up being serialized with Kryo, then it will be registered at Kryo to make
 	 * sure that only tags are written.
 	 *  
-	 * @param type The class of the type to registerTypeWithSerializer.
+	 * @param type The class of the type to register.
 	 */
 	public void registerType(Class<?> type) {
 		if (type == null) {
-			throw new NullPointerException("Cannot registerTypeWithSerializer null type class.");
+			throw new NullPointerException("Cannot register null type class.");
 		}
 		
 		KryoSerializer.registerType(type);

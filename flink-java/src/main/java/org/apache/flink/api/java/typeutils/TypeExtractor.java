@@ -1342,8 +1342,9 @@ public class TypeExtractor {
 		}
 		return result;
 	}
-	
-	private static Class<?> typeToClass(Type t) {
+
+	// not public to users
+	public static Class<?> typeToClass(Type t) {
 		if (t instanceof Class) {
 			return (Class<?>)t;
 		}
@@ -1352,8 +1353,9 @@ public class TypeExtractor {
 		}
 		throw new IllegalArgumentException("Cannot convert type to class");
 	}
-	
-	private static boolean isClassType(Type t) {
+
+	// not public to users
+	public static boolean isClassType(Type t) {
 		return t instanceof Class<?> || t instanceof ParameterizedType;
 	}
 

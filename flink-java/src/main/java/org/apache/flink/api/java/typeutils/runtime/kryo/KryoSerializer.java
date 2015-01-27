@@ -286,16 +286,16 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 				kryo.addDefaultSerializer(e.getKey(), e.getValue());
 			}
 
-			// registerTypeWithSerializer the type of our class
+			// register the type of our class
 			kryo.register(type);
 			
-			// registerTypeWithSerializer given types. we do this first so that any registration of a
+			// register given types. we do this first so that any registration of a
 			// more specific serializer overrides this
 			for (Class<?> type : registeredTypes) {
 				kryo.register(type);
 			}
 			
-			// registerTypeWithSerializer given serializer classes
+			// register given serializer classes
 			for (Map.Entry<Class<?>, Class<? extends Serializer<?>>> e : registeredTypesWithSerializerClasses.entrySet()) {
 				Class<?> typeClass = e.getKey();
 				Class<? extends Serializer<?>> serializerClass = e.getValue();
@@ -305,7 +305,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 				kryo.register(typeClass, serializer);
 			}
 
-			// registerTypeWithSerializer given serializers
+			// register given serializers
 			for (Map.Entry<Class<?>, Serializer<?>> e : registeredTypesWithSerializers.entrySet()) {
 				kryo.register(e.getKey(), e.getValue());
 			}
@@ -336,12 +336,12 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	 */
 	public static void registerTypeWithSerializer(Class<?> clazz, Serializer<?> serializer) {
 		if (clazz == null || serializer == null) {
-			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
+			throw new NullPointerException("Cannot register null class or serializer.");
 		}
 		if (!(serializer instanceof java.io.Serializable)) {
 			throw new IllegalArgumentException("The serializer instance must be serializable, (for distributing it in the cluster), "
 					+ "as defined by java.io.Serializable. For stateless serializers, you can use the "
-					+ "'registerTypeWithSerializer(Class, Class)' method to registerTypeWithSerializer the serializer via its class.");
+					+ "'registerTypeWithSerializer(Class, Class)' method to register the serializer via its class.");
 		}
 		
 		synchronized (KryoSerializer.class) {
@@ -357,7 +357,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	 */
 	public static void registerTypeWithSerializer(Class<?> clazz, Class<? extends Serializer<?>> serializerClass) {
 		if (clazz == null || serializerClass == null) {
-			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
+			throw new NullPointerException("Cannot register null class or serializer.");
 		}
 		
 		synchronized (KryoSerializer.class) {
@@ -377,7 +377,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	 */
 	public static void registerDefaultSerializer(Class<?> clazz, Class<? extends Serializer<?>> serializerClass) {
 		if (clazz == null || serializerClass == null) {
-			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
+			throw new NullPointerException("Cannot register null class or serializer.");
 		}
 
 		synchronized (KryoSerializer.class) {
@@ -397,12 +397,12 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	 */
 	public static void registerDefaultSerializer(Class<?> clazz, Serializer<?> serializer) {
 		if (clazz == null || serializer == null) {
-			throw new NullPointerException("Cannot registerTypeWithSerializer null class or serializer.");
+			throw new NullPointerException("Cannot register null class or serializer.");
 		}
 		if (!(serializer instanceof java.io.Serializable)) {
 			throw new IllegalArgumentException("The serializer instance must be serializable, (for distributing it in the cluster), "
 					+ "as defined by java.io.Serializable. For stateless serializers, you can use the "
-					+ "'registerTypeWithSerializer(Class, Class)' method to registerTypeWithSerializer the serializer via its class.");
+					+ "'registerDefaultSerializer(Class, Class)' method to register the serializer via its class.");
 		}
 
 		synchronized (KryoSerializer.class) {
@@ -420,11 +420,11 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	 * name tags, rather than full class names, thereby vastly increasing the serialization
 	 * performance in many cases.
 	 *  
-	 * @param type The class of the type to registerTypeWithSerializer.
+	 * @param type The class of the type to register.
 	 */
 	public static void registerType(Class<?> type) {
 		if (type == null) {
-			throw new NullPointerException("Cannot registerTypeWithSerializer null type class.");
+			throw new NullPointerException("Cannot register null type class.");
 		}
 		
 		synchronized (KryoSerializer.class) {

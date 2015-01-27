@@ -30,14 +30,21 @@ import de.javakaffee.kryoserializers.jodatime.JodaIntervalSerializer;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificRecordBase;
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.thrift.protocol.TMessage;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import scala.reflect.ClassTag;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -50,6 +57,58 @@ import java.util.Collection;
  * Also, there is a Java Annotation for adding a default serializer (@DefaultSerializer) to classes.
  */
 public class Serializers {
+
+
+	/**
+	 * NOTE: This method is not a public Flink API.
+	 *
+	 * This method walks the entire hierarchy of the given type and registers all types it encounters
+	 * to Kryo.
+	 * It also watches for types which need special serializers.
+	 */
+	private static ExecutionEnvironment kryoRegEnv = new KryoRegistrationExecutionEnvironment();
+	private static Set<Class<?>> alreadySeen = new HashSet<Class<?>>();
+	public static void recursivelyRegisterType(Class<?> type) {
+		alreadySeen.add(type);
+		kryoRegEnv.registerType(type);
+		addSerializerForType(kryoRegEnv, type);
+
+		Field[] fields = type.getDeclaredFields();
+		for(Field field : fields) {
+			Type fieldType = field.getGenericType();
+			if(fieldType instanceof ParameterizedType) { // field has generics
+				ParameterizedType parameterizedFieldType = (ParameterizedType) fieldType;
+				for(Type t: parameterizedFieldType.getActualTypeArguments()) {
+					if(TypeExtractor.isClassType(t)) {
+						recursivelyRegisterType(TypeExtractor.typeToClass(t));
+					}
+				}
+			}
+			Class<?> clazz = field.getType();
+			if(!alreadySeen.contains(clazz)) {
+				recursivelyRegisterType(clazz);
+			}
+		}
+	}
+
+	public static void addSerializerForType(ExecutionEnvironment env, Class<?> type) {
+		if(type.isAssignableFrom(Message.class)) {
+			registerProtoBuf(env);
+		}
+		if(type.isAssignableFrom(TMessage.class)) {
+			registerThrift(env);
+		}
+		if(type.isAssignableFrom(GenericData.Record.class)) {
+			registerGenericAvro(env);
+		}
+		if(type.isAssignableFrom(SpecificRecordBase.class)) {
+			registerSpecificAvro(env, (Class<? extends SpecificRecordBase>) type);
+		}
+		if(type.isAssignableFrom(DateTime.class) || type.isAssignableFrom(Interval.class)) {
+			registerJodaTime(env);
+		}
+	}
+
 	/**
 	 * Register serializers required for Google Protocol Buffers
 	 * with Flink runtime.
@@ -63,7 +122,7 @@ public class Serializers {
 	 * Register Apache Thrift messages
 	 */
 	public static void registerThrift(ExecutionEnvironment env) {
-		// TBaseSerializer states it should be initalized sa a default Kryo serializer
+		// TBaseSerializer states it should be initalized as a default Kryo serializer
 		env.registerDefaultKryoSerializer(TMessage.class, TBaseSerializer.class);
 		env.registerType(TMessage.class);
 	}
@@ -175,5 +234,22 @@ public class Serializers {
 			Schema.Parser sParser = new Schema.Parser();
 			return sParser.parse(schemaAsString);
 		}
+	}
+
+	/**
+	 * Fake execution environment to use the same interfaces for registering serializer groups
+	 */
+	private static class KryoRegistrationExecutionEnvironment extends ExecutionEnvironment {
+
+		@Override
+		public JobExecutionResult execute(String jobName) throws Exception {
+			throw new UnsupportedOperationException("Fake EE");
+		}
+
+		@Override
+		public String getExecutionPlan() throws Exception {
+			throw new UnsupportedOperationException("Fake EE");
+		}
+
 	}
 }
