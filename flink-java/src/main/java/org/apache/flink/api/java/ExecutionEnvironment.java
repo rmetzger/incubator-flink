@@ -251,7 +251,7 @@ public abstract class ExecutionEnvironment {
 	 * @param serializer The serializer to use.
 	 * @throws IllegalArgumentException Thrown, if the serializer is not serializable.
 	 */
-	public static void registerDefaultKryoSerializer(Class<?> clazz, Serializer<?> serializer) {
+	public void registerDefaultKryoSerializer(Class<?> clazz, Serializer<?> serializer) {
 		KryoSerializer.registerDefaultSerializer(clazz, serializer);
 	}
 	
