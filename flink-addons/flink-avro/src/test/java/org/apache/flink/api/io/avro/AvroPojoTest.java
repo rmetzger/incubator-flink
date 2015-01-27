@@ -92,6 +92,7 @@ public class AvroPojoTest extends MultipleProgramsTestBase {
 	@Test
 	public void testKeySelection() throws Exception {
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		env.getConfig().enableObjectReuse();
 		Path in = new Path(inFile.getAbsoluteFile().toURI());
 
 		AvroInputFormat<User> users = new AvroInputFormat<User>(in, User.class);

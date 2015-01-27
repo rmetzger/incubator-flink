@@ -66,6 +66,7 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
 
 	@Override
 	public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+		Serializers.recursivelyRegisterType(this.typeClass);
 		return new KryoSerializer<T>(this.typeClass, config);
 	}
 

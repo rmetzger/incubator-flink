@@ -79,8 +79,8 @@ public class GroupReduceITCase extends MultipleProgramsTestBase {
 	@Test
 	public void testCorrectnessOfGroupReduceOnTuplesWithKeyFieldSelector() throws Exception{
 		/*
-				 * check correctness of groupReduce on tuples with key field selector
-				 */
+		 * check correctness of groupReduce on tuples with key field selector
+		 */
 
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
@@ -412,8 +412,8 @@ public class GroupReduceITCase extends MultipleProgramsTestBase {
 	public void testCorrectnessOfGroupReduceOnTuplesWithTupleReturningKeySelector() throws
 			Exception {
 		/*
-					 * check correctness of groupReduce on tuples with tuple-returning key selector
-					 */
+		 * check correctness of groupReduce on tuples with tuple-returning key selector
+		 */
 
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 

@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.java.typeutils.runtime;
+package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.runtime.AbstractGenericTypeComparatorTest;
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 
-public class KryoGenericArraySerializerTest extends AbstractGenericArraySerializerTest {
+public class KryoGenericTypeComparatorTest extends AbstractGenericTypeComparatorTest {
 	@Override
-	protected <T> TypeSerializer<T> createComponentSerializer(Class<T> type) {
+	protected <T> TypeSerializer<T> createSerializer(Class<T> type) {
 		return new KryoSerializer<T>(type, new ExecutionConfig());
 	}
 }
