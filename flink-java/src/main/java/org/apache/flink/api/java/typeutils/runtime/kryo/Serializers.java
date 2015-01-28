@@ -38,6 +38,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import scala.reflect.ClassTag;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -195,7 +196,7 @@ public class Serializers {
 	 * Avro is serializing collections with an "GenericData.Array" type. Kryo is not able to handle
 	 * this type, so we use ArrayLists.
 	 */
-	public static class SpecificInstanceCollectionSerializer<T extends Collection> extends CollectionSerializer {
+	public static class SpecificInstanceCollectionSerializer<T extends Collection> extends CollectionSerializer implements Serializable {
 		Class<T> type;
 		public SpecificInstanceCollectionSerializer(Class<T> type) {
 			this.type = type;
@@ -217,7 +218,7 @@ public class Serializers {
 	 * This is only used with {{@link org.apache.avro.generic.GenericData.Record}} types.
 	 * Having this serializer, we are able to handle avro Records.
 	 */
-	public static class AvroSchemaSerializer extends Serializer<Schema> {
+	public static class AvroSchemaSerializer extends Serializer<Schema> implements Serializable {
 		@Override
 		public void write(Kryo kryo, Output output, Schema object) {
 			String schemaAsString = object.toString(false);

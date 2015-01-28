@@ -51,6 +51,9 @@ public class InstantiationUtil {
 		@Override
 		public Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
 			if (classLoader != null) {
+				if(desc.getName().equals("boolean")) {
+					System.out.println("Gotcha");
+				}
 				return Class.forName(desc.getName(), false, classLoader);
 			}
 
