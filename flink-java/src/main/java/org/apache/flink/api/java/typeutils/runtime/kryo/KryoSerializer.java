@@ -38,6 +38,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
@@ -100,8 +102,12 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	private transient Output output;
 	
 	// ------------------------------------------------------------------------
-
 	public KryoSerializer(Class<T> type){
+
+		String fullStackTrace = org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace(
+				new RuntimeException("Thread "+Thread.currentThread().getId()+" creates new KryoSerializer"));
+		System.out.println(fullStackTrace);
+
 		if(type == null){
 			throw new NullPointerException("Type class cannot be null.");
 		}
@@ -118,24 +124,71 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 					new HashSet<Class<?>>(staticRegisteredTypes);
 
 			// registered types with serializers
-			this.registeredTypesWithSerializers = staticRegisteredTypesWithSerializers.isEmpty() ?
-					Collections.<Class<?>, Serializer<?>>emptyMap() :
-					new HashMap<Class<?>, Serializer<?>>(staticRegisteredTypesWithSerializers);
+			this.registeredTypesWithSerializers = deepCopyMap(staticRegisteredTypesWithSerializers);
 
 			this.registeredTypesWithSerializerClasses = staticRegisteredTypesWithSerializerClasses.isEmpty() ?
 					Collections.<Class<?>, Class<? extends Serializer<?>>>emptyMap() :
 					new HashMap<Class<?>, Class<? extends Serializer<?>>>(staticRegisteredTypesWithSerializerClasses);
 
 			// static default serializers
-			this.registeredDefaultSerializers = staticRegisteredDefaultSerializers.isEmpty() ?
-					Collections.<Class<?>, Serializer<?>>emptyMap() :
-					new HashMap<Class<?>, Serializer<?>>(staticRegisteredDefaultSerializers);
+			this.registeredDefaultSerializers = deepCopyMap(staticRegisteredDefaultSerializers);
 
 			this.registeredDefaultSerializerClasses = staticRegisteredDefaultSerializerClasses.isEmpty() ?
 					Collections.<Class<?>, Class<? extends Serializer<?>>>emptyMap() :
 					new HashMap<Class<?>, Class<? extends Serializer<?>>>(staticRegisteredDefaultSerializerClasses);
 		}
 		
+	}
+
+	private void readObject(ObjectInputStream ois) {
+		try {
+			ois.defaultReadObject();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		String fullStackTrace = org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace(
+				new RuntimeException("Thread "+Thread.currentThread().getId()+" creates new KryoSerializer"));
+		System.out.println(fullStackTrace);
+	}
+	/**
+	 * We need to copy the stateful kryo serializers for each Kryo instance,
+	 * because we can not assume that they are thread-safe.
+	 */
+	private static Map<Class<?>, Serializer<?>> deepCopyMap(Map<Class<?>, Serializer<?>> in) {
+		if(in.isEmpty()) {
+			return Collections.<Class<?>, Serializer<?>>emptyMap();
+		}
+		Map<Class<?>, Serializer<?>> out = new HashMap<Class<?>, Serializer<?>>(in.size());
+		for(Map.Entry<Class<?>, Serializer<?>> inElement : in.entrySet()) {
+			// use java serialization to create a copy of the serializer
+			ObjectOutputStream oos = null;
+			ObjectInputStream ois = null;
+			Serializer<?> copy = null;
+			try
+			{
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				oos = new ObjectOutputStream(bos);
+				oos.writeObject(inElement.getValue());
+				oos.flush();
+				ByteArrayInputStream bin = new ByteArrayInputStream(bos.toByteArray());
+				ois = new ObjectInputStream(bin);
+				copy = (Serializer<?>) ois.readObject();
+			} catch(Exception e) {
+				throw new RuntimeException("Error creating a deep copy of serializer "+inElement.getValue(), e);
+			} finally {
+				try {
+					oos.close();
+					ois.close();
+				} catch(Throwable e) {
+					throw new RuntimeException("Error closing streams", e);
+				}
+			}
+			out.put(inElement.getKey(), copy);
+		}
+
+		return out;
 	}
 
 	// ------------------------------------------------------------------------
@@ -202,6 +255,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
 	@Override
 	public void serialize(T record, DataOutputView target) throws IOException {
+		check();
+		System.out.println("serialize() -- Kryo instance "+System.identityHashCode(this)+" on thread "+Thread.currentThread().getId());
 		checkKryoInitialized();
 		if (target != previousOut) {
 			DataOutputViewStream outputStream = new DataOutputViewStream(target);
@@ -223,10 +278,31 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			}
 		}
 	}
+	static Map<Integer, Long> instanceChecker = new HashMap<Integer, Long>();
+	public void check() {
+		int ownObjectId = System.identityHashCode(this);
+		Long ownThreadId = Thread.currentThread().getId();
+		Long hasThread = instanceChecker.get(ownObjectId);
+		if(hasThread == null) {
+			instanceChecker.put(ownObjectId, ownThreadId);
+		} else {
+			if(ownThreadId == hasThread) {
+				System.out.println("all good with this instance");
+			} else {
+				Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+				for(Thread t : threadSet) {
+					System.out.println("Thread id="+t.getId()+" name="+t.getName());
+				}
+				System.out.println("Found the culprit. We are in thread "+ownThreadId+" Kryo belongs to thread "+hasThread);
+			}
+		}
+	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public T deserialize(DataInputView source) throws IOException {
+		check();
+		System.out.println("deserialize() -- Kryo instance "+System.identityHashCode(this)+" on thread "+Thread.currentThread().getId()+ " name="+Thread.currentThread().getName());
 		checkKryoInitialized();
 		if (source != previousIn) {
 			DataInputViewStream inputStream = new DataInputViewStream(source);
