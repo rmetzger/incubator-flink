@@ -104,9 +104,9 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	// ------------------------------------------------------------------------
 	public KryoSerializer(Class<T> type){
 
-		String fullStackTrace = org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace(
-				new RuntimeException("Thread "+Thread.currentThread().getId()+" creates new KryoSerializer"));
-		System.out.println(fullStackTrace);
+//		String fullStackTrace = org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace(
+//				new RuntimeException("Thread "+Thread.currentThread().getId()+" creates new KryoSerializer"));
+//		System.out.println(fullStackTrace);
 
 		if(type == null){
 			throw new NullPointerException("Type class cannot be null.");
@@ -140,7 +140,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		
 	}
 
-	private void readObject(ObjectInputStream ois) {
+/*	private void readObject(ObjectInputStream ois) {
 		try {
 			ois.defaultReadObject();
 		} catch (IOException e) {
@@ -151,7 +151,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		String fullStackTrace = org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace(
 				new RuntimeException("Thread "+Thread.currentThread().getId()+" creates new KryoSerializer"));
 		System.out.println(fullStackTrace);
-	}
+	} */
 	/**
 	 * We need to copy the stateful kryo serializers for each Kryo instance,
 	 * because we can not assume that they are thread-safe.
@@ -255,8 +255,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
 	@Override
 	public void serialize(T record, DataOutputView target) throws IOException {
-		check();
-		System.out.println("serialize() -- Kryo instance "+System.identityHashCode(this)+" on thread "+Thread.currentThread().getId());
+	//	check();
+	//	System.out.println("serialize() -- Kryo instance "+System.identityHashCode(this)+" on thread "+Thread.currentThread().getId());
 		checkKryoInitialized();
 		if (target != previousOut) {
 			DataOutputViewStream outputStream = new DataOutputViewStream(target);
@@ -301,8 +301,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T deserialize(DataInputView source) throws IOException {
-		check();
-		System.out.println("deserialize() -- Kryo instance "+System.identityHashCode(this)+" on thread "+Thread.currentThread().getId()+ " name="+Thread.currentThread().getName());
+	//	check();
+	//	System.out.println("deserialize() -- Kryo instance "+System.identityHashCode(this)+" on thread "+Thread.currentThread().getId()+ " name="+Thread.currentThread().getName());
 		checkKryoInitialized();
 		if (source != previousIn) {
 			DataInputViewStream inputStream = new DataInputViewStream(source);

@@ -100,7 +100,9 @@ public final class RuntimeStatefulSerializerFactory<T> implements TypeSerializer
 	public TypeSerializer<T> getSerializer() {
 		if (serializerData != null) {
 			try {
-				return (TypeSerializer<T>) InstantiationUtil.deserializeObject(this.serializerData, this.loader);
+				TypeSerializer<T> s = (TypeSerializer < T >) InstantiationUtil.deserializeObject(this.serializerData, this.loader);
+				System.out.println("Factory created "+s+" object id="+System.identityHashCode(s));
+				return s;
 			} catch (Exception e) {
 				throw new RuntimeException("Repeated instantiation of serializer failed.", e);
 			}
