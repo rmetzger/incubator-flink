@@ -181,7 +181,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	public void perJobYarnCluster() {
 		LOG.info("Starting perJobYarnCluster()");
 		File exampleJarLocation = YarnTestBase.findFile(".", new ContainsName("-WordCount.jar", "streaming")); // exclude streaming wordcount here.
-		runWithArgs(new String[] {"run", "-m", "yarn-cluster",
+		runWithArgs(new String[] {"run", "-m", "yarn-cluster", "-v",
 				"-yj", flinkUberjar.getAbsolutePath(),
 				"-yn", "1",
 				"-yjm", "512",
