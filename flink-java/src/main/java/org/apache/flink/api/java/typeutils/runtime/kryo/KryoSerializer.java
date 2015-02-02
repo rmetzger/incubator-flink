@@ -63,7 +63,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 	private static final long serialVersionUID = 4L;
 
 	// static registered types
-	private static Set<Tuple2<Class<?>, Integer>> staticRegisteredTypes = new HashSet<Tuple2<Class<?>, Integer>>();
+	private static Set<Tuple2FirstEquals<Class<?>, Integer>> staticRegisteredTypes = new HashSet<Tuple2FirstEquals<Class<?>, Integer>>();
 
 	// static registered types with serializers
 	private static Map<Class<?>, Tuple2<Serializer<?>, Integer>> staticRegisteredTypesWithSerializers = new HashMap<Class<?>,  Tuple2<Serializer<?>, Integer>>();
@@ -75,8 +75,6 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
 	private static int flinkRegisteredTypeId = 0;
 
-
-	
 	// ------------------------------------------------------------------------
 
 	// registered types
@@ -140,7 +138,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 					Collections.<Class<?>, Class<? extends Serializer<?>>>emptyMap() :
 					new HashMap<Class<?>, Class<? extends Serializer<?>>>(staticRegisteredDefaultSerializerClasses);
 		}
-		
+
+		System.out.println("I've registered "+flinkRegisteredTypeId+" types");
 	}
 
 /*	private void readObject(ObjectInputStream ois) {
@@ -359,9 +358,11 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
 			// add default serializers
 			for(Map.Entry<Class<?>, Serializer<?>> e : registeredDefaultSerializers.entrySet()) {
+				System.out.println(Thread.currentThread().getName()+"adding default serializer"+e.getValue());
 				kryo.addDefaultSerializer(e.getKey(), e.getValue());
 			}
 			for(Map.Entry<Class<?>, Class<? extends Serializer<?>>> e : registeredDefaultSerializerClasses.entrySet()) {
+				System.out.println(Thread.currentThread().getName()+"adding default serializer"+e.getValue());
 				kryo.addDefaultSerializer(e.getKey(), e.getValue());
 			}
 
@@ -370,14 +371,15 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			
 			// register given types. we do this first so that any registration of a
 			// more specific serializer overrides this
-			List<Tuple2<Class<?>, Integer>> sortedRegTypes = new ArrayList<Tuple2<Class<?>, Integer>>(staticRegisteredTypes);
+			List<Tuple2<Class<?>, Integer>> sortedRegTypes = new ArrayList<Tuple2<Class<?>, Integer>>(registeredTypes);
 			Collections.sort(sortedRegTypes, new Comparator<Tuple2<Class<?>, Integer>>() {
 				@Override
 				public int compare(Tuple2<Class<?>, Integer> o1, Tuple2<Class<?>, Integer> o2) {
-					return Integer.compare(o1.f1, o2.f1);
+					return o1.f1.compareTo(o2.f1);
 				}
 			});
 			for(Tuple2<Class<?>, Integer> type : sortedRegTypes) {
+				System.out.println(Thread.currentThread().getName()+"reg type alone"+type.f0);
 				kryo.register(type.f0);
 			}
 
@@ -386,7 +388,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			Collections.sort(sortedRegTypesWithSerializers, new Comparator<Map.Entry<Class<?>, Tuple2<Class<? extends Serializer<?>>, Integer>>>() {
 				@Override
 				public int compare(Map.Entry<Class<?>, Tuple2<Class<? extends Serializer<?>>, Integer>> o1, Map.Entry<Class<?>, Tuple2<Class<? extends Serializer<?>>, Integer>> o2) {
-					return Integer.compare(o1.getValue().f1, o2.getValue().f1);
+					return o1.getValue().f1.compareTo(o2.getValue().f1);
 				}
 			});
 			// register given serializer classes
@@ -396,6 +398,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 				
 				Serializer<?> serializer =
 						ReflectionSerializerFactory.makeSerializer(kryo, serializerClass, typeClass);
+				System.out.println(Thread.currentThread().getName()+"Reg ser "+serializer);
 				kryo.register(typeClass, serializer);
 			}
 
@@ -404,11 +407,12 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			Collections.sort(sortedRegisteredTypesWithSerializers, new Comparator<Map.Entry<Class<?>, Tuple2<Serializer<?>, Integer>>>() {
 				@Override
 				public int compare(Map.Entry<Class<?>, Tuple2<Serializer<?>, Integer>> o1, Map.Entry<Class<?>, Tuple2<Serializer<?>, Integer>> o2) {
-					return Integer.compare(o1.getValue().f1, o2.getValue().f1);
+					return o1.getValue().f1.compareTo(o2.getValue().f1);
 				}
 			});
 			// register given serializers
 			for (Map.Entry<Class<?>, Tuple2<Serializer<?>, Integer>> e : sortedRegisteredTypesWithSerializers) {
+				System.out.println(Thread.currentThread().getName()+"Reg ser from inst "+e.getValue().f0);
 				kryo.register(e.getKey(), e.getValue().f0);
 			}
 
@@ -534,7 +538,28 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		}
 		
 		synchronized (KryoSerializer.class) {
-			staticRegisteredTypes.add(new Tuple2<Class<?>, Integer>(type, flinkRegisteredTypeId++));
+			staticRegisteredTypes.add(new Tuple2FirstEquals<Class<?>, Integer>(type, flinkRegisteredTypeId++));
+		}
+	}
+
+	private static class Tuple2FirstEquals<K, V> extends Tuple2<K,V> {
+		public Tuple2FirstEquals(K type, V i) {
+			super(type,i);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if(this == o) { return true; }
+			if (!(o instanceof Tuple2)) { return false; }
+			@SuppressWarnings("rawtypes")
+			Tuple2 tuple = (Tuple2) o;
+			if (f0 != null ? !f0.equals(tuple.f0) : tuple.f0 != null) { return false; }
+			return true;
+		}
+
+		@Override
+		public int hashCode() {
+			return f0 != null ? f0.hashCode() : 0;
 		}
 	}
 
