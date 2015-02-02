@@ -41,7 +41,7 @@ public class AvroTypeInfo<T extends SpecificRecordBase> extends PojoTypeInfo<T> 
 		super(typeClass, generateFieldsFromAvroSchema(typeClass));
 		// since the program is apparently using an Avro Type, we
 		// register the Avro serialization utils with Kryo.
-		KryoSerializer.registerTypeWithSerializer(GenericData.Array.class, new Serializers.SpecificInstanceCollectionSerializer(ArrayList.class));
+		KryoSerializer.registerTypeWithSerializer(GenericData.Array.class, Serializers.SpecificInstanceCollectionSerializerForArrayList.class);
 	}
 
 	private static <T extends SpecificRecordBase> List<PojoField> generateFieldsFromAvroSchema(Class<T> typeClass) {

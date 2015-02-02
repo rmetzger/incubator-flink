@@ -30,8 +30,6 @@ import de.javakaffee.kryoserializers.jodatime.JodaIntervalSerializer;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificRecordBase;
-import org.apache.flink.api.common.JobExecutionResult;
-import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.thrift.protocol.TMessage;
 import org.joda.time.DateTime;
@@ -66,12 +64,12 @@ public class Serializers {
 	 * to Kryo.
 	 * It also watches for types which need special serializers.
 	 */
-	private static ExecutionEnvironment kryoRegEnv = new KryoRegistrationExecutionEnvironment();
 	private static Set<Class<?>> alreadySeen = new HashSet<Class<?>>();
+	private static KryoRegistration kryoReg = new KryoRegistration();
 	public static void recursivelyRegisterType(Class<?> type) {
 		alreadySeen.add(type);
-		kryoRegEnv.registerType(type);
-		addSerializerForType(kryoRegEnv, type);
+		kryoReg.registerType(type);
+		addSerializerForType(kryoReg, type);
 
 		Field[] fields = type.getDeclaredFields();
 		for(Field field : fields) {
@@ -94,21 +92,21 @@ public class Serializers {
 		}
 	}
 
-	public static void addSerializerForType(ExecutionEnvironment env, Class<?> type) {
+	public static void addSerializerForType(SerializerRegistrable reg, Class<?> type) {
 		if(type.isAssignableFrom(Message.class)) {
-			registerProtoBuf(env);
+			registerProtoBuf(reg);
 		}
 		if(type.isAssignableFrom(TMessage.class)) {
-			registerThrift(env);
+			registerThrift(reg);
 		}
 		if(type.isAssignableFrom(GenericData.Record.class)) {
-			registerGenericAvro(env);
+			registerGenericAvro(reg);
 		}
 		if(type.isAssignableFrom(SpecificRecordBase.class)) {
-			registerSpecificAvro(env, (Class<? extends SpecificRecordBase>) type);
+			registerSpecificAvro(reg, (Class<? extends SpecificRecordBase>) type);
 		}
 		if(type.isAssignableFrom(DateTime.class) || type.isAssignableFrom(Interval.class)) {
-			registerJodaTime(env);
+			registerJodaTime(reg);
 		}
 	}
 
@@ -116,38 +114,38 @@ public class Serializers {
 	 * Register serializers required for Google Protocol Buffers
 	 * with Flink runtime.
 	 */
-	public static void registerProtoBuf(ExecutionEnvironment env) {
+	public static void registerProtoBuf(SerializerRegistrable reg) {
 		// Google Protobuf (FLINK-1392)
-		env.registerTypeWithKryoSerializer(Message.class, ProtobufSerializer.class);
+		reg.registerTypeWithKryoSerializer(Message.class, ProtobufSerializer.class);
 	}
 
 	/**
 	 * Register Apache Thrift messages
 	 */
-	public static void registerThrift(ExecutionEnvironment env) {
+	public static void registerThrift(SerializerRegistrable reg) {
 		// TBaseSerializer states it should be initalized as a default Kryo serializer
-		env.registerDefaultKryoSerializer(TMessage.class, TBaseSerializer.class);
-		env.registerType(TMessage.class);
+		reg.registerDefaultKryoSerializer(TMessage.class, TBaseSerializer.class);
+		reg.registerType(TMessage.class);
 	}
 
 	/**
 	 * Register these serializers for using Avro's {@see GenericData.Record} and classes
 	 * implementing {@see org.apache.avro.specific.SpecificRecordBase}
 	 */
-	public static void registerGenericAvro(ExecutionEnvironment env) {
+	public static void registerGenericAvro(SerializerRegistrable reg) {
 		// Avro POJOs contain java.util.List which have GenericData.Array as their runtime type
 		// because Kryo is not able to serialize them properly, we use this serializer for them
-		env.registerTypeWithKryoSerializer(GenericData.Array.class, SpecificInstanceCollectionSerializerForArrayList.class);
+		reg.registerTypeWithKryoSerializer(GenericData.Array.class, SpecificInstanceCollectionSerializerForArrayList.class);
 		// We register this serializer for users who want to use untyped Avro records (GenericData.Record).
 		// Kryo is able to serialize everything in there, except for the Schema.
 		// This serializer is very slow, but using the GenericData.Records of Kryo is in general a bad idea.
 		// we add the serializer as a default serializer because Avro is using a private sub-type at runtime.
-		env.registerDefaultKryoSerializer(Schema.class, AvroSchemaSerializer.class);
+		reg.registerDefaultKryoSerializer(Schema.class, AvroSchemaSerializer.class);
 	}
 
 
-	public static void registerSpecificAvro(ExecutionEnvironment env, Class<? extends SpecificRecordBase> avroType) {
-		registerGenericAvro(env);
+	public static void registerSpecificAvro(SerializerRegistrable reg, Class<? extends SpecificRecordBase> avroType) {
+		registerGenericAvro(reg);
 		// This rule only applies if users explicitly use the GenericTypeInformation for the avro types
 		// usually, we are able to handle Avro POJOs with the POJO serializer.
 		// (However only if the GenericData.Array type is registered!)
@@ -174,15 +172,15 @@ public class Serializers {
 	 * <li>{@link org.joda.time.chrono.GJChronology}</li>
 	 * </ul>
 	 */
-	public static void registerJodaTime(ExecutionEnvironment env) {
-		env.registerTypeWithKryoSerializer(DateTime.class, JodaDateTimeSerializer.class);
-		env.registerTypeWithKryoSerializer(Interval.class, JodaIntervalSerializer.class);
+	public static void registerJodaTime(SerializerRegistrable reg) {
+		reg.registerTypeWithKryoSerializer(DateTime.class, JodaDateTimeSerializer.class);
+		reg.registerTypeWithKryoSerializer(Interval.class, JodaIntervalSerializer.class);
 	}
 
 	/**
 	 * Register less frequently used serializers
 	 */
-	public static void registerJavaUtils(ExecutionEnvironment env) {
+	public static void registerJavaUtils(SerializerRegistrable reg) {
 		// BitSet, Regex is already present through twitter-chill.
 	}
 
@@ -243,16 +241,30 @@ public class Serializers {
 	/**
 	 * Fake execution environment to use the same interfaces for registering serializer groups
 	 */
-	private static class KryoRegistrationExecutionEnvironment extends ExecutionEnvironment {
+	private static class KryoRegistration implements SerializerRegistrable {
 
 		@Override
-		public JobExecutionResult execute(String jobName) throws Exception {
-			throw new UnsupportedOperationException("Fake EE");
+		public void registerTypeWithKryoSerializer(Class<?> type, Serializer<?> serializer) {
+			KryoSerializer.registerTypeWithSerializer(type, serializer);
 		}
 
 		@Override
-		public String getExecutionPlan() throws Exception {
-			throw new UnsupportedOperationException("Fake EE");
+		public void registerTypeWithKryoSerializer(Class<?> type, Class<? extends Serializer<?>> serializerClass) {
+			KryoSerializer.registerTypeWithSerializer(type, serializerClass);
+		}
+
+		@Override
+		public void registerDefaultKryoSerializer(Class<?> type, Class<? extends Serializer<?>> serializerClass) {
+			KryoSerializer.registerDefaultSerializer(type, serializerClass);
+		}
+
+		@Override
+		public void registerDefaultKryoSerializer(Class<?> clazz, Serializer<?> serializer) {
+			KryoSerializer.registerDefaultSerializer(clazz, serializer);
+		}
+
+		public void registerType(Class<?> type) {
+			KryoSerializer.registerType(type);
 		}
 
 	}
