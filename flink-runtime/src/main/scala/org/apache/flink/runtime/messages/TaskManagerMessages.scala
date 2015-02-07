@@ -111,8 +111,9 @@ object TaskManagerMessages {
    * manager which forwards it to the InstanceManager.
    *
    * @param instanceID
+   * @param metricsReport utf-8 encoded JSON report from the metricRegistry.
    */
-  case class Heartbeat(instanceID: InstanceID)
+  case class Heartbeat(instanceID: InstanceID, metricsReport: Array[Byte])
 
   /**
    * Requests a notification from the task manager as soon as the task manager has been

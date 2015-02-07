@@ -26,6 +26,10 @@ import management.{GarbageCollectorMXBean, ManagementFactory, MemoryMXBean}
 
 import akka.actor._
 import akka.pattern.ask
+import com.codahale.metrics.{Gauge, MetricFilter, MetricRegistry}
+import com.codahale.metrics.json.MetricsModule
+import com.codahale.metrics.jvm.{MemoryUsageGaugeSet, GarbageCollectorMetricSet}
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.flink.api.common.cache.DistributedCache
 import org.apache.flink.configuration.{ConfigConstants, Configuration, GlobalConfiguration}
 import org.apache.flink.core.fs.Path
@@ -114,6 +118,16 @@ import scala.collection.JavaConverters._
   val hardwareDescription = HardwareDescription.extractFromSystem(memoryManager.getMemorySize)
   val fileCache = new FileCache()
   val runningTasks = scala.collection.mutable.HashMap[ExecutionAttemptID, Task]()
+  val metricRegistry = new MetricRegistry
+  // register metrics
+  metricRegistry.register("gc", new GarbageCollectorMetricSet)
+  metricRegistry.register("memory", new MemoryUsageGaugeSet)
+  metricRegistry.register("load", new Gauge[Double] {
+    override def getValue: Double = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage()
+  })
+  // register metric serialization
+  val metricRegistryMapper: ObjectMapper = new ObjectMapper().registerModule(new MetricsModule(TimeUnit.SECONDS,
+    TimeUnit.MILLISECONDS, false, MetricFilter.ALL))
 
   // Actors which want to be notified once this task manager has been registered at the job manager
   val waitForRegistration = scala.collection.mutable.Set[ActorRef]()
@@ -303,7 +317,8 @@ import scala.collection.JavaConverters._
       }
 
     case SendHeartbeat =>
-      currentJobManager ! Heartbeat(instanceID)
+      val report = metricRegistryMapper.writeValueAsBytes(metricRegistry)
+      currentJobManager ! Heartbeat(instanceID, report)
 
     case LogMemoryUsage =>
       logMemoryStats()
