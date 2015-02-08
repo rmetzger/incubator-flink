@@ -117,6 +117,7 @@ public class SetupInfoServlet extends HttpServlet {
 			long time = new Date().getTime() - instance.getLastHeartBeat();
 	
 			try {
+				objInner.put("id", instance.getId().hashCode());
 				objInner.put("inetAdress", instance.getInstanceConnectionInfo().getInetAdress());
 				objInner.put("ipcPort", instance.getTaskManager().path().address().hostPort());
 				objInner.put("dataPort", instance.getInstanceConnectionInfo().dataPort());
@@ -127,6 +128,10 @@ public class SetupInfoServlet extends HttpServlet {
 				objInner.put("physicalMemory", instance.getResources().getSizeOfPhysicalMemory() >>> 20);
 				objInner.put("freeMemory", instance.getResources().getSizeOfJvmHeap() >>> 20);
 				objInner.put("managedMemory", instance.getResources().getSizeOfManagedMemory() >>> 20);
+				byte[] report = instance.getLastMetricsReport();
+				if(report != null) {
+					objInner.put("metrics", new String(report, "utf-8"));
+				}
 				array.put(objInner);
 			}
 			catch (JSONException e) {

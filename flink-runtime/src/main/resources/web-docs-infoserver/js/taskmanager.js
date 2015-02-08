@@ -17,34 +17,87 @@
  */
 
 $(document).ready(function() {
-	pollTaskmanagers();
-	
+	setInterval(updateTaskManagers, 5000);
 });
 
+
+function convertHex(hex,opacity){
+    hex = hex.replace('#','');
+    r = parseInt(hex.substring(0,2), 16);
+    g = parseInt(hex.substring(2,4), 16);
+    b = parseInt(hex.substring(4,6), 16);
+
+    result = 'rgba('+r+','+g+','+b+','+opacity/100+')';
+    return result;
+}
+
+function getUnixTime() {
+	return new Date().getTime()/1000;
+}
+
+// this array contains the history metrics for the taskManagers.
+var taskManagerMemory = [];
+
+// array with the graphs for each taskManager.
+var taskManagerGraph = [];
+
+// values for the memory charting. In order!
+var memoryValues = ["memory.total.used", "memory.heap.used", "memory.non-heap.used" ];
+
+/**
+Create rickshaw graph for the specified taskManager id (tmid).
+**/
+function createGraph(tmId) {
+}
 /*
  * Initializes taskmanagers table
  */
-function loadTaskmanagers(json) {
-	$("#taskmanagerTable").empty();
-	var table = "<table class=\"table table-bordered table-hover table-striped\">";
-	table += "<tr><th>Node</th><th>Ipc Port</th><th>Data Port</th><th>Seconds since last Heartbeat</th>" +
-			"<th>Number of Slots</th><th>Available Slots</th><th>CPU Cores</th><th>Physical Memory (mb)</th><th>TaskManager Heapsize (mb)</th><th>Managed Memory (mb)</th></tr>";
+function processTMdata(json) {
+    var tableHeader = $("#taskmanagerTable-header");
+
 	for (var i = 0; i < json.taskmanagers.length; i++) {
 		var tm = json.taskmanagers[i]
-		table += "<tr><td>"+tm.inetAdress+"</td><td>"+tm.ipcPort+"</td><td>"+tm.dataPort+"</td><td>"+tm.timeSinceLastHeartbeat+"</td>" +
-				"<td>"+tm.slotsNumber+"</td><td>"+tm.freeSlots+"</td><td>"+tm.cpuCores+"</td><td>"+tm.physicalMemory+"</td><td>"+tm.freeMemory+"</td><td>"+tm.managedMemory+"</td></tr>";
+		var tmRowIdCssName = "tm-row-"+tm.id;
+		// check if taskManager has a row
+		tmRow = $("#"+tmRowIdCssName)
+		if(tmRow.length == 0) {
+		    var tmMemoryBox = "<div class=\"chart_container\">"+
+                                  "<div class=\"y_axis\"></div>"+
+                                  "<div class=\"chart\"></div>"+
+                               "</div>"+
+                               "<div class=\"legend\"></div>";
+		    // the taskamanger does not yet have a table row
+		    tableHeader.after("<tr id=\""+tmRowIdCssName+"\">" +
+		                "<td>"+tm.inetAdress+" <br> IPC Port: "+tm.ipcPort+", Data Port: "+tm.dataPort+"</td>" + // first row: TaskManager
+		                "<td id=\""+tmRowIdCssName+"-memory\">"+tmMemoryBox+"</td>" + // second row: memory statistics
+		                "<td id=\""+tmRowIdCssName+"-info\"><i>Loading Information</i></td>" + // Information
+		                "</tr>");
+		    taskManagerMemory[tm.id] = []; // create empty array for TM
+		    taskManagerGraph[tm.id] = createGraph(tm.id);
+		}
+        // fill (update) row with contents
+        // memory statistics
+        var time = getUnixTime();
+        for(i in memoryValues) {
+            value = memoryValues[i];
+            taskManagerMemory[tm.id][value].push({x: time, y: data.gauges[value].value})
+        }
+
+
+        // info box
+        tmInfoBox = $("#"+tmRowIdCssName+"-info")
+        tmInfoBox.html("Last Heartbeat: "+tm.timeSinceLastHeartbeat+" seconds ago<br>"+
+            "Processing Slots: "+tm.freeSlots+"/"+tm.slotsNumber+"<br>"+
+            "Flink Managed Memory: "+tm.managedMemory+" mb<br>"+
+            "CPU cores: "+tm.cpuCores+" <br>"+
+            "Physical Memory "+tm.physicalMemory+" mb");
 	}
-	table += "</table>";
-	$("#taskmanagerTable").append(table);
 }
 
-function pollTaskmanagers() {
+function updateTaskManagers() {
 	$.ajax({ url : "setupInfo?get=taskmanagers", type : "GET", cache: false, success : function(json) {
-		loadTaskmanagers(json);
+		processTMdata(json);
 	}, dataType : "json",
 	});
-	setTimeout(function() {
-		pollTaskmanagers();
-	}, 10000);
 }
 

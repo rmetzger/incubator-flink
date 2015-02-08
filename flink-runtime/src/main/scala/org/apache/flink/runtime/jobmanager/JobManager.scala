@@ -339,8 +339,8 @@ class JobManager(val configuration: Configuration,
       sender ! RegisteredTaskManagers(instanceManager.getAllRegisteredInstances.asScala)
 
     case Heartbeat(instanceID, metricsReport) =>
-      log.info("Received metricsReport " + new String(metricsReport, "utf-8"))
-      instanceManager.reportHeartBeat(instanceID)
+      //log.info("Received metricsReport " + new String(metricsReport, "utf-8"))
+      instanceManager.reportHeartBeat(instanceID, metricsReport)
 
     case Terminated(taskManager) =>
       log.info("Task manager {} terminated.", taskManager.path)
