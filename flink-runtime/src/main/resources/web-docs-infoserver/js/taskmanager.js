@@ -43,7 +43,7 @@ var taskManagerMemory = [];
 var taskManagerGraph = [];
 
 // values for the memory charting. In order!
-var memoryValues = ["memory.total.used", "memory.heap.used", "memory.non-heap.used" ];
+var memoryValues = ["memory.non-heap.used", "memory.flink.used", "memory.heap.used" ];
 
 /**
 Create rickshaw graph for the specified taskManager id (tmid).
@@ -55,28 +55,28 @@ function createGraph(tmId) {
         var value = memoryValues[i];
         taskManagerMemory[tmId][value] = [];
         series.push({
-            color: convertHex(palette.color(), 80),
+            color: convertHex(palette.color(), 90),
             data: taskManagerMemory[tmId][value],
             name: value,
             stroke: 'rgba(0,0,0,0.5)'
         });
     }
     var graph = new Rickshaw.Graph( {
-            element: document.querySelector("#chart-"+tmId),
-            width: 580,
-            height: 250,
-            series: series,
-            renderer: 'area',
-            stroke: true
+        element: document.querySelector("#chart-"+tmId),
+        width: 580,
+        height: 250,
+        series: series,
+        renderer: 'area',
+        stroke: true
     } );
-    graph.renderer.unstack = true;
+
     var x_axis = new Rickshaw.Graph.Axis.Time( { graph: graph } );
 
     var y_axis = new Rickshaw.Graph.Axis.Y( {
-            graph: graph,
-            orientation: 'left',
-            tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-            element: document.getElementById("y_axis-"+tmId)
+        graph: graph,
+        orientation: 'left',
+        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+        element: document.getElementById("y_axis-"+tmId)
     } );
 
     var hoverDetail = new Rickshaw.Graph.HoverDetail( {
@@ -88,6 +88,20 @@ function createGraph(tmId) {
         graph: graph,
         element: document.querySelector("#legend-"+tmId)
     });
+
+    var tableBox = $("#tm-row-"+tmId+"-memory");
+
+    // make graph resizable
+    var resize = function() {
+        graph.configure({
+            width: tableBox.innerWidth() - $(".y_axis").width() - 20
+        });
+        graph.render();
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
     return graph;
 }
 /*
@@ -121,9 +135,22 @@ function processTMdata(json) {
         // memory statistics
         var time = getUnixTime();
         for(memValIdx in memoryValues) {
-            value = memoryValues[memValIdx];
+            valueKey = memoryValues[memValIdx];
             metricsJSON = $.parseJSON(tm.metrics);
-            taskManagerMemory[tm.id][value].push({x: time, y: metricsJSON.gauges[value].value})
+
+            var flinkMemory = tm.managedMemory * 1000 * 1000;
+            switch(valueKey) {
+                case "memory.heap.used":
+                    var value = metricsJSON.gauges[valueKey].value - flinkMemory;
+                    break;
+                case "memory.non-heap.used":
+                    var value = metricsJSON.gauges[valueKey].value;
+                    break;
+                case "memory.flink.used":
+                    var value = flinkMemory;
+                    break;
+            }
+            taskManagerMemory[tm.id][valueKey].push({x: time, y: value})
         }
         taskManagerGraph[tm.id].update();
 
