@@ -120,8 +120,8 @@ function processTMdata(json) {
         // fill (update) row with contents
         // memory statistics
         var time = getUnixTime();
-        for(i in memoryValues) {
-            value = memoryValues[i];
+        for(memValIdx in memoryValues) {
+            value = memoryValues[memValIdx];
             metricsJSON = $.parseJSON(tm.metrics);
             taskManagerMemory[tm.id][value].push({x: time, y: metricsJSON.gauges[value].value})
         }
