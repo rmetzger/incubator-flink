@@ -17,7 +17,8 @@
  */
 
 $(document).ready(function() {
-	setInterval(updateTaskManagers, 5000);
+    updateTaskManagers(); // first call
+	setInterval(updateTaskManagers, 5000); // schedule periodic calls.
 });
 
 
@@ -75,7 +76,7 @@ function createGraph(tmId) {
             graph: graph,
             orientation: 'left',
             tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-            element: document.getElementById("y_axis-"+tmId),
+            element: document.getElementById("y_axis-"+tmId)
     } );
 
     var hoverDetail = new Rickshaw.Graph.HoverDetail( {
@@ -96,10 +97,10 @@ function processTMdata(json) {
     var tableHeader = $("#taskmanagerTable-header");
 
 	for (var i = 0; i < json.taskmanagers.length; i++) {
-		var tm = json.taskmanagers[i]
+		var tm = json.taskmanagers[i];
 		var tmRowIdCssName = "tm-row-"+tm.id;
 		// check if taskManager has a row
-		tmRow = $("#"+tmRowIdCssName)
+		tmRow = $("#"+tmRowIdCssName);
 		if(tmRow.length == 0) {
 		    var tmMemoryBox = "<div class=\"chart_container\" id=\"chart_container-"+tm.id+"\">"+
                                   "<div class=\"y_axis\" id=\"y_axis-"+tm.id+"\"></div>"+
@@ -128,7 +129,7 @@ function processTMdata(json) {
 
 
         // info box
-        tmInfoBox = $("#"+tmRowIdCssName+"-info")
+        tmInfoBox = $("#"+tmRowIdCssName+"-info");
         tmInfoBox.html("Last Heartbeat: "+tm.timeSinceLastHeartbeat+" seconds ago<br>"+
             "Processing Slots: "+tm.freeSlots+"/"+tm.slotsNumber+"<br>"+
             "Flink Managed Memory: "+tm.managedMemory+" mb<br>"+
@@ -140,7 +141,7 @@ function processTMdata(json) {
 function updateTaskManagers() {
 	$.ajax({ url : "setupInfo?get=taskmanagers", type : "GET", cache: false, success : function(json) {
 		processTMdata(json);
-	}, dataType : "json",
+	}, dataType : "json"
 	});
 }
 
