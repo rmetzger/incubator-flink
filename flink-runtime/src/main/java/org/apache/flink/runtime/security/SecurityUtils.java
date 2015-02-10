@@ -54,14 +54,20 @@ public class SecurityUtils {
 		Credentials credentials = new Credentials();
 		// for user
 		UserGroupInformation currUsr = UserGroupInformation.getCurrentUser();
+		System.out.println("current user "+currUsr);
+		System.out.println("isFromKeytab "+currUsr.isFromKeytab());
+		System.out.println("hasKerberosCredentials"+currUsr.hasKerberosCredentials());
 
 		Collection<Token<? extends TokenIdentifier>> usrTok = currUsr.getTokens();
 		for(Token<? extends TokenIdentifier> token : usrTok) {
 			final Text id = new Text(token.getIdentifier());
 			credentials.addToken(id, token);
+			System.out.println("id = "+id+" token "+token);
 		}
 		DataOutputBuffer dob = new DataOutputBuffer();
 		credentials.writeTokenStorageToStream(dob);
+		dob.flush();
+		System.out.println("Token buf size  "+dob.getLength());
 		FileOutputStream fos = new FileOutputStream(file);
 		byte[] currUser = currUsr.getShortUserName().getBytes("UTF-8");
 		fos.write(currUser.length);

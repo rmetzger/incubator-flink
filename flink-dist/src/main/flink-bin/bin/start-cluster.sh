@@ -54,13 +54,13 @@ do
     if [ -n "$line" ]; then
         HOST=$( extractHostName $line)
         if [ "$IS_SECURE" == "1" ]; then
-            scp -F $FLINK_SSH_OPTS "$FLINK_CONF_DIR/.securityTokens" $HOST":$FLINK_CONF_DIR/.securityTokens"
+            scp "$FLINK_CONF_DIR/.securityTokens" $HOST":$FLINK_CONF_DIR/.securityTokens"
         fi
         ssh -n $FLINK_SSH_OPTS $HOST -- "nohup /bin/bash $FLINK_BIN_DIR/taskmanager.sh start &"
     fi
 done < "$HOSTLIST"
 
 
-if [ "$IS_SECURE" == "1" ]; then
-    rm "$FLINK_CONF_DIR/.securityTokens"
-fi
+#if [ "$IS_SECURE" == "1" ]; then
+#    rm "$FLINK_CONF_DIR/.securityTokens"
+#fi
