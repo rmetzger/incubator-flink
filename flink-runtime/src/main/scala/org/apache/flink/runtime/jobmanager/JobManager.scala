@@ -20,14 +20,16 @@ package org.apache.flink.runtime.jobmanager
 
 import java.io.{IOException, File}
 import java.net.InetSocketAddress
+import java.security.PrivilegedExceptionAction
 import akka.actor._
 import akka.pattern.ask
 import org.apache.flink.configuration.{ConfigConstants, GlobalConfiguration, Configuration}
 import org.apache.flink.core.io.InputSplitAssigner
 import org.apache.flink.runtime.blob.BlobServer
-import org.apache.flink.runtime.executiongraph.{Execution, ExecutionJobVertex, ExecutionGraph}
+import org.apache.flink.runtime.executiongraph.{ExecutionJobVertex, ExecutionGraph}
 import org.apache.flink.runtime.messages.ArchiveMessages.ArchiveExecutionGraph
 import org.apache.flink.runtime.messages.ExecutionGraphMessages.JobStatusChanged
+import org.apache.flink.runtime.security.SecurityUtils
 import org.apache.flink.runtime.taskmanager.TaskManager
 import org.apache.flink.runtime.util.EnvironmentInformation
 import org.apache.flink.runtime.{JobException, ActorLogMessages}
@@ -547,6 +549,29 @@ object JobManager {
 
   def main(args: Array[String]): Unit = {
     EnvironmentInformation.logEnvironmentInfo(LOG, "JobManager")
+
+    val tokensFile = new File(SecurityUtils.SECURITY_TOKEN_FILE_NAME)
+    if(tokensFile.exists) {
+      LOG.info("Found security token file")
+      if(SecurityUtils.isSecurityEnabled) {
+        LOG.info("Security is enabled. Using Tokens to start JobManager.")
+        val user = SecurityUtils.createUserFromTokens(tokensFile)
+        user.doAs(new PrivilegedExceptionAction[Unit] {
+          override def run(): Unit = {
+            start(args)
+          }
+        })
+        return // return to avoid starting an insecure Actor.
+      } else {
+        LOG.warn("Security token file present but security not enabled. " +
+          "Please check the hadoop configuration.")
+        // fall through to start TaskManager
+      }
+    }
+    start(args)
+  }
+
+  def start(args: Array[String]): Unit = {
     val (configuration, executionMode, listeningAddress) = parseArgs(args)
 
     val jobManagerSystem = AkkaUtils.createActorSystem(configuration, listeningAddress)

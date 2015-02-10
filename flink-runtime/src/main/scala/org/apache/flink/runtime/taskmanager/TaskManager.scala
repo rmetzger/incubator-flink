@@ -20,6 +20,7 @@ package org.apache.flink.runtime.taskmanager
 
 import java.io.{File, IOException}
 import java.net.{InetAddress, InetSocketAddress}
+import java.security.PrivilegedExceptionAction
 import java.util
 import java.util.concurrent.{FutureTask, TimeUnit}
 import management.{GarbageCollectorMXBean, ManagementFactory, MemoryMXBean}
@@ -53,6 +54,7 @@ import org.apache.flink.runtime.messages.TaskManagerProfilerMessages
 .{UnregisterProfilingListener, UnmonitorTask, MonitorTask, RegisterProfilingListener}
 import org.apache.flink.runtime.net.NetUtils
 import org.apache.flink.runtime.profiling.ProfilingUtils
+import org.apache.flink.runtime.security.SecurityUtils
 import org.apache.flink.runtime.util.EnvironmentInformation
 import org.apache.flink.util.ExceptionUtils
 import org.slf4j.LoggerFactory
@@ -660,6 +662,29 @@ object TaskManager {
   def main(args: Array[String]): Unit = {
     EnvironmentInformation.logEnvironmentInfo(LOG, "TaskManager")
 
+
+    val tokensFile = new File(SecurityUtils.SECURITY_TOKEN_FILE_NAME)
+    if(tokensFile.exists) {
+      LOG.info("Found security token file")
+      if(SecurityUtils.isSecurityEnabled) {
+        LOG.info("Security is enabled. Using Tokens to start TaskManager")
+        val user = SecurityUtils.createUserFromTokens(tokensFile)
+        user.doAs(new PrivilegedExceptionAction[Unit] {
+          override def run(): Unit = {
+            startActor(args)
+          }
+        })
+        return // return to avoid starting an insecure Actor.
+      } else {
+        LOG.warn("Security token file present but security not enabled. " +
+          "Please check the hadoop configuration.")
+        // fall through to start TaskManager
+      }
+    }
+    startActor(args)
+
+  }
+  def startActor(args: Array[String]) : Unit = {
     val (hostname, port, configuration) = parseArgs(args)
 
     val (taskManagerSystem, _) = startActorSystemAndActor(hostname, port, configuration,

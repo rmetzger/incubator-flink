@@ -55,6 +55,7 @@ import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.akka.AkkaUtils;
+import org.apache.flink.runtime.security.SecurityUtils;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.jobgraph.JobID;
@@ -84,6 +85,7 @@ public class CliFrontend {
 	private static final String ACTION_INFO = "info";
 	private static final String ACTION_LIST = "list";
 	private static final String ACTION_CANCEL = "cancel";
+	private static final String ACTION_INTERNAL = "internal"; // internal, undocumented actions
 
 	// general options
 	private static final Option HELP_OPTION = new Option("h", "help", false, "Show the help for the CLI Frontend.");
@@ -678,7 +680,20 @@ public class CliFrontend {
 			return handleError(t);
 		}
 	}
-
+	protected int internal(String[] args) {
+		if(args.length != 1) {
+			System.out.println("Invalid args : "+Arrays.toString(args));
+			return 1;
+		}
+		if(args[0].equals("gettokens")) {
+			try {
+				SecurityUtils.writeTokensToFile(new File(".securityTokens"));
+			} catch(Throwable e){
+				throw new RuntimeException("Error getting credentials", e);
+			}
+		}
+		return 0;
+	}
 	/**
 	 * @param line
 	 * 
@@ -1057,10 +1072,24 @@ public class CliFrontend {
 		String action = args[0];
 		
 		// remove action from parameters
-		String[] params = Arrays.copyOfRange(args, 1, args.length);
+		final String[] params = Arrays.copyOfRange(args, 1, args.length);
 		
 		// do action
 		if (action.equals(ACTION_RUN)) {
+			// run() needs to run in a secured environment for the optimizer.
+			if(SecurityUtils.isSecurityEnabled()) {
+				System.out.println("Secure Hadoop setup detected.");
+				try {
+					return SecurityUtils.runSecured(new SecurityUtils.FlinkSecuredRunner<Integer>() {
+						@Override
+						public Integer run() throws Exception {
+							return CliFrontend.this.run(params);
+						}
+					});
+				} catch (Exception e) {
+					handleError(e);
+				}
+			}
 			return run(params);
 		} else if (action.equals(ACTION_LIST)) {
 			return list(params);
@@ -1068,6 +1097,8 @@ public class CliFrontend {
 			return info(params);
 		} else if (action.equals(ACTION_CANCEL)) {
 			return cancel(params);
+		} else if (action.equals(ACTION_INTERNAL)) {
+			return internal(params);
 		} else if (action.equals("-h") || action.equals("--help")) {
 			printHelp();
 			return 0;

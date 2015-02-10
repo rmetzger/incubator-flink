@@ -34,6 +34,11 @@ if [ ! -f "$HOSTLIST" ]; then
     exit 1
 fi
 
+# TODO: Add check for secure environment.
+"$FLINK_BIN_DIR"/flink internal gettokens
+# tokens have been written to .securityTokens
+
+
 # cluster mode, bring up job manager locally and a task manager on every slave host
 "$FLINK_BIN_DIR"/jobmanager.sh start cluster
 
