@@ -30,7 +30,7 @@ object YarnUtils {
   val LOG = LoggerFactory.getLogger(this.getClass)
 
   def startActorSystemAndTaskManager(args: Array[String]): (ActorSystem, ActorRef) = {
-    val (hostname, port, config) = TaskManager.parseArgs(args)
+    val (hostname, port, config, _) = TaskManager.parseArgs(args)
 
     val actorSystem = AkkaUtils.createActorSystem(config, Some((hostname, port)))
 
