@@ -687,13 +687,13 @@ public class CliFrontend {
 		}
 		if(args[0].equals("gettokens")) {
 			try {
-				SecurityUtils.writeTokensToFile(new File(".securityTokens"));
+				SecurityUtils.writeTokensToFile(new File(getConfigurationDirectoryFromEnv() + File.separator + ".securityTokens"));
 			} catch(Throwable e){
 				throw new RuntimeException("Error getting credentials", e);
 			}
 		}
 		if(args[0].equals("issecure")) {
-			System.out.println(SecurityUtils.isSecurityEnabled() ? "1" : "0");
+			System.out.println(SecurityUtils.isSecurityEnabled() ? "issecure=true" : "issecure=false");
 			return 0;
 		}
 		return 0;
@@ -826,24 +826,10 @@ public class CliFrontend {
 		return configurationDirectory;
 	}
 
-	public static String getConfigurationDirectoryFromEnv() {
-		String location = null;
-		if (System.getenv(ENV_CONFIG_DIRECTORY) != null) {
-			location = System.getenv(ENV_CONFIG_DIRECTORY);
-		} else if (new File(CONFIG_DIRECTORY_FALLBACK_1).exists()) {
-			location = CONFIG_DIRECTORY_FALLBACK_1;
-		} else if (new File(CONFIG_DIRECTORY_FALLBACK_2).exists()) {
-			location = CONFIG_DIRECTORY_FALLBACK_2;
-		} else {
-			throw new RuntimeException("The configuration directory was not found. Please configure the '" + 
-					ENV_CONFIG_DIRECTORY + "' environment variable properly.");
-		}
-		return location;
-	}
 	/**
 	 * Reads configuration settings. The default path can be overridden
 	 * by setting the ENV variable "FLINK_CONF_DIR".
-	 * 
+	 *
 	 * @return Flink's global configuration
 	 */
 	protected Configuration getGlobalConfiguration() {
@@ -876,10 +862,24 @@ public class CliFrontend {
 				System.err.println("Error while loading YARN properties: "+e.getMessage());
 				e.printStackTrace();
 			}
-			
+
 			globalConfigurationLoaded = true;
 		}
 		return GlobalConfiguration.getConfiguration();
+	}
+	public static String getConfigurationDirectoryFromEnv() {
+		String location = null;
+		if (System.getenv(ENV_CONFIG_DIRECTORY) != null) {
+			location = System.getenv(ENV_CONFIG_DIRECTORY);
+		} else if (new File(CONFIG_DIRECTORY_FALLBACK_1).exists()) {
+			location = CONFIG_DIRECTORY_FALLBACK_1;
+		} else if (new File(CONFIG_DIRECTORY_FALLBACK_2).exists()) {
+			location = CONFIG_DIRECTORY_FALLBACK_2;
+		} else {
+			throw new RuntimeException("The configuration directory was not found. Please configure the '" +
+					ENV_CONFIG_DIRECTORY + "' environment variable properly.");
+		}
+		return location;
 	}
 
 	protected FiniteDuration getAkkaTimeout(){

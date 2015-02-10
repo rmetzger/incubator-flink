@@ -34,8 +34,10 @@ if [ ! -f "$HOSTLIST" ]; then
     exit 1
 fi
 
-IS_SECURE=`"$FLINK_BIN_DIR"/flink internal issecure`
-if [ "$IS_SECURE" == "1" ]; then
+IS_SECURE_INTERNAL=`"$FLINK_BIN_DIR"/flink internal issecure`
+IS_SECURE="0"
+if [[ $IS_SECURE_INTERNAL == *"issecure=true"* ]]; then
+    IS_SECURE="1"
     echo "Secure setup detected. Distributing tokens in cluster"
     # write tokens to conf dir.
     "$FLINK_BIN_DIR"/flink internal gettokens
