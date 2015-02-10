@@ -23,10 +23,11 @@ import java.net.InetSocketAddress
 import java.security.PrivilegedExceptionAction
 import akka.actor._
 import akka.pattern.ask
-import org.apache.flink.configuration.{ConfigConstants, GlobalConfiguration, Configuration}
+import org.apache.flink.configuration.{Configuration, ConfigConstants, GlobalConfiguration}
 import org.apache.flink.core.io.InputSplitAssigner
 import org.apache.flink.runtime.blob.BlobServer
 import org.apache.flink.runtime.executiongraph.{ExecutionJobVertex, ExecutionGraph}
+import org.apache.flink.runtime.jobmanager.ExecutionMode._
 import org.apache.flink.runtime.messages.ArchiveMessages.ArchiveExecutionGraph
 import org.apache.flink.runtime.messages.ExecutionGraphMessages.JobStatusChanged
 import org.apache.flink.runtime.security.SecurityUtils
@@ -549,8 +550,9 @@ object JobManager {
 
   def main(args: Array[String]): Unit = {
     EnvironmentInformation.logEnvironmentInfo(LOG, "JobManager")
+    val (configuration, configDir, executionMode, listeningAddress) = parseArgs(args)
 
-    val tokensFile = new File(SecurityUtils.SECURITY_TOKEN_FILE_NAME)
+    val tokensFile = new File(configDir + File.separator + SecurityUtils.SECURITY_TOKEN_FILE_NAME)
     if(tokensFile.exists) {
       LOG.info("Found security token file")
       if(SecurityUtils.isSecurityEnabled) {
@@ -558,7 +560,7 @@ object JobManager {
         val user = SecurityUtils.createUserFromTokens(tokensFile)
         user.doAs(new PrivilegedExceptionAction[Unit] {
           override def run(): Unit = {
-            start(args)
+            start(configuration, executionMode, listeningAddress)
           }
         })
         return // return to avoid starting an insecure Actor.
@@ -568,12 +570,11 @@ object JobManager {
         // fall through to start TaskManager
       }
     }
-    start(args)
+    start(configuration, executionMode, listeningAddress)
   }
 
-  def start(args: Array[String]): Unit = {
-    val (configuration, executionMode, listeningAddress) = parseArgs(args)
-
+  def start(configuration: Configuration, executionMode: ExecutionMode,
+            listeningAddress : Option[(String, Int)]): Unit = {
     val jobManagerSystem = AkkaUtils.createActorSystem(configuration, listeningAddress)
 
     startActor(Props(new JobManager(configuration) with WithWebServer))(jobManagerSystem)
@@ -593,13 +594,13 @@ object JobManager {
    * @param args command line arguments
    * @return triple of configuration, execution mode and an optional listening address
    */
-  def parseArgs(args: Array[String]): (Configuration, ExecutionMode, Option[(String, Int)]) = {
+  def parseArgs(args: Array[String]): (Configuration, String, ExecutionMode, Option[(String, Int)]) = {
     val parser = new scopt.OptionParser[JobManagerCLIConfiguration]("jobmanager") {
       head("flink jobmanager")
-      opt[String]("configDir") action { (x, c) => c.copy(configDir = x) } text ("Specify " +
+      opt[String]("configDir") action { (arg, c) => c.copy(configDir = arg) } text ("Specify " +
         "configuration directory.")
-      opt[String]("executionMode") optional() action { (x, c) =>
-        if(x.equals("local")){
+      opt[String]("executionMode") optional() action { (arg, c) =>
+        if(arg.equals("local")){
           c.copy(executionMode = LOCAL)
         }else{
           c.copy(executionMode = CLUSTER)
@@ -626,7 +627,7 @@ object JobManager {
         // Listening address on which the actor system listens for remote messages
         val listeningAddress = Some((hostname, port))
 
-        (configuration, config.executionMode, listeningAddress)
+        (configuration, config.configDir, config.executionMode, listeningAddress)
     } getOrElse {
       LOG.error("CLI Parsing failed. Usage: " + parser.usage)
       sys.exit(FAILURE_RETURN_CODE)

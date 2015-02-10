@@ -34,9 +34,12 @@ if [ ! -f "$HOSTLIST" ]; then
     exit 1
 fi
 
-# TODO: Add check for secure environment.
-"$FLINK_BIN_DIR"/flink internal gettokens
-# tokens have been written to .securityTokens
+IS_SECURE=`"$FLINK_BIN_DIR"/flink internal issecure`
+if [ "$IS_SECURE" == "1" ]; then
+    echo "Secure setup detected. Distributing tokens in cluster"
+    # write tokens to conf dir.
+    "$FLINK_BIN_DIR"/flink internal gettokens
+fi
 
 
 # cluster mode, bring up job manager locally and a task manager on every slave host
@@ -48,6 +51,14 @@ do
     read line || GOON=false
     if [ -n "$line" ]; then
         HOST=$( extractHostName $line)
+        if [ "$IS_SECURE" == "1" ]; then
+            scp -F $FLINK_SSH_OPTS "$FLINK_CONF_DIR/.securityTokens" $HOST":$FLINK_CONF_DIR/.securityTokens"
+        fi
         ssh -n $FLINK_SSH_OPTS $HOST -- "nohup /bin/bash $FLINK_BIN_DIR/taskmanager.sh start &"
     fi
 done < "$HOSTLIST"
+
+
+if [ "$IS_SECURE" == "1" ]; then
+    rm "$FLINK_CONF_DIR/.securityTokens"
+fi

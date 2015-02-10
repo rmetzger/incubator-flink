@@ -692,6 +692,10 @@ public class CliFrontend {
 				throw new RuntimeException("Error getting credentials", e);
 			}
 		}
+		if(args[0].equals("issecure")) {
+			System.out.println(SecurityUtils.isSecurityEnabled() ? "1" : "0");
+			return 0;
+		}
 		return 0;
 	}
 	/**

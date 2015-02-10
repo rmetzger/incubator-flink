@@ -661,9 +661,9 @@ object TaskManager {
 
   def main(args: Array[String]): Unit = {
     EnvironmentInformation.logEnvironmentInfo(LOG, "TaskManager")
+    val (hostname, port, configuration, configDir) = parseArgs(args)
 
-
-    val tokensFile = new File(SecurityUtils.SECURITY_TOKEN_FILE_NAME)
+    val tokensFile = new File(configDir + File.separator + SecurityUtils.SECURITY_TOKEN_FILE_NAME)
     if(tokensFile.exists) {
       LOG.info("Found security token file")
       if(SecurityUtils.isSecurityEnabled) {
@@ -671,7 +671,7 @@ object TaskManager {
         val user = SecurityUtils.createUserFromTokens(tokensFile)
         user.doAs(new PrivilegedExceptionAction[Unit] {
           override def run(): Unit = {
-            startActor(args)
+            startActor(hostname, port, configuration)
           }
         })
         return // return to avoid starting an insecure Actor.
@@ -681,11 +681,10 @@ object TaskManager {
         // fall through to start TaskManager
       }
     }
-    startActor(args)
+    startActor(hostname, port, configuration)
 
   }
-  def startActor(args: Array[String]) : Unit = {
-    val (hostname, port, configuration) = parseArgs(args)
+  def startActor(hostname: String, port: Int, configuration: Configuration) : Unit = {
 
     val (taskManagerSystem, _) = startActorSystemAndActor(hostname, port, configuration,
       localAkkaCommunication = false, localTaskManagerCommunication = false)
@@ -700,7 +699,7 @@ object TaskManager {
    * @param args Command line arguments
    * @return Tuple of (hostname, port, configuration)
    */
-  def parseArgs(args: Array[String]): (String, Int, Configuration) = {
+  def parseArgs(args: Array[String]): (String, Int, Configuration, String) = {
     val parser = new scopt.OptionParser[TaskManagerCLIConfiguration]("taskmanager") {
       head("flink task manager")
       opt[String]("configDir") action { (x, c) =>
@@ -737,7 +736,7 @@ object TaskManager {
         // try to find out the TaskManager's own hostname by connecting to jobManagerAddress
         val hostname = NetUtils.resolveAddress(jobManagerAddress).getHostName
 
-        (hostname, port, configuration)
+        (hostname, port, configuration, config.configDir)
     } getOrElse {
       LOG.error(s"TaskManager parseArgs called with ${args.mkString(" ")}.")
       LOG.error("CLI parsing failed. Usage: " + parser.usage)
