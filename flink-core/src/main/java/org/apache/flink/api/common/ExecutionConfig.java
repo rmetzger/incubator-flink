@@ -333,7 +333,7 @@ public class ExecutionConfig implements Serializable {
 	/**
 	 * Returns the registered default Kryo Serializer classes.
 	 */
-	public List<Entry<Class<?>, Class<? extends Serializer<?>>>> getDefaultKryoSerializersClasses() {
+	public List<Entry<Class<?>, Class<? extends Serializer<?>>>> getDefaultKryoSerializerClasses() {
 		return defaultKryoSerializerClasses;
 	}
 

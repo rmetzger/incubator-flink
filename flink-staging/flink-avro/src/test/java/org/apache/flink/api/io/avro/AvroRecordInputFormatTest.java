@@ -220,8 +220,8 @@ public class AvroRecordInputFormatTest {
 		Serializers.recursivelyRegisterType(( (GenericTypeInfo) te).getTypeClass(), ec);
 
 		TypeSerializer<GenericData.Record> tser = te.createSerializer(ec);
-		Assert.assertEquals(1, ec.getDefaultKryoSerializersClasses().size());
-		Assert.assertEquals(new ExecutionConfig.Entry<Class<?>, Class<? extends Serializer<?>>>(Schema.class, Serializers.AvroSchemaSerializer.class), ec.getDefaultKryoSerializersClasses().get(0));
+		Assert.assertEquals(1, ec.getDefaultKryoSerializerClasses().size());
+		Assert.assertEquals(new ExecutionConfig.Entry<Class<?>, Class<? extends Serializer<?>>>(Schema.class, Serializers.AvroSchemaSerializer.class), ec.getDefaultKryoSerializerClasses().get(0));
 		ComparatorTestBase.TestOutputView target = new ComparatorTestBase.TestOutputView();
 		tser.serialize(rec, target);
 
@@ -254,8 +254,7 @@ public class AvroRecordInputFormatTest {
 		// now serialize it with our framework:
 		ExecutionConfig ec = new ExecutionConfig();
 		TypeInformation<User> te = (TypeInformation<User>) TypeExtractor.createTypeInfo(User.class);
-//		Assert.assertEquals(AvroTypeInfo.class, te.getClass());
-//		Serializers.recursivelyRegisterType(( (GenericTypeInfo) te).getTypeClass(), ec);
+		Assert.assertEquals(AvroTypeInfo.class, te.getClass());
 		TypeSerializer<User> tser = te.createSerializer(ec);
 		ComparatorTestBase.TestOutputView target = new ComparatorTestBase.TestOutputView();
 		tser.serialize(rec, target);

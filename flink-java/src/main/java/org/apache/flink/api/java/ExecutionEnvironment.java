@@ -935,7 +935,7 @@ public abstract class ExecutionEnvironment {
 				config.getRegisteredTypesWithKryoSerializerClasses().size() +
 				config.getRegisteredTypesWithKryoSerializers().size();
 		int defaultKryoSerializers = config.getDefaultKryoSerializers().size() +
-				config.getDefaultKryoSerializersClasses().size();
+				config.getDefaultKryoSerializerClasses().size();
 		LOG.info("The job has {} registered types and {} default Kryo serializers", registeredTypes, defaultKryoSerializers);
 
 		if(LOG.isDebugEnabled()) {
@@ -943,7 +943,7 @@ public abstract class ExecutionEnvironment {
 			LOG.debug("Registered Kryo with Serializers types: {}", Joiner.on(',').join(config.getRegisteredTypesWithKryoSerializers()));
 			LOG.debug("Registered Kryo with Serializer Classes types: {}", Joiner.on(',').join(config.getRegisteredTypesWithKryoSerializerClasses()));
 			LOG.debug("Registered Kryo default Serializers: {}", Joiner.on(',').join(config.getDefaultKryoSerializers()));
-			LOG.debug("Registered Kryo default Serializers Classes {}", Joiner.on(',').join(config.getDefaultKryoSerializersClasses()));
+			LOG.debug("Registered Kryo default Serializers Classes {}", Joiner.on(',').join(config.getDefaultKryoSerializerClasses()));
 			LOG.debug("Registered POJO types: {}", Joiner.on(',').join(config.getRegisteredPojoTypes()));
 		}
 

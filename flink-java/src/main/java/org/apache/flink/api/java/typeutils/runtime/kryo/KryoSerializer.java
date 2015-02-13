@@ -88,7 +88,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 		this.type = type;
 
 		this.defaultSerializers = executionConfig.getDefaultKryoSerializers();
-		this.defaultSerializerClasses = executionConfig.getDefaultKryoSerializersClasses();
+		this.defaultSerializerClasses = executionConfig.getDefaultKryoSerializerClasses();
 		this.registeredTypesWithSerializers = executionConfig.getRegisteredTypesWithKryoSerializers();
 		this.registeredTypesWithSerializerClasses = executionConfig.getRegisteredTypesWithKryoSerializerClasses();
 		this.registeredTypes = executionConfig.getRegisteredKryoTypes();
