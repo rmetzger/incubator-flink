@@ -31,6 +31,7 @@ import java.util.UUID;
 import com.esotericsoftware.kryo.Serializer;
 
 import com.google.common.base.Joiner;
+import org.apache.avro.generic.GenericData;
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InvalidProgramException;
@@ -42,6 +43,7 @@ import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.operators.OperatorInformation;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.java.hadoop.mapred.HadoopInputFormat;
 import org.apache.flink.api.java.io.CollectionInputFormat;
 import org.apache.flink.api.java.io.CsvReader;
@@ -902,6 +904,13 @@ public abstract class ExecutionEnvironment {
 					GenericTypeInfo<?> genericTypeInfo = (GenericTypeInfo<?>) typeInfo;
 					if(!config.isDisableAutoTypeRegistration()) {
 						Serializers.recursivelyRegisterType(genericTypeInfo.getTypeClass(), config);
+					}
+				}
+				if(typeInfo instanceof CompositeType) {
+					List<GenericTypeInfo<?>> genericTypesInComposite = new ArrayList<GenericTypeInfo<?>>();
+					Utils.getContainedGenericTypes((CompositeType)typeInfo, genericTypesInComposite);
+					for(GenericTypeInfo<?> gt : genericTypesInComposite) {
+						Serializers.recursivelyRegisterType(gt.getTypeClass(), config);
 					}
 				}
 				return true;

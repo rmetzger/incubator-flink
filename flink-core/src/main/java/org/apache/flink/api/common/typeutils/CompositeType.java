@@ -130,9 +130,8 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 		}
 		return getNewComparator(config);
 	}
- 	
 
-	
+
 	public static class FlatFieldDescriptor {
 		private int keyPosition;
 		private TypeInformation<?> type;

@@ -17,6 +17,7 @@
  */
 package org.apache.flink.api.io.avro;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.io.avro.generated.User;
@@ -143,6 +144,11 @@ public class AvroPojoTest extends MultipleProgramsTestBase {
 		});
 		res.writeAsText(resultPath);
 		env.execute("Simple Avro read job");
+
+		// test if automatic registration of the Types worked
+		ExecutionConfig ec = env.getConfig();
+		Assert.assertTrue(ec.getRegisteredKryoTypes().contains(org.apache.flink.api.io.avro.generated.Fixed16.class));
+
 		if(fieldName.equals("name")) {
 			expected = "Alyssa\nCharlie";
 		} else if(fieldName.equals("type_enum")) {

@@ -145,7 +145,7 @@ class ExecutionEnvironment(javaEnv: JavaEnv) {
   /**
    * Registers a default serializer for the given class and its sub-classes at Kryo.
    */
-  def registerDefaultKryoSerializer(clazz: Class[_], serializer: Class[_ <: Serializer[_]]) {
+  def addDefaultKryoSerializer(clazz: Class[_], serializer: Class[_ <: Serializer[_]]) {
     javaEnv.addDefaultKryoSerializer(clazz, serializer)
   }
 
@@ -155,7 +155,7 @@ class ExecutionEnvironment(javaEnv: JavaEnv) {
    * Note that the serializer instance must be serializable (as defined by java.io.Serializable),
    * because it may be distributed to the worker nodes by java serialization.
    */
-  def registerDefaultKryoSerializer(clazz: Class[_], serializer: Serializer[_]): Unit = {
+  def addDefaultKryoSerializer(clazz: Class[_], serializer: Serializer[_]): Unit = {
     javaEnv.addDefaultKryoSerializer(clazz, serializer)
   }
   

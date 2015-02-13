@@ -68,6 +68,9 @@ public class Serializers {
 
 	public static void recursivelyRegisterType(Class<?> type, ExecutionConfig config) {
 		alreadySeen.add(type);
+		if(type.isPrimitive()) {
+			return;
+		}
 		config.registerKryoType(type);
 		addSerializerForType(config, type);
 
