@@ -27,11 +27,13 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.twitter.chill.ScalaKryoInstantiator;
 
+import org.apache.avro.generic.GenericData;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.runtime.DataInputViewStream;
 import org.apache.flink.api.java.typeutils.runtime.DataOutputViewStream;
 import org.apache.flink.api.java.typeutils.runtime.NoFetchingInput;
+import org.apache.flink.api.java.typeutils.runtime.kryo.Serializers.SpecificInstanceCollectionSerializerForArrayList;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 
@@ -291,6 +293,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 			for (ExecutionConfig.Entry<Class<?>, Serializer<?>> e : registeredTypesWithSerializers) {
 				kryo.register(e.getKey(), e.getValue());
 			}
+			// this is needed for Avro but can not be added on demand.
+			kryo.register(GenericData.Array.class, new SpecificInstanceCollectionSerializerForArrayList());
 
 			kryo.setRegistrationRequired(false);
 			kryo.setClassLoader(Thread.currentThread().getContextClassLoader());

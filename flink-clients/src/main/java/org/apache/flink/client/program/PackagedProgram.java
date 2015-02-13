@@ -696,7 +696,7 @@ public class PackagedProgram {
 		private String preview = null;
 		
 		@Override
-		public JobExecutionResult executeInternal(String jobName) throws Exception {
+		public JobExecutionResult execute(String jobName) throws Exception {
 			this.plan = createProgramPlan(jobName);
 			this.previewPlan = PactCompiler.createPreOptimizedPlan((Plan) plan);
 			

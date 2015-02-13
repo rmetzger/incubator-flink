@@ -62,7 +62,7 @@ public class RemoteEnvironment extends ExecutionEnvironment {
 	
 	
 	@Override
-	public JobExecutionResult executeInternal(String jobName) throws Exception {
+	public JobExecutionResult execute(String jobName) throws Exception {
 		Plan p = createProgramPlan(jobName);
 		
 		PlanExecutor executor = PlanExecutor.createRemoteExecutor(host, port, jarFiles);

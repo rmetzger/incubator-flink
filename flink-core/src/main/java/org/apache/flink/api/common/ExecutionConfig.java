@@ -380,7 +380,7 @@ public class ExecutionConfig implements Serializable {
 	}
 
 
-	public static class Entry<K, V> {
+	public static class Entry<K, V> implements Serializable {
 		private final K k;
 		private final V v;
 		public Entry(K k, V v) {

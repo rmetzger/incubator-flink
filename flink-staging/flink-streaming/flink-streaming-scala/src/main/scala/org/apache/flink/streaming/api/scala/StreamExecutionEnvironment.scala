@@ -76,19 +76,38 @@ class StreamExecutionEnvironment(javaEnv: JavaEnv) {
   def getBufferTimout: Long = javaEnv.getBufferTimeout()
 
   /**
-   * Registers the given Serializer as a default serializer for the given class at the
-   * [[KryoSerializer]].
+   * Registers the given type with the serializer at the [[KryoSerializer]].
+   *
+   * Note that the serializer instance must be serializable (as defined by java.io.Serializable),
+   * because it may be distributed to the worker nodes by java serialization.
    */
-  def registerKryoSerializer(clazz: Class[_], serializer: Serializer[_]): Unit = {
-    javaEnv.registerKryoSerializer(clazz, serializer)
+  def registerTypeWithKryoSerializer(clazz: Class[_], serializer: Serializer[_]): Unit = {
+    javaEnv.registerTypeWithKryoSerializer(clazz, serializer)
   }
 
   /**
-   * Registers the given Serializer as a default serializer for the given class at the
-   * [[KryoSerializer]]
+   * Registers the given type with the serializer at the [[KryoSerializer]].
    */
-  def registerKryoSerializer(clazz: Class[_], serializer: Class[_ <: Serializer[_]]) {
-    javaEnv.registerKryoSerializer(clazz, serializer)
+  def registerTypeWithKryoSerializer(clazz: Class[_], serializer: Class[_ <: Serializer[_]]) {
+    javaEnv.registerTypeWithKryoSerializer(clazz, serializer)
+  }
+
+
+  /**
+   * Registers a default serializer for the given class and its sub-classes at Kryo.
+   */
+  def registerDefaultKryoSerializer(clazz: Class[_], serializer: Class[_ <: Serializer[_]]) {
+    javaEnv.addDefaultKryoSerializer(clazz, serializer)
+  }
+
+  /**
+   * Registers a default serializer for the given class and its sub-classes at Kryo.
+   *
+   * Note that the serializer instance must be serializable (as defined by java.io.Serializable),
+   * because it may be distributed to the worker nodes by java serialization.
+   */
+  def registerDefaultKryoSerializer(clazz: Class[_], serializer: Serializer[_]): Unit = {
+    javaEnv.addDefaultKryoSerializer(clazz, serializer)
   }
 
   /**

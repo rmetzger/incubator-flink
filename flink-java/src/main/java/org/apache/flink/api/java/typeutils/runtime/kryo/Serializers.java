@@ -35,6 +35,7 @@ import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.thrift.protocol.TMessage;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
+import scala.reflect.ClassTag;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -92,19 +93,19 @@ public class Serializers {
 	}
 
 	public static void addSerializerForType(ExecutionConfig reg, Class<?> type) {
-		if(type.isAssignableFrom(Message.class)) {
+		if(Message.class.isAssignableFrom(type)) {
 			registerProtoBuf(reg);
 		}
-		if(type.isAssignableFrom(TMessage.class)) {
+		if(TMessage.class.isAssignableFrom(type)) {
 			registerThrift(reg);
 		}
-		if(type.isAssignableFrom(GenericData.Record.class)) {
+		if(GenericData.Record.class.isAssignableFrom(type)) {
 			registerGenericAvro(reg);
 		}
-		if(type.isAssignableFrom(SpecificRecordBase.class)) {
+		if(SpecificRecordBase.class.isAssignableFrom(type)) {
 			registerSpecificAvro(reg, (Class<? extends SpecificRecordBase>) type);
 		}
-		if(type.isAssignableFrom(DateTime.class) || type.isAssignableFrom(Interval.class)) {
+		if(DateTime.class.isAssignableFrom(type) || Interval.class.isAssignableFrom(type)) {
 			registerJodaTime(reg);
 		}
 	}
@@ -149,8 +150,8 @@ public class Serializers {
 		// usually, we are able to handle Avro POJOs with the POJO serializer.
 		// (However only if the GenericData.Array type is registered!)
 
-	//	ClassTag<SpecificRecordBase> tag = scala.reflect.ClassTag$.MODULE$.apply(avroType);
-	//	env.registerTypeWithKryoSerializer(avroType, com.twitter.chill.avro.AvroSerializer.SpecificRecordSerializer(tag));
+		ClassTag<SpecificRecordBase> tag = scala.reflect.ClassTag$.MODULE$.apply(avroType);
+		reg.registerTypeWithKryoSerializer(avroType, com.twitter.chill.avro.AvroSerializer.SpecificRecordSerializer(tag));
 	}
 
 
@@ -189,7 +190,6 @@ public class Serializers {
 	// --------------------------------------------------------------------------------------------
 
 	public static class SpecificInstanceCollectionSerializerForArrayList extends SpecificInstanceCollectionSerializer<ArrayList> {
-
 		public SpecificInstanceCollectionSerializerForArrayList() {
 			super(ArrayList.class);
 		}

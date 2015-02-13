@@ -100,7 +100,7 @@ class KryoGenericTypeSerializerTest {
   }
 
   @Test
-  def jodaSerialization: Unit = {
+  def jodaSerialization1: Unit = {
     val a = List(new LocalDate(1), new LocalDate(2))
     
     runTests(a)
@@ -202,7 +202,7 @@ class KryoGenericTypeSerializerTest {
 
     // Register the custom Kryo Serializer
     val conf = new ExecutionConfig
-    conf.registerKryoSerializer(classOf[LocalDate], classOf[LocalDateSerializer])
+    conf.registerTypeWithKryoSerializer(classOf[LocalDate], classOf[LocalDateSerializer])
     val typeInfo = new GenericTypeInfo[T](clsTag.runtimeClass.asInstanceOf[Class[T]])
     val serializer = typeInfo.createSerializer(conf)
     val typeClass = typeInfo.getTypeClass

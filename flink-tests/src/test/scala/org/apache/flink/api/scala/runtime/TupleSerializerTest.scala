@@ -209,7 +209,7 @@ class TupleSerializerTest {
     try {
       // Register the custom Kryo Serializer
       val conf = new ExecutionConfig
-      conf.registerKryoSerializer(classOf[LocalDate], classOf[LocalDateSerializer])
+      conf.registerTypeWithKryoSerializer(classOf[LocalDate], classOf[LocalDateSerializer])
       val tupleTypeInfo = implicitly[TypeInformation[T]].asInstanceOf[TupleTypeInfoBase[T]]
       val serializer = tupleTypeInfo.createSerializer(conf)
       val tupleClass = tupleTypeInfo.getTypeClass
