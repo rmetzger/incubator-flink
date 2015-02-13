@@ -366,7 +366,7 @@ public class Client {
 		}
 		
 		@Override
-		public JobExecutionResult execute(String jobName) throws Exception {
+		public JobExecutionResult executeInternal(String jobName) throws Exception {
 			Plan plan = createProgramPlan(jobName);
 			this.optimizerPlan = compiler.compile(plan);
 			

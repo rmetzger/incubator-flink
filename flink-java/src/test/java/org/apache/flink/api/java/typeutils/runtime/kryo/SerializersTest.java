@@ -18,6 +18,7 @@
 package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import de.javakaffee.kryoserializers.jodatime.JodaIntervalSerializer;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.joda.time.Interval;
 import org.junit.Assert;
 import org.junit.Test;
@@ -49,8 +50,9 @@ public class SerializersTest {
 
 	@Test
 	public void testTypeRegistration() {
-		Serializers.recursivelyRegisterType(ClassWithNested.class);
-		KryoSerializer kryo = new KryoSerializer(String.class); // we create Kryo from another type.
+		ExecutionConfig conf = new ExecutionConfig();
+		Serializers.recursivelyRegisterType(ClassWithNested.class, conf);
+		KryoSerializer kryo = new KryoSerializer(String.class, conf); // we create Kryo from another type.
 
 		Assert.assertTrue(kryo.getKryo().getRegistration(FromNested.class).getId() > 0);
 		Assert.assertTrue(kryo.getKryo().getRegistration(ClassWithNested.class).getId() > 0);

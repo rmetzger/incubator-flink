@@ -19,7 +19,7 @@
 package org.apache.flink.streaming.api.scala
 
 import com.esotericsoftware.kryo.Serializer
-import org.apache.flink.api.java.typeutils.runtime.KryoSerializer
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer
 
 import scala.reflect.ClassTag
 import org.apache.commons.lang.Validate

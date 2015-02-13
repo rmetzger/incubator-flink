@@ -21,7 +21,7 @@ import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeutils.SerializerTestInstance
 import org.apache.flink.api.java.ExecutionEnvironment
 import org.apache.flink.api.java.typeutils.GenericTypeInfo
-import org.apache.flink.api.java.typeutils.runtime.KryoSerializer
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer
 import org.joda.time.DateTime
 import org.junit.Test
 import scala.reflect._

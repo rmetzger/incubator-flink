@@ -44,7 +44,7 @@ public class LocalEnvironment extends ExecutionEnvironment {
 	// --------------------------------------------------------------------------------------------
 	
 	@Override
-	public JobExecutionResult execute(String jobName) throws Exception {
+	public JobExecutionResult executeInternal(String jobName) throws Exception {
 		Plan p = createProgramPlan(jobName);
 		
 		PlanExecutor executor = PlanExecutor.createLocalExecutor();

@@ -89,7 +89,7 @@ class ExecutionEnvironment(javaEnv: JavaEnv) {
 
   /**
    * Returns the default degree of parallelism for this execution environment. Note that this
-   * value can be overridden by individual operations using [[DataSet.setParallelism]]
+   * value can be overridden by individual operations using [[DataSet.setParallelism]
    */
   def getDegreeOfParallelism = javaEnv.getDegreeOfParallelism
   
@@ -146,7 +146,7 @@ class ExecutionEnvironment(javaEnv: JavaEnv) {
    * Registers a default serializer for the given class and its sub-classes at Kryo.
    */
   def registerDefaultKryoSerializer(clazz: Class[_], serializer: Class[_ <: Serializer[_]]) {
-    javaEnv.registerDefaultKryoSerializer(clazz, serializer)
+    javaEnv.addDefaultKryoSerializer(clazz, serializer)
   }
 
   /**
@@ -156,7 +156,7 @@ class ExecutionEnvironment(javaEnv: JavaEnv) {
    * because it may be distributed to the worker nodes by java serialization.
    */
   def registerDefaultKryoSerializer(clazz: Class[_], serializer: Serializer[_]): Unit = {
-    javaEnv.registerDefaultKryoSerializer(clazz, serializer)
+    javaEnv.addDefaultKryoSerializer(clazz, serializer)
   }
   
   /**

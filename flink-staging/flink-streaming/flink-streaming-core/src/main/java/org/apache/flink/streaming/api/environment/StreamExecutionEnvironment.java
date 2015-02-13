@@ -180,7 +180,7 @@ public abstract class StreamExecutionEnvironment {
 
 	/**
 	 * Registers the given Serializer as a default serializer for the given type at the
-	 * {@link org.apache.flink.api.java.typeutils.runtime.KryoSerializer}.
+	 * {@link org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer}.
 	 *
 	 * Note that the serializer instance must be serializable (as defined by java.io.Serializable),
 	 * because it may be distributed to the worker nodes by java serialization.
@@ -189,12 +189,12 @@ public abstract class StreamExecutionEnvironment {
 	 * @param serializer The serializer to use.
 	 */
 	public void registerKryoSerializer(Class<?> type, Serializer<?> serializer) {
-		config.registerKryoSerializer(type, serializer);
+		config.registerTypeWithKryoSerializer(type, serializer);
 	}
 
 	/**
 	 * Registers the given Serializer via its class as a serializer for the given type at the
-	 * {@link org.apache.flink.api.java.typeutils.runtime.KryoSerializer}.
+	 * {@link org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer}.
 	 *
 	 * @param type The class of the types serialized with the given serializer.
 	 * @param serializerClass The class of the serializer to use.

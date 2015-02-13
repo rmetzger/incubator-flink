@@ -21,6 +21,7 @@ package org.apache.flink.api.java.typeutils.runtime;
 import static org.junit.Assert.*;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.apache.flink.api.common.typeutils.TypeSerializer;

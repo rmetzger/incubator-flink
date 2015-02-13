@@ -30,6 +30,7 @@ import de.javakaffee.kryoserializers.jodatime.JodaIntervalSerializer;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificRecordBase;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.thrift.protocol.TMessage;
 import org.joda.time.DateTime;
@@ -55,8 +56,6 @@ import java.util.Set;
  * Also, there is a Java Annotation for adding a default serializer (@DefaultSerializer) to classes.
  */
 public class Serializers {
-
-
 	/**
 	 * NOTE: This method is not a public Flink API.
 	 *
@@ -65,11 +64,11 @@ public class Serializers {
 	 * It also watches for types which need special serializers.
 	 */
 	private static Set<Class<?>> alreadySeen = new HashSet<Class<?>>();
-	private static KryoRegistration kryoReg = new KryoRegistration();
-	public static void recursivelyRegisterType(Class<?> type) {
+
+	public static void recursivelyRegisterType(Class<?> type, ExecutionConfig config) {
 		alreadySeen.add(type);
-		kryoReg.registerType(type);
-		addSerializerForType(kryoReg, type);
+		config.registerKryoType(type);
+		addSerializerForType(config, type);
 
 		Field[] fields = type.getDeclaredFields();
 		for(Field field : fields) {
@@ -80,19 +79,19 @@ public class Serializers {
 					if(TypeExtractor.isClassType(t) ) {
 						Class clazz = TypeExtractor.typeToClass(t);
 						if(!alreadySeen.contains(clazz)) {
-							recursivelyRegisterType(TypeExtractor.typeToClass(t));
+							recursivelyRegisterType(TypeExtractor.typeToClass(t), config);
 						}
 					}
 				}
 			}
 			Class<?> clazz = field.getType();
 			if(!alreadySeen.contains(clazz)) {
-				recursivelyRegisterType(clazz);
+				recursivelyRegisterType(clazz, config);
 			}
 		}
 	}
 
-	public static void addSerializerForType(SerializerRegistrable reg, Class<?> type) {
+	public static void addSerializerForType(ExecutionConfig reg, Class<?> type) {
 		if(type.isAssignableFrom(Message.class)) {
 			registerProtoBuf(reg);
 		}
@@ -114,7 +113,7 @@ public class Serializers {
 	 * Register serializers required for Google Protocol Buffers
 	 * with Flink runtime.
 	 */
-	public static void registerProtoBuf(SerializerRegistrable reg) {
+	public static void registerProtoBuf(ExecutionConfig reg) {
 		// Google Protobuf (FLINK-1392)
 		reg.registerTypeWithKryoSerializer(Message.class, ProtobufSerializer.class);
 	}
@@ -122,17 +121,17 @@ public class Serializers {
 	/**
 	 * Register Apache Thrift messages
 	 */
-	public static void registerThrift(SerializerRegistrable reg) {
+	public static void registerThrift(ExecutionConfig reg) {
 		// TBaseSerializer states it should be initalized as a default Kryo serializer
-		reg.registerDefaultKryoSerializer(TMessage.class, TBaseSerializer.class);
-		reg.registerType(TMessage.class);
+		reg.addDefaultKryoSerializer(TMessage.class, TBaseSerializer.class);
+		reg.registerKryoType(TMessage.class);
 	}
 
 	/**
 	 * Register these serializers for using Avro's {@see GenericData.Record} and classes
 	 * implementing {@see org.apache.avro.specific.SpecificRecordBase}
 	 */
-	public static void registerGenericAvro(SerializerRegistrable reg) {
+	public static void registerGenericAvro(ExecutionConfig reg) {
 		// Avro POJOs contain java.util.List which have GenericData.Array as their runtime type
 		// because Kryo is not able to serialize them properly, we use this serializer for them
 		reg.registerTypeWithKryoSerializer(GenericData.Array.class, SpecificInstanceCollectionSerializerForArrayList.class);
@@ -140,11 +139,11 @@ public class Serializers {
 		// Kryo is able to serialize everything in there, except for the Schema.
 		// This serializer is very slow, but using the GenericData.Records of Kryo is in general a bad idea.
 		// we add the serializer as a default serializer because Avro is using a private sub-type at runtime.
-		reg.registerDefaultKryoSerializer(Schema.class, AvroSchemaSerializer.class);
+		reg.addDefaultKryoSerializer(Schema.class, AvroSchemaSerializer.class);
 	}
 
 
-	public static void registerSpecificAvro(SerializerRegistrable reg, Class<? extends SpecificRecordBase> avroType) {
+	public static void registerSpecificAvro(ExecutionConfig reg, Class<? extends SpecificRecordBase> avroType) {
 		registerGenericAvro(reg);
 		// This rule only applies if users explicitly use the GenericTypeInformation for the avro types
 		// usually, we are able to handle Avro POJOs with the POJO serializer.
@@ -172,7 +171,7 @@ public class Serializers {
 	 * <li>{@link org.joda.time.chrono.GJChronology}</li>
 	 * </ul>
 	 */
-	public static void registerJodaTime(SerializerRegistrable reg) {
+	public static void registerJodaTime(ExecutionConfig reg) {
 		reg.registerTypeWithKryoSerializer(DateTime.class, JodaDateTimeSerializer.class);
 		reg.registerTypeWithKryoSerializer(Interval.class, JodaIntervalSerializer.class);
 	}
@@ -180,7 +179,7 @@ public class Serializers {
 	/**
 	 * Register less frequently used serializers
 	 */
-	public static void registerJavaUtils(SerializerRegistrable reg) {
+	public static void registerJavaUtils(ExecutionConfig reg) {
 		// BitSet, Regex is already present through twitter-chill.
 	}
 
@@ -236,36 +235,5 @@ public class Serializers {
 			Schema.Parser sParser = new Schema.Parser();
 			return sParser.parse(schemaAsString);
 		}
-	}
-
-	/**
-	 * Fake execution environment to use the same interfaces for registering serializer groups
-	 */
-	private static class KryoRegistration implements SerializerRegistrable {
-
-		@Override
-		public void registerTypeWithKryoSerializer(Class<?> type, Serializer<?> serializer) {
-			KryoSerializer.registerTypeWithSerializer(type, serializer);
-		}
-
-		@Override
-		public void registerTypeWithKryoSerializer(Class<?> type, Class<? extends Serializer<?>> serializerClass) {
-			KryoSerializer.registerTypeWithSerializer(type, serializerClass);
-		}
-
-		@Override
-		public void registerDefaultKryoSerializer(Class<?> type, Class<? extends Serializer<?>> serializerClass) {
-			KryoSerializer.registerDefaultSerializer(type, serializerClass);
-		}
-
-		@Override
-		public void registerDefaultKryoSerializer(Class<?> clazz, Serializer<?> serializer) {
-			KryoSerializer.registerDefaultSerializer(clazz, serializer);
-		}
-
-		public void registerType(Class<?> type) {
-			KryoSerializer.registerType(type);
-		}
-
 	}
 }
