@@ -31,7 +31,6 @@ import java.util.UUID;
 import com.esotericsoftware.kryo.Serializer;
 
 import com.google.common.base.Joiner;
-import org.apache.avro.generic.GenericData;
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InvalidProgramException;
