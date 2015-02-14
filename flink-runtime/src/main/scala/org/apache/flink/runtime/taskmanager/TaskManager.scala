@@ -123,11 +123,13 @@ import scala.collection.JavaConverters._
   metricRegistry.register("gc", new GarbageCollectorMetricSet)
   metricRegistry.register("memory", new MemoryUsageGaugeSet)
   metricRegistry.register("load", new Gauge[Double] {
-    override def getValue: Double = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage()
+    override def getValue: Double =
+      ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage()
   })
   // register metric serialization
-  val metricRegistryMapper: ObjectMapper = new ObjectMapper().registerModule(new MetricsModule(TimeUnit.SECONDS,
-    TimeUnit.MILLISECONDS, false, MetricFilter.ALL))
+  val metricRegistryMapper: ObjectMapper =
+    new ObjectMapper().registerModule(new MetricsModule(TimeUnit.SECONDS, TimeUnit.MILLISECONDS,
+      false, MetricFilter.ALL))
 
   // Actors which want to be notified once this task manager has been registered at the job manager
   val waitForRegistration = scala.collection.mutable.Set[ActorRef]()
