@@ -2,6 +2,7 @@ package org.apache.flink.runtime.taskmanager;
 
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
@@ -43,6 +44,13 @@ public class Playin {
 				// gather standard Jmx metrics
 				mr.register("gc", new GarbageCollectorMetricSet());
 				mr.register("memory", new MemoryUsageGaugeSet());
+				mr.register("load", new Gauge<Double>() {
+
+					@Override
+					public Double getValue() {
+						return ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+					}
+				});
 
 				/*final ConsoleReporter consoleReporter = ConsoleReporter.forRegistry(mr)
 						.convertRatesTo(TimeUnit.SECONDS)

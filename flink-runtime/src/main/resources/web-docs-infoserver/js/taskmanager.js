@@ -17,6 +17,7 @@
  */
 
 $(document).ready(function() {
+console.log("requesting TMs");
     updateTaskManagers(); // first call
 	setInterval(updateTaskManagers, 5000); // schedule periodic calls.
 });
@@ -33,7 +34,7 @@ function convertHex(hex,opacity){
 }
 
 function getUnixTime() {
-	return new Date().getTime()/1000;
+	return Math.floor(new Date().getTime()/1000);
 }
 
 // this array contains the history metrics for the taskManagers.
@@ -43,14 +44,18 @@ var taskManagerMemory = [];
 var taskManagerGraph = [];
 
 // values for the memory charting. In order!
-var memoryValues = ["memory.non-heap.used", "memory.flink.used", "memory.heap.used" ];
+var memoryValues = ["memory.non-heap.used" , "memory.flink.used", "memory.heap.used" ];
 
 /**
 Create rickshaw graph for the specified taskManager id (tmid).
 **/
-function createGraph(tmId) {
+function createGraph(tmId, maxload, maxmem) {
+console.log("creating graph");
     var palette = new Rickshaw.Color.Palette({scheme: "spectrum14"} );
     var series = [];
+    var scales = [];
+    scales.push(d3.scale.linear().domain([1, maxmem]).nice());
+    scales.push(d3.scale.linear().domain([0, maxload]).nice());
     for(i in memoryValues) {
         var value = memoryValues[i];
         taskManagerMemory[tmId][value] = [];
@@ -58,25 +63,48 @@ function createGraph(tmId) {
             color: convertHex(palette.color(), 90),
             data: taskManagerMemory[tmId][value],
             name: value,
+            scale: scales[0],
+            renderer: 'area',
             stroke: 'rgba(0,0,0,0.5)'
         });
     }
+    taskManagerMemory[tmId]["load"] = [];
+    // add load series
+    series.push({
+        color: palette.color(),
+        scale: scales[1],
+        data: taskManagerMemory[tmId]["load"],
+        name: "OS Load",
+        renderer: 'line',
+        //stroke: 'rgba(0,0,0,0.5)'
+    });
+
     var graph = new Rickshaw.Graph( {
         element: document.querySelector("#chart-"+tmId),
         width: 580,
         height: 250,
         series: series,
-        renderer: 'area',
+        renderer: 'multi',
+         // renderer: 'line',
         stroke: true
     } );
 
     var x_axis = new Rickshaw.Graph.Axis.Time( { graph: graph } );
 
-    var y_axis = new Rickshaw.Graph.Axis.Y( {
+    var y_axis = new Rickshaw.Graph.Axis.Y.Scaled( {
         graph: graph,
         orientation: 'left',
+        scale: scales[0],
         tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
         element: document.getElementById("y_axis-"+tmId)
+    } );
+
+    var y_axis_load = new Rickshaw.Graph.Axis.Y.Scaled( {
+        graph: graph,
+        orientation: 'right',
+        scale: scales[1],
+        grid: false,
+        element: document.getElementById("y_axis-load-"+tmId)
     } );
 
     var hoverDetail = new Rickshaw.Graph.HoverDetail( {
@@ -94,7 +122,7 @@ function createGraph(tmId) {
     // make graph resizable
     var resize = function() {
         graph.configure({
-            width: tableBox.innerWidth() - $(".y_axis").width() - 20
+            width: tableBox.innerWidth() - $(".y_axis").width() - 75
         });
         graph.render();
     }
@@ -113,12 +141,14 @@ function processTMdata(json) {
 	for (var i = 0; i < json.taskmanagers.length; i++) {
 		var tm = json.taskmanagers[i];
 		var tmRowIdCssName = "tm-row-"+tm.id;
+		var metricsJSON = $.parseJSON(tm.metrics);
 		// check if taskManager has a row
 		tmRow = $("#"+tmRowIdCssName);
 		if(tmRow.length == 0) {
 		    var tmMemoryBox = "<div class=\"chart_container\" id=\"chart_container-"+tm.id+"\">"+
-                                  "<div class=\"y_axis\" id=\"y_axis-"+tm.id+"\"></div>"+
+                                  "<div class=\"y_axis\" id=\"y_axis-"+tm.id+"\"><p class=\"axis_label\">Memory</p></div>"+
                                   "<div class=\"chart\" id=\"chart-"+tm.id+"\"></div>"+
+                                  "<div class=\"y_axis-load\" id=\"y_axis-load-"+tm.id+"\"><p class=\"axis_label\">Load</p></div>"+
                                "</div>"+
                                "<div class=\"legend\" id=\"legend-"+tm.id+"\"></div>";
 		    // the taskamanger does not yet have a table row
@@ -127,8 +157,9 @@ function processTMdata(json) {
 		                "<td id=\""+tmRowIdCssName+"-memory\">"+tmMemoryBox+"</td>" + // second row: memory statistics
 		                "<td id=\""+tmRowIdCssName+"-info\"><i>Loading Information</i></td>" + // Information
 		                "</tr>");
+		    var maxmem = metricsJSON.gauges["memory.total.max"].value
 		    taskManagerMemory[tm.id] = []; // create empty array for TM
-		    taskManagerGraph[tm.id] = createGraph(tm.id);
+		    taskManagerGraph[tm.id] = createGraph(tm.id, tm.cpuCores, maxmem); // cpu cores as load approximation
 		    taskManagerGraph[tm.id].render();
 		}
         // fill (update) row with contents
@@ -136,7 +167,6 @@ function processTMdata(json) {
         var time = getUnixTime();
         for(memValIdx in memoryValues) {
             valueKey = memoryValues[memValIdx];
-            metricsJSON = $.parseJSON(tm.metrics);
 
             var flinkMemory = tm.managedMemory * 1000 * 1000;
             switch(valueKey) {
@@ -152,8 +182,10 @@ function processTMdata(json) {
             }
             taskManagerMemory[tm.id][valueKey].push({x: time, y: value})
         }
+        // load
+        taskManagerMemory[tm.id]["load"].push({x:time, y:metricsJSON.gauges["load"].value });
         taskManagerGraph[tm.id].update();
-
+console.log("Update graph");
 
         // info box
         tmInfoBox = $("#"+tmRowIdCssName+"-info");
