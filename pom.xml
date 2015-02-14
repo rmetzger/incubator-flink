@@ -1025,6 +1025,9 @@ under the License.
 						<exclude>flink-runtime/src/main/resources/web-docs-infoserver/js/flot/*</exclude>
 						<exclude>flink-runtime/src/main/resources/web-docs-infoserver/js/jcanvas.min.js</exclude>
 						<exclude>flink-runtime/src/main/resources/web-docs-infoserver/js/timeline.js</exclude>
+						<exclude>flink-runtime/src/main/resources/web-docs-infoserver/js/d3.min.js</exclude>
+						<exclude>flink-runtime/src/main/resources/web-docs-infoserver/js/d3.layout.min.js</exclude>
+						<exclude>flink-runtime/src/main/resources/web-docs-infoserver/js/rickshaw.*</exclude>
 						<!-- Test Data. -->
 						<exclude>flink-tests/src/test/resources/testdata/terainput.txt</exclude>
 						<exclude>flink-staging/flink-avro/src/test/resources/avro/user.avsc</exclude>
