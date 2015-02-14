@@ -22,7 +22,6 @@ console.log("requesting TMs");
 	setInterval(updateTaskManagers, 5000); // schedule periodic calls.
 });
 
-
 function convertHex(hex,opacity){
     hex = hex.replace('#','');
     r = parseInt(hex.substring(0,2), 16);
@@ -132,6 +131,35 @@ console.log("creating graph");
 
     return graph;
 }
+
+function drawOrUpdateGCStats(tmId, metrics) {
+    var gcs = [];
+    for(var key in metrics.gauges) {
+        var pat = /gc.([^.]+).(count|time)/
+        if(pat.test(key)) {
+            var matches = key.match(pat);
+            if($.inArray(matches[1], gcs) == -1) {
+                gcs.push(matches[1]);
+            }
+        }
+    }
+
+    var html =  "<table class=\"table table-bordered table-hover table-striped\">"+
+                "<tr><td>Name</td><td>Count</td><td>Time</td></tr>";
+    for(var key in gcs) {
+        var gc = gcs[key];
+        html += "<tr><td>"+gc+"</td>";
+        html += "<td>"+metrics.gauges["gc."+gc+".count"].value+"</td>";
+        html += "<td>"+metrics.gauges["gc."+gc+".time"].value+" ms</td></tr>";
+    }
+    html +="</table>";
+    console.log("html",html);
+    $("#gcStats-"+tmId).html(html);
+}
+
+function getTooltipHTML(txt) {
+    return "<i class=\"fa fa-exclamation-circle\" data-toggle=\"tooltip\" data-placement=\"top\" title=\""+txt+"\"></i>";
+}
 /*
  * Initializes taskmanagers table
  */
@@ -142,6 +170,7 @@ function processTMdata(json) {
 		var tm = json.taskmanagers[i];
 		var tmRowIdCssName = "tm-row-"+tm.id;
 		var metricsJSON = $.parseJSON(tm.metrics);
+
 		// check if taskManager has a row
 		tmRow = $("#"+tmRowIdCssName);
 		if(tmRow.length == 0) {
@@ -185,15 +214,30 @@ function processTMdata(json) {
         // load
         taskManagerMemory[tm.id]["load"].push({x:time, y:metricsJSON.gauges["load"].value });
         taskManagerGraph[tm.id].update();
-console.log("Update graph");
+
 
         // info box
         tmInfoBox = $("#"+tmRowIdCssName+"-info");
+        var slotsInfo = "";
+        if(tm.slotsNumber < tm.cpuCores) {
+            slotsInfo = getTooltipHTML("The number of configured processing slots ("+tm.slotsNumber+") is lower than the "+
+                "number of CPU cores ("+tm.cpuCores+"). For good performance, the number of slots should be at least the number of cores.");
+        }
+        var memoryInfo = "";
+        if(  (tm.managedMemory/tm.physicalMemory) < 0.6 ) {
+            memoryInfo = getTooltipHTML("The amout of memory available to Flink ("+tm.managedMemory+" MB) is much lower than "+
+                "the physical memory available on the machine ("+tm.physicalMemory+" MB). For good performance, Flink should get as much memory as possible.");
+        }
         tmInfoBox.html("Last Heartbeat: "+tm.timeSinceLastHeartbeat+" seconds ago<br>"+
-            "Processing Slots: "+tm.freeSlots+"/"+tm.slotsNumber+"<br>"+
-            "Flink Managed Memory: "+tm.managedMemory+" mb<br>"+
+            "Processing Slots: "+tm.freeSlots+"/"+tm.slotsNumber+" "+slotsInfo+"<br>"+
+            "Flink Managed Memory: "+tm.managedMemory+" mb "+memoryInfo+"<br>"+
             "CPU cores: "+tm.cpuCores+" <br>"+
-            "Physical Memory "+tm.physicalMemory+" mb");
+            "Physical Memory "+tm.physicalMemory+" mb"+
+            "<div id=\"gcStats-"+tm.id+"\"></div>");
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        });
+        drawOrUpdateGCStats(tm.id, metricsJSON);
 	}
 }
 
