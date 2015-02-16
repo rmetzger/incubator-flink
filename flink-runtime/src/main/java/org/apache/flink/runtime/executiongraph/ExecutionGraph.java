@@ -645,7 +645,7 @@ public class ExecutionGraph implements Serializable {
 	 */
 	public void prepareForArchiving() {
 		if (!state.isTerminalState()) {
-			throw new IllegalStateException("Can only archive the job from a terminal state");
+			throw new IllegalStateException("Can only archive the job from a terminal state. Current state "+state);
 		}
 		
 		userClassLoader = null;
