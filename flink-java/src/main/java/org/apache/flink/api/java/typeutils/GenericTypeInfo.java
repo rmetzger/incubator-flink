@@ -18,14 +18,19 @@
 
 package org.apache.flink.api.java.typeutils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.runtime.AvroSerializer;
 import org.apache.flink.api.java.typeutils.runtime.GenericTypeComparator;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType<T> {
 
@@ -106,5 +111,56 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
 	@Override
 	public String toString() {
 		return "GenericType<" + typeClass.getCanonicalName() + ">";
+	}
+
+
+	// --------------------------------------------------------------------------------------------
+
+	/**
+	 * Debugging utility to understand the hierarchy of serializers created by the Java API.
+	 * Tested in GroupReduceITCase.testGroupByGenericType()
+	 */
+	public static <T> String getSerializerTree(TypeInformation<T> ti) {
+		return getSerializerTree(ti, 0);
+	}
+
+	private static <T> String getSerializerTree(TypeInformation<T> ti, int indent) {
+		String ret = "";
+		if(ti instanceof CompositeType) {
+			ret += StringUtils.repeat(' ', indent) + ti.getClass().getSimpleName()+"\n";
+			CompositeType<T> cti = (CompositeType<T>) ti;
+			for(int i = 0; i < cti.getArity(); i++) {
+				String fieldName = "";
+				TypeInformation fieldType = cti.getTypeAt(i);
+				if(ti instanceof TupleTypeInfo) {
+					fieldName = "f"+i;
+				} else if(ti instanceof PojoTypeInfo) {
+					fieldName = ((PojoTypeInfo) (ti)).getPojoFieldAt(i).field.getName();
+				}
+				ret += StringUtils.repeat(' ', indent + 2) + fieldName+":"+getSerializerTree(fieldType, indent);
+			}
+		} else {
+			if(ti instanceof GenericTypeInfo) {
+				ret += StringUtils.repeat(' ', indent) + "GenericTypeInfo ("+ti.getTypeClass().getSimpleName()+")\n";
+				ret += getGenericTypeTree(ti.getTypeClass(), indent + 4);
+			} else {
+				ret += StringUtils.repeat(' ', indent) + ti.toString()+"\n";
+			}
+		}
+		return ret;
+	}
+
+	private static String getGenericTypeTree(Class type, int indent) {
+		String ret = "";
+		for(Field field : type.getDeclaredFields()) {
+			if(Modifier.isStatic(field.getModifiers()) || Modifier.isTransient(field.getModifiers())) {
+				continue;
+			}
+			ret += StringUtils.repeat(' ', indent) + field.getName() + ":" + field.getType().getTypeName() + (field.getType().isEnum() ? " (is enum)" : "") + "\n";
+			if(!field.getType().isPrimitive()) {
+				ret += getGenericTypeTree(field.getType(), indent + 4);
+			}
+		}
+		return ret;
 	}
 }
