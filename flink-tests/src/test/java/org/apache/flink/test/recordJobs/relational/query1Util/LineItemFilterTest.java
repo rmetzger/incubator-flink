@@ -27,6 +27,8 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.codahale.metrics.Counter;
+import junit.framework.Assert;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.operators.shipping.RecordOutputCollector;
 import org.apache.flink.test.recordJobs.util.Tuple;
@@ -45,6 +47,8 @@ public class LineItemFilterTest {
 	
 	@Mock
 	RecordWriter<Record> recordWriterMock;
+
+	Counter cnt = new Counter();
 	
 	private List<RecordWriter<Record>> writerList = new ArrayList<RecordWriter<Record>>();
 
@@ -56,7 +60,7 @@ public class LineItemFilterTest {
 	}
 	
 	@Test
-	public void shouldNotFilterTuple() throws Exception, InterruptedException
+	public void shouldNotFilterTuple() throws Exception
 	{
 		LineItemFilter out = new LineItemFilter();
 		
@@ -66,12 +70,15 @@ public class LineItemFilterTest {
 		Record rec = new Record();
 		rec.setField(0, inputKey);
 		rec.setField(1, input);
-		
-		Collector<Record> collector = new RecordOutputCollector(writerList);
-		
+
+
+		Collector<Record> collector = new RecordOutputCollector(writerList, cnt);
+
 		StringValue returnFlag = new StringValue(RETURN_FLAG);
-		
+		long before = cnt.getCount();
 		out.map(rec, collector);
+		// test metrics counter
+		assertEquals(before + 1, cnt.getCount());
 		
 		ArgumentCaptor<Record> argument = ArgumentCaptor.forClass(Record.class);
 		verify(recordWriterMock).emit(argument.capture());
@@ -93,7 +100,7 @@ public class LineItemFilterTest {
 		rec.setField(0, inputKey);
 		rec.setField(1, input);
 		
-		Collector<Record> collector = new RecordOutputCollector(writerList);
+		Collector<Record> collector = new RecordOutputCollector(writerList, cnt);
 		
 		out.map(rec, collector);
 		verifyNoMoreInteractions(recordWriterMock);
@@ -111,7 +118,7 @@ public class LineItemFilterTest {
 		rec.setField(1, input);
 		
 		
-		Collector<Record> collector = new RecordOutputCollector(writerList);
+		Collector<Record> collector = new RecordOutputCollector(writerList, cnt);
 		
 		out.map(rec, collector);
 		verifyNoMoreInteractions(recordWriterMock);
@@ -130,7 +137,7 @@ public class LineItemFilterTest {
 		rec.setField(0, inputKey);
 		rec.setField(1, input);
 		
-		Collector<Record> collector = new RecordOutputCollector(writerList);
+		Collector<Record> collector = new RecordOutputCollector(writerList, cnt);
 		
 		out.map(rec, collector);
 		verifyNoMoreInteractions(recordWriterMock);
@@ -159,7 +166,7 @@ public class LineItemFilterTest {
 		rec.setField(0, inputKey);
 		rec.setField(1, input);
 		
-		Collector<Record> collector = new RecordOutputCollector(writerList);
+		Collector<Record> collector = new RecordOutputCollector(writerList, cnt);
 		
 		out.map(rec, collector);
 		verifyNoMoreInteractions(recordWriterMock);

@@ -119,11 +119,12 @@ import scala.collection.JavaConverters._
   val hardwareDescription = HardwareDescription.extractFromSystem(memoryManager.getMemorySize)
   val fileCache = new FileCache()
   val runningTasks = scala.collection.mutable.HashMap[ExecutionAttemptID, Task]()
-  val metricRegistry = new MetricRegistry
+  var metrics = new scala.collection.mutable.ArrayBuffer[(JobID, ExecutionAttemptID, MetricRegistry)]
+  val taskManagerMetricRegistry = new MetricRegistry
   // register metrics
-  metricRegistry.register("gc", new GarbageCollectorMetricSet)
-  metricRegistry.register("memory", new MemoryUsageGaugeSet)
-  metricRegistry.register("load", new Gauge[Double] {
+  taskManagerMetricRegistry.register("gc", new GarbageCollectorMetricSet)
+  taskManagerMetricRegistry.register("memory", new MemoryUsageGaugeSet)
+  taskManagerMetricRegistry.register("load", new Gauge[Double] {
     override def getValue: Double =
       ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage()
   })
@@ -313,6 +314,9 @@ import scala.collection.JavaConverters._
     case SendHeartbeat =>
       var report: Array[Byte] = null
       try {
+	for( el <- metrics) {
+          println("metrics: ", el.toString())
+        }
         report = metricRegistryMapper.writeValueAsBytes(metricRegistry)
       } catch {
         case all: Throwable => log.warning("Error turning the report into JSON", all)
@@ -702,6 +706,12 @@ import scala.collection.JavaConverters._
   }
 
   private def removeAllTaskResources(task: Task): Unit = {
+    // remove entry from metrics list.
+    for(entry <- metrics) {
+      if(entry._1 == task.getJobID) {
+        metrics -= entry
+      }
+    }
     if (task.getEnvironment != null) {
       try {
         for (entry <- DistributedCache.readFileInfoFromConfig(
