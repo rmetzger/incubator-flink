@@ -46,7 +46,7 @@ import org.apache.flink.runtime.instance.{HardwareDescription, InstanceConnectio
 import org.apache.flink.runtime.io.disk.iomanager.IOManagerAsync
 import org.apache.flink.runtime.io.network.NetworkEnvironment
 import org.apache.flink.runtime.io.network.netty.NettyConfig
-import org.apache.flink.runtime.jobgraph.IntermediateDataSetID
+import org.apache.flink.runtime.jobgraph.{JobID, IntermediateDataSetID}
 import org.apache.flink.runtime.jobmanager.JobManager
 import org.apache.flink.runtime.memorymanager.DefaultMemoryManager
 import org.apache.flink.runtime.messages.JobManagerMessages.UpdateTaskExecutionState
@@ -62,6 +62,7 @@ import org.apache.flink.runtime.security.SecurityUtils
 import org.apache.flink.runtime.security.SecurityUtils.FlinkSecuredRunner
 import org.apache.flink.runtime.util.EnvironmentInformation
 import org.apache.flink.util.ExceptionUtils
+import org.apache.hadoop.metrics.util.MetricsRegistry
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
@@ -314,10 +315,10 @@ import scala.collection.JavaConverters._
     case SendHeartbeat =>
       var report: Array[Byte] = null
       try {
-	for( el <- metrics) {
-          println("metrics: ", el.toString())
+	      for( el <- metrics) {
+          println("metrics: ", el.toString(), metricRegistryMapper.writeValueAsString(el._3))
         }
-        report = metricRegistryMapper.writeValueAsBytes(metricRegistry)
+        report = metricRegistryMapper.writeValueAsBytes(taskManagerMetricRegistry)
       } catch {
         case all: Throwable => log.warning("Error turning the report into JSON", all)
       }
@@ -436,7 +437,8 @@ import scala.collection.JavaConverters._
           s"TaskManager contains already a task with executionID $executionID.")
         case None =>
       }
-
+      var taskMetrics = new MetricRegistry()
+      metrics.append((jobID, executionID, taskMetrics))
       val env = currentJobManager match {
         case Some(jobManager) =>
           val splitProvider = new TaskInputSplitProvider(jobManager, jobID, vertexID,
@@ -707,11 +709,11 @@ import scala.collection.JavaConverters._
 
   private def removeAllTaskResources(task: Task): Unit = {
     // remove entry from metrics list.
-    for(entry <- metrics) {
+   /* for(entry <- metrics) {
       if(entry._1 == task.getJobID) {
         metrics -= entry
       }
-    }
+    } */
     if (task.getEnvironment != null) {
       try {
         for (entry <- DistributedCache.readFileInfoFromConfig(
