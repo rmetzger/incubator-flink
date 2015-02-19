@@ -345,11 +345,13 @@ public class DataSinkTask<IT> extends AbstractInvokable {
 		numGates += groupSize;
 		if (groupSize == 1) {
 			// non-union case
-			inputReader = new MutableRecordReader<DeserializationDelegate<IT>>(getEnvironment().getReader(0));
+			inputReader = new MutableRecordReader<DeserializationDelegate<IT>>(getEnvironment().getReader(0),
+					this.getEnvironment().getTaskMetrics().getIncomingRecordsCounter());
 		} else if (groupSize > 1){
 			// union case
 			UnionBufferReader reader = new UnionBufferReader(getEnvironment().getAllReaders());
-			inputReader = new MutableRecordReader<IOReadableWritable>(reader);
+			inputReader = new MutableRecordReader<IOReadableWritable>(reader,
+					this.getEnvironment().getTaskMetrics().getIncomingRecordsCounter());
 		} else {
 			throw new Exception("Illegal input group size in task configuration: " + groupSize);
 		}

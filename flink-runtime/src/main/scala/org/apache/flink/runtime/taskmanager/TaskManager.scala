@@ -439,7 +439,7 @@ import scala.collection.JavaConverters._
             executionID, userCodeClassLoader, timeout)
 
           new RuntimeEnvironment(jobManager, task, tdd, userCodeClassLoader,
-            memoryManager, ioManager, splitProvider, bcVarManager, networkEnvironment.get)
+            memoryManager, ioManager, splitProvider, bcVarManager, networkEnvironment.get, taskMetrics)
 
         case None => throw new IllegalStateException("TaskManager has not yet been registered at " +
           "a JobManager.")

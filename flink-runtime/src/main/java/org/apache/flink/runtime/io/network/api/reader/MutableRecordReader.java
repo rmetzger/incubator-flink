@@ -18,18 +18,21 @@
 
 package org.apache.flink.runtime.io.network.api.reader;
 
+import com.codahale.metrics.Counter;
 import org.apache.flink.core.io.IOReadableWritable;
 
 import java.io.IOException;
 
 public class MutableRecordReader<T extends IOReadableWritable> extends AbstractRecordReader<T> implements MutableReader<T> {
-
-	public MutableRecordReader(BufferReaderBase reader) {
+	private final Counter counter;
+	public MutableRecordReader(BufferReaderBase reader, Counter counter) {
 		super(reader);
+		this.counter = counter;
 	}
 
 	@Override
 	public boolean next(final T target) throws IOException, InterruptedException {
+		counter.inc();
 		return getNextRecord(target);
 	}
 

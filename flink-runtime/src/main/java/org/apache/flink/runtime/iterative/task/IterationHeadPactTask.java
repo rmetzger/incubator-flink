@@ -119,7 +119,7 @@ public class IterationHeadPactTask<X, Y, S extends Function, OT> extends Abstrac
 		final TaskConfig finalOutConfig = this.config.getIterationHeadFinalOutputConfig();
 		final ClassLoader userCodeClassLoader = getUserCodeClassLoader();
 		this.finalOutputCollector = RegularPactTask.getOutputCollector(this, finalOutConfig,
-			userCodeClassLoader, this.finalOutputWriters, config.getNumOutputs(), finalOutConfig.getNumOutputs());
+			userCodeClassLoader, this.finalOutputWriters, config.getNumOutputs(), finalOutConfig.getNumOutputs(), this.getEnvironment().getTaskMetrics());
 
 		// sanity check the setup
 		final int writersIntoStepFunction = this.eventualOutputs.size();

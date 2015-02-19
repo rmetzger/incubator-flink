@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.execution;
 
 import akka.actor.ActorRef;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager;
@@ -36,6 +37,7 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.jobgraph.tasks.InputSplitProvider;
 import org.apache.flink.runtime.memorymanager.MemoryManager;
+import org.apache.flink.runtime.metrics.TaskMetrics;
 import org.apache.flink.runtime.taskmanager.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +89,8 @@ public class RuntimeEnvironment implements Environment, Runnable {
 
 	private final BroadcastVariableManager broadcastVariableManager;
 
+	private final TaskMetrics taskMetrics;
+
 	private final Map<String, FutureTask<Path>> cacheCopyTasks = new HashMap<String, FutureTask<Path>>();
 
 	private final AtomicBoolean canceled = new AtomicBoolean();
@@ -102,7 +106,8 @@ public class RuntimeEnvironment implements Environment, Runnable {
 	public RuntimeEnvironment(
 			ActorRef jobManager, Task owner, TaskDeploymentDescriptor tdd, ClassLoader userCodeClassLoader,
 			MemoryManager memoryManager, IOManager ioManager, InputSplitProvider inputSplitProvider,
-			BroadcastVariableManager broadcastVariableManager, NetworkEnvironment networkEnvironment) throws Exception {
+			BroadcastVariableManager broadcastVariableManager, NetworkEnvironment networkEnvironment,
+			MetricRegistry taskMetrics) throws Exception {
 
 		this.owner = checkNotNull(owner);
 
@@ -112,6 +117,8 @@ public class RuntimeEnvironment implements Environment, Runnable {
 		this.jobManager = checkNotNull(jobManager);
 
 		this.broadcastVariableManager = checkNotNull(broadcastVariableManager);
+
+		this.taskMetrics = new TaskMetrics(taskMetrics);
 
 		try {
 			// Produced intermediate result partitions
@@ -346,6 +353,11 @@ public class RuntimeEnvironment implements Environment, Runnable {
 	@Override
 	public BroadcastVariableManager getBroadcastVariableManager() {
 		return broadcastVariableManager;
+	}
+
+	@Override
+	public TaskMetrics getTaskMetrics() {
+		return this.taskMetrics;
 	}
 
 	@Override

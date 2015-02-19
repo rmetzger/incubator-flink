@@ -19,6 +19,7 @@
 
 package org.apache.flink.runtime.operators;
 
+import com.codahale.metrics.MetricRegistry;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;

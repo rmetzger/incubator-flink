@@ -19,6 +19,7 @@
 
 package org.apache.flink.runtime.operators;
 
+import com.codahale.metrics.Counter;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
@@ -79,7 +80,8 @@ public class FlatMapDriver<IT, OT> implements PactDriver<FlatMapFunction<IT, OT>
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("FlatMapDriver object reuse: " + (this.objectReuseEnabled ? "ENABLED" : "DISABLED") + ".");
-		}	}
+		}
+	}
 
 	@Override
 	public void run() throws Exception {
@@ -90,7 +92,6 @@ public class FlatMapDriver<IT, OT> implements PactDriver<FlatMapFunction<IT, OT>
 
 		if (objectReuseEnabled) {
 			IT record = this.taskContext.<IT>getInputSerializer(0).getSerializer().createInstance();
-
 
 			while (this.running && ((record = input.next(record)) != null)) {
 				function.flatMap(record, output);

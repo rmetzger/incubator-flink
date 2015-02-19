@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.io;
 
+import com.codahale.metrics.Counter;
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
 import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
@@ -26,8 +27,8 @@ public class IndexedMutableReader<T extends IOReadableWritable> extends MutableR
 
 	BufferReaderBase reader;
 
-	public IndexedMutableReader(BufferReaderBase reader) {
-		super(reader);
+	public IndexedMutableReader(BufferReaderBase reader, Counter counter) {
+		super(reader, counter);
 		this.reader = reader;
 	}
 

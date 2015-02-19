@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.codahale.metrics.Counter;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.types.Record;
 import org.apache.flink.util.Collector;
@@ -36,6 +37,7 @@ public class RecordOutputCollector implements Collector<Record>
 {
 	// list of writers
 	protected RecordWriter<Record>[] writers;
+	private final Counter counter;
 
 	/**
 	 * Initializes the output collector with a set of writers.
@@ -45,9 +47,9 @@ public class RecordOutputCollector implements Collector<Record>
 	 * @param writers List of all writers.
 	 */
 	@SuppressWarnings("unchecked")
-	public RecordOutputCollector(List<RecordWriter<Record>> writers) {
-
+	public RecordOutputCollector(List<RecordWriter<Record>> writers, Counter counter) {
 		this.writers = (RecordWriter<Record>[]) writers.toArray(new RecordWriter[writers.size()]);
+		this.counter = counter;
 	}
 
 	/**
@@ -77,6 +79,7 @@ public class RecordOutputCollector implements Collector<Record>
 	@Override
 	public void collect(Record record)
 	{
+		counter.inc();
 		try {
 			for (int i = 0; i < writers.length; i++) {
 				this.writers[i].emit(record);

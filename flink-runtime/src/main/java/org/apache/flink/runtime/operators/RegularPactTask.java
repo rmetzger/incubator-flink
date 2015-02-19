@@ -46,6 +46,7 @@ import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.memorymanager.MemoryManager;
 import org.apache.flink.runtime.messages.JobManagerMessages;
+import org.apache.flink.runtime.metrics.TaskMetrics;
 import org.apache.flink.runtime.operators.chaining.ChainedDriver;
 import org.apache.flink.runtime.operators.chaining.ExceptionInChainedStubException;
 import org.apache.flink.runtime.operators.resettable.SpillingResettableMutableObjectIterator;
@@ -719,7 +720,8 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 
 			if (groupSize == 1) {
 				// non-union case
-				inputReaders[i] = new MutableRecordReader<IOReadableWritable>(getEnvironment().getReader(currentReaderOffset));
+				inputReaders[i] = new MutableRecordReader<IOReadableWritable>(getEnvironment().getReader(currentReaderOffset),
+						this.getEnvironment().getTaskMetrics().getIncomingRecordsCounter());
 			} else if (groupSize > 1){
 				// union case
 				BufferReader[] readers = new BufferReader[groupSize];
@@ -727,7 +729,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 					readers[j] = getEnvironment().getReader(currentReaderOffset + j);
 				}
 				UnionBufferReader reader = new UnionBufferReader(readers);
-				inputReaders[i] = new MutableRecordReader<IOReadableWritable>(reader);
+				inputReaders[i] = new MutableRecordReader<IOReadableWritable>(reader, this.getEnvironment().getTaskMetrics().getIncomingRecordsCounter());
 			} else {
 				throw new Exception("Illegal input group size in task configuration: " + groupSize);
 			}
@@ -759,7 +761,8 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 			final int groupSize = this.config.getBroadcastGroupSize(i);
 			if (groupSize == 1) {
 				// non-union case
-				broadcastInputReaders[i] = new MutableRecordReader<IOReadableWritable>(getEnvironment().getReader(currentReaderOffset));
+				broadcastInputReaders[i] = new MutableRecordReader<IOReadableWritable>(getEnvironment().getReader(currentReaderOffset),
+						this.getEnvironment().getTaskMetrics().getIncomingBroadcastRecordsCounter());
 			} else if (groupSize > 1){
 				// union case
 				BufferReader[] readers = new BufferReader[groupSize];
@@ -767,7 +770,8 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 					readers[j] = getEnvironment().getReader(currentReaderOffset + j);
 				}
 				UnionBufferReader reader = new UnionBufferReader(readers);
-				broadcastInputReaders[i] = new MutableRecordReader<IOReadableWritable>(reader);
+				broadcastInputReaders[i] = new MutableRecordReader<IOReadableWritable>(reader,
+						this.getEnvironment().getTaskMetrics().getIncomingBroadcastRecordsCounter());
 			} else {
 				throw new Exception("Illegal input group size in task configuration: " + groupSize);
 			}
@@ -1242,7 +1246,8 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 	 *
 	 * @return The OutputCollector that data produced in this task is submitted to.
 	 */
-	public static <T> Collector<T> getOutputCollector(AbstractInvokable task, TaskConfig config, ClassLoader cl, List<RecordWriter<?>> eventualOutputs, int outputOffset, int numOutputs)
+	public static <T> Collector<T> getOutputCollector(AbstractInvokable task, TaskConfig config,
+		ClassLoader cl, List<RecordWriter<?>> eventualOutputs, int outputOffset, int numOutputs, TaskMetrics metrics)
 			throws Exception
 	{
 		if (numOutputs == 0) {
@@ -1283,7 +1288,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 			}
 
 			@SuppressWarnings("unchecked")
-			final Collector<T> outColl = (Collector<T>) new RecordOutputCollector(writers);
+			final Collector<T> outColl = (Collector<T>) new RecordOutputCollector(writers, metrics.getOutgoingRecordsCounter());
 			return outColl;
 		}
 		else {
@@ -1314,7 +1319,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 			if (eventualOutputs != null) {
 				eventualOutputs.addAll(writers);
 			}
-			return new OutputCollector<T>(writers, serializerFactory.getSerializer());
+			return new OutputCollector<T>(writers, serializerFactory.getSerializer(), metrics.getOutgoingRecordsCounter());
 		}
 	}
 
@@ -1358,7 +1363,8 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 
 				if (i == numChained -1) {
 					// last in chain, instantiate the output collector for this task
-					previous = getOutputCollector(nepheleTask, chainedStubConf, cl, eventualOutputs, 0, chainedStubConf.getNumOutputs());
+					previous = getOutputCollector(nepheleTask, chainedStubConf, cl, eventualOutputs, 0,
+							chainedStubConf.getNumOutputs(), nepheleTask.getEnvironment().getTaskMetrics());
 				}
 
 				ct.setup(chainedStubConf, taskName, previous, nepheleTask, cl, executionConfig);
@@ -1372,7 +1378,8 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 		// else
 
 		// instantiate the output collector the default way from this configuration
-		return getOutputCollector(nepheleTask , config, cl, eventualOutputs, 0, numOutputs);
+		return getOutputCollector(nepheleTask, config, cl, eventualOutputs, 0, numOutputs,
+				nepheleTask.getEnvironment().getTaskMetrics());
 	}
 	
 	// --------------------------------------------------------------------------------------------

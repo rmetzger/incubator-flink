@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.taskmanager;
 
 import akka.actor.ActorRef;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.blob.BlobKey;
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager;
@@ -271,7 +272,7 @@ public class TaskTest {
 			
 			RuntimeEnvironment env = new RuntimeEnvironment(mock(ActorRef.class), task, tdd, getClass().getClassLoader(),
 					mock(MemoryManager.class), mock(IOManager.class), mock(InputSplitProvider.class),
-					new BroadcastVariableManager(), MockNetworkEnvironment.getMock());
+					new BroadcastVariableManager(), MockNetworkEnvironment.getMock(), new MetricRegistry());
 
 			task.setEnvironment(env);
 			
@@ -308,7 +309,7 @@ public class TaskTest {
 			
 			RuntimeEnvironment env = new RuntimeEnvironment(mock(ActorRef.class), task, tdd, getClass().getClassLoader(),
 					mock(MemoryManager.class), mock(IOManager.class), mock(InputSplitProvider.class),
-					new BroadcastVariableManager(), MockNetworkEnvironment.getMock());
+					new BroadcastVariableManager(), MockNetworkEnvironment.getMock(), new MetricRegistry());
 
 			task.setEnvironment(env);
 			

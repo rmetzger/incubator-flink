@@ -56,12 +56,13 @@ public class InputHandler<IN> {
 			if (numberOfInputs < 2) {
 
 				inputs = new IndexedMutableReader<DeserializationDelegate<StreamRecord<IN>>>(
-						streamVertex.getEnvironment().getReader(0));
+						streamVertex.getEnvironment().getReader(0), streamVertex.getEnvironment().getTaskMetrics().getIncomingRecordsCounter());
 
 			} else {
 				UnionBufferReader reader = new UnionBufferReader(streamVertex.getEnvironment()
 						.getAllReaders());
-				inputs = new IndexedMutableReader<DeserializationDelegate<StreamRecord<IN>>>(reader);
+				inputs = new IndexedMutableReader<DeserializationDelegate<StreamRecord<IN>>>(reader,
+						streamVertex.getEnvironment().getTaskMetrics().getIncomingRecordsCounter());
 			}
 
 			inputIter = createInputIterator();
