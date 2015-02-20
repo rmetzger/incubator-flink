@@ -25,6 +25,11 @@ import org.apache.flink.yarn.Messages.StopYarnSession
 trait YarnTaskManager extends ActorLogMessages {
   that: TaskManager =>
 
+  override def postStop(): Unit = {
+    log.warning("Stopping actor system because YarnTaskManager actor stopped")
+    context.system.shutdown()
+  }
+
   abstract override def receiveWithLogMessages: Receive = {
     receiveYarnMessages orElse super.receiveWithLogMessages
   }

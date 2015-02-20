@@ -97,6 +97,7 @@ object ApplicationMaster {
           // start the web info server
           LOG.info("Starting Job Manger web frontend.")
           config.setString(ConfigConstants.JOB_MANAGER_WEB_LOG_PATH_KEY, logDirs)
+          config.setInteger(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY, 0)
           webserver = new WebInfoServer(config, jobManager, archiver)
           webserver.start()
 

@@ -64,6 +64,10 @@ trait YarnJobManager extends ActorLogMessages {
   var completedContainers = 0
   var numTaskManager = 0
 
+  override def postStop(): Unit = {
+    log.warning("Stopping actor system because YarnJobManager actor stopped")
+    context.system.shutdown()
+  }
 
   abstract override def receiveWithLogMessages: Receive = {
     receiveYarnMessages orElse super.receiveWithLogMessages
