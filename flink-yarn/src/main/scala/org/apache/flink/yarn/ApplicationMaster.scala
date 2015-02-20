@@ -27,6 +27,7 @@ import org.apache.flink.configuration.{Configuration, ConfigConstants}
 import org.apache.flink.runtime.akka.AkkaUtils
 import org.apache.flink.runtime.jobmanager.JobManager
 import org.apache.flink.runtime.jobmanager.web.WebInfoServer
+import org.apache.flink.runtime.util.EnvironmentInformation
 import org.apache.flink.yarn.Messages.StartYarnSession
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
@@ -44,7 +45,8 @@ object ApplicationMaster {
   val MODIFIED_CONF_FILE = "flink-conf-modified.yaml"
   val MAX_REGISTRATION_DURATION = "5 minutes"
 
-  def main(args: Array[String]): Unit ={
+  def main(args: Array[String]): Unit = {
+    EnvironmentInformation.logEnvironmentInfo(LOG, "ApplicationMaster / JobManager")
     val yarnClientUsername = System.getenv(FlinkYarnClient.ENV_CLIENT_USERNAME)
     LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName}" +
       s"' setting user to execute Flink ApplicationMaster/JobManager to $yarnClientUsername'")

@@ -25,6 +25,7 @@ import java.util.Map;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import org.apache.flink.runtime.util.EnvironmentInformation;
 import org.apache.flink.yarn.YarnUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ public class YarnTaskManagerRunner {
 		LOG.info("Setting log path "+localDirs);
 		LOG.info("YARN daemon runs as '"+UserGroupInformation.getCurrentUser().getShortUserName()+"' setting"
 				+ " user to execute Flink TaskManager to '"+yarnClientUsername+"'");
+		EnvironmentInformation.logEnvironmentInfo(LOG, "YARN TaskManager");
 		UserGroupInformation ugi = UserGroupInformation.createRemoteUser(yarnClientUsername);
 		for(Token<? extends TokenIdentifier> toks : UserGroupInformation.getCurrentUser().getTokens()) {
 			ugi.addToken(toks);
