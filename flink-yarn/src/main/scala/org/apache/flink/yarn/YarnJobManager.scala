@@ -118,10 +118,15 @@ trait YarnJobManager extends ActorLogMessages {
       startYarnSession(conf, actorSystemPort, webServerPort)
 
     case PollContainerCompletion =>
+      log.info("polling container completion ",allocatedContainers, numTaskManager)
       rmClientOption match {
         case Some(rmClient) =>
           val response = rmClient.allocate(completedContainers.toFloat / numTaskManager)
-
+          log.info("got new allocate response ",response)
+          var pmsg = response.getPreemptionMessage
+          log.info("preemtion message: ", pmsg)
+          var contract = pmsg.getContract
+          log.info("contract", contract)
           for (container <- response.getAllocatedContainers.asScala) {
             log.info(s"Got new container for TM ${container.getId} on host ${
               container.getNodeId.getHost
@@ -157,8 +162,10 @@ trait YarnJobManager extends ActorLogMessages {
           }
 
           if (allocatedContainers < numTaskManager) {
+            log.info("scheduling new container allocation completion");
             context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, PollContainerCompletion)
           } else if (completedContainers < numTaskManager) {
+            log.info("scheduling new container completion with completion delay");
             context.system.scheduler.scheduleOnce(COMPLETION_DELAY, self, PollContainerCompletion)
           } else {
             self ! StopYarnSession(FinalApplicationStatus.FAILED)
@@ -194,7 +201,6 @@ trait YarnJobManager extends ActorLogMessages {
       val rm = AMRMClient.createAMRMClient[ContainerRequest]()
       rm.init(conf)
       rm.start()
-
       rmClientOption = Some(rm)
 
       val nm = NMClient.createNMClient()
@@ -216,6 +222,7 @@ trait YarnJobManager extends ActorLogMessages {
 
       // Resource requirements for worker containers
       val capability = Records.newRecord(classOf[Resource])
+      log.info("requesting "+memoryPerTaskManager+" for the new container");
       capability.setMemory(memoryPerTaskManager)
       capability.setVirtualCores(1) // hard-code that number (YARN is not accounting for CPUs)
 
