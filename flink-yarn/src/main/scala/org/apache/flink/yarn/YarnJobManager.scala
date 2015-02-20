@@ -124,9 +124,14 @@ trait YarnJobManager extends ActorLogMessages {
           val response = rmClient.allocate(completedContainers.toFloat / numTaskManager)
           log.info("got new allocate response ",response)
           var pmsg = response.getPreemptionMessage
-          log.info("preemtion message: ", pmsg)
-          var contract = pmsg.getContract
-          log.info("contract", contract)
+          if(pmsg != null) {
+            log.info("preemtion message: ", pmsg)
+            var contract = pmsg.getContract
+            if(contract != null) {
+              log.info("contract", contract)
+            }
+          }
+
           for (container <- response.getAllocatedContainers.asScala) {
             log.info(s"Got new container for TM ${container.getId} on host ${
               container.getNodeId.getHost
