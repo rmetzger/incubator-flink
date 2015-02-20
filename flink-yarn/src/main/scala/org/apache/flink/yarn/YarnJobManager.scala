@@ -122,17 +122,17 @@ trait YarnJobManager extends ActorLogMessages {
       startYarnSession(conf, actorSystemPort, webServerPort)
 
     case PollContainerCompletion =>
-      log.info("polling container completion ",allocatedContainers, numTaskManager)
+      log.info("polling container completion " + allocatedContainers + " - " + numTaskManager)
       rmClientOption match {
         case Some(rmClient) =>
-          val response = rmClient.allocate(completedContainers.toFloat / numTaskManager)
-          log.info("got new allocate response ",response)
+          val response = rmClient.allocate(allocatedContainers.toFloat / numTaskManager)
+          log.info("got new allocate response " + response)
           var pmsg = response.getPreemptionMessage
           if(pmsg != null) {
-            log.info("preemtion message: ", pmsg)
+            log.info("preemtion message: " + pmsg)
             var contract = pmsg.getContract
             if(contract != null) {
-              log.info("contract", contract)
+              log.info("contract" + contract)
             }
           }
 
@@ -171,6 +171,18 @@ trait YarnJobManager extends ActorLogMessages {
           }
 
           if (allocatedContainers < numTaskManager) {
+                        val priority = Records.newRecord(classOf[Priority])
+                        priority.setPriority(0)
+
+                        // Resource requirements for worker containers
+                        val capability = Records.newRecord(classOf[Resource])
+                        log.info("requesting " + 5500 + " for the new container")
+                        capability.setMemory(5500)
+                        capability.setVirtualCores(1)
+                          val containerRequest = new ContainerRequest(capability, null, null, priority)
+                          log.info(s"Requesting TaskManager container")
+                          rmClient.addContainerRequest(containerRequest)
+
             log.info("scheduling new container allocation completion");
             context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, PollContainerCompletion)
           } else if (completedContainers < numTaskManager) {
