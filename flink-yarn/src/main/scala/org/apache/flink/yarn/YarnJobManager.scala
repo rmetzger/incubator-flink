@@ -222,7 +222,7 @@ trait YarnJobManager extends ActorLogMessages {
 
       // Resource requirements for worker containers
       val capability = Records.newRecord(classOf[Resource])
-      log.info("requesting "+memoryPerTaskManager+" for the new container");
+      log.info("requesting " + memoryPerTaskManager + " for the new container")
       capability.setMemory(memoryPerTaskManager)
       capability.setVirtualCores(1) // hard-code that number (YARN is not accounting for CPUs)
 
