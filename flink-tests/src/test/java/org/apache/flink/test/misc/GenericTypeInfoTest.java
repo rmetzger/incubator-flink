@@ -36,7 +36,7 @@ public class GenericTypeInfoTest {
 				"    sqlDate:java.sql.Date\n" +
 				"    bigInt:java.math.BigInteger\n" +
 				"        signum:int\n" +
-				"        mag:int[]\n" +
+				"        mag:[I\n" +
 				"        bitCount:int\n" +
 				"        bitLength:int\n" +
 				"        lowestSetBit:int\n" +
@@ -44,7 +44,7 @@ public class GenericTypeInfoTest {
 				"    bigDecimalKeepItNull:java.math.BigDecimal\n" +
 				"        intVal:java.math.BigInteger\n" +
 				"            signum:int\n" +
-				"            mag:int[]\n" +
+				"            mag:[I\n" +
 				"            bitCount:int\n" +
 				"            bitLength:int\n" +
 				"            lowestSetBit:int\n" +
@@ -53,7 +53,7 @@ public class GenericTypeInfoTest {
 				"    scalaBigInt:scala.math.BigInt\n" +
 				"        bigInteger:java.math.BigInteger\n" +
 				"            signum:int\n" +
-				"            mag:int[]\n" +
+				"            mag:[I\n" +
 				"            bitCount:int\n" +
 				"            bitLength:int\n" +
 				"            lowestSetBit:int\n" +
@@ -61,7 +61,7 @@ public class GenericTypeInfoTest {
 				"    mixed:java.util.List\n" +
 				"    makeMeGeneric:org.apache.flink.test.javaApiOperators.util.CollectionDataSets$PojoWithDateAndEnum\n" +
 				"        group:java.lang.String\n" +
-				"            value:char[]\n" +
+				"            value:[C\n" +
 				"            hash:int\n" +
 				"        date:java.util.Date\n" +
 				"        cat:org.apache.flink.test.javaApiOperators.util.CollectionDataSets$Category (is enum)\n", GenericTypeInfo.getSerializerTree(ti));

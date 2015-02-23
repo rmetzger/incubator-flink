@@ -156,7 +156,7 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
 			if(Modifier.isStatic(field.getModifiers()) || Modifier.isTransient(field.getModifiers())) {
 				continue;
 			}
-			ret += StringUtils.repeat(' ', indent) + field.getName() + ":" + field.getType().getTypeName() + (field.getType().isEnum() ? " (is enum)" : "") + "\n";
+			ret += StringUtils.repeat(' ', indent) + field.getName() + ":" + field.getType().getName() + (field.getType().isEnum() ? " (is enum)" : "") + "\n";
 			if(!field.getType().isPrimitive()) {
 				ret += getGenericTypeTree(field.getType(), indent + 4);
 			}
