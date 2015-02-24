@@ -87,6 +87,23 @@ under the License.
 					<groupId>org.mortbay.jetty</groupId>
 					<artifactId>jetty-util</artifactId>
 				</exclusion>
+				<!-- The hadoop dependencies are handled through flink-shaded-hadoop -->
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-common</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-auth</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-annotations</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-mapreduce-client-core</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 	</dependencies>
@@ -103,13 +120,12 @@ under the License.
 			<properties>
 				<hbase.version>${hbase.hadoop1.version}</hbase.version>
 			</properties>
-			<dependencies>
-				<!-- Force hadoop-common dependency -->
+		<!--	<dependencies>
 				<dependency>
 					<groupId>org.apache.hadoop</groupId>
 					<artifactId>hadoop-core</artifactId>
 				</dependency>
-			</dependencies>
+			</dependencies> -->
 		</profile>
 		
 		<profile>

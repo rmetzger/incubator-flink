@@ -117,22 +117,6 @@ under the License.
 	<!-- See main pom.xml for explanation of profiles -->
 	<profiles>
 		<profile>
-			<id>hadoop-1</id>
-			<activation>
-				<property>
-					<!-- Please do not remove the 'hadoop1' comment. See ./tools/generate_specific_pom.sh -->
-					<!--hadoop1--><name>hadoop.profile</name><value>1</value>
-				</property>
-			</activation>
-			<properties>
-				<hadoop.version>${hadoop-one.version}</hadoop.version>
-			</properties>
-			<dependencies>
-				<!-- No extra dependencies: flink-hbase is currently not compatible with Hadoop v1 -->
-			</dependencies>
-		</profile>
-
-		<profile>
 			<id>include-yarn</id>
 			<activation>
 				<property>
