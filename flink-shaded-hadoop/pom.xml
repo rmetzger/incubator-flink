@@ -121,6 +121,10 @@ under the License.
 										<exclude>com.google.inject.**</exclude>
 									</excludes>
 								</relocation>
+								<relocation>
+									<pattern>org.objectweb.asm</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.objectweb.asm</shadedPattern>
+								</relocation>
 							</relocations>
 						</configuration>
 					</execution>
