@@ -52,7 +52,7 @@ under the License.
 	</scm>
 
 	<modules>
-		<module>flink-shaded</module>
+		<module>flink-shaded-hadoop</module>
 		<module>flink-core</module>
 		<module>flink-java</module>
 		<module>flink-scala</module>
@@ -241,6 +241,12 @@ under the License.
 				<groupId>com.esotericsoftware.kryo</groupId>
 				<artifactId>kryo</artifactId>
 				<version>2.24.0</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>${guava.version}</version>
 			</dependency>
 
 			<dependency>
@@ -935,38 +941,6 @@ under the License.
 				</configuration>
 			</plugin>
 			
-			<!-- Relocate references to Google Guava classes into a different namespace -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.3</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<shadedArtifactAttached>false</shadedArtifactAttached>
-							<createDependencyReducedPom>false</createDependencyReducedPom>
-							<artifactSet>
-								<includes>
-									<include>org.apache.flink:${project.artifact}</include>
-								</includes>
-							</artifactSet>
-							<relocations>
-								<relocation>
-									<pattern>com.google</pattern>
-									<shadedPattern>org.apache.flink.shaded.com.google</shadedPattern>
-									<excludes>
-										<exclude>com.google.protobuf.**</exclude>
-									</excludes>
-								</relocation>
-							</relocations>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.rat</groupId>
 				<artifactId>apache-rat-plugin</artifactId>

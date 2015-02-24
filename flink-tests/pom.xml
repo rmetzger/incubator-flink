@@ -484,14 +484,5 @@ under the License.
 				</dependency>
 			</dependencies>
 		</profile>
-		<profile>
-			<id>hadoop-2</id>
-			<activation>
-				<property>
-					<!-- Please do not remove the 'hadoop2' comment. See ./tools/generate_specific_pom.sh -->
-					<!--hadoop2--><name>!hadoop.profile</name>
-				</property>
-			</activation>
-		</profile>
 	</profiles>
 </project>
