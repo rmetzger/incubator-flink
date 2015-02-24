@@ -164,7 +164,7 @@ under the License.
 			<dependency>
 				<groupId>org.ow2.asm</groupId>
 				<artifactId>asm</artifactId>
-				<version>3.2</version>
+				<version>4.0</version>
 			</dependency>
 
 			<!-- Make sure we use a consistent jetty version throughout the project -->
