@@ -117,6 +117,15 @@ under the License.
 							<shadedArtifactAttached>false</shadedArtifactAttached>
 							<createDependencyReducedPom>true</createDependencyReducedPom>
 							<dependencyReducedPomLocation>${project.basedir}/target/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+							<filters>
+								<filter>
+									<!-- maybe slf4j-jdk14 -->
+									<artifact>org.slf4j:*</artifact>
+									<excludes>
+										<exclude>org/slf4j/impl/StaticLoggerBinder*</exclude>
+									</excludes>
+								</filter>
+							</filters>
 							<relocations>
 								<relocation>
 									<pattern>com.google</pattern>
