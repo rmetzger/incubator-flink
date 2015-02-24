@@ -30,7 +30,10 @@ public class GenericTypeInfoTest {
 	@Test
 	public void testSerializerTree() {
 		TypeInformation<CollectionDataSets.PojoWithCollectionGeneric> ti = (TypeInformation<CollectionDataSets.PojoWithCollectionGeneric>) TypeExtractor.createTypeInfo(CollectionDataSets.PojoWithCollectionGeneric.class);
-		Assert.assertEquals("GenericTypeInfo (PojoWithCollectionGeneric)\n" +
+		String serTree = GenericTypeInfo.getSerializerTree(ti);
+		// We can not test against the entire output because the fields of 'String' differ
+		// between java versions
+		Assert.assertTrue(serTree.startsWith("GenericTypeInfo (PojoWithCollectionGeneric)\n" +
 				"    pojos:java.util.List\n" +
 				"    key:int\n" +
 				"    sqlDate:java.sql.Date\n" +
@@ -60,10 +63,6 @@ public class GenericTypeInfoTest {
 				"            firstNonzeroIntNum:int\n" +
 				"    mixed:java.util.List\n" +
 				"    makeMeGeneric:org.apache.flink.test.javaApiOperators.util.CollectionDataSets$PojoWithDateAndEnum\n" +
-				"        group:java.lang.String\n" +
-				"            value:[C\n" +
-				"            hash:int\n" +
-				"        date:java.util.Date\n" +
-				"        cat:org.apache.flink.test.javaApiOperators.util.CollectionDataSets$Category (is enum)\n", GenericTypeInfo.getSerializerTree(ti));
+				"        group:java.lang.String\n"));
 	}
 }
