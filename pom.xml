@@ -71,6 +71,7 @@ under the License.
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<shading-artifact.name>error</shading-artifact.name>
 		<hadoop-one.version>1.2.1</hadoop-one.version>
 		<hadoop-two.version>2.2.0</hadoop-two.version>
 		<scala.version>2.10.4</scala.version>
@@ -619,6 +620,7 @@ under the License.
 			</activation>
 			<properties>
 				<hadoop.version>${hadoop-one.version}</hadoop.version>
+				<shading-artifact.name>flink-shaded-hadoop1</shading-artifact.name>
 			</properties>
 		</profile>
 		<profile>
@@ -631,6 +633,7 @@ under the License.
 			</activation>
 			<properties>
 				<hadoop.version>${hadoop-two.version}</hadoop.version>
+				<shading-artifact.name>flink-shaded-hadoop2</shading-artifact.name>
 			</properties>
 		</profile>
 
@@ -642,6 +645,9 @@ under the License.
 				<!--hadoop2--><name>!hadoop.profile</name>
 				</property>
 			</activation>
+			<properties>
+				<shading-artifact.name>flink-shaded-include-yarn</shading-artifact.name>
+			</properties>
 			<modules>
 				<module>flink-yarn</module>
 				<module>flink-yarn-tests</module>
@@ -659,6 +665,7 @@ under the License.
 				<akka.version>2.2.1</akka.version>
 				<kryoserialization.version>0.3.1</kryoserialization.version>
 				<protobuf.version>2.4.1</protobuf.version>
+				<shading-artifact.name>flink-shaded-hadoop2</shading-artifact.name>
 			</properties>
 			<dependencyManagement>
 				<dependencies>

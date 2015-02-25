@@ -43,12 +43,12 @@ under the License.
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-runtime</artifactId>
 			<version>${project.version}</version>
-			<exclusions>
+			<!-- <exclusions>
 				<exclusion>
 					<artifactId>hadoop-core</artifactId>
 					<groupId>org.apache.hadoop</groupId>
 				</exclusion>
-			</exclusions>
+			</exclusions> -->
 		</dependency>
 		
 		<dependency>
@@ -65,7 +65,7 @@ under the License.
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-shaded-hadoop</artifactId>
+			<artifactId>${shading-artifact.name}</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>

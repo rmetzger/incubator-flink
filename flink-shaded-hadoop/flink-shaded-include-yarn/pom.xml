@@ -35,7 +35,7 @@ under the License.
 	<packaging>jar</packaging>
 
 	<dependencies>
-		<!-- <dependency>
+		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 		</dependency>
@@ -48,7 +48,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-mapreduce-client-core</artifactId>
-		</dependency> -->
+		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-yarn-client</artifactId>
