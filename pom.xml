@@ -1138,7 +1138,7 @@ under the License.
 							<dependencyReducedPomLocation>${project.basedir}/target/dependency-reduced-pom.xml</dependencyReducedPomLocation>
 							<artifactSet>
 								<includes>
-									<include>org.apache.flink:*</include>
+									<!-- <include>org.apache.flink:*</include> -->
 									<include>com.google.guava:*</include>
 									<include>org.ow2.asm:*</include>
 								</includes>
