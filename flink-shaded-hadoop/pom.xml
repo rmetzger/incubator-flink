@@ -107,6 +107,10 @@ under the License.
 									</excludes>
 								</filter>
 							</filters>
+							<transformers>
+								<!-- The service transformer is needed to merge META-INF/services files -->
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+							</transformers>
 							<relocations>
 								<relocation>
 									<pattern>com.google</pattern>
