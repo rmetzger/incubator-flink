@@ -1122,7 +1122,7 @@ under the License.
 				(For example users can use whatever guava version they want, because we don't
 				expose our guava dependency)
 			-->
-			<plugin>
+	<!--		<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
 				<version>2.3</version>
@@ -1138,7 +1138,6 @@ under the License.
 							<dependencyReducedPomLocation>${project.basedir}/target/dependency-reduced-pom.xml</dependencyReducedPomLocation>
 							<artifactSet>
 								<includes>
-									<!-- <include>org.apache.flink:*</include> -->
 									<include>com.google.guava:*</include>
 									<include>org.ow2.asm:*</include>
 								</includes>
@@ -1160,7 +1159,7 @@ under the License.
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin> -->
 
 		</plugins>
 
