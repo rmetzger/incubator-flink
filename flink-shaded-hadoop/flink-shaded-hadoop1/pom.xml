@@ -32,7 +32,7 @@ under the License.
 	<artifactId>flink-shaded-hadoop1</artifactId>
 	<name>flink-shaded-hadoop1</name>
 
-	<packaging>pom</packaging>
+	<packaging>jar</packaging>
 
 	<dependencies>
 		<dependency>

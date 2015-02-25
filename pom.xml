@@ -1122,12 +1122,13 @@ under the License.
 				(For example users can use whatever guava version they want, because we don't
 				expose our guava dependency)
 			-->
-	<!--		<plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
 				<version>2.3</version>
 				<executions>
 					<execution>
+						<id>shade-flink</id>
 						<phase>package</phase>
 						<goals>
 							<goal>shade</goal>
@@ -1159,7 +1160,7 @@ under the License.
 						</configuration>
 					</execution>
 				</executions>
-			</plugin> -->
+			</plugin>
 
 		</plugins>
 

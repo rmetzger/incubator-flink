@@ -89,6 +89,7 @@ under the License.
 				<version>2.3</version>
 				<executions>
 					<execution>
+						<id>shade-hadoop</id>
 						<phase>package</phase>
 						<goals>
 							<goal>shade</goal>
