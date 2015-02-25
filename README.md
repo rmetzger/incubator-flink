@@ -16,6 +16,7 @@ val counts = text.flatMap { _.split("\\W+") }
 counts.writeAsCsv(outputPath)
 ```
 
+
 Flink is highlighted by some unique features:
 
 * Hybrid batch/streaming runtime that supports batch processing and data streaming programs.
