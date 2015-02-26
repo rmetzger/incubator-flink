@@ -34,49 +34,9 @@ under the License.
 
 	<packaging>pom</packaging>
 
-	<profiles>
-		<profile>
-			<id>hadoop-1</id>
-			<activation>
-				<property>
-					<!-- Please do not remove the 'hadoop1' comment. See ./tools/generate_specific_pom.sh -->
-					<!--hadoop1--><name>hadoop.profile</name><value>1</value>
-				</property>
-			</activation>
-			<modules>
-				<module>flink-shaded-hadoop1</module>
-			</modules>
-		</profile>
-		<profile>
-			<id>hadoop-2</id>
-			<activation>
-				<property>
-					<!-- Please do not remove the 'hadoop2' comment. See ./tools/generate_specific_pom.sh -->
-					<!--hadoop2--><name>!hadoop.profile</name>
-				</property>
-			</activation>
-			<modules>
-				<module>flink-shaded-hadoop2</module>
-			</modules>
-			
-		</profile>
-
-		<profile>
-			<id>include-yarn</id>
-			<activation>
-				<property>
-					<!-- Please do not remove the 'hadoop2' comment. See ./tools/generate_specific_pom.sh -->
-					<!--hadoop2--><name>!hadoop.profile</name>
-				</property>
-			</activation>
-			<modules>
-				<module>flink-shaded-include-yarn</module>
-			</modules>
-			<dependencies>
-			
-			</dependencies>
-		</profile>
-	</profiles>
+	<modules>
+		<module>${shading-artifact.name}</module>
+	</modules>
 
 	<build>
 		<plugins>
@@ -116,7 +76,7 @@ under the License.
 									<pattern>com.google</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.com.google</shadedPattern>
 									<excludes>
-										<exclude>com.google.protobuf.**</exclude>
+										<!-- <exclude>com.google.protobuf.**</exclude> -->
 										<exclude>com.google.inject.**</exclude>
 									</excludes>
 								</relocation>
