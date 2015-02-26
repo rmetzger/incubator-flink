@@ -238,6 +238,13 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 	@Override
 	public void setShipFiles(List<File> shipFiles) {
+		for(File shipFile: shipFiles) {
+			// remove uberjar from ship list (by default everything in the lib/ folder is added to
+			// the list of files to ship, but we handle the uberjar separatly.
+			if(shipFile.getName().startsWith("flink-dist-") && shipFile.getName().endsWith("jar")) {
+				shipFiles.remove(shipFile);
+			}
+		}
 		this.shipFiles.addAll(shipFiles);
 	}
 
