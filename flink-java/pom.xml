@@ -33,9 +33,6 @@ under the License.
 	<name>flink-java</name>
 
 	<packaging>jar</packaging>
-	<properties>
-		<chill.version>0.5.2</chill.version>
-	</properties>
 
 	<dependencies>
 		<dependency>
@@ -64,6 +61,7 @@ under the License.
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm</artifactId>
+			<version>${asm.version}</version>
 		</dependency>
 		
 		<dependency>

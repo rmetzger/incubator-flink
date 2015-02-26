@@ -89,6 +89,8 @@ under the License.
 		<scala.macros.version>2.0.1</scala.macros.version>
 		<kryoserialization.version>0.3.2</kryoserialization.version>
 		<protobuf.version>2.5.0</protobuf.version>
+		<chill.version>0.5.2</chill.version>
+		<asm.version>4.0</asm.version>
 	</properties>
 
 	<dependencies>
@@ -160,18 +162,15 @@ under the License.
 	<!-- this section defines the module versions that are used if nothing else is specified. -->
 	<dependencyManagement>
 		<!-- WARN: 
-			DO NOT put guava here. It will overwrite Hadoop's guava dependency (even though we handle it
+			DO NOT put 	guava, 
+						protobuf, 
+						asm,
+						netty
+					here. It will overwrite Hadoop's guava dependency (even though we handle it
 			separatly in the flink-shaded-hadoop module).
 			We can use all guava versions everywhere by adding it directly as a dependency to each project.
 		-->
 		<dependencies>
-		
-			<!-- ASM is used by us, Kryo, Hadoop, ... -->
-			<dependency>
-				<groupId>org.ow2.asm</groupId>
-				<artifactId>asm</artifactId>
-				<version>4.0</version>
-			</dependency>
 
 			<!-- Make sure we use a consistent jetty version throughout the project -->
 			<dependency>

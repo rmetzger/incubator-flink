@@ -84,6 +84,10 @@ under the License.
 									<pattern>org.objectweb.asm</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.objectweb.asm</shadedPattern>
 								</relocation>
+								<relocation>
+									<pattern>org.jboss.netty</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.jboss.netty</shadedPattern>
+								</relocation>
 							</relocations>
 						</configuration>
 					</execution>

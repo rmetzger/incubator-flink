@@ -55,7 +55,7 @@ under the License.
 		<dependency>
 			<groupId>com.twitter</groupId>
 			<artifactId>chill_2.10</artifactId>
-			<version>0.5.1</version>
+			<version>${chill.version}</version>
 		</dependency>
 
 		<dependency>
