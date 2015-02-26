@@ -183,6 +183,7 @@ public abstract class YarnTestBase {
 	public static class RootDirFilenameFilter implements FilenameFilter {
 		@Override
 		public boolean accept(File dir, String name) {
+		//	System.out.println("dir="+dir+" name="+name);
 			return name.startsWith("flink-dist") && name.endsWith(".jar") && dir.toString().contains("/lib");
 		}
 	}
@@ -269,7 +270,8 @@ public abstract class YarnTestBase {
 	}
 
 	public static void startYARNWithConfig(Configuration conf) {
-		flinkUberjar = findFile(".", new RootDirFilenameFilter());
+		flinkUberjar = findFile("..", new RootDirFilenameFilter());
+		//	System.out.println("got "+flinkUberjar);
 		Assert.assertNotNull(flinkUberjar);
 		String flinkDistRootDir = flinkUberjar.getParentFile().getParent();
 
