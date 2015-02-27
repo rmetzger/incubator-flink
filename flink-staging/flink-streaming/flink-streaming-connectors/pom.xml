@@ -51,7 +51,7 @@ under the License.
 
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka_2.10</artifactId>
+			<artifactId>kafka_${scala.binary.version}</artifactId>
 			<version>0.8.2.0</version>
 			<exclusions>
 				<exclusion>
