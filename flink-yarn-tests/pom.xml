@@ -68,12 +68,19 @@ under the License.
 			<artifactId>flink-shaded-include-yarn-tests</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
-
 				
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<type>jar</type>
+		</dependency>
+
 	</dependencies>
 
 	<build>
+		<testSourceDirectory>src/main/java</testSourceDirectory>
+
 		<plugins>
 			<!-- Set the root directory for all tests to the project root.
 			We need this to be able to locate the final build (in flink-dist)
@@ -94,19 +101,6 @@ under the License.
 					<workingDirectory>../</workingDirectory>
 				</configuration>
 			</plugin>
-<plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.5</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -120,7 +114,6 @@ under the License.
 							<goal>shade</goal>
 						</goals>
 						<configuration>
-							<shadeTestJar>true</shadeTestJar>
 							<shadedArtifactAttached>false</shadedArtifactAttached>
 							<createDependencyReducedPom>true</createDependencyReducedPom>
 							<dependencyReducedPomLocation>${project.basedir}/target/dependency-reduced-pom.xml</dependencyReducedPomLocation>

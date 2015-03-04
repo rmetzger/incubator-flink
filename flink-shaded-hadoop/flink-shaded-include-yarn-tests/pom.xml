@@ -35,15 +35,37 @@ under the License.
 	<packaging>jar</packaging>
 
 	<dependencies>
-
+		<!-- NOTE: We do not exclude hadoop's dependencies so that the tests start proplery (in particular jetty) -->
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-yarn-server-tests</artifactId>
+			<version>${hadoop.version}</version>
+		</dependency>
+
+		<!-- Add test-jar as well -->
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-yarn-server-tests</artifactId>
+			<version>${hadoop.version}</version>
+			<type>test-jar</type>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-minicluster</artifactId>
+			<version>${hadoop.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-minicluster</artifactId>
+			<version>${hadoop.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-yarn-server-resourcemanager</artifactId>
+			<version>${hadoop.version}</version>
 		</dependency>
 
 	</dependencies>
