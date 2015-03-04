@@ -79,8 +79,8 @@ under the License.
 				<exclusion>
 					<groupId>javax.servlet.jsp</groupId>
 					<artifactId>jsp-api</artifactId>
-				</exclusion>
-			</exclusions> -->
+				</exclusion>-->
+			</exclusions> 
 		</dependency>
 
 		<dependency>
@@ -123,8 +123,8 @@ under the License.
 				<exclusion>
 					<groupId>javax.servlet</groupId>
 					<artifactId>servlet-api</artifactId>
-				</exclusion>
-			</exclusions> -->
+				</exclusion>  -->
+			</exclusions>
 		</dependency>
 
 		<dependency>

@@ -134,6 +134,10 @@ under the License.
 				<hbase.version>${hbase.hadoop2.version}</hbase.version>
 			</properties>
 		</profile>
+
+		<profile>
+			<id>include-yarn</id>
+		</profile>
 		
 		<profile>
 			<id>cdh5.1.3</id>
