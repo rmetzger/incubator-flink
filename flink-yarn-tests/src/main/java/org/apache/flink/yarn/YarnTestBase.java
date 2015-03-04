@@ -183,7 +183,6 @@ public abstract class YarnTestBase {
 	public static class RootDirFilenameFilter implements FilenameFilter {
 		@Override
 		public boolean accept(File dir, String name) {
-		//	System.out.println("dir="+dir+" name="+name);
 			return name.startsWith("flink-dist") && name.endsWith(".jar") && dir.toString().contains("/lib");
 		}
 	}

@@ -35,7 +35,12 @@ under the License.
 	<packaging>jar</packaging>
 
 	<dependencies>
-		<!-- NOTE: We do not exclude hadoop's dependencies so that the tests start proplery (in particular jetty) -->
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-common</artifactId>
+			<version>${hadoop.version}</version>
+		</dependency>
+		<!-- NOTE: We do not exclude hadoop's dependencies so that the tests start property (in particular jetty) -->
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-yarn-server-tests</artifactId>

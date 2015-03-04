@@ -44,7 +44,7 @@ under the License.
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>
 				</exclusion>
-			<!--	<exclusion>
+				<exclusion>
 					<groupId>tomcat</groupId>
 					<artifactId>jasper-compiler</artifactId>
 				</exclusion>
@@ -79,7 +79,7 @@ under the License.
 				<exclusion>
 					<groupId>javax.servlet.jsp</groupId>
 					<artifactId>jsp-api</artifactId>
-				</exclusion>-->
+				</exclusion>
 			</exclusions> 
 		</dependency>
 
@@ -92,7 +92,7 @@ under the License.
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>
 				</exclusion>
-		<!--		<exclusion>
+				<exclusion>
 					<groupId>tomcat</groupId>
 					<artifactId>jasper-compiler</artifactId>
 				</exclusion>
@@ -123,7 +123,7 @@ under the License.
 				<exclusion>
 					<groupId>javax.servlet</groupId>
 					<artifactId>servlet-api</artifactId>
-				</exclusion>  -->
+				</exclusion>
 			</exclusions>
 		</dependency>
 
