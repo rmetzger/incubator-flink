@@ -75,6 +75,12 @@ under the License.
 			<artifactId>flink-hadoop-compatibility</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.flink</groupId>
+					<artifactId>flink-shaded-include-yarn</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		
 		<dependency>
@@ -135,10 +141,6 @@ under the License.
 			</properties>
 		</profile>
 
-		<profile>
-			<id>include-yarn</id>
-		</profile>
-		
 		<profile>
 			<id>cdh5.1.3</id>
 			<properties>
