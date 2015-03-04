@@ -73,6 +73,14 @@ under the License.
 							<shadedArtifactAttached>false</shadedArtifactAttached>
 							<createDependencyReducedPom>true</createDependencyReducedPom>
 							<dependencyReducedPomLocation>${project.basedir}/target/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+							<artifactSet>
+								<excludes>
+									<exclude>asm:asm</exclude>
+									<exclude>tomcat:*</exclude>
+									<exclude>org.mortbay.jetty:*</exclude>
+									<exclude>org.eclipse.jdt:*</exclude>
+								</excludes>
+							</artifactSet>
 							<filters>
 								<filter>
 									<!-- maybe slf4j-jdk14 -->
