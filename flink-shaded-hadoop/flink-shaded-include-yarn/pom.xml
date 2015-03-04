@@ -39,12 +39,12 @@ under the License.
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 			<version>${hadoop.version}</version>
-		<!--	<exclusions>
+			<exclusions>
 				<exclusion>
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>
 				</exclusion>
-				<exclusion>
+			<!--	<exclusion>
 					<groupId>tomcat</groupId>
 					<artifactId>jasper-compiler</artifactId>
 				</exclusion>
@@ -87,12 +87,12 @@ under the License.
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-hdfs</artifactId>
 			<version>${hadoop.version}</version>
-		<!--	<exclusions>
+			<exclusions>
 				<exclusion>
 					<groupId>asm</groupId>
 					<artifactId>asm</artifactId>
 				</exclusion>
-				<exclusion>
+		<!--		<exclusion>
 					<groupId>tomcat</groupId>
 					<artifactId>jasper-compiler</artifactId>
 				</exclusion>
