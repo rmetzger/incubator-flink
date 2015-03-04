@@ -271,7 +271,6 @@ public abstract class YarnTestBase {
 
 	public static void startYARNWithConfig(Configuration conf) {
 		flinkUberjar = findFile("..", new RootDirFilenameFilter());
-		//	System.out.println("got "+flinkUberjar);
 		Assert.assertNotNull(flinkUberjar);
 		String flinkDistRootDir = flinkUberjar.getParentFile().getParent();
 
