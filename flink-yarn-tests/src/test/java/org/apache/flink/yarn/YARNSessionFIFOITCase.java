@@ -17,26 +17,44 @@
  */
 package org.apache.flink.yarn;
 
+import com.google.common.base.Joiner;
 import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
+import org.apache.flink.yarn.appMaster.YarnTaskManagerRunner;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.yarn.api.protocolrecords.StopContainersRequest;
+import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.security.NMTokenIdentifier;
+import org.apache.hadoop.yarn.server.nodemanager.NodeManager;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.spi.LoggingEvent;
+import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -45,6 +63,8 @@ import java.util.List;
  */
 public class YARNSessionFIFOITCase extends YarnTestBase {
 	private static final Logger LOG = LoggerFactory.getLogger(YARNSessionFIFOITCase.class);
+
+
 
 	/*
 	Override init with FIFO scheduler.
@@ -68,9 +88,126 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 						"-tm", "1024"},
 				"Number of connected TaskManagers changed to 1. Slots available: 1", RunTypes.YARN_SESSION);
 		LOG.info("Finished testClientStartup()");
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
+	/**
+	 * Test TaskManager failure
+	 */
+	@Test(timeout=60000) // timeout after a minute.
+	public void testTaskManagerFailure() {
+		LOG.info("Starting testTaskManagerFailure()");
+		Runner runner = startWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
+				"-n", "1",
+				"-jm", "512",
+				"-tm", "1024",
+				"-Dfancy-configuration-value=veryFancy",
+				"-Dyarn.maximum-failed-containers=3"},
+				"Number of connected TaskManagers changed to 1. Slots available: 1",
+				RunTypes.YARN_SESSION);
+
+		Assert.assertEquals(2, getRunningContainers());
+
+		// ------------------------ Test if JobManager web interface is accessible -------
+		try {
+			YarnClient yc = YarnClient.createYarnClient();
+			yc.init(yarnConfiguration);
+			yc.start();
+			String url = yc.getApplications().get(0).getTrackingUrl();
+			LOG.info("Got application URL from YARN {}", url);
+
+			// get number of TaskManagers:
+			Assert.assertEquals("{\"taskmanagers\": 1, \"slots\": 1}\n", getFromHTTP("http://" + url + "jobsInfo?get=taskmanagers"));
+
+			// get the configuration from webinterface & check if the dynamic properties from YARN show up there.
+			String config = getFromHTTP("http://" + url + "setupInfo?get=globalC");
+			JSONObject parsed = new JSONObject(config);
+			Assert.assertEquals("veryFancy", parsed.getString("fancy-configuration-value"));
+			Assert.assertEquals("3", parsed.getString("yarn.maximum-failed-containers"));
+
+			// test logfile access
+			String logs = getFromHTTP("http://" + url + "logInfo");
+			Assert.assertTrue(logs.contains("Starting YARN ApplicationMaster/JobManager (Version"));
+		} catch(Throwable e) {
+			LOG.warn("Error while running test",e);
+			Assert.fail();
+		}
+
+		// ------------------------ Kill container with TaskManager  -------
+
+		// find container id of taskManager:
+		ContainerId taskManagerContainer = null;
+		NodeManager nodeManager = null;
+		UserGroupInformation remoteUgi = null;
+		try {
+			remoteUgi = UserGroupInformation.getCurrentUser();
+		} catch (IOException e) {
+			LOG.warn("Unable to get curr user", e);
+			Assert.fail();
+		}
+		for(int nmId = 0; nmId < NUM_NODEMANAGERS; nmId++) {
+			NodeManager nm = yarnCluster.getNodeManager(nmId);
+			ConcurrentMap<ContainerId, Container> containers = nm.getNMContext().getContainers();
+			for(Map.Entry<ContainerId, Container> entry : containers.entrySet()) {
+				String command = Joiner.on(" ").join(entry.getValue().getLaunchContext().getCommands());
+				LOG.warn("containerId " + entry.getKey() + " command =" + command);
+
+				if(command.contains(YarnTaskManagerRunner.class.getSimpleName())) {
+					taskManagerContainer = entry.getKey();
+					nodeManager = nm;
+					NMTokenIdentifier nmIdent = new NMTokenIdentifier(taskManagerContainer.getApplicationAttemptId(), null, "",0);
+					// allow myself to do stuff with the container
+					remoteUgi.addCredentials(entry.getValue().getCredentials());
+					remoteUgi.addTokenIdentifier(nmIdent);
+				}
+			}
+			sleep(500);
+		}
+		Assert.assertNotNull("Unable to find container with TaskManager", taskManagerContainer);
+		Assert.assertNotNull("Illegal state", nodeManager);
+
+		List<ContainerId> toStop = new LinkedList<ContainerId>();
+		toStop.add(taskManagerContainer);
+		StopContainersRequest scr = StopContainersRequest.newInstance(toStop);
+
+		try {
+			nodeManager.getNMContext().getContainerManager().stopContainers(scr);
+		} catch (Throwable e) {
+			LOG.warn("Error stopping container", e);
+			Assert.fail("Error stopping container: "+e.getMessage());
+		}
+
+		// wait for new container to be started.
+		while(!errContent.toString().contains("Launching container")) {
+			sleep(1000);
+		}
+
+		// send "stop" command to command line interface
+		runner.sendStop();
+		// wait for the thread to stop
+		try {
+			runner.join(1000);
+		} catch (InterruptedException e) {
+			LOG.warn("Interrupted while stopping runner", e);
+		}
+		LOG.warn("stopped");
+
+		// ----------- Send output to logger
+		System.setOut(originalStdout);
+		System.setErr(originalStderr);
+		String oC = outContent.toString();
+		String eC = errContent.toString();
+		LOG.info("Sending stdout content through logger: \n\n{}\n\n", oC);
+		LOG.info("Sending stderr content through logger: \n\n{}\n\n", eC);
+
+		// ------ Check if everything happened correctly
+		Assert.assertTrue("Expect to see failed container", eC.contains("New messages from the YARN cluster"));
+		Assert.assertTrue("Expect to see failed container", eC.contains("Container killed by the ApplicationMaster"));
+		Assert.assertTrue("Expect to see new container started", eC.contains("Launching container") && eC.contains("on host"));
+
+		LOG.info("Finished testTaskManagerFailure()");
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
+	}
 
 	/**
 	 * Test querying the YARN cluster.
@@ -82,7 +219,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		LOG.info("Starting testQueryCluster()");
 		runWithArgs(new String[] {"-q"}, "Summary: totalMemory 8192 totalCores 1332", RunTypes.YARN_SESSION); // we have 666*2 cores.
 		LOG.info("Finished testQueryCluster()");
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 	/**
@@ -98,7 +235,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				"-tm", "1024",
 				"-qu", "doesntExist"}, "Number of connected TaskManagers changed to 1. Slots available: 1", RunTypes.YARN_SESSION);
 		LOG.info("Finished testNonexistingQueue()");
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 	/**
@@ -117,7 +254,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				"-tm", "1024"}, "Number of connected TaskManagers changed to", RunTypes.YARN_SESSION); // the number of TMs depends on the speed of the test hardware
 		LOG.info("Finished testMoreNodesThanAvailable()");
 		checkForLogString("This YARN session requires 10752MB of memory in the cluster. There are currently only 8192MB available.");
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 	/**
@@ -176,7 +313,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		LOG.info("Finished testfullAlloc()");
 		checkForLogString("There is not enough memory available in the YARN cluster. The TaskManager(s) require 3840MB each. NodeManagers available: [4096, 4096]\n" +
 				"After allocating the JobManager (512MB) and (1/2) TaskManagers, the following NodeManagers are available: [3584, 256]");
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 	/**
@@ -194,7 +331,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				"-yjm", "512",
 				"-ytm", "1024", exampleJarLocation.getAbsolutePath()}, "Job execution switched to status FINISHED.", RunTypes.CLI_FRONTEND);
 		LOG.info("Finished perJobYarnCluster()");
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 	/**
@@ -252,7 +389,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		yarnCluster.shutdown();
 		LOG.info("Finished testJavaAPI()");
 
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 	public boolean ignoreOnTravis() {
@@ -264,6 +401,24 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		}
 		return false;
 	}
+
+
+	///------------------------ Ported tool form: https://github.com/rmetzger/flink/blob/flink1501/flink-tests/src/test/java/org/apache/flink/test/web/WebFrontendITCase.java
+
+	public static String getFromHTTP(String url) throws Exception{
+		URLConnection connection = new URL(url).openConnection();
+		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		String inputLine;
+		StringBuffer sb = new StringBuffer();
+
+		while ((inputLine = in.readLine()) != null) {
+			sb.append(inputLine).append('\n');
+		}
+		in.close();
+		return sb.toString();
+	}
+
+
 
 	//
 	// --------------- Tools to test if a certain string has been logged with Log4j. -------------
@@ -290,7 +445,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			LOG.info("Found expected string '"+expected+"' in log message "+found);
 			return;
 		}
-		Assert.fail("Unable to find expected string '"+expected+"' in log messages");
+		Assert.fail("Unable to find expected string '" + expected + "' in log messages");
 	}
 
 	public static class TestAppender extends AppenderSkeleton {

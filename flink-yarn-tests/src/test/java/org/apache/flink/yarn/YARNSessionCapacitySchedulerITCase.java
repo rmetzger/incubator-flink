@@ -56,7 +56,7 @@ public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
 						"-tm", "1024", "-qu", "qa-team"},
 				"Number of connected TaskManagers changed to 1. Slots available: 1", RunTypes.YARN_SESSION);
 
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 
@@ -74,6 +74,6 @@ public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
 				"-qu", "doesntExist"}, "to unknown queue: doesntExist", RunTypes.YARN_SESSION);
 		checkForLogString("The specified queue 'doesntExist' does not exist. Available queues: default, qa-team");
 
-		ensureNoExceptionsInLogFiles();
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 }
