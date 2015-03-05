@@ -52,7 +52,7 @@ trait YarnJobManager extends ActorLogMessages {
   import context._
   import scala.collection.JavaConverters._
 
-  val ALLOCATION_DELAY = 100 milliseconds
+  val ALLOCATION_DELAY = 300 milliseconds
   val COMPLETION_DELAY = 5 seconds
 
   var rmClientOption: Option[AMRMClient[ContainerRequest]] = None
@@ -60,9 +60,13 @@ trait YarnJobManager extends ActorLogMessages {
   var messageListener:Option[ActorRef] = None
   var containerLaunchContext: Option[ContainerLaunchContext] = None
 
-  var allocatedContainers = 0
-  var completedContainers = 0
-  var numTaskManager = 0
+  var runningContainers = 0 // number of currently running containers
+  var failedContainers = 0 // failed container count
+  var numTaskManager = 0 // the requested number of TMs
+  var maxFailedContainers =
+    configuration.getInteger(ConfigConstants.YARN_MAX_FAILED_CONTAINERS, numTaskManager)
+
+  var memoryPerTaskManager = 0
 
 
   abstract override def receiveWithLogMessages: Receive = {
@@ -120,16 +124,16 @@ trait YarnJobManager extends ActorLogMessages {
     case PollContainerCompletion =>
       rmClientOption match {
         case Some(rmClient) =>
-          val response = rmClient.allocate(completedContainers.toFloat / numTaskManager)
+          val response = rmClient.allocate(runningContainers.toFloat / numTaskManager)
 
           for (container <- response.getAllocatedContainers.asScala) {
             log.info(s"Got new container for TM ${container.getId} on host ${
               container.getNodeId.getHost
             }")
 
-            allocatedContainers += 1
+            runningContainers += 1
 
-            log.info(s"Launching container #$allocatedContainers.")
+            log.info(s"Launching container #$runningContainers.")
             nmClientOption match {
               case Some(nmClient) =>
                 containerLaunchContext match {
@@ -145,23 +149,37 @@ trait YarnJobManager extends ActorLogMessages {
           }
 
           for (status <- response.getCompletedContainersStatuses.asScala) {
-            completedContainers += 1
-            log.info(s"Completed container ${status.getContainerId}. Total completed " +
-              s"$completedContainers.")
+            failedContainers += 1
+            runningContainers -= 1
+            log.info(s"Completed container ${status.getContainerId}. Total failed containers " +
+              s"$failedContainers.")
             log.info(s"Diagnostics ${status.getDiagnostics}.")
 
             messageListener foreach {
               _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
                 s"state=${status.getState}.\n${status.getDiagnostics}")
             }
+            if(configuration.getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, false)) {
+              log.info("Requesting a new container from YARN for the failed container")
+              val containerRequest = getContainerRequest(memoryPerTaskManager)
+              rmClient.addContainerRequest(containerRequest)
+            }
           }
 
-          if (allocatedContainers < numTaskManager) {
-            context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, PollContainerCompletion)
-          } else if (completedContainers < numTaskManager) {
-            context.system.scheduler.scheduleOnce(COMPLETION_DELAY, self, PollContainerCompletion)
-          } else {
+          if(maxFailedContainers >= failedContainers) {
+            log.warning("Stopping YARN session because the number of failed containers ({}) " +
+              "exceeded the maximum failed container count ({})." +
+              "This number is controlled by the '{}' configuration setting. By default its " +
+              "the number of requested containers", failedContainers, maxFailedContainers,
+              ConfigConstants.YARN_MAX_FAILED_CONTAINERS)
             self ! StopYarnSession(FinalApplicationStatus.FAILED)
+          }
+          if (runningContainers < numTaskManager) {
+            // we don't have the requested number of containers. Do fast polling
+            context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, PollContainerCompletion)
+          } else if (failedContainers < numTaskManager) {
+            // everything is good, slow polling
+            context.system.scheduler.scheduleOnce(COMPLETION_DELAY, self, PollContainerCompletion)
           }
         case None =>
           log.error("The AMRMClient was not set.")
@@ -174,7 +192,7 @@ trait YarnJobManager extends ActorLogMessages {
                                webServerPort: Int): Unit = {
     Try {
       log.info("Start yarn session.")
-      val memoryPerTaskManager = env.get(FlinkYarnClient.ENV_TM_MEMORY).toInt
+      memoryPerTaskManager = env.get(FlinkYarnClient.ENV_TM_MEMORY).toInt
       val heapLimit = Utils.calculateHeapSize(memoryPerTaskManager)
 
       val applicationMasterHost = env.get(Environment.NM_HOST.key)
@@ -210,18 +228,10 @@ trait YarnJobManager extends ActorLogMessages {
       rm.registerApplicationMaster(applicationMasterHost, actorSystemPort, url)
 
 
-      // Priority for worker containers - priorities are intra-application
-      val priority = Records.newRecord(classOf[Priority])
-      priority.setPriority(0)
-
-      // Resource requirements for worker containers
-      val capability = Records.newRecord(classOf[Resource])
-      capability.setMemory(memoryPerTaskManager)
-      capability.setVirtualCores(1) // hard-code that number (YARN is not accounting for CPUs)
 
       // Make container requests to ResourceManager
       for (i <- 0 until numTaskManager) {
-        val containerRequest = new ContainerRequest(capability, null, null, priority)
+        val containerRequest = getContainerRequest(memoryPerTaskManager)
         log.info(s"Requesting TaskManager container $i.")
         rm.addContainerRequest(containerRequest)
       }
@@ -257,8 +267,8 @@ trait YarnJobManager extends ActorLogMessages {
       val taskManagerLocalResources = ("flink.jar", flinkJar) ::("flink-conf.yaml",
         flinkConf) :: resources toMap
 
-      allocatedContainers = 0
-      completedContainers = 0
+      runningContainers = 0
+      failedContainers = 0
 
       containerLaunchContext = Some(createContainerLaunchContext(heapLimit, hasLogback, hasLog4j,
         yarnClientUsername, conf, taskManagerLocalResources))
@@ -269,6 +279,18 @@ trait YarnJobManager extends ActorLogMessages {
         log.error(t, "Could not start yarn session.")
         self ! StopYarnSession(FinalApplicationStatus.FAILED)
     }
+  }
+
+  private def getContainerRequest(memoryPerTaskManager: Int): ContainerRequest = {
+    // Priority for worker containers - priorities are intra-application
+    val priority = Records.newRecord(classOf[Priority])
+    priority.setPriority(0)
+
+    // Resource requirements for worker containers
+    val capability = Records.newRecord(classOf[Resource])
+    capability.setMemory(memoryPerTaskManager)
+    capability.setVirtualCores(1) // hard-code that number (YARN is not accounting for CPUs)
+    new ContainerRequest(capability, null, null, priority)
   }
 
   private def createContainerLaunchContext(heapLimit: Int, hasLogback: Boolean, hasLog4j: Boolean,
