@@ -217,6 +217,7 @@ public class FlinkYarnSessionCli {
 
 		if(cmd.hasOption(DETACHED.getOpt())) {
 			detachedMode = true;
+			flinkYarnClient.setDetachedMode(detachedMode);
 		}
 		return flinkYarnClient;
 	}

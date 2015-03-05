@@ -135,6 +135,8 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 	private List<File> shipFiles = new ArrayList<File>();
 	private org.apache.flink.configuration.Configuration flinkConfiguration;
 
+	private boolean detached;
+
 
 	public FlinkYarnClient() {
 		conf = new YarnConfiguration();
@@ -307,6 +309,12 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 			return deployInternal(clusterName);
 		}
 	}
+
+	@Override
+	public void setDetachedMode(boolean detachedMode) {
+		this.detached = detachedMode;
+	}
+
 	/**
 	 * This method will block until the ApplicationMaster/JobManager have been
 	 * deployed on YARN.
@@ -593,7 +601,7 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 			Thread.sleep(1000);
 		}
 		// the Flink cluster is deployed in YARN. Represent cluster
-		return new FlinkYarnCluster(yarnClient, appId, conf, flinkConfiguration, sessionFilesDir);
+		return new FlinkYarnCluster(yarnClient, appId, conf, flinkConfiguration, sessionFilesDir, detached);
 	}
 
 	/**
