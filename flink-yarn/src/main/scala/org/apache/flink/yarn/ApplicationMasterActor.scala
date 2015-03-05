@@ -165,7 +165,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
             }
           }
 
-          if(maxFailedContainers >= failedContainers) {
+          if(failedContainers >= maxFailedContainers) {
             log.warning("Stopping YARN session because the number of failed containers ({}) " +
               "exceeded the maximum failed container count ({})." +
               "This number is controlled by the '{}' configuration setting. By default its " +

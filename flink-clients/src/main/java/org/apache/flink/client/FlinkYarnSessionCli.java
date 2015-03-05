@@ -343,6 +343,7 @@ public class FlinkYarnSessionCli {
 		options.addOption(SHIP_PATH);
 		options.addOption(SLOTS);
 		options.addOption(DYNAMIC_PROPERTIES);
+		options.addOption(DETACHED);
 	}
 
 	public int run(String[] args) {
