@@ -46,7 +46,7 @@ import scala.language.postfixOps
 import scala.util.Try
 
 
-trait YarnJobManager extends ActorLogMessages {
+trait ApplicationMasterActor extends ActorLogMessages {
   that: JobManager =>
 
   import context._
@@ -63,8 +63,7 @@ trait YarnJobManager extends ActorLogMessages {
   var runningContainers = 0 // number of currently running containers
   var failedContainers = 0 // failed container count
   var numTaskManager = 0 // the requested number of TMs
-  var maxFailedContainers =
-    configuration.getInteger(ConfigConstants.YARN_MAX_FAILED_CONTAINERS, numTaskManager)
+  var maxFailedContainers = 0
 
   var memoryPerTaskManager = 0
 
@@ -199,7 +198,11 @@ trait YarnJobManager extends ActorLogMessages {
       require(applicationMasterHost != null, s"Application master (${Environment.NM_HOST} not set.")
 
       numTaskManager = env.get(FlinkYarnClient.ENV_TM_COUNT).toInt
-      log.info(s"Requesting $numTaskManager task managers.")
+      maxFailedContainers = configuration.getInteger(ConfigConstants.YARN_MAX_FAILED_CONTAINERS,
+        numTaskManager)
+      log.info("Requesting {} TaskManagers. Tolerating {} failed TaskManagers",
+        numTaskManager, maxFailedContainers)
+
 
       val remoteFlinkJarPath = env.get(FlinkYarnClient.FLINK_JAR_PATH)
       val fs = FileSystem.get(conf)

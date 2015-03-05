@@ -227,7 +227,7 @@ object ApplicationMaster {
 
     val jobManagerProps = Props(new JobManager(configuration, instanceManager, scheduler,
       libraryCacheManager, archiver, accumulatorManager, profiler, executionRetries,
-      delayBetweenRetries, timeout) with YarnJobManager)
+      delayBetweenRetries, timeout) with ApplicationMasterActor)
 
     LOG.debug("Starting JobManager actor")
     val jobManager = JobManager.startActor(jobManagerProps, jobManagerSystem)

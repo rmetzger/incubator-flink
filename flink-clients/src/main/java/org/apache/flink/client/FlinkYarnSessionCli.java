@@ -241,6 +241,7 @@ public class FlinkYarnSessionCli {
 		opt.addOption(QUEUE);
 		opt.addOption(SLOTS);
 		opt.addOption(DYNAMIC_PROPERTIES);
+		opt.addOption(DETACHED);
 		formatter.printHelp(" ", opt);
 	}
 
