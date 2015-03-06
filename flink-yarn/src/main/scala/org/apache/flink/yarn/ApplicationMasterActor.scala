@@ -135,9 +135,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
           // get new containers from YARN
           for (container <- response.getAllocatedContainers.asScala) {
-            log.info(s"Got new container for TaskManager: ${container.getId} on host ${
-              container.getNodeId.getHost
-            }")
+            log.info(s"Got new container for allocation: ${container.getId}")
             allocatedContainersList += container
             // REMOVEME
             log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
@@ -181,8 +179,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
               numTaskManager, runningContainers, missingContainers)
             // not enough containers running
             if(allocatedContainersList.size > 0) {
-              log.info("{} containers already allocated by YARN." +
-                "Starting them", allocatedContainersList.size)
+              log.info("{} containers already allocated by YARN. Starting them.",
+                allocatedContainersList.size)
               // we have some containers allocated to us --> start them
               // REMOVEME
               log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
@@ -205,7 +203,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
                     log.error("The NMClient was not set.")
                     self ! StopYarnSession(FinalApplicationStatus.FAILED)
                 }
-                runningContainers < numTaskManager
+                // dropping condition
+                runningContainers <= numTaskManager
               })
               // REMOVEME
               log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
@@ -216,7 +215,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
                   "is set to {}", missingContainers, reallocate)
                 // there are still containers missing. Request them from YARN
                 if(reallocate) {
-                  log.info("Requesting {] new container(s) from YARN")
+                  log.info("Requesting {} new container(s) from YARN", missingContainers)
                   for(i <- 0 to missingContainers) {
                     val containerRequest = getContainerRequest(memoryPerTaskManager)
                     rmClient.addContainerRequest(containerRequest)
