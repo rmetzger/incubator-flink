@@ -34,8 +34,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 /**
  * The entry point for running a TaskManager in a YARN container. The YARN container will invoke
