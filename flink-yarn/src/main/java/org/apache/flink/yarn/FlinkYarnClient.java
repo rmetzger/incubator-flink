@@ -492,6 +492,8 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 		// Set-up ApplicationSubmissionContext for the application
 		ApplicationSubmissionContext appContext = yarnApplication.getApplicationSubmissionContext();
+		appContext.setMaxAppAttempts(flinkConfiguration.getInteger(ConfigConstants.YARN_APPLICATION_ATTEMPTS, 1));
+
 		final ApplicationId appId = appContext.getApplicationId();
 
 		// Setup jar for ApplicationMaster

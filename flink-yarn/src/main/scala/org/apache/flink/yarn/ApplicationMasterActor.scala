@@ -72,6 +72,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
   // list of containers available for starting
   var allocatedContainersList: mutable.MutableList[Container] = new mutable.MutableList[Container]
+  var runningContainersList: mutable.MutableList[Container] = new mutable.MutableList[Container]
 
 
   abstract override def receiveWithLogMessages: Receive = {
@@ -138,7 +139,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
             log.info(s"Got new container for allocation: ${container.getId}")
             allocatedContainersList += container
             // REMOVEME
-            log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
+            log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
           }
 
           // get failed containers
@@ -148,11 +149,32 @@ trait ApplicationMasterActor extends ActorLogMessages {
             log.info(s"Completed container ${status.getContainerId}. Total failed containers " +
               s"$failedContainers.")
             log.info(s"Diagnostics ${status.getDiagnostics}.")
-
-            messageListener foreach {
-              _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
-                s"state=${status.getState}.\n${status.getDiagnostics}")
+            // remove failed container from running containers
+            var failedContainer: Container = null
+            log.info("Running containers {}", runningContainerIds())
+            runningContainersList = runningContainersList.filter(runningContainer => {
+              val result = runningContainer.getId.equals(status.getContainerId)
+              if(result) {
+                failedContainer = runningContainer
+              }
+              !result
+            })
+            if(failedContainer == null) {
+              log.warning("Unable to find completed container id={} in " +
+                "list of running containers {}", status.getContainerId, runningContainerIds())
             }
+            allocatedContainersList += failedContainer
+            messageListener foreach {
+              val detail = status.getExitStatus match {
+                case -103 => "Vmem limit exceeded";
+                case -104 => "Pmem limit exceeded";
+                case _ => ""
+              }
+              _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
+                s"state=${status.getState}.\n${status.getDiagnostics} $detail")
+            }
+            // add container back to list of allocated containers
+
           }
           // return containers if the RM wants them and we haven't allocated them yet.
           val preemtionMessage = response.getPreemptionMessage
@@ -167,7 +189,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
               tryToReturnContainers(strictContract.getContainers.asScala)
             }
             // REMOVEME
-            log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
+            log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
           }
 
           // ---------------------------- decide if we need to do anything ---------
@@ -184,7 +206,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
                 allocatedContainersList.size)
               // we have some containers allocated to us --> start them
               // REMOVEME
-              log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
+              log.info("allocatedContainersList.toString = {}",  allocatedContainerIds())
               allocatedContainersList = allocatedContainersList.dropWhile(container => {
                 if (missingContainers <= 0) {
                   require(missingContainers == 0, "The variable can not be negative. Illegal state")
@@ -195,6 +217,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
                   log.info("Launching container #{} ({}).", containersLaunched, container.getId)
                   containersLaunched += 1
+                  runningContainersList += container
                   // start the container
                   nmClientOption match {
                     case Some(nmClient) =>
@@ -214,7 +237,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
               })
             }
             // REMOVEME
-            log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
+            log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
             // if there are still containers missing, request them from YARN
             if(missingContainers > 0) {
               val reallocate = configuration
@@ -257,6 +280,13 @@ trait ApplicationMasterActor extends ActorLogMessages {
       log.debug("Processed Heartbeat with RMClient. Running containers {}," +
         "failed containers {}, allocated containers {}", runningContainers, failedContainers,
         allocatedContainersList.size)
+  }
+
+  private def runningContainerIds(): Unit = {
+    return runningContainersList map { runningCont => runningCont.getId}
+  }
+  private def allocatedContainerIds(): Unit = {
+    return runningContainersList map { runningCont => runningCont.getId}
   }
 
   private def startYarnSession(conf: Configuration,

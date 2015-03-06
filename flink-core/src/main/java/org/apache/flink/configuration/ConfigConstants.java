@@ -195,6 +195,14 @@ public final class ConfigConstants {
 	 */
 	public static final String YARN_MAX_FAILED_CONTAINERS = "yarn.maximum-failed-containers";
 
+	/**
+	 * Set the number of retries for failed YARN ApplicationMasters/JobManagers.
+	 * This value is usually limited by YARN.
+	 *
+	 * By default, its 1.
+	 */
+	public static final String YARN_APPLICATION_ATTEMPTS = "yarn.application-attempts";
+
 	// ------------------------ Hadoop Configuration ------------------------
 
 	/**
