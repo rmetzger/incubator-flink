@@ -18,7 +18,7 @@
 
 package org.apache.flink.yarn
 
-import java.io.{File, PrintWriter, FileWriter, BufferedWriter}
+import java.io.{PrintWriter, FileWriter, BufferedWriter}
 import java.security.PrivilegedAction
 
 import akka.actor._
@@ -47,8 +47,8 @@ object ApplicationMaster {
 
   def main(args: Array[String]): Unit ={
     val yarnClientUsername = System.getenv(FlinkYarnClient.ENV_CLIENT_USERNAME)
-    LOG.info("YARN daemon runs as {} setting user to execute Flink ApplicationMaster/JobManager" +
-      " to {}", UserGroupInformation.getCurrentUser.getShortUserName, yarnClientUsername)
+    LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName} " +
+      s"setting user to execute Flink ApplicationMaster/JobManager to ${yarnClientUsername}")
 
     EnvironmentInformation.logEnvironmentInfo(LOG, "YARN ApplicationMaster/JobManager", args)
     EnvironmentInformation.checkJavaVersion()
