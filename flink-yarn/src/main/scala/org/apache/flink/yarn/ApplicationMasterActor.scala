@@ -139,6 +139,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
               container.getNodeId.getHost
             }")
             allocatedContainersList += container
+            // REMOVEME
+            log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
           }
 
           // get failed containers
@@ -166,6 +168,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
             if(strictContract != null) {
               tryToReturnContainers(strictContract.getContainers.asScala)
             }
+            // REMOVEME
+            log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
           }
 
           // ---------------------------- decide if we need to do anything
@@ -180,11 +184,13 @@ trait ApplicationMasterActor extends ActorLogMessages {
               log.info("{} containers already allocated by YARN." +
                 "Starting them", allocatedContainersList.size)
               // we have some containers allocated to us --> start them
+              // REMOVEME
+              log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
               allocatedContainersList = allocatedContainersList.dropWhile(container => {
                 runningContainers += 1
                 missingContainers -= 1
 
-                log.info(s"Launching container #$containersLaunched.")
+                log.info(s"Launching container #{} ({}).", containersLaunched, container.getId)
                 containersLaunched += 1
                 // start the container
                 nmClientOption match {
@@ -201,6 +207,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
                 }
                 runningContainers < numTaskManager
               })
+              // REMOVEME
+              log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
               if(missingContainers > 0) {
                 val reallocate = configuration
                   .getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)

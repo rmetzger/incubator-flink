@@ -47,8 +47,8 @@ object ApplicationMaster {
 
   def main(args: Array[String]): Unit ={
     val yarnClientUsername = System.getenv(FlinkYarnClient.ENV_CLIENT_USERNAME)
-    LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName}" +
-      s"' setting user to execute Flink ApplicationMaster/JobManager to $yarnClientUsername'")
+    LOG.info("YARN daemon runs as {} setting user to execute Flink ApplicationMaster/JobManager" +
+      " to {}", UserGroupInformation.getCurrentUser.getShortUserName, yarnClientUsername)
 
     EnvironmentInformation.logEnvironmentInfo(LOG, "YARN ApplicationMaster/JobManager", args)
     EnvironmentInformation.checkJavaVersion()
@@ -106,7 +106,10 @@ object ApplicationMaster {
             webserver.start()
           }
 
-          val jobManagerWebPort = if (webserver == null) -1 else webserver.getServerPort
+          val jobManagerWebPort = if (webserver == null) {
+            LOG.warn("Web server is null. It will not be accessible through YARN")
+            -1
+          } else webserver.getServerPort
 
           // generate configuration file for TaskManagers
           generateConfigurationFile(s"$currDir/$MODIFIED_CONF_FILE", currDir, ownHostname,
