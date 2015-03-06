@@ -131,7 +131,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
         case Some(rmClient) =>
           val response = rmClient.allocate(runningContainers.toFloat / numTaskManager)
 
-          // ---------------------------- handle YARN responses
+          // ---------------------------- handle YARN responses -------------
 
           // get new containers from YARN
           for (container <- response.getAllocatedContainers.asScala) {
@@ -157,7 +157,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
           // return containers if the RM wants them and we haven't allocated them yet.
           val preemtionMessage = response.getPreemptionMessage
           if(preemtionMessage != null) {
-            log.debug("Received preemtion message from YARN {}", preemtionMessage)
+            log.info("Received preemtion message from YARN {}", preemtionMessage)
             val contract = preemtionMessage.getContract
             if(contract != null) {
               tryToReturnContainers(contract.getContainers.asScala)
@@ -170,13 +170,14 @@ trait ApplicationMasterActor extends ActorLogMessages {
             log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
           }
 
-          // ---------------------------- decide if we need to do anything
+          // ---------------------------- decide if we need to do anything ---------
 
           // check if we want to start some of our allocated containers.
           if(runningContainers < numTaskManager) {
             var missingContainers = numTaskManager - runningContainers
-            log.info("The user requested {} containers, {} are running. {} containers missing",
+            log.info("The user requested {} containers, {} running. {} containers missing",
               numTaskManager, runningContainers, missingContainers)
+
             // not enough containers running
             if(allocatedContainersList.size > 0) {
               log.info("{} containers already allocated by YARN. Starting them.",
@@ -185,7 +186,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
               // REMOVEME
               log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
               allocatedContainersList = allocatedContainersList.dropWhile(container => {
-                if(missingContainers <= 0) {
+                if (missingContainers <= 0) {
                   require(missingContainers == 0, "The variable can not be negative. Illegal state")
                   false
                 } else {
@@ -211,20 +212,22 @@ trait ApplicationMasterActor extends ActorLogMessages {
                   true
                 }
               })
-              // REMOVEME
-              log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
-              if(missingContainers > 0) {
-                val reallocate = configuration
-                  .getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)
-                log.info("There are {} containers missing. Reallocation of failed containers" +
-                  "is set to {}", missingContainers, reallocate)
-                // there are still containers missing. Request them from YARN
-                if(reallocate) {
-                  log.info("Requesting {} new container(s) from YARN", missingContainers)
-                  for(i <- 0 to missingContainers) {
-                    val containerRequest = getContainerRequest(memoryPerTaskManager)
-                    rmClient.addContainerRequest(containerRequest)
-                  }
+            }
+            // REMOVEME
+            log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
+            // if there are still containers missing, request them from YARN
+            if(missingContainers > 0) {
+              val reallocate = configuration
+                .getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)
+              log.info("There are {} containers missing. Reallocation of failed containers" +
+                "is set to {} ({})", missingContainers, reallocate,
+                ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS)
+              // there are still containers missing. Request them from YARN
+              if(reallocate) {
+                log.info("Requesting {} new container(s) from YARN", missingContainers)
+                for(i <- 0 to missingContainers) {
+                  val containerRequest = getContainerRequest(memoryPerTaskManager)
+                  rmClient.addContainerRequest(containerRequest)
                 }
               }
             }
@@ -303,7 +306,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
       // Make container requests to ResourceManager
       for (i <- 0 until numTaskManager) {
         val containerRequest = getContainerRequest(memoryPerTaskManager)
-        log.info(s"Requesting TaskManager container $i.")
+        log.info(s"Requesting initial TaskManager container $i.")
+        // these are initial requests. The reallocation setting doesn't affect this.
         rm.addContainerRequest(containerRequest)
       }
 

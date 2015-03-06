@@ -261,7 +261,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 					"Can not request cluster status");
 		}
 		if(hasBeenStopped()) {
-			throw new RuntimeException("The FlinkYarnCluster has alread been stopped");
+			throw new RuntimeException("The FlinkYarnCluster has already been stopped");
 		}
 		List<String> ret = new ArrayList<String>();
 		// get messages from ApplicationClient (locally)
@@ -274,7 +274,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 				result = Await.result(response, akkaDuration);
 			} catch(Exception ioe) {
-				LOG.warn("Error retrieving the yarn messages locally", ioe);
+				LOG.warn("Error retrieving the YARN messages locally", ioe);
+				break;
 			}
 
 			if(!(result instanceof Option)) {
@@ -282,7 +283,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 						"Option. Instead the response is of type " + result.getClass() + ".");
 			} else {
 				Option messageOption = (Option) result;
-
+				LOG.debug("Received message option {}", messageOption);
 				if(messageOption.isEmpty()) {
 					break;
 				} else {
