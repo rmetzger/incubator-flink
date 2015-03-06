@@ -140,7 +140,9 @@ trait ApplicationMasterActor extends ActorLogMessages {
           for (container <- response.getAllocatedContainers.asScala) {
             log.info(s"Got new container for allocation: ${container.getId}")
             allocatedContainersList += container
-            numPendingRequests -= 1
+            if(numPendingRequests > 0) {
+              numPendingRequests -= 1
+            }
             // REMOVEME
             log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
           }
@@ -255,17 +257,17 @@ trait ApplicationMasterActor extends ActorLogMessages {
                 .getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)
               log.info(s"There are $missingContainers containers missing." +
                 s" $numPendingRequests are already requested." +
-                s"Requesting $toAllocateFromYarn additional containers from YARN" +
-                "Reallocation of failed containers is enabled=$reallocate ('{}')",
+                s"Requesting $toAllocateFromYarn additional containers from YARN. " +
+                s"Reallocation of failed containers is enabled=$reallocate ('{}')",
                 ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS)
               // there are still containers missing. Request them from YARN
               if(reallocate) {
-                log.info("Requesting {} new container(s) from YARN. Pending requests {}",
-                  missingContainers, numPendingRequests)
                 for(i <- 0 to toAllocateFromYarn) {
                   val containerRequest = getContainerRequest(memoryPerTaskManager)
                   rmClient.addContainerRequest(containerRequest)
                   numPendingRequests += 1
+                  log.info("Requested additional container from YARN. Pending requests {}",
+                    numPendingRequests)
                 }
               }
             }
@@ -301,7 +303,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
     return runningContainersList map { runningCont => runningCont.getId}
   }
   private def allocatedContainerIds(): mutable.MutableList[ContainerId] = {
-    return runningContainersList map { runningCont => runningCont.getId}
+    return allocatedContainersList map { runningCont => runningCont.getId}
   }
 
   private def startYarnSession(conf: Configuration,
@@ -352,6 +354,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
       for (i <- 0 until numTaskManager) {
         val containerRequest = getContainerRequest(memoryPerTaskManager)
         log.info(s"Requesting initial TaskManager container $i.")
+        numPendingRequests += 1
         // these are initial requests. The reallocation setting doesn't affect this.
         rm.addContainerRequest(containerRequest)
       }
