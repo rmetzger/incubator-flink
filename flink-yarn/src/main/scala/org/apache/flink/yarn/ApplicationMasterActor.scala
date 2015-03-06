@@ -185,26 +185,31 @@ trait ApplicationMasterActor extends ActorLogMessages {
               // REMOVEME
               log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
               allocatedContainersList = allocatedContainersList.dropWhile(container => {
-                runningContainers += 1
-                missingContainers -= 1
+                if(missingContainers <= 0) {
+                  require(missingContainers == 0, "The variable can not be negative. Illegal state")
+                  false
+                } else {
+                  runningContainers += 1
+                  missingContainers -= 1
 
-                log.info(s"Launching container #{} ({}).", containersLaunched, container.getId)
-                containersLaunched += 1
-                // start the container
-                nmClientOption match {
-                  case Some(nmClient) =>
-                    containerLaunchContext match {
-                      case Some(ctx) => nmClient.startContainer(container, ctx)
-                      case None =>
-                        log.error("The ContainerLaunchContext was not set.")
-                        self ! StopYarnSession(FinalApplicationStatus.FAILED)
-                    }
-                  case None =>
-                    log.error("The NMClient was not set.")
-                    self ! StopYarnSession(FinalApplicationStatus.FAILED)
+                  log.info("Launching container #{} ({}).", containersLaunched, container.getId)
+                  containersLaunched += 1
+                  // start the container
+                  nmClientOption match {
+                    case Some(nmClient) =>
+                      containerLaunchContext match {
+                        case Some(ctx) => nmClient.startContainer(container, ctx)
+                        case None =>
+                          log.error("The ContainerLaunchContext was not set.")
+                          self ! StopYarnSession(FinalApplicationStatus.FAILED)
+                      }
+                    case None =>
+                      log.error("The NMClient was not set.")
+                      self ! StopYarnSession(FinalApplicationStatus.FAILED)
+                  }
+                  // dropping condition
+                  true
                 }
-                // dropping condition
-                missingContainers > 0
               })
               // REMOVEME
               log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)
