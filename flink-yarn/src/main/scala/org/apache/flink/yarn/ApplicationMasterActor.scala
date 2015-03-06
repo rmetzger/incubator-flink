@@ -148,9 +148,9 @@ trait ApplicationMasterActor extends ActorLogMessages {
           for (status <- response.getCompletedContainersStatuses.asScala) {
             failedContainers += 1
             runningContainers -= 1
-            log.info(s"Completed container ${status.getContainerId}. Total failed containers " +
-              s"$failedContainers.")
-            log.info(s"Diagnostics ${status.getDiagnostics}.")
+            log.info(s"Container ${status.getContainerId} stopped running. " +
+              s"Total failed containers $failedContainers.")
+            log.info(s"Diagnostics from YARN: ${status.getDiagnostics}.")
             // remove failed container from running containers
             var failedContainer: Container = null
             log.info("Running containers {}", runningContainerIds())
@@ -165,7 +165,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
               log.warning("Unable to find completed container id={} in " +
                 "list of running containers {}", status.getContainerId, runningContainerIds())
             }
-            // TODO allocatedContainersList += failedContainer
             messageListener foreach {
               val detail = status.getExitStatus match {
                 case -103 => "Vmem limit exceeded";
@@ -200,7 +199,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
             // not enough containers running
             if(allocatedContainersList.size > 0) {
-              log.info("{} containers already allocated by YARN. Starting them.",
+              log.info("{} containers already allocated by YARN. Starting...",
                 allocatedContainersList.size)
               // we have some containers allocated to us --> start them
               allocatedContainersList = allocatedContainersList.dropWhile(container => {
@@ -208,12 +207,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
                   require(missingContainers == 0, "The variable can not be negative. Illegal state")
                   false
                 } else {
-                  runningContainers += 1
-                  missingContainers -= 1
-
-                  log.info("Launching container #{} ({}).", containersLaunched, container.getId)
-                  containersLaunched += 1
-                  runningContainersList += container
                   // start the container
                   nmClientOption match {
                     case Some(nmClient) =>
@@ -221,6 +214,13 @@ trait ApplicationMasterActor extends ActorLogMessages {
                         case Some(ctx) => {
                           try {
                             nmClient.startContainer(container, ctx)
+                            runningContainers += 1
+                            missingContainers -= 1
+
+                            log.info("Launching container #{} ({} on host {}).",
+                              containersLaunched, container.getId, container.getNodeId.getHost)
+                            containersLaunched += 1
+                            runningContainersList += container
                           } catch {
                             case e: YarnException =>
                               log.error(e, "Exception while starting YARN container")
@@ -260,6 +260,15 @@ trait ApplicationMasterActor extends ActorLogMessages {
                 }
               }
             }
+          }
+
+          if(runningContainers >= numTaskManager && allocatedContainersList.size > 0) {
+            log.info("Flink has {} allocated containers which are not needed right now. " +
+              "Returning them", allocatedContainersList.size)
+            for(container <- allocatedContainersList) {
+              rmClient.releaseAssignedContainer(container.getId)
+            }
+            allocatedContainersList.clear()
           }
 
           if(failedContainers >= maxFailedContainers) {
