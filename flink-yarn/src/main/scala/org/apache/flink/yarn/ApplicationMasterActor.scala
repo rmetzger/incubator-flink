@@ -142,8 +142,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
             if(numPendingRequests > 0) {
               numPendingRequests -= 1
             }
-            // REMOVEME
-            log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
           }
 
           // get failed containers
@@ -177,8 +175,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
               _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
                 s"state=${status.getState}.\n${status.getDiagnostics} $detail")
             }
-            // add container back to list of allocated containers
-
           }
           // return containers if the RM wants them and we haven't allocated them yet.
           val preemtionMessage = response.getPreemptionMessage
@@ -192,8 +188,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
             if(strictContract != null) {
               tryToReturnContainers(strictContract.getContainers.asScala)
             }
-            // REMOVEME
-            log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
           }
 
           // ---------------------------- decide if we need to do anything ---------
@@ -209,8 +203,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
               log.info("{} containers already allocated by YARN. Starting them.",
                 allocatedContainersList.size)
               // we have some containers allocated to us --> start them
-              // REMOVEME
-              log.info("allocatedContainersList.toString = {}",  allocatedContainerIds())
               allocatedContainersList = allocatedContainersList.dropWhile(container => {
                 if (missingContainers <= 0) {
                   require(missingContainers == 0, "The variable can not be negative. Illegal state")
@@ -247,21 +239,19 @@ trait ApplicationMasterActor extends ActorLogMessages {
                 }
               })
             }
-            // REMOVEME
-            log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
             // if there are still containers missing, request them from YARN
             val toAllocateFromYarn = Math.max(missingContainers - numPendingRequests, 0)
             if(toAllocateFromYarn > 0) {
               val reallocate = configuration
                 .getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)
               log.info(s"There are $missingContainers containers missing." +
-                s" $numPendingRequests are already requested." +
-                s"Requesting $toAllocateFromYarn additional containers from YARN. " +
+                s" $numPendingRequests are already requested. " +
+                s"Requesting $toAllocateFromYarn additional container(s) from YARN. " +
                 s"Reallocation of failed containers is enabled=$reallocate ('{}')",
                 ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS)
               // there are still containers missing. Request them from YARN
               if(reallocate) {
-                for(i <- 0 to toAllocateFromYarn) {
+                for(i <- 1 to toAllocateFromYarn) {
                   val containerRequest = getContainerRequest(memoryPerTaskManager)
                   rmClient.addContainerRequest(containerRequest)
                   numPendingRequests += 1
