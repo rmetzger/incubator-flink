@@ -40,6 +40,7 @@ import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync
 import org.apache.hadoop.yarn.client.api.{NMClient, AMRMClient}
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
+import org.apache.hadoop.yarn.exceptions.YarnException
 import org.apache.hadoop.yarn.util.Records
 
 import scala.collection.mutable
@@ -67,6 +68,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
   var numTaskManager = 0 // the requested number of TMs
   var maxFailedContainers = 0
   var containersLaunched = 0
+  var numPendingRequests = 0 // number of currently pending container allocation requests.
 
   var memoryPerTaskManager = 0
 
@@ -138,6 +140,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
           for (container <- response.getAllocatedContainers.asScala) {
             log.info(s"Got new container for allocation: ${container.getId}")
             allocatedContainersList += container
+            numPendingRequests -= 1
             // REMOVEME
             log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
           }
@@ -222,7 +225,14 @@ trait ApplicationMasterActor extends ActorLogMessages {
                   nmClientOption match {
                     case Some(nmClient) =>
                       containerLaunchContext match {
-                        case Some(ctx) => nmClient.startContainer(container, ctx)
+                        case Some(ctx) => {
+                          try {
+                            nmClient.startContainer(container, ctx)
+                          } catch {
+                            case e: YarnException =>
+                              log.error("Exception while starting YARN container", e)
+                          }
+                        }
                         case None =>
                           log.error("The ContainerLaunchContext was not set.")
                           self ! StopYarnSession(FinalApplicationStatus.FAILED)
@@ -239,18 +249,23 @@ trait ApplicationMasterActor extends ActorLogMessages {
             // REMOVEME
             log.info("allocatedContainersList.toString = {}", allocatedContainerIds())
             // if there are still containers missing, request them from YARN
-            if(missingContainers > 0) {
+            val toAllocateFromYarn = Math.max(missingContainers - numPendingRequests, 0)
+            if(toAllocateFromYarn > 0) {
               val reallocate = configuration
                 .getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)
-              log.info("There are {} containers missing. Reallocation of failed containers" +
-                "is set to {} ({})", missingContainers, reallocate,
+              log.info(s"There are $missingContainers containers missing." +
+                s" $numPendingRequests are already requested." +
+                s"Requesting $toAllocateFromYarn additional containers from YARN" +
+                "Reallocation of failed containers is enabled=$reallocate ('{}')",
                 ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS)
               // there are still containers missing. Request them from YARN
               if(reallocate) {
-                log.info("Requesting {} new container(s) from YARN", missingContainers)
-                for(i <- 0 to missingContainers) {
+                log.info("Requesting {} new container(s) from YARN. Pending requests {}",
+                  missingContainers, numPendingRequests)
+                for(i <- 0 to toAllocateFromYarn) {
                   val containerRequest = getContainerRequest(memoryPerTaskManager)
                   rmClient.addContainerRequest(containerRequest)
+                  numPendingRequests += 1
                 }
               }
             }
@@ -282,10 +297,10 @@ trait ApplicationMasterActor extends ActorLogMessages {
         allocatedContainersList.size)
   }
 
-  private def runningContainerIds(): Unit = {
+  private def runningContainerIds(): mutable.MutableList[ContainerId] = {
     return runningContainersList map { runningCont => runningCont.getId}
   }
-  private def allocatedContainerIds(): Unit = {
+  private def allocatedContainerIds(): mutable.MutableList[ContainerId] = {
     return runningContainersList map { runningCont => runningCont.getId}
   }
 
