@@ -41,7 +41,6 @@ import org.apache.hadoop.yarn.client.api.{NMClient, AMRMClient}
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
 import org.apache.hadoop.yarn.exceptions.YarnException
 import org.apache.hadoop.yarn.util.Records
-import org.slf4j.{LoggerFactory, Logger}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -54,8 +53,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
   import context._
   import scala.collection.JavaConverters._
-
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[ApplicationMasterActor])
 
   val ALLOCATION_DELAY = 300 milliseconds
   val COMPLETION_DELAY = 5 seconds
