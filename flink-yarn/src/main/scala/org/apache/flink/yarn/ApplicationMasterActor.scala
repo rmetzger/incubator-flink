@@ -204,7 +204,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
                     self ! StopYarnSession(FinalApplicationStatus.FAILED)
                 }
                 // dropping condition
-                runningContainers <= numTaskManager
+                missingContainers > 0
               })
               // REMOVEME
               log.info("allocatedContainersList.toString = {}", allocatedContainersList.toString)

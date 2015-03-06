@@ -193,7 +193,7 @@ public class WebInfoServer {
 	public void start() throws Exception {
 		server.start();
 		final Connector connector = server.getConnectors()[0];
-		assignedPort = connector.getPort();
+		assignedPort = connector.getLocalPort(); // we have to use getLocalPort() instead of getPort() http://stackoverflow.com/questions/8884865/how-to-discover-jetty-7-running-port
 		LOG.info("Started web info server for JobManager on {}:{}", connector.getHost(), assignedPort);
 	}
 
