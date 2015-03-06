@@ -41,7 +41,7 @@ object Messages {
 
   case class JobManagerActorRef(jobManager: ActorRef)
 
-  case object PollContainerCompletion
+  case object HeartbeatWithYarn
   case object PollYarnClusterStatus // see org.apache.flink.runtime.yarn.FlinkYarnClusterStatus for
                                     // the response
   case object CheckForUserCommand

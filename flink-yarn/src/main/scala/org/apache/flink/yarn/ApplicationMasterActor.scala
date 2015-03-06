@@ -42,6 +42,7 @@ import org.apache.hadoop.yarn.client.api.{NMClient, AMRMClient}
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
 import org.apache.hadoop.yarn.util.Records
 
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
@@ -65,8 +66,12 @@ trait ApplicationMasterActor extends ActorLogMessages {
   var failedContainers = 0 // failed container count
   var numTaskManager = 0 // the requested number of TMs
   var maxFailedContainers = 0
+  var containersLaunched = 0
 
   var memoryPerTaskManager = 0
+
+  // list of containers available for starting
+  var allocatedContainersList: mutable.MutableList[Container] = new mutable.MutableList[Container]
 
 
   abstract override def receiveWithLogMessages: Receive = {
@@ -121,33 +126,22 @@ trait ApplicationMasterActor extends ActorLogMessages {
     case StartYarnSession(conf, actorSystemPort, webServerPort) =>
       startYarnSession(conf, actorSystemPort, webServerPort)
 
-    case PollContainerCompletion =>
+    case HeartbeatWithYarn =>
       rmClientOption match {
         case Some(rmClient) =>
           val response = rmClient.allocate(runningContainers.toFloat / numTaskManager)
 
+          // ---------------------------- handle YARN responses
+
+          // get new containers from YARN
           for (container <- response.getAllocatedContainers.asScala) {
-            log.info(s"Got new container for TM ${container.getId} on host ${
+            log.info(s"Got new container for TaskManager: ${container.getId} on host ${
               container.getNodeId.getHost
             }")
-
-            runningContainers += 1
-
-            log.info(s"Launching container #$runningContainers.")
-            nmClientOption match {
-              case Some(nmClient) =>
-                containerLaunchContext match {
-                  case Some(ctx) => nmClient.startContainer(container, ctx)
-                  case None =>
-                    log.error("The ContainerLaunchContext was not set.")
-                    self ! StopYarnSession(FinalApplicationStatus.FAILED)
-                }
-              case None =>
-                log.error("The NMClient was not set.")
-                self ! StopYarnSession(FinalApplicationStatus.FAILED)
-            }
+            allocatedContainersList += container
           }
 
+          // get failed containers
           for (status <- response.getCompletedContainersStatuses.asScala) {
             failedContainers += 1
             runningContainers -= 1
@@ -159,10 +153,68 @@ trait ApplicationMasterActor extends ActorLogMessages {
               _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
                 s"state=${status.getState}.\n${status.getDiagnostics}")
             }
-            if(configuration.getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)) {
-              log.info("Requesting a new container from YARN for the failed container")
-              val containerRequest = getContainerRequest(memoryPerTaskManager)
-              rmClient.addContainerRequest(containerRequest)
+          }
+          // return containers if the RM wants them and we haven't allocated them yet.
+          val preemtionMessage = response.getPreemptionMessage
+          if(preemtionMessage != null) {
+            log.debug("Received preemtion message from YARN {}", preemtionMessage)
+            val contract = preemtionMessage.getContract
+            if(contract != null) {
+              tryToReturnContainers(contract.getContainers.asScala)
+            }
+            val strictContract = preemtionMessage.getStrictContract
+            if(strictContract != null) {
+              tryToReturnContainers(strictContract.getContainers.asScala)
+            }
+          }
+
+          // ---------------------------- decide if we need to do anything
+
+          // check if we want to start some of our allocated containers.
+          if(runningContainers < numTaskManager) {
+            var missingContainers = numTaskManager - runningContainers
+            log.info("The user requested {} containers, {} are running. {} containers missing",
+              numTaskManager, runningContainers, missingContainers)
+            // not enough containers running
+            if(allocatedContainersList.size > 0) {
+              log.info("{} containers already allocated by YARN." +
+                "Starting them", allocatedContainersList.size)
+              // we have some containers allocated to us --> start them
+              allocatedContainersList = allocatedContainersList.dropWhile(container => {
+                runningContainers += 1
+                missingContainers -= 1
+
+                log.info(s"Launching container #$containersLaunched.")
+                containersLaunched += 1
+                // start the container
+                nmClientOption match {
+                  case Some(nmClient) =>
+                    containerLaunchContext match {
+                      case Some(ctx) => nmClient.startContainer(container, ctx)
+                      case None =>
+                        log.error("The ContainerLaunchContext was not set.")
+                        self ! StopYarnSession(FinalApplicationStatus.FAILED)
+                    }
+                  case None =>
+                    log.error("The NMClient was not set.")
+                    self ! StopYarnSession(FinalApplicationStatus.FAILED)
+                }
+                runningContainers < numTaskManager
+              })
+              if(missingContainers > 0) {
+                val reallocate = configuration
+                  .getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)
+                log.info("There are {} containers missing. Reallocation of failed containers" +
+                  "is set to {}", missingContainers, reallocate)
+                // there are still containers missing. Request them from YARN
+                if(reallocate) {
+                  log.info("Requesting {] new container(s) from YARN")
+                  for(i <- 0 to missingContainers) {
+                    val containerRequest = getContainerRequest(memoryPerTaskManager)
+                    rmClient.addContainerRequest(containerRequest)
+                  }
+                }
+              }
             }
           }
 
@@ -174,17 +226,22 @@ trait ApplicationMasterActor extends ActorLogMessages {
               ConfigConstants.YARN_MAX_FAILED_CONTAINERS)
             self ! StopYarnSession(FinalApplicationStatus.FAILED)
           }
+
+          // schedule next heartbeat:
           if (runningContainers < numTaskManager) {
             // we don't have the requested number of containers. Do fast polling
-            context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, PollContainerCompletion)
+            context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, HeartbeatWithYarn)
           } else if (failedContainers < numTaskManager) {
             // everything is good, slow polling
-            context.system.scheduler.scheduleOnce(COMPLETION_DELAY, self, PollContainerCompletion)
+            context.system.scheduler.scheduleOnce(COMPLETION_DELAY, self, HeartbeatWithYarn)
           }
         case None =>
           log.error("The AMRMClient was not set.")
           self ! StopYarnSession(FinalApplicationStatus.FAILED)
       }
+      log.debug("Processed Heartbeat with RMClient. Running containers {}," +
+        "failed containers {}, allocated containers {}", runningContainers, failedContainers,
+        allocatedContainersList.size)
   }
 
   private def startYarnSession(conf: Configuration,
@@ -231,8 +288,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
       log.info(s"Registering ApplicationMaster with tracking url $url.")
       rm.registerApplicationMaster(applicationMasterHost, actorSystemPort, url)
 
-
-
       // Make container requests to ResourceManager
       for (i <- 0 until numTaskManager) {
         val containerRequest = getContainerRequest(memoryPerTaskManager)
@@ -277,11 +332,23 @@ trait ApplicationMasterActor extends ActorLogMessages {
       containerLaunchContext = Some(createContainerLaunchContext(heapLimit, hasLogback, hasLog4j,
         yarnClientUsername, conf, taskManagerLocalResources))
 
-      context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, PollContainerCompletion)
+      context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, HeartbeatWithYarn)
     } recover {
       case t: Throwable =>
         log.error(t, "Could not start yarn session.")
         self ! StopYarnSession(FinalApplicationStatus.FAILED)
+    }
+  }
+
+  private def tryToReturnContainers(returnRequest: mutable.Set[PreemptionContainer]): Unit = {
+    for(requestedBackContainers <- returnRequest) {
+      allocatedContainersList = allocatedContainersList.dropWhile( container => {
+        val result = requestedBackContainers.equals(container)
+        if(result) {
+          log.info("Returning container {} back to ResourceManager.", container)
+        }
+        result
+      })
     }
   }
 

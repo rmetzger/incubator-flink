@@ -89,7 +89,7 @@ public class WebInfoServer {
 
 		this.port = config.getInteger(ConfigConstants.JOB_MANAGER_WEB_PORT_KEY,
 				ConfigConstants.DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT);
-		if (this.port <= 0) {
+		if (this.port < 0) {
 			throw new IllegalArgumentException("Invalid port for the webserver: " + this.port);
 		}
 
