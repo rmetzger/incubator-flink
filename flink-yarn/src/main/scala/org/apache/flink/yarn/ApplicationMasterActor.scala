@@ -37,11 +37,11 @@ import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import org.apache.hadoop.yarn.api.records._
-import org.apache.hadoop.yarn.client.api.async.NMClientAsync
 import org.apache.hadoop.yarn.client.api.{NMClient, AMRMClient}
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
 import org.apache.hadoop.yarn.exceptions.YarnException
 import org.apache.hadoop.yarn.util.Records
+import org.slf4j.{LoggerFactory, Logger}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -54,6 +54,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
   import context._
   import scala.collection.JavaConverters._
+
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[ApplicationMasterActor])
 
   val ALLOCATION_DELAY = 300 milliseconds
   val COMPLETION_DELAY = 5 seconds
@@ -168,7 +170,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
               log.warning("Unable to find completed container id={} in " +
                 "list of running containers {}", status.getContainerId, runningContainerIds())
             }
-            allocatedContainersList += failedContainer
+            // TODO allocatedContainersList += failedContainer
             messageListener foreach {
               val detail = status.getExitStatus match {
                 case -103 => "Vmem limit exceeded";
@@ -232,7 +234,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
                             nmClient.startContainer(container, ctx)
                           } catch {
                             case e: YarnException =>
-                              log.error("Exception while starting YARN container", e)
+                              log.error(e, "Exception while starting YARN container")
                           }
                         }
                         case None =>
