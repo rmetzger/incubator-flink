@@ -560,6 +560,9 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		if(clusterName == null) {
 			clusterName = "Flink session with "+taskManagerCount+" TaskManagers";
 		}
+		if(detached) {
+			clusterName += " (detached)";
+		}
 
 		appContext.setApplicationName(clusterName); // application name
 		appContext.setApplicationType("Apache Flink");
@@ -654,8 +657,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		return new ClusterResourceDescription(totalFreeMemory, containerLimit, nodeManagersFree);
 	}
 
-
-
 	public String getClusterDescription() throws Exception {
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -688,6 +689,10 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		}
 		yarnClient.stop();
 		return baos.toString();
+	}
+
+	public String getSessionFilesDir() {
+		return sessionFilesDir.toString();
 	}
 
 	public static class YarnDeploymentException extends RuntimeException {

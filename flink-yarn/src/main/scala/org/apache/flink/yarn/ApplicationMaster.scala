@@ -27,6 +27,7 @@ import org.apache.flink.configuration.{GlobalConfiguration, Configuration, Confi
 import org.apache.flink.runtime.akka.AkkaUtils
 import org.apache.flink.runtime.jobmanager.JobManager
 import org.apache.flink.runtime.jobmanager.web.WebInfoServer
+import org.apache.flink.runtime.util.EnvironmentInformation
 import org.apache.flink.yarn.Messages.StartYarnSession
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
@@ -48,6 +49,10 @@ object ApplicationMaster {
     val yarnClientUsername = System.getenv(FlinkYarnClient.ENV_CLIENT_USERNAME)
     LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName}" +
       s"' setting user to execute Flink ApplicationMaster/JobManager to $yarnClientUsername'")
+
+    EnvironmentInformation.logEnvironmentInfo(LOG, "YARN ApplicationMaster/JobManager", args)
+    EnvironmentInformation.checkJavaVersion()
+    org.apache.flink.runtime.util.SignalHandler.register(LOG)
 
     val ugi = UserGroupInformation.createRemoteUser(yarnClientUsername)
 

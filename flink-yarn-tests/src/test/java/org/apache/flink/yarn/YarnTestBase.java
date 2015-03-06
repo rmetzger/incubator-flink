@@ -68,6 +68,11 @@ public abstract class YarnTestBase {
 
 	private final static String TEST_CLUSTER_NAME = "flink-yarn-tests";
 
+	// The tests are scanning for these strings in the final output.
+	protected final static String[] prohibtedStrings = {
+			"Exception", // we don't want any exceptions to happen
+			"Started SelectChannelConnector@0.0.0.0:8081" // Jetty should start on a random port in YARN mode.
+	};
 
 	// Temp directory which is deleted after the unit test.
 	private static TemporaryFolder tmp = new TemporaryFolder();
@@ -225,11 +230,10 @@ public abstract class YarnTestBase {
 	 * This method checks the written TaskManager and JobManager log files
 	 * for exceptions.
 	 */
-	public static void ensureNoExceptionsInLogFiles() {
+	public static void ensureNoProhibitedStringInLogFiles(final String[] prohibited) {
 		File cwd = new File("target/"+TEST_CLUSTER_NAME);
 		Assert.assertTrue("Expecting directory "+cwd.getAbsolutePath()+" to exist", cwd.exists());
 		Assert.assertTrue("Expecting directory "+cwd.getAbsolutePath()+" to be a directory", cwd.isDirectory());
-		System.out.println("cwd = "+cwd.getAbsolutePath());
 		File foundFile = findFile(cwd.getAbsolutePath(), new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
@@ -243,9 +247,13 @@ public abstract class YarnTestBase {
 				}
 				while (scanner.hasNextLine()) {
 					final String lineFromFile = scanner.nextLine();
-					if(lineFromFile.contains("Exception")) {
-						return true;
+					for(int i = 0; i < prohibited.length; i++) {
+						if(lineFromFile.contains(prohibited[i])) {
+							LOG.warn("Prohibited String '{}' in line '{}'", prohibited[i], lineFromFile);
+							return true;
+						}
 					}
+
 				}
 				return false;
 			}
@@ -257,16 +265,12 @@ public abstract class YarnTestBase {
 			} catch (FileNotFoundException e) {
 				Assert.fail("Unable to locate file: "+e.getMessage()+" file: "+foundFile.getAbsolutePath());
 			}
-			LOG.warn("Found a file with an exception. Printing contents:");
+			LOG.warn("Found a file with a prohibited string. Printing contents:");
 			while (scanner.hasNextLine()) {
 				LOG.warn("LINE: "+scanner.nextLine());
 			}
-			Assert.fail("Found a file "+foundFile+" with an exception");
+			Assert.fail("Found a file "+foundFile+" with a prohibited string: "+Arrays.toString(prohibited));
 		}
-	}
-
-	public static void main(String[] args) {
-		ensureNoExceptionsInLogFiles();
 	}
 
 	public static void startYARNWithConfig(Configuration conf) {

@@ -50,4 +50,6 @@ public abstract class AbstractFlinkYarnClient {
 	public abstract AbstractFlinkYarnCluster deploy(String clusterName) throws Exception;
 
 	public abstract void setDetachedMode(boolean detachedMode);
+
+	public abstract String getSessionFilesDir();
 }

@@ -37,6 +37,7 @@ import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import org.apache.hadoop.yarn.api.records._
+import org.apache.hadoop.yarn.client.api.async.NMClientAsync
 import org.apache.hadoop.yarn.client.api.{NMClient, AMRMClient}
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
 import org.apache.hadoop.yarn.util.Records
@@ -158,7 +159,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
               _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
                 s"state=${status.getState}.\n${status.getDiagnostics}")
             }
-            if(configuration.getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, false)) {
+            if(configuration.getBoolean(ConfigConstants.YARN_REALLOCATE_FAILED_CONTAINERS, true)) {
               log.info("Requesting a new container from YARN for the failed container")
               val containerRequest = getContainerRequest(memoryPerTaskManager)
               rmClient.addContainerRequest(containerRequest)

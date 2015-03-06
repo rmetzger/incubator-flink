@@ -135,28 +135,28 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 			actorRunner = new Thread(new Runnable() {
 				@Override
 				public void run() {
-					// blocks until ApplicationMaster has been stopped
-					actorSystem.awaitTermination();
+				// blocks until ApplicationMaster has been stopped
+				actorSystem.awaitTermination();
 
-					// get final application report
-					try {
-						ApplicationReport appReport = yarnClient.getApplicationReport(appId);
+				// get final application report
+				try {
+					ApplicationReport appReport = yarnClient.getApplicationReport(appId);
 
-						LOG.info("Application " + appId + " finished with state " + appReport
-								.getYarnApplicationState() + " and final state " + appReport
-								.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
+					LOG.info("Application " + appId + " finished with state " + appReport
+							.getYarnApplicationState() + " and final state " + appReport
+							.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
 
-						if (appReport.getYarnApplicationState() == YarnApplicationState.FAILED || appReport.getYarnApplicationState()
-								== YarnApplicationState.KILLED) {
-							LOG.warn("Application failed. Diagnostics " + appReport.getDiagnostics());
-							LOG.warn("If log aggregation is activated in the Hadoop cluster, we recommend to retrieve "
-									+ "the full application log using this command:\n"
-									+ "\tyarn logs -applicationId " + appReport.getApplicationId() + "\n"
-									+ "(It sometimes takes a few seconds until the logs are aggregated)");
-						}
-					} catch (Exception e) {
-						LOG.warn("Error while getting final application report", e);
+					if (appReport.getYarnApplicationState() == YarnApplicationState.FAILED || appReport.getYarnApplicationState()
+							== YarnApplicationState.KILLED) {
+						LOG.warn("Application failed. Diagnostics " + appReport.getDiagnostics());
+						LOG.warn("If log aggregation is activated in the Hadoop cluster, we recommend to retrieve "
+								+ "the full application log using this command:\n"
+								+ "\tyarn logs -applicationId " + appReport.getApplicationId() + "\n"
+								+ "(It sometimes takes a few seconds until the logs are aggregated)");
 					}
+				} catch (Exception e) {
+					LOG.warn("Error while getting final application report", e);
+				}
 				}
 			});
 			actorRunner.setDaemon(true);
