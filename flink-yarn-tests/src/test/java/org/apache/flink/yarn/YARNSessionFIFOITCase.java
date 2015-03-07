@@ -18,6 +18,7 @@
 package org.apache.flink.yarn;
 
 import com.google.common.base.Joiner;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
@@ -177,10 +178,21 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			Assert.fail("Error stopping container: "+e.getMessage());
 		}
 
-		// wait for new container to be started.
-		while(!errContent.toString().contains("Launching container")) {
+		// stateful terminantion check:
+		// wait until we saw a container being killed and AFTERWARDS a new one launced
+		boolean ok = false;
+		do {
+			LOG.debug("Waiting for correct order of events. Output: {}", errContent.toString());
+
+			String o = errContent.toString();
+			int killedOff = o.indexOf("Container killed by the ApplicationMaster");
+			if(killedOff != -1) {
+				o = o.substring(killedOff);
+				ok = o.indexOf("Launching container") > 0;
+			}
 			sleep(1000);
-		}
+		} while(!ok);
+
 
 		// send "stop" command to command line interface
 		runner.sendStop();
