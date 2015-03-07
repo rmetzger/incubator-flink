@@ -88,17 +88,17 @@ trait ApplicationMasterActor extends ActorLogMessages {
   }
 
   def receiveYarnMessages: Receive = {
-    case StopYarnSession(status) =>
-      log.info("Stopping YARN JobManager with status {}.", status)
+    case StopYarnSession(status, diag) =>
+      log.info("Stopping YARN JobManager with status {} and diagnostic {}.", status, diag)
 
       instanceManager.getAllRegisteredInstances.asScala foreach {
         instance =>
-          instance.getTaskManager ! StopYarnSession(status)
+          instance.getTaskManager ! StopYarnSession(status, diag)
       }
 
       rmClientOption foreach {
         rmClient =>
-          Try(rmClient.unregisterApplicationMaster(status, "", "")).recover{
+          Try(rmClient.unregisterApplicationMaster(status, diag, "")).recover{
             case t: Throwable => log.error(t, "Could not unregister the application master.")
           }
 
@@ -233,11 +233,13 @@ trait ApplicationMasterActor extends ActorLogMessages {
                         }
                         case None =>
                           log.error("The ContainerLaunchContext was not set.")
-                          self ! StopYarnSession(FinalApplicationStatus.FAILED)
+                          self ! StopYarnSession(FinalApplicationStatus.FAILED,
+                            "Fatal error in AM: The ContainerLaunchContext was not set.")
                       }
                     case None =>
                       log.error("The NMClient was not set.")
-                      self ! StopYarnSession(FinalApplicationStatus.FAILED)
+                      self ! StopYarnSession(FinalApplicationStatus.FAILED,
+                        "Fatal error in AM: The NMClient was not set.")
                   }
                   // dropping condition
                   true
@@ -277,25 +279,27 @@ trait ApplicationMasterActor extends ActorLogMessages {
           }
 
           if(failedContainers >= maxFailedContainers) {
-            log.warning("Stopping YARN session because the number of failed containers ({}) " +
-              "exceeded the maximum failed container count ({})." +
-              "This number is controlled by the '{}' configuration setting. By default its " +
-              "the number of requested containers", failedContainers, maxFailedContainers,
-              ConfigConstants.YARN_MAX_FAILED_CONTAINERS)
-            self ! StopYarnSession(FinalApplicationStatus.FAILED)
+            val msg = s"Stopping YARN session because the number of failed " +
+              s"containers ($failedContainers) exceeded the maximum failed container " +
+              s"count ($maxFailedContainers). This number is controlled by " +
+              s"the '${ConfigConstants.YARN_MAX_FAILED_CONTAINERS}' configuration " +
+              s"setting. By default its the number of requested containers"
+            log.error(msg)
+            self ! StopYarnSession(FinalApplicationStatus.FAILED, msg)
           }
 
           // schedule next heartbeat:
           if (runningContainers < numTaskManager) {
             // we don't have the requested number of containers. Do fast polling
-            context.system.scheduler.scheduleOnce(FAST_YARN_HEARTBEAT_DELAY, self, HeartbeatWithYarn)
+            context.system.scheduler.scheduleOnce(FAST_YARN_HEARTBEAT_DELAY, self,HeartbeatWithYarn)
           } else {
             // everything is good, slow down polling
             context.system.scheduler.scheduleOnce(YARN_HEARTBEAT_DELAY, self, HeartbeatWithYarn)
           }
         case None =>
           log.error("The AMRMClient was not set.")
-          self ! StopYarnSession(FinalApplicationStatus.FAILED)
+          self ! StopYarnSession(FinalApplicationStatus.FAILED, "Fatal error in AM: AMRMClient " +
+            "was not set")
       }
       log.debug("Processed Heartbeat with RMClient. Running containers {}," +
         "failed containers {}, allocated containers {}", runningContainers, failedContainers,
@@ -403,7 +407,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
     } recover {
       case t: Throwable =>
         log.error(t, "Could not start yarn session.")
-        self ! StopYarnSession(FinalApplicationStatus.FAILED)
+        self ! StopYarnSession(FinalApplicationStatus.FAILED,
+          s"ApplicationMaster failed while starting. Exception Message: ${t.getMessage}")
     }
   }
 

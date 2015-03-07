@@ -332,7 +332,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 			if(applicationClient != ActorRef.noSender()) {
 				try {
 					Future<Object> response = Patterns.ask(applicationClient,
-							new Messages.StopYarnSession(FinalApplicationStatus.SUCCEEDED),
+							new Messages.StopYarnSession(FinalApplicationStatus.SUCCEEDED,
+									"Flink YARN Client requested shutdown"),
 							new Timeout(akkaDuration));
 
 					Await.ready(response, akkaDuration);

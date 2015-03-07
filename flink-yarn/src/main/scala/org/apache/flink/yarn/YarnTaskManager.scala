@@ -38,8 +38,9 @@ class YarnTaskManager(connectionInfo: InstanceConnectionInfo, jobManagerAkkaURL:
   }
 
   def receiveYarnMessages: Receive = {
-    case StopYarnSession(status) =>
-      log.info(s"Stopping YARN TaskManager with final application status $status")
+    case StopYarnSession(status, diagnostics) =>
+      log.info(s"Stopping YARN TaskManager with final application status $status " +
+        s"and diagnostics: $diagnostics")
       context.system.shutdown()
   }
 }

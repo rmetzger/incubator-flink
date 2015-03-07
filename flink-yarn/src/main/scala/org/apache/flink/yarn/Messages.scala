@@ -31,7 +31,7 @@ object Messages {
   case class ApplicationMasterStatus(numTaskManagers: Int, numSlots: Int)
   case class RegisterClient(client: ActorRef)
 
-  case class StopYarnSession(status: FinalApplicationStatus)
+  case class StopYarnSession(status: FinalApplicationStatus, diagnostics: String)
 
   case object JobManagerStopped
 
