@@ -17,13 +17,23 @@
  */
 package org.apache.flink.yarn;
 
+import com.google.common.base.Joiner;
 import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
+import org.apache.flink.yarn.appMaster.YarnTaskManagerRunner;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.yarn.api.protocolrecords.StopContainersRequest;
+import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.apache.hadoop.yarn.security.NMTokenIdentifier;
+import org.apache.hadoop.yarn.server.nodemanager.NodeManager;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
 import org.apache.log4j.AppenderSkeleton;
@@ -35,8 +45,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -73,6 +87,102 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
+	/**
+	 * Test TaskManager failure
+	 */
+	@Test
+	public void testTaskManagerFailure() {
+		LOG.info("Starting testTaskManagerFailure()");
+		Runner runner = startWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
+				"-n", "1",
+				"-jm", "512",
+				"-tm", "1024",
+				"-Dfancy-configuration-value=veryFancy",
+				"-Dyarn.maximum-failed-containers=3"},
+				"Number of connected TaskManagers changed to 1. Slots available: 1",
+				RunTypes.YARN_SESSION);
+
+		Assert.assertEquals(2, getRunningContainers());
+
+		// ------------------------ Test if JobManager web interface is accessible -------
+		//YarnClient yc = YarnClient.createYarnClient();
+		//yc.getApplications().get(0).getTrackingUrl()
+
+		// ------------------------ Kill container with TaskManager  -------
+
+		// find container id of taskManager:
+		ContainerId taskManagerContainer = null;
+		NodeManager nodeManager = null;
+		UserGroupInformation remoteUgi = null;
+		try {
+			remoteUgi = UserGroupInformation.getCurrentUser();
+		} catch (IOException e) {
+			LOG.warn("Unable to get curr user", e);
+			Assert.fail();
+		}
+		for(int nmId = 0; nmId < NUM_NODEMANAGERS; nmId++) {
+			NodeManager nm = yarnCluster.getNodeManager(nmId);
+			ConcurrentMap<ContainerId, Container> containers = nm.getNMContext().getContainers();
+			for(Map.Entry<ContainerId, Container> entry : containers.entrySet()) {
+				String command = Joiner.on(" ").join(entry.getValue().getLaunchContext().getCommands());
+				LOG.warn("containerId " + entry.getKey() + " command =" + command);
+
+				if(command.contains(YarnTaskManagerRunner.class.getSimpleName())) {
+					taskManagerContainer = entry.getKey();
+					nodeManager = nm;
+					NMTokenIdentifier nmIdent = new NMTokenIdentifier(taskManagerContainer.getApplicationAttemptId(), null, "",0);
+					// allow myself to do stuff with the container
+					remoteUgi.addCredentials(entry.getValue().getCredentials());
+					remoteUgi.addTokenIdentifier(nmIdent);
+				}
+			}
+			sleep(500);
+		}
+		Assert.assertNotNull("Unable to find container with TaskManager", taskManagerContainer);
+		Assert.assertNotNull("Illegal state", nodeManager);
+
+		List<ContainerId> toStop = new LinkedList<ContainerId>();
+		toStop.add(taskManagerContainer);
+		StopContainersRequest scr = StopContainersRequest.newInstance(toStop);
+
+		try {
+			nodeManager.getNMContext().getContainerManager().stopContainers(scr);
+		} catch (Throwable e) {
+			LOG.warn("Error stopping container", e);
+			Assert.fail("Error stopping container: "+e.getMessage());
+		}
+
+		// wait for new container to be started.
+		while(errContent.toString().contains("Launching container")) {
+			sleep(1000);
+		}
+
+		// send "stop" command to command line interface
+		runner.sendStop();
+		// wait for the thread to stop
+		try {
+			runner.join(1000);
+		} catch (InterruptedException e) {
+			LOG.warn("Interrupted while stopping runner", e);
+		}
+		LOG.warn("stopped");
+
+		// ----------- Send output to logger
+		System.setOut(originalStdout);
+		System.setErr(originalStderr);
+		String oC = outContent.toString();
+		String eC = errContent.toString();
+		LOG.info("Sending stdout content through logger: \n\n{}\n\n", oC);
+		LOG.info("Sending stderr content through logger: \n\n{}\n\n", eC);
+
+		// ------ Check if everything happened correctly
+		Assert.assertTrue("Expect to see failed container", eC.contains("New messages from the YARN cluster"));
+		Assert.assertTrue("Expect to see failed container", eC.contains("Container killed by the ApplicationMaster"));
+		Assert.assertTrue("Expect to see new container started", eC.contains("Launching container") && eC.contains("on host"));
+
+		LOG.info("Finished testTaskManagerFailure()");
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
+	}
 
 	/**
 	 * Test querying the YARN cluster.
@@ -292,7 +402,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			LOG.info("Found expected string '"+expected+"' in log message "+found);
 			return;
 		}
-		Assert.fail("Unable to find expected string '"+expected+"' in log messages");
+		Assert.fail("Unable to find expected string '" + expected + "' in log messages");
 	}
 
 	public static class TestAppender extends AppenderSkeleton {

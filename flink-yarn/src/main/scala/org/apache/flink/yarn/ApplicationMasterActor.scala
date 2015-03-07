@@ -39,6 +39,7 @@ import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.client.api.{NMClient, AMRMClient}
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
+import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.exceptions.YarnException
 import org.apache.hadoop.yarn.util.Records
 
@@ -166,12 +167,12 @@ trait ApplicationMasterActor extends ActorLogMessages {
                 runningContainers -= 1
                 log.info(s"Container ${status.getContainerId} was a running container. " +
                   s"Total failed containers $failedContainers.")
+                val detail = status.getExitStatus match {
+                  case -103 => "Vmem limit exceeded";
+                  case -104 => "Pmem limit exceeded";
+                  case _ => ""
+                }
                 messageListener foreach {
-                  val detail = status.getExitStatus match {
-                    case -103 => "Vmem limit exceeded";
-                    case -104 => "Pmem limit exceeded";
-                    case _ => ""
-                  }
                   _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
                     s"state=${status.getState}.\n${status.getDiagnostics} $detail")
                 }
@@ -221,11 +222,14 @@ trait ApplicationMasterActor extends ActorLogMessages {
                             nmClient.startContainer(container, ctx)
                             runningContainers += 1
                             missingContainers -= 1
-
-                            log.info("Launching container #{} ({} on host {}).",
-                              containersLaunched, container.getId, container.getNodeId.getHost)
+                            val message = s"Launching container ${containersLaunched} " +
+                              s"(${container.getId} on host ${container.getNodeId.getHost})."
+                            log.info(message)
                             containersLaunched += 1
                             runningContainersList += container
+                            messageListener foreach {
+                              _ ! YarnMessage(message)
+                            }
                           } catch {
                             case e: YarnException =>
                               log.error(e, "Exception while starting YARN container")
@@ -323,6 +327,16 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
       val applicationMasterHost = env.get(Environment.NM_HOST.key)
       require(applicationMasterHost != null, s"Application master (${Environment.NM_HOST} not set.")
+
+      val yarnExpiryInterval: FiniteDuration = FiniteDuration(
+        conf.getInt(YarnConfiguration.RM_AM_EXPIRY_INTERVAL_MS,
+          YarnConfiguration.DEFAULT_RM_AM_EXPIRY_INTERVAL_MS), MILLISECONDS)
+
+      if(YARN_HEARTBEAT_DELAY.gteq(yarnExpiryInterval)) {
+        log.warning("The heartbeat interval of the Flink Application master ({}) is greater than " +
+          "YARN's expiry interval ({}). The application is likely to be killed by YARN.",
+        YARN_HEARTBEAT_DELAY, yarnExpiryInterval)
+      }
 
       numTaskManager = env.get(FlinkYarnClient.ENV_TM_COUNT).toInt
       maxFailedContainers = configuration.getInteger(ConfigConstants.YARN_MAX_FAILED_CONTAINERS,

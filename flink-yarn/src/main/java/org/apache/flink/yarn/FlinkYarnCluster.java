@@ -187,7 +187,6 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	/**
 	 * This method is only available if the cluster hasn't been started in detached mode.
-	 * @return
 	 */
 	@Override
 	public FlinkYarnClusterStatus getClusterStatus() {
@@ -270,8 +269,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 			throw new RuntimeException("The FlinkYarnCluster has already been stopped");
 		}
 		List<String> ret = new ArrayList<String>();
-		// get messages from ApplicationClient (locally)
 
+		// get messages from ApplicationClient (locally)
 		while(true) {
 			Object result = null;
 			try {

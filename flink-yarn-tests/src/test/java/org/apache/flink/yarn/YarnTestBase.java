@@ -23,11 +23,14 @@ import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.MiniYARNCluster;
+import org.apache.hadoop.yarn.server.nodemanager.NodeManager;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -51,6 +54,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -59,14 +63,18 @@ import java.util.Scanner;
  *
  * This class is located in a different package which is build after flink-dist. This way,
  * we can use the YARN uberjar of flink to start a Flink YARN session.
+ *
+ * The test is not threadsafe. Parallel execution of tests is not possible!
  */
 public abstract class YarnTestBase {
 	private static final Logger LOG = LoggerFactory.getLogger(YarnTestBase.class);
 
-	private final static PrintStream originalStdout = System.out;
-	private final static PrintStream originalStderr = System.err;
+	protected final static PrintStream originalStdout = System.out;
+	protected final static PrintStream originalStderr = System.err;
 
 	private final static String TEST_CLUSTER_NAME = "flink-yarn-tests";
+
+	protected final static int NUM_NODEMANAGERS = 2;
 
 	// The tests are scanning for these strings in the final output.
 	protected final static String[] prohibtedStrings = {
@@ -95,6 +103,7 @@ public abstract class YarnTestBase {
 		yarnConfiguration.setBoolean(YarnConfiguration.LOG_AGGREGATION_ENABLED, true);
 		yarnConfiguration.setInt(YarnConfiguration.NM_VCORES, 666); // memory is overwritten in the MiniYARNCluster.
 		// so we have to change the number of cores for testing.
+		yarnConfiguration.setInt(YarnConfiguration.RM_AM_EXPIRY_INTERVAL_MS, 10000); // 10 seconds expiry (to ensure we properly heartbeat with YARN).
 	}
 
 	// This code is taken from: http://stackoverflow.com/a/7201825/568695
@@ -273,6 +282,24 @@ public abstract class YarnTestBase {
 		}
 	}
 
+	public static void sleep(int time) {
+		try {
+			Thread.sleep(time);
+		} catch (InterruptedException e) {
+			LOG.warn("Interruped",e);
+		}
+	}
+
+	public static int getRunningContainers() {
+		int count = 0;
+		for(int nmId = 0; nmId < NUM_NODEMANAGERS; nmId++) {
+			NodeManager nm = yarnCluster.getNodeManager(nmId);
+			ConcurrentMap<ContainerId, Container> containers = nm.getNMContext().getContainers();
+			count += containers.size();
+		}
+		return count;
+	}
+
 	public static void startYARNWithConfig(Configuration conf) {
 		flinkUberjar = findFile(".", new RootDirFilenameFilter());
 		Assert.assertNotNull(flinkUberjar);
@@ -283,9 +310,9 @@ public abstract class YarnTestBase {
 		}
 
 		try {
-			LOG.info("Starting up MiniYARN cluster");
+			LOG.info("Starting up MiniYARNCluster");
 			if (yarnCluster == null) {
-				yarnCluster = new MiniYARNCluster(TEST_CLUSTER_NAME, 2, 1, 1);
+				yarnCluster = new MiniYARNCluster(TEST_CLUSTER_NAME, NUM_NODEMANAGERS, 1, 1);
 
 				yarnCluster.init(conf);
 				yarnCluster.start();
@@ -318,13 +345,60 @@ public abstract class YarnTestBase {
 
 	// -------------------------- Runner -------------------------- //
 
-	private static ByteArrayOutputStream outContent;
-	private static ByteArrayOutputStream errContent;
+	protected static ByteArrayOutputStream outContent;
+	protected static ByteArrayOutputStream errContent;
 	enum RunTypes {
 		YARN_SESSION, CLI_FRONTEND
 	}
 
-	protected void runWithArgs(String[] args, String expect, RunTypes type) {
+	/**
+	 * This method returns once the "startedAfterString" has been seen.
+	 * @param args
+	 * @param startedAfterString
+	 * @param type
+	 */
+	protected Runner startWithArgs(String[] args, String startedAfterString, RunTypes type) {
+		LOG.info("Running with args {}", Arrays.toString(args));
+
+		outContent = new ByteArrayOutputStream();
+		errContent = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(outContent));
+		System.setErr(new PrintStream(errContent));
+
+
+		final int START_TIMEOUT_SECONDS = 60;
+
+		Runner runner = new Runner(args, type);
+		runner.start();
+
+		for(int second = 0; second <  START_TIMEOUT_SECONDS; second++) {
+			sleep(1000);
+			// check output for correct TaskManager startup.
+			if(outContent.toString().contains(startedAfterString)
+					|| errContent.toString().contains(startedAfterString) ) {
+				LOG.info("Found expected output in redirected streams");
+				return runner;
+			}
+			// check if thread died
+			if(!runner.isAlive()) {
+				sendOutput();
+				Assert.fail("Runner thread died before the test was finished. Return value = "+runner.getReturnValue());
+			}
+		}
+
+		sendOutput();
+		Assert.fail("During the timeout period of " + START_TIMEOUT_SECONDS + " seconds the " +
+				"expected string did not show up");
+		return null;
+	}
+
+	/**
+	 * The test has been passed once the "terminateAfterString" has been seen.
+	 * @param args
+	 * @param terminateAfterString
+	 * @param type
+	 */
+	protected void runWithArgs(String[] args, String terminateAfterString, RunTypes type) {
 		LOG.info("Running with args {}", Arrays.toString(args));
 
 		outContent = new ByteArrayOutputStream();
@@ -340,14 +414,10 @@ public abstract class YarnTestBase {
 
 		boolean expectedStringSeen = false;
 		for(int second = 0; second <  START_TIMEOUT_SECONDS; second++) {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				Assert.fail("Interruption not expected");
-			}
+			sleep(1000);
 			// check output for correct TaskManager startup.
-			if(outContent.toString().contains(expect)
-					|| errContent.toString().contains(expect) ) {
+			if(outContent.toString().contains(terminateAfterString)
+					|| errContent.toString().contains(terminateAfterString) ) {
 				expectedStringSeen = true;
 				LOG.info("Found expected output in redirected streams");
 				// send "stop" command to command line interface
@@ -374,7 +444,7 @@ public abstract class YarnTestBase {
 		LOG.info("Test was successful");
 	}
 
-	private static void sendOutput() {
+	protected static void sendOutput() {
 		System.setOut(originalStdout);
 		System.setErr(originalStderr);
 
