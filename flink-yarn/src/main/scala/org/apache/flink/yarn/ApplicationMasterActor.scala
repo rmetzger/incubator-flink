@@ -54,19 +54,14 @@ trait ApplicationMasterActor extends ActorLogMessages {
   import context._
   import scala.collection.JavaConverters._
 
-  val FAST_YARN_HEARTBEAT_DELAY = 500 milliseconds
-  val DEFAULT_YARN_HEARTBEAT_DELAY = 5 seconds
-  val YARN_HEARTBEAT_DELAY =
-    if(configuration.getString(ConfigConstants.YARN_HEARTBEAT_DELAY, null) == null) {
+  val FAST_YARN_HEARTBEAT_DELAY: FiniteDuration = 500 milliseconds
+  val DEFAULT_YARN_HEARTBEAT_DELAY: FiniteDuration = 5 seconds
+  val YARN_HEARTBEAT_DELAY: FiniteDuration =
+    if(configuration.getString(ConfigConstants.YARN_HEARTBEAT_DELAY_SECONDS, null) == null) {
       DEFAULT_YARN_HEARTBEAT_DELAY
     } else {
-      try {
-        Duration(configuration.getString(ConfigConstants.YARN_HEARTBEAT_DELAY, null))
-      } catch {
-        case e: NumberFormatException => log.error(e, "Unable to use configured heartbeat delay. " +
-          "Using default: {}", DEFAULT_YARN_HEARTBEAT_DELAY)
-        DEFAULT_YARN_HEARTBEAT_DELAY
-      }
+      FiniteDuration(
+        configuration.getInteger(ConfigConstants.YARN_HEARTBEAT_DELAY_SECONDS, 5), SECONDS)
     }
 
   var rmClientOption: Option[AMRMClient[ContainerRequest]] = None
