@@ -144,35 +144,37 @@ trait ApplicationMasterActor extends ActorLogMessages {
             }
           }
 
-          // get failed containers
+          // get failed containers (returned containers are also completed, so we have to
+          // distinguish if it was running before).
           for (status <- response.getCompletedContainersStatuses.asScala) {
-            failedContainers += 1
-            runningContainers -= 1
-            log.info(s"Container ${status.getContainerId} stopped running. " +
-              s"Total failed containers $failedContainers.")
-            log.info(s"Diagnostics from YARN: ${status.getDiagnostics}.")
+            log.info(s"Container ${status.getContainerId} is completed " +
+              s"with diagnostics: ${status.getDiagnostics}")
             // remove failed container from running containers
             var failedContainer: Container = null
-            log.info("Running containers {}", runningContainerIds())
             runningContainersList = runningContainersList.filter(runningContainer => {
-              val result = runningContainer.getId.equals(status.getContainerId)
-              if(result) {
+              val wasRunningContainer = runningContainer.getId.equals(status.getContainerId)
+              if(wasRunningContainer) {
+                failedContainers += 1
+                runningContainers -= 1
+                log.info(s"Container ${status.getContainerId} was a running container. " +
+                  s"Total failed containers $failedContainers.")
                 failedContainer = runningContainer
+                messageListener foreach {
+                  val detail = status.getExitStatus match {
+                    case -103 => "Vmem limit exceeded";
+                    case -104 => "Pmem limit exceeded";
+                    case _ => ""
+                  }
+                  _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
+                    s"state=${status.getState}.\n${status.getDiagnostics} $detail")
+                }
               }
-              !result
+              // return
+              !wasRunningContainer
             })
             if(failedContainer == null) {
               log.warning("Unable to find completed container id={} in " +
                 "list of running containers {}", status.getContainerId, runningContainerIds())
-            }
-            messageListener foreach {
-              val detail = status.getExitStatus match {
-                case -103 => "Vmem limit exceeded";
-                case -104 => "Pmem limit exceeded";
-                case _ => ""
-              }
-              _ ! YarnMessage(s"Diagnostics for containerID=${status.getContainerId} in " +
-                s"state=${status.getState}.\n${status.getDiagnostics} $detail")
             }
           }
           // return containers if the RM wants them and we haven't allocated them yet.
