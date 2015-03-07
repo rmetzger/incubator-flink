@@ -203,6 +203,14 @@ public final class ConfigConstants {
 	 */
 	public static final String YARN_APPLICATION_ATTEMPTS = "yarn.application-attempts";
 
+	/**
+	 * The heartbeat intervall between the Application Master and the YARN Resource Manager.
+	 *
+	 * The value needs to be parsable by Scala's Duration.
+	 * By default, its "5 seconds".
+	 */
+	public static final String YARN_HEARTBEAT_DELAY = "yarn.heartbeat-delay";
+
 	// ------------------------ Hadoop Configuration ------------------------
 
 	/**

@@ -230,8 +230,14 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 					"The system might be in an erroneous state");
 			return false;
 		} else {
-			return (lastReport.getYarnApplicationState() == YarnApplicationState.FAILED ||
-					lastReport.getYarnApplicationState() == YarnApplicationState.KILLED);
+			YarnApplicationState appState = lastReport.getYarnApplicationState();
+			boolean status= (appState == YarnApplicationState.FAILED ||
+					appState == YarnApplicationState.KILLED);
+			if(status) {
+				LOG.warn("YARN reported application state {}", appState);
+				LOG.warn("Diagnostics: {}", lastReport.getDiagnostics());
+			}
+			return status;
 		}
 	}
 

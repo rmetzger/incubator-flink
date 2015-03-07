@@ -102,7 +102,7 @@ class ApplicationClient extends Actor with ActorLogMessages with ActorLogging {
         WAIT_FOR_YARN_INTERVAL, jm, PollYarnClusterStatus))
 
     case msg: StopYarnSession =>
-      log.info("Stop yarn session.")
+      log.info("Sending StopYarnSession request to ApplicationMaster.")
       stopMessageReceiver = Some(sender)
       yarnJobManager foreach {
         _ forward msg

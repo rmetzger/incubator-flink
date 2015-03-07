@@ -297,6 +297,7 @@ public class FlinkYarnSessionCli {
 
 				if(yarnCluster.hasFailed()) {
 					System.err.println("The YARN cluster has failed");
+					yarnCluster.shutdown();
 				}
 
 				// wait until CLIENT_POLLING_INTERVALL is over or the user entered something.

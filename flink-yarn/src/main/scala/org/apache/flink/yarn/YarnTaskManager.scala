@@ -18,8 +18,6 @@
 
 package org.apache.flink.yarn
 
-import akka.actor.{ActorLogging, Actor}
-import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.instance.InstanceConnectionInfo
 import org.apache.flink.runtime.taskmanager.{NetworkEnvironmentConfiguration, TaskManagerConfiguration, TaskManager}
 import org.apache.flink.yarn.Messages.StopYarnSession

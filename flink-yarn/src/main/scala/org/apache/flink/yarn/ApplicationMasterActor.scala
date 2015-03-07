@@ -54,8 +54,20 @@ trait ApplicationMasterActor extends ActorLogMessages {
   import context._
   import scala.collection.JavaConverters._
 
-  val ALLOCATION_DELAY = 300 milliseconds
-  val COMPLETION_DELAY = 5 seconds
+  val FAST_YARN_HEARTBEAT_DELAY = 500 milliseconds
+  val DEFAULT_YARN_HEARTBEAT_DELAY = 5 seconds
+  val YARN_HEARTBEAT_DELAY =
+    if(configuration.getString(ConfigConstants.YARN_HEARTBEAT_DELAY, null) == null) {
+      DEFAULT_YARN_HEARTBEAT_DELAY
+    } else {
+      try {
+        Duration(configuration.getString(ConfigConstants.YARN_HEARTBEAT_DELAY, null))
+      } catch {
+        case e: NumberFormatException => log.error(e, "Unable to use configured heartbeat delay. " +
+          "Using default: {}", DEFAULT_YARN_HEARTBEAT_DELAY)
+        DEFAULT_YARN_HEARTBEAT_DELAY
+      }
+    }
 
   var rmClientOption: Option[AMRMClient[ContainerRequest]] = None
   var nmClientOption: Option[NMClient] = None
@@ -131,7 +143,9 @@ trait ApplicationMasterActor extends ActorLogMessages {
     case HeartbeatWithYarn =>
       rmClientOption match {
         case Some(rmClient) =>
+          log.debug("Send heartbeat to YARN")
           val response = rmClient.allocate(runningContainers.toFloat / numTaskManager)
+
 
           // ---------------------------- handle YARN responses -------------
 
@@ -150,7 +164,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
             log.info(s"Container ${status.getContainerId} is completed " +
               s"with diagnostics: ${status.getDiagnostics}")
             // remove failed container from running containers
-            var failedContainer: Container = null
             runningContainersList = runningContainersList.filter(runningContainer => {
               val wasRunningContainer = runningContainer.getId.equals(status.getContainerId)
               if(wasRunningContainer) {
@@ -158,7 +171,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
                 runningContainers -= 1
                 log.info(s"Container ${status.getContainerId} was a running container. " +
                   s"Total failed containers $failedContainers.")
-                failedContainer = runningContainer
                 messageListener foreach {
                   val detail = status.getExitStatus match {
                     case -103 => "Vmem limit exceeded";
@@ -172,10 +184,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
               // return
               !wasRunningContainer
             })
-            if(failedContainer == null) {
-              log.warning("Unable to find completed container id={} in " +
-                "list of running containers {}", status.getContainerId, runningContainerIds())
-            }
           }
           // return containers if the RM wants them and we haven't allocated them yet.
           val preemtionMessage = response.getPreemptionMessage
@@ -285,10 +293,10 @@ trait ApplicationMasterActor extends ActorLogMessages {
           // schedule next heartbeat:
           if (runningContainers < numTaskManager) {
             // we don't have the requested number of containers. Do fast polling
-            context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, HeartbeatWithYarn)
-          } else if (failedContainers < numTaskManager) {
-            // everything is good, slow polling
-            context.system.scheduler.scheduleOnce(COMPLETION_DELAY, self, HeartbeatWithYarn)
+            context.system.scheduler.scheduleOnce(FAST_YARN_HEARTBEAT_DELAY, self, HeartbeatWithYarn)
+          } else {
+            // everything is good, slow down polling
+            context.system.scheduler.scheduleOnce(YARN_HEARTBEAT_DELAY, self, HeartbeatWithYarn)
           }
         case None =>
           log.error("The AMRMClient was not set.")
@@ -396,7 +404,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
       containerLaunchContext = Some(createContainerLaunchContext(heapLimit, hasLogback, hasLog4j,
         yarnClientUsername, conf, taskManagerLocalResources))
 
-      context.system.scheduler.scheduleOnce(ALLOCATION_DELAY, self, HeartbeatWithYarn)
+      context.system.scheduler.scheduleOnce(FAST_YARN_HEARTBEAT_DELAY, self, HeartbeatWithYarn)
     } recover {
       case t: Throwable =>
         log.error(t, "Could not start yarn session.")
