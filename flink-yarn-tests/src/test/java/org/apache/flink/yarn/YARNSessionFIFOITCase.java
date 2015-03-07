@@ -90,7 +90,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	/**
 	 * Test TaskManager failure
 	 */
-	@Test
+	@Test(timeout=60000) // timeout after a minute.
 	public void testTaskManagerFailure() {
 		LOG.info("Starting testTaskManagerFailure()");
 		Runner runner = startWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
@@ -153,7 +153,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		}
 
 		// wait for new container to be started.
-		while(errContent.toString().contains("Launching container")) {
+		while(!errContent.toString().contains("Launching container")) {
 			sleep(1000);
 		}
 
