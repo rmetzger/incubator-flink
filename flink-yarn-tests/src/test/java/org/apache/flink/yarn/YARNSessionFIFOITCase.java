@@ -18,6 +18,7 @@
 package org.apache.flink.yarn;
 
 import com.google.common.base.Joiner;
+import org.apache.commons.io.IOUtils;
 import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
@@ -53,7 +54,9 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -163,14 +166,16 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			YarnClient yc = YarnClient.createYarnClient();
 			yc.init(yarnConfiguration);
 			yc.start();
-			String url = yc.getApplications().get(0).getTrackingUrl();
+			List<ApplicationReport> apps = yc.getApplications(EnumSet.of(YarnApplicationState.RUNNING));
+			Assert.assertEquals(1, apps.size()); // Only one running
+			String url = apps.get(0).getTrackingUrl();
 			if(!url.endsWith("/")) {
 				url += "/";
 			}
 			LOG.info("Got application URL from YARN {}", url);
 
 			// get number of TaskManagers:
-			Assert.assertEquals("{\"taskmanagers\": 1, \"slots\": 1}\n", getFromHTTP("http://" + url + "jobsInfo?get=taskmanagers"));
+			Assert.assertEquals("{\"taskmanagers\": 1, \"slots\": 1}", getFromHTTP("http://" + url + "jobsInfo?get=taskmanagers"));
 
 			// get the configuration from webinterface & check if the dynamic properties from YARN show up there.
 			String config = getFromHTTP("http://" + url + "setupInfo?get=globalC");
@@ -470,17 +475,19 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	///------------------------ Ported tool form: https://github.com/rmetzger/flink/blob/flink1501/flink-tests/src/test/java/org/apache/flink/test/web/WebFrontendITCase.java
 
 	public static String getFromHTTP(String url) throws Exception{
-		URLConnection connection = new URL(url).openConnection();
+		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 		connection.setConnectTimeout(100000);
-		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-		String inputLine;
-		StringBuffer sb = new StringBuffer();
-
-		while ((inputLine = in.readLine()) != null) {
-			sb.append(inputLine).append('\n');
+		connection.connect();
+		InputStream is = null;
+		if(connection.getResponseCode() >= 400) {
+			// error!
+			LOG.warn("HTTP Response code when connecting to {} was {}", url, connection.getResponseCode());
+			is = connection.getErrorStream();
+		} else {
+			is = connection.getInputStream();
 		}
-		in.close();
-		return sb.toString();
+
+		return IOUtils.toString(is, connection.getContentEncoding() != null ? connection.getContentEncoding() : "UTF-8");
 	}
 
 
