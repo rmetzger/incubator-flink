@@ -109,6 +109,14 @@ print_stacktraces () {
 	done
 }
 
+# locate YARN logs and put them into artifacts directory
+put_yarn_logs_to_artifacts() {
+	# Make sure to be in project root
+	cd $HERE/../
+	pwd
+	find target/flink-yarn-tests -type f -name '*.log' -exec cp '{}' $ARTIFACTS_DIR ';'
+}
+
 mod_time () {
 	if [[ `uname` == 'Darwin' ]]; then
 		eval $(stat -s $MVN_OUT)
@@ -176,6 +184,8 @@ echo "MVN exited with EXIT CODE: ${EXIT_CODE}."
 
 rm $MVN_PID
 rm $MVN_EXIT
+
+put_yarn_logs_to_artifacts
 
 upload_artifacts_s3
 
