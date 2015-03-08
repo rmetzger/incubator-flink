@@ -18,7 +18,6 @@
 package org.apache.flink.yarn;
 
 import com.google.common.base.Joiner;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
@@ -28,15 +27,21 @@ import org.apache.flink.yarn.appMaster.YarnTaskManagerRunner;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.protocolrecords.StopContainersRequest;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.security.NMTokenIdentifier;
 import org.apache.hadoop.yarn.server.nodemanager.NodeManager;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.Application;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
 import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Priority;
 import org.apache.log4j.spi.LoggingEvent;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
@@ -52,6 +57,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -65,8 +71,6 @@ import java.util.concurrent.ConcurrentMap;
 public class YARNSessionFIFOITCase extends YarnTestBase {
 	private static final Logger LOG = LoggerFactory.getLogger(YARNSessionFIFOITCase.class);
 
-
-
 	/*
 	Override init with FIFO scheduler.
 	 */
@@ -77,6 +81,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		yarnConfiguration.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 512);
 		startYARNWithConfig(yarnConfiguration);
 	}
+
 	/**
 	 * Test regular operation, including command line parameter parsing.
 	 */
@@ -89,6 +94,50 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 						"-tm", "1024"},
 				"Number of connected TaskManagers changed to 1. Slots available: 1", RunTypes.YARN_SESSION);
 		LOG.info("Finished testClientStartup()");
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
+	}
+
+	/**
+	 * Test regular operation, including command line parameter parsing.
+	 */
+	@Test(timeout=60000) // timeout after a minute.
+	public void testDetachedMode() {
+		LOG.info("Starting testDetachedMode()");
+		addTestAppender(FlinkYarnSessionCli.class, Level.INFO);
+		Runner runner = startWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
+						"-n", "1",
+						"-jm", "512",
+						"-tm", "1024",
+						"--detached"},
+				"Flink JobManager is now running on", RunTypes.YARN_SESSION);
+
+		checkForLogString("The Flink YARN client has been started in detached mode");
+
+		Assert.assertFalse("The runner should detach.", runner.isAlive());
+
+		// kill application "externally".
+		try {
+			YarnClient yc = YarnClient.createYarnClient();
+			yc.init(yarnConfiguration);
+			yc.start();
+			List<ApplicationReport> apps = yc.getApplications(EnumSet.of(YarnApplicationState.RUNNING));
+			Assert.assertEquals(1, apps.size()); // Only one running
+			ApplicationId id = apps.get(0).getApplicationId();
+			yc.killApplication(id);
+
+			while(yc.getApplications(EnumSet.of(YarnApplicationState.KILLED)).size() == 0) {
+				for(ApplicationReport a : yc.getApplications()) {
+					LOG.warn("a="+a.getApplicationId()+" s="+a.getYarnApplicationState());
+				}
+				sleep(500);
+			}
+		} catch(Throwable t) {
+			LOG.warn("Killing failed", t);
+			Assert.fail();
+		}
+
+		LOG.info("Finished testDetachedMode()");
+
 		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
@@ -115,6 +164,9 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			yc.init(yarnConfiguration);
 			yc.start();
 			String url = yc.getApplications().get(0).getTrackingUrl();
+			if(!url.endsWith("/")) {
+				url += "/";
+			}
 			LOG.info("Got application URL from YARN {}", url);
 
 			// get number of TaskManagers:
@@ -258,7 +310,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		if(ignoreOnTravis()) {
 			return;
 		}
-		addTestAppender();
+		addTestAppender(FlinkYarnClient.class, Level.WARN);
 		LOG.info("Starting testMoreNodesThanAvailable()");
 		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "10",
@@ -286,7 +338,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		if(ignoreOnTravis()) {
 			return;
 		}
-		addTestAppender();
+		addTestAppender(FlinkYarnClient.class, Level.WARN);
 		LOG.info("Starting testResourceComputation()");
 		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "5",
@@ -316,7 +368,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		if(ignoreOnTravis()) {
 			return;
 		}
-		addTestAppender();
+		addTestAppender(FlinkYarnClient.class, Level.WARN);
 		LOG.info("Starting testfullAlloc()");
 		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "2",
@@ -419,6 +471,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 
 	public static String getFromHTTP(String url) throws Exception{
 		URLConnection connection = new URL(url).openConnection();
+		connection.setConnectTimeout(10000);
 		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 		String inputLine;
 		StringBuffer sb = new StringBuffer();
@@ -437,9 +490,13 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	// See :  http://stackoverflow.com/questions/3717402/how-to-test-w-junit-that-warning-was-logged-w-log4j
 	//
 	private static TestAppender testAppender;
-	public static void addTestAppender() {
+	public static void addTestAppender(Class target, Level level) {
 		testAppender = new TestAppender();
-		org.apache.log4j.Logger.getRootLogger().addAppender(testAppender);
+		testAppender.setThreshold(level);
+		org.apache.log4j.Logger lg = org.apache.log4j.Logger.getLogger(target);
+		lg.setLevel(level);
+		lg.addAppender(testAppender);
+		//org.apache.log4j.Logger.getRootLogger().addAppender(testAppender);
 	}
 
 	public static void checkForLogString(String expected) {

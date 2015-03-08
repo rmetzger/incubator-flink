@@ -161,14 +161,16 @@ public abstract class YarnTestBase {
 		yarnClient.start();
 		List<ApplicationReport> apps = yarnClient.getApplications();
 		for(ApplicationReport app : apps) {
-			if(app.getYarnApplicationState() != YarnApplicationState.FINISHED) {
-				Assert.fail("There is at least one application on the cluster is not finished");
+			if(app.getYarnApplicationState() != YarnApplicationState.FINISHED
+					&& app.getYarnApplicationState() != YarnApplicationState.KILLED) {
+				Assert.fail("There is at least one application on the cluster is not finished." +
+						"App "+app.getApplicationId()+" is in state "+app.getYarnApplicationState());
 			}
 		}
 	}
 
 	/**
-	 * Locate a file or diretory directory
+	 * Locate a file or directory
 	 */
 	public static File findFile(String startAt, FilenameFilter fnf) {
 		File root = new File(startAt);
@@ -177,7 +179,6 @@ public abstract class YarnTestBase {
 			return null;
 		}
 		for(String file : files) {
-
 			File f = new File(startAt + File.separator + file);
 			if(f.isDirectory()) {
 				File r = findFile(f.getAbsolutePath(), fnf);
@@ -187,7 +188,6 @@ public abstract class YarnTestBase {
 			} else if (fnf.accept(f.getParentFile(), f.getName())) {
 				return f;
 			}
-
 		}
 		return null;
 	}

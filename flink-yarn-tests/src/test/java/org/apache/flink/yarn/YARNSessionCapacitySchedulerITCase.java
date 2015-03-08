@@ -20,6 +20,7 @@ package org.apache.flink.yarn;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler;
+import org.apache.log4j.Level;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
 	 */
 	@Test
 	public void testNonexistingQueue() {
-		addTestAppender();
+		addTestAppender(FlinkYarnClient.class, Level.WARN);
 		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "1",
 				"-jm", "512",
