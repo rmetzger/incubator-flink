@@ -144,7 +144,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	/**
 	 * Test TaskManager failure
 	 */
-	@Test(timeout=60000) // timeout after a minute.
+	@Test(timeout=100000) // timeout after 100 seconds
 	public void testTaskManagerFailure() {
 		LOG.info("Starting testTaskManagerFailure()");
 		Runner runner = startWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
@@ -471,7 +471,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 
 	public static String getFromHTTP(String url) throws Exception{
 		URLConnection connection = new URL(url).openConnection();
-		connection.setConnectTimeout(10000);
+		connection.setConnectTimeout(30000);
 		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 		String inputLine;
 		StringBuffer sb = new StringBuffer();
