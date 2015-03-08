@@ -471,7 +471,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 
 	public static String getFromHTTP(String url) throws Exception{
 		URLConnection connection = new URL(url).openConnection();
-		connection.setConnectTimeout(30000);
+		connection.setConnectTimeout(100000);
 		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 		String inputLine;
 		StringBuffer sb = new StringBuffer();
