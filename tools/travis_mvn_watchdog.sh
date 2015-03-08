@@ -113,8 +113,10 @@ print_stacktraces () {
 put_yarn_logs_to_artifacts() {
 	# Make sure to be in project root
 	cd $HERE/../
-	pwd
-	find target/flink-yarn-tests -type f -name '*.log' -exec cp '{}' $ARTIFACTS_DIR ';'
+	#create directories
+	find target/flink-yarn-tests -type d -name '*.log' -exec mkdir -p $ARTIFACTS_DIR/{} \;
+	# copy those logfiles.
+	find target/flink-yarn-tests -type f -name '*.log' -exec cp {} $ARTIFACTS_DIR/{} \;
 }
 
 mod_time () {
