@@ -369,7 +369,6 @@ trait ApplicationMasterActor extends ActorLogMessages {
       // Register with ResourceManager
       val url = s"http://$applicationMasterHost:$webServerPort"
       log.info(s"Registering ApplicationMaster with tracking url $url.")
-      rgg
       rm.registerApplicationMaster(applicationMasterHost, actorSystemPort, url)
 
       // Make container requests to ResourceManager
