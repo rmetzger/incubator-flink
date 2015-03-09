@@ -177,7 +177,12 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	@Override
 	public String getWebInterfaceURL() {
-		return this.intialAppReport.getTrackingUrl();
+		String url = this.intialAppReport.getTrackingUrl();
+		// there seems to be a difference between HD 2.2.0 and 2.6.0
+		if(!url.startsWith("http://")) {
+			url = "http://" + url;
+		}
+		return url;
 	}
 
 	@Override
