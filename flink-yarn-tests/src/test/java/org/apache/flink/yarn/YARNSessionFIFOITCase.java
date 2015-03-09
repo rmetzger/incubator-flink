@@ -69,7 +69,7 @@ import java.util.concurrent.ConcurrentMap;
 public class YARNSessionFIFOITCase extends YarnTestBase {
 	private static final Logger LOG = LoggerFactory.getLogger(YARNSessionFIFOITCase.class);
 	static {
-		TEST_CLUSTER_NAME += "-fifo";
+		TEST_CLUSTER_NAME = "flink-yarn-tests-fifo";
 	}
 
 	/*

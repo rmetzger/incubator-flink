@@ -37,7 +37,7 @@ import static org.apache.flink.yarn.YARNSessionFIFOITCase.checkForLogString;
 public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
 
 	static {
-		TEST_CLUSTER_NAME += "-capacityscheduler";
+		TEST_CLUSTER_NAME = "flink-yarn-tests-capacityscheduler";
 	}
 
 	@BeforeClass
