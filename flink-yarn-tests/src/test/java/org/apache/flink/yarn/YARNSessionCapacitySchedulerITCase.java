@@ -22,13 +22,10 @@ import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler;
 import org.apache.log4j.Level;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.apache.flink.yarn.YARNSessionFIFOITCase.addTestAppender;
-import static org.apache.flink.yarn.YARNSessionFIFOITCase.checkForLogString;
+import static org.apache.flink.yarn.UtilsTest.addTestAppender;
+import static org.apache.flink.yarn.UtilsTest.checkForLogString;
 
 
 /**
@@ -37,9 +34,6 @@ import static org.apache.flink.yarn.YARNSessionFIFOITCase.checkForLogString;
  */
 public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
 
-	static {
-		TEST_CLUSTER_NAME = "flink-yarn-tests-capacityscheduler";
-	}
 
 	@BeforeClass
 	public static void setup() {
@@ -47,6 +41,7 @@ public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
 		yarnConfiguration.set("yarn.scheduler.capacity.root.queues", "default,qa-team");
 		yarnConfiguration.setInt("yarn.scheduler.capacity.root.default.capacity", 40);
 		yarnConfiguration.setInt("yarn.scheduler.capacity.root.qa-team.capacity", 60);
+		yarnConfiguration.set(YarnTestBase.TEST_CLUSTER_NAME_KEY, "flink-yarn-tests-capacityscheduler");
 		startYARNWithConfig(yarnConfiguration);
 	}
 

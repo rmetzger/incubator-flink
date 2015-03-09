@@ -72,7 +72,7 @@ public abstract class YarnTestBase {
 	protected final static PrintStream originalStdout = System.out;
 	protected final static PrintStream originalStderr = System.err;
 
-	protected static String TEST_CLUSTER_NAME = "flink-yarn-tests";
+	protected static String TEST_CLUSTER_NAME_KEY = "flink-yarn-minicluster-name";
 
 	protected final static int NUM_NODEMANAGERS = 2;
 
@@ -239,9 +239,13 @@ public abstract class YarnTestBase {
 	/**
 	 * This method checks the written TaskManager and JobManager log files
 	 * for exceptions.
+	 *
+	 * WARN: Please make sure the tool doesn't find old logfiles from previous test runs.
+	 * So always run "mvn clean" before running the tests here.
+	 *
 	 */
 	public static void ensureNoProhibitedStringInLogFiles(final String[] prohibited) {
-		File cwd = new File("target/"+TEST_CLUSTER_NAME);
+		File cwd = new File("target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
 		Assert.assertTrue("Expecting directory "+cwd.getAbsolutePath()+" to exist", cwd.exists());
 		Assert.assertTrue("Expecting directory "+cwd.getAbsolutePath()+" to be a directory", cwd.isDirectory());
 		File foundFile = findFile(cwd.getAbsolutePath(), new FilenameFilter() {
@@ -313,7 +317,7 @@ public abstract class YarnTestBase {
 		try {
 			LOG.info("Starting up MiniYARNCluster");
 			if (yarnCluster == null) {
-				yarnCluster = new MiniYARNCluster(TEST_CLUSTER_NAME, NUM_NODEMANAGERS, 1, 1);
+				yarnCluster = new MiniYARNCluster(conf.get(YarnTestBase.TEST_CLUSTER_NAME_KEY), NUM_NODEMANAGERS, 1, 1);
 
 				yarnCluster.init(conf);
 				yarnCluster.start();

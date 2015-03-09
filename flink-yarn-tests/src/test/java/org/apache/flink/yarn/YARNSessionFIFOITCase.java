@@ -40,9 +40,7 @@ import org.apache.hadoop.yarn.server.nodemanager.NodeManager;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
-import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Level;
-import org.apache.log4j.spi.LoggingEvent;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -56,12 +54,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+
+import static org.apache.flink.yarn.UtilsTest.addTestAppender;
+import static org.apache.flink.yarn.UtilsTest.checkForLogString;
 
 
 /**
@@ -70,9 +70,6 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class YARNSessionFIFOITCase extends YarnTestBase {
 	private static final Logger LOG = LoggerFactory.getLogger(YARNSessionFIFOITCase.class);
-	static {
-		TEST_CLUSTER_NAME = "flink-yarn-tests-fifo";
-	}
 
 	/*
 	Override init with FIFO scheduler.
@@ -82,6 +79,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		yarnConfiguration.setClass(YarnConfiguration.RM_SCHEDULER, FifoScheduler.class, ResourceScheduler.class);
 		yarnConfiguration.setInt(YarnConfiguration.NM_PMEM_MB, 768);
 		yarnConfiguration.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 512);
+		yarnConfiguration.set(YarnTestBase.TEST_CLUSTER_NAME_KEY, "flink-yarn-tests-fifo");
 		startYARNWithConfig(yarnConfiguration);
 	}
 
@@ -91,7 +89,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	@Test
 	public void testClientStartup() {
 		LOG.info("Starting testClientStartup()");
-		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
+		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 						"-n", "1",
 						"-jm", "512",
 						"-tm", "1024"},
@@ -327,7 +325,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		}
 		addTestAppender(FlinkYarnClient.class, Level.WARN);
 		LOG.info("Starting testMoreNodesThanAvailable()");
-		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
+		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "10",
 				"-jm", "512",
 				"-tm", "1024"}, "Number of connected TaskManagers changed to", RunTypes.YARN_SESSION); // the number of TMs depends on the speed of the test hardware
@@ -355,7 +353,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		}
 		addTestAppender(FlinkYarnClient.class, Level.WARN);
 		LOG.info("Starting testResourceComputation()");
-		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
+		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "5",
 				"-jm", "256",
 				"-tm", "1585"}, "Number of connected TaskManagers changed to", RunTypes.YARN_SESSION);
@@ -385,7 +383,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		}
 		addTestAppender(FlinkYarnClient.class, Level.WARN);
 		LOG.info("Starting testfullAlloc()");
-		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
+		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "2",
 				"-jm", "256",
 				"-tm", "3840"}, "Number of connected TaskManagers changed to", RunTypes.YARN_SESSION);
@@ -404,7 +402,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	public void perJobYarnCluster() {
 		LOG.info("Starting perJobYarnCluster()");
 		File exampleJarLocation = YarnTestBase.findFile(".", new ContainsName("-WordCount.jar", "streaming")); // exclude streaming wordcount here.
-		runWithArgs(new String[] {"run", "-m", "yarn-cluster",
+		runWithArgs(new String[]{"run", "-m", "yarn-cluster",
 				"-yj", flinkUberjar.getAbsolutePath(),
 				"-yn", "1",
 				"-yjm", "512",
@@ -502,46 +500,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 
 
 
-	//
-	// --------------- Tools to test if a certain string has been logged with Log4j. -------------
-	// See :  http://stackoverflow.com/questions/3717402/how-to-test-w-junit-that-warning-was-logged-w-log4j
-	//
-	private static TestAppender testAppender;
-	public static void addTestAppender(Class target, Level level) {
-		testAppender = new TestAppender();
-		testAppender.setThreshold(level);
-		org.apache.log4j.Logger lg = org.apache.log4j.Logger.getLogger(target);
-		lg.setLevel(level);
-		lg.addAppender(testAppender);
-		//org.apache.log4j.Logger.getRootLogger().addAppender(testAppender);
-	}
 
-	public static void checkForLogString(String expected) {
-		if(testAppender == null) {
-			throw new NullPointerException("Initialize it first");
-		}
-		LoggingEvent found = null;
-		for(LoggingEvent event: testAppender.events) {
-			if(event.getMessage().toString().contains(expected)) {
-				found = event;
-				break;
-			}
-		}
-		if(found != null) {
-			LOG.info("Found expected string '"+expected+"' in log message "+found);
-			return;
-		}
-		Assert.fail("Unable to find expected string '" + expected + "' in log messages");
-	}
-
-	public static class TestAppender extends AppenderSkeleton {
-		public List<LoggingEvent> events = new ArrayList<LoggingEvent>();
-		public void close() {}
-		public boolean requiresLayout() {return false;}
-		@Override
-		protected void append(LoggingEvent event) {
-			events.add(event);
-		}
-	}
 	
 }
