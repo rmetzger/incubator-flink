@@ -27,6 +27,7 @@ import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus;
 import org.apache.flink.yarn.appMaster.YarnTaskManagerRunner;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.TokenIdentifier;
 import org.apache.hadoop.yarn.api.protocolrecords.StopContainersRequest;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
@@ -45,6 +46,7 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +140,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		}
 
 		LOG.info("Finished testDetachedMode()");
-
 		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
@@ -195,8 +196,12 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		ContainerId taskManagerContainer = null;
 		NodeManager nodeManager = null;
 		UserGroupInformation remoteUgi = null;
+		NMTokenIdentifier nmIdent = null;
 		try {
 			remoteUgi = UserGroupInformation.getCurrentUser();
+			for(TokenIdentifier ti :remoteUgi.getTokenIdentifiers()) {
+				LOG.warn("TIs before change: "+ti);
+			}
 		} catch (IOException e) {
 			LOG.warn("Unable to get curr user", e);
 			Assert.fail();
@@ -206,18 +211,19 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			ConcurrentMap<ContainerId, Container> containers = nm.getNMContext().getContainers();
 			for(Map.Entry<ContainerId, Container> entry : containers.entrySet()) {
 				String command = Joiner.on(" ").join(entry.getValue().getLaunchContext().getCommands());
-				LOG.warn("containerId " + entry.getKey() + " command =" + command);
-
 				if(command.contains(YarnTaskManagerRunner.class.getSimpleName())) {
 					taskManagerContainer = entry.getKey();
 					nodeManager = nm;
-					NMTokenIdentifier nmIdent = new NMTokenIdentifier(taskManagerContainer.getApplicationAttemptId(), null, "",0);
+					nmIdent = new NMTokenIdentifier(taskManagerContainer.getApplicationAttemptId(), null, "",0);
 					// allow myself to do stuff with the container
-					remoteUgi.addCredentials(entry.getValue().getCredentials());
+					// remoteUgi.addCredentials(entry.getValue().getCredentials());
 					remoteUgi.addTokenIdentifier(nmIdent);
 				}
 			}
 			sleep(500);
+		}
+		for(TokenIdentifier ti :remoteUgi.getTokenIdentifiers()) {
+			LOG.warn("TIs after adding: "+ti);
 		}
 		Assert.assertNotNull("Unable to find container with TaskManager", taskManagerContainer);
 		Assert.assertNotNull("Illegal state", nodeManager);
@@ -233,7 +239,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			Assert.fail("Error stopping container: "+e.getMessage());
 		}
 
-		// stateful terminantion check:
+		// stateful termination check:
 		// wait until we saw a container being killed and AFTERWARDS a new one launced
 		boolean ok = false;
 		do {
@@ -272,6 +278,12 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		Assert.assertTrue("Expect to see failed container", eC.contains("Container killed by the ApplicationMaster"));
 		Assert.assertTrue("Expect to see new container started", eC.contains("Launching container") && eC.contains("on host"));
 
+		// cleanup auth for the subsequent tests.
+		remoteUgi.getTokenIdentifiers().remove(nmIdent);
+
+		for(TokenIdentifier ti :remoteUgi.getTokenIdentifiers()) {
+			LOG.warn("TIs after removing: "+ti);
+		}
 		LOG.info("Finished testTaskManagerFailure()");
 		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
@@ -425,7 +437,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			yarnCluster = flinkYarnClient.deploy(null);
 		} catch (Exception e) {
 			System.err.println("Error while deploying YARN cluster: "+e.getMessage());
-			e.printStackTrace(System.err);
+			LOG.warn("Failing test",e);
 			Assert.fail();
 		}
 		FlinkYarnClusterStatus expectedStatus = new FlinkYarnClusterStatus(1, 1);

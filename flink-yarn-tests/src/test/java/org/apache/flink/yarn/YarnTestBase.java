@@ -162,7 +162,8 @@ public abstract class YarnTestBase {
 		List<ApplicationReport> apps = yarnClient.getApplications();
 		for(ApplicationReport app : apps) {
 			if(app.getYarnApplicationState() != YarnApplicationState.FINISHED
-					&& app.getYarnApplicationState() != YarnApplicationState.KILLED) {
+					&& app.getYarnApplicationState() != YarnApplicationState.KILLED
+					&& app.getYarnApplicationState() != YarnApplicationState.FAILED) {
 				Assert.fail("There is at least one application on the cluster is not finished." +
 						"App "+app.getApplicationId()+" is in state "+app.getYarnApplicationState());
 			}
