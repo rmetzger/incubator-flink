@@ -40,6 +40,7 @@ import org.apache.hadoop.yarn.server.nodemanager.NodeManager;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
+import org.apache.jasper.tagplugins.jstl.core.Url;
 import org.apache.log4j.Level;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
@@ -182,7 +183,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			Assert.assertTrue(logs.contains("Starting YARN ApplicationMaster/JobManager (Version"));
 		} catch(Throwable e) {
 			LOG.warn("Error while running test",e);
-			Assert.fail();
+			Assert.fail(e.getMessage());
 		}
 
 		// ------------------------ Kill container with TaskManager  -------
@@ -424,7 +425,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			yarnCluster = flinkYarnClient.deploy(null);
 		} catch (Exception e) {
 			System.err.println("Error while deploying YARN cluster: "+e.getMessage());
-			LOG.warn("Failing test",e);
+			LOG.warn("Failing test", e);
 			Assert.fail();
 		}
 		FlinkYarnClusterStatus expectedStatus = new FlinkYarnClusterStatus(1, 1);
@@ -472,7 +473,9 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	///------------------------ Ported tool form: https://github.com/rmetzger/flink/blob/flink1501/flink-tests/src/test/java/org/apache/flink/test/web/WebFrontendITCase.java
 
 	public static String getFromHTTP(String url) throws Exception{
-		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+		URL u = new URL(url);
+		LOG.info("Accessing URL "+url+" as URL: "+u);
+		HttpURLConnection connection = (HttpURLConnection) u.openConnection();
 		connection.setConnectTimeout(100000);
 		connection.connect();
 		InputStream is = null;
