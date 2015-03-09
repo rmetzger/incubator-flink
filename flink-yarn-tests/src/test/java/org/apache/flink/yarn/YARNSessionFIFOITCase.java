@@ -127,9 +127,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			yc.killApplication(id);
 
 			while(yc.getApplications(EnumSet.of(YarnApplicationState.KILLED)).size() == 0) {
-				for(ApplicationReport a : yc.getApplications()) {
-					LOG.warn("a="+a.getApplicationId()+" s="+a.getYarnApplicationState());
-				}
 				sleep(500);
 			}
 		} catch(Throwable t) {
@@ -197,9 +194,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		NMTokenIdentifier nmIdent = null;
 		try {
 			remoteUgi = UserGroupInformation.getCurrentUser();
-			for(TokenIdentifier ti :remoteUgi.getTokenIdentifiers()) {
-				LOG.warn("TIs before change: "+ti);
-			}
 		} catch (IOException e) {
 			LOG.warn("Unable to get curr user", e);
 			Assert.fail();
@@ -220,9 +214,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			}
 			sleep(500);
 		}
-		for(TokenIdentifier ti :remoteUgi.getTokenIdentifiers()) {
-			LOG.warn("TIs after adding: "+ti);
-		}
+
 		Assert.assertNotNull("Unable to find container with TaskManager", taskManagerContainer);
 		Assert.assertNotNull("Illegal state", nodeManager);
 
@@ -279,9 +271,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		// cleanup auth for the subsequent tests.
 		remoteUgi.getTokenIdentifiers().remove(nmIdent);
 
-		for(TokenIdentifier ti :remoteUgi.getTokenIdentifiers()) {
-			LOG.warn("TIs after removing: "+ti);
-		}
 		LOG.info("Finished testTaskManagerFailure()");
 		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
