@@ -252,7 +252,7 @@ public abstract class YarnTestBase {
 				try {
 					scanner = new Scanner(f);
 				} catch (FileNotFoundException e) {
-					Assert.fail("Unable to locate file: "+e.getMessage()+" file: "+f.getAbsolutePath());
+					LOG.warn("Unable to locate file: "+e.getMessage()+" file: "+f.getAbsolutePath());
 				}
 				while (scanner.hasNextLine()) {
 					final String lineFromFile = scanner.nextLine();
