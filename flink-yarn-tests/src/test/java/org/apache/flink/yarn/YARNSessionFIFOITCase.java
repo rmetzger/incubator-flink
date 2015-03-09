@@ -68,6 +68,9 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class YARNSessionFIFOITCase extends YarnTestBase {
 	private static final Logger LOG = LoggerFactory.getLogger(YARNSessionFIFOITCase.class);
+	static {
+		TEST_CLUSTER_NAME += "-fifo";
+	}
 
 	/*
 	Override init with FIFO scheduler.

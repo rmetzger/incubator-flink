@@ -72,7 +72,7 @@ public abstract class YarnTestBase {
 	protected final static PrintStream originalStdout = System.out;
 	protected final static PrintStream originalStderr = System.err;
 
-	private final static String TEST_CLUSTER_NAME = "flink-yarn-tests";
+	protected static String TEST_CLUSTER_NAME = "flink-yarn-tests";
 
 	protected final static int NUM_NODEMANAGERS = 2;
 

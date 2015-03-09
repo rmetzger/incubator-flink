@@ -35,7 +35,10 @@ import static org.apache.flink.yarn.YARNSessionFIFOITCase.checkForLogString;
  * Is has, by default a queue called "default". The configuration here adds another queue: "qa-team".
  */
 public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
-	private static final Logger LOG = LoggerFactory.getLogger(YARNSessionCapacitySchedulerITCase.class);
+
+	static {
+		TEST_CLUSTER_NAME += "-capacityscheduler";
+	}
 
 	@BeforeClass
 	public static void setup() {
