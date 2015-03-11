@@ -26,6 +26,8 @@ matrix:
       env: PROFILE="-Dhadoop.version=2.6.0"
     - jdk: "oraclejdk7"
       env: PROFILE="-Dscala-2.11.profile"
+    - jdk: "oraclejdk8"
+      env: PROFILE="-Dscala-2.11.profile -Dhadoop.profile=1"
 
 
 git:
