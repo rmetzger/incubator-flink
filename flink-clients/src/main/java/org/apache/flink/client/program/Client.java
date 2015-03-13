@@ -69,6 +69,14 @@ public class Client {
 	private final Optimizer compiler;		// the compiler to compile the jobs
 	
 	private boolean printStatusDuringExecution = false;
+
+	/**
+	 * If != -1, this field specifies the total number of available slots on the cluster
+	 * conntected to the client.
+	 */
+	private int maxSlots = -1;
+
+	private ClassLoader userCodeClassLoader; // TODO: use userCodeClassloader to deserialize accumulator results.
 	
 	// ------------------------------------------------------------------------
 	//                            Construction
@@ -89,6 +97,8 @@ public class Client {
 		configuration.setInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, jobManagerAddress.getPort());
 		
 		this.compiler = new Optimizer(new DataStatistics(), new DefaultCostEstimator());
+		this.userCodeClassLoader = userCodeClassLoader;
+		this.maxSlots = maxSlots;
 	}
 
 	/**
@@ -113,6 +123,7 @@ public class Client {
 		}
 
 		this.compiler = new Optimizer(new DataStatistics(), new DefaultCostEstimator());
+		this.userCodeClassLoader = userCodeClassLoader;
 	}
 	
 	public void setPrintStatusDuringExecution(boolean print) {
@@ -125,6 +136,14 @@ public class Client {
 	
 	public int getJobManagerPort() {
 		return this.configuration.getInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, -1);
+	}
+
+	/**
+	 * @return -1 if unknown. The maximum number of available processing slots at the Flink cluster
+	 * connected to this client.
+	 */
+	public int getMaxSlots() {
+		return this.maxSlots;
 	}
 	
 	// ------------------------------------------------------------------------

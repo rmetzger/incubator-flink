@@ -265,10 +265,16 @@ public class CliFrontend {
 		}
 
 		try {
-			Client client = getClient(options, program.getUserCodeClassLoader(), program.getMainClassName());
+			int userParallelism = options.getParallelism();
 
-			int parallelism = options.getParallelism();
-			int exitCode = executeProgram(program, client, parallelism);
+			Client client = getClient(options, program.getUserCodeClassLoader(), program.getMainClassName(), userParallelism);
+
+			if(client.getMaxSlots() != -1 && userParallelism == -1) {
+				logAndSysout("Using the parallelism provided by the remote cluster ("+client.getMaxSlots()+"). " +
+						"To use another parallelism, set it at the ./bin/flink client.");
+				userParallelism = client.getMaxSlots();
+			}
+			int exitCode = executeProgram(program, client, userParallelism);
 
 			if (yarnCluster != null) {
 				List<String> msgs = yarnCluster.getNewMessages();
@@ -346,7 +352,7 @@ public class CliFrontend {
 			int parallelism = options.getParallelism();
 
 			LOG.info("Creating program plan dump");
-			Client client = getClient(options, program.getUserCodeClassLoader(), program.getMainClassName());
+			Client client = getClient(options, program.getUserCodeClassLoader(), program.getMainClassName(), parallelism);
 			String jsonPlan = client.getOptimizedPlanAsJson(program, parallelism);
 
 			if (jsonPlan != null) {
@@ -681,20 +687,35 @@ public class CliFrontend {
 		LOG.info("JobManager is at " + jmActor.path());
 		return jmActor;
 	}
-	
 
-	
-	protected Client getClient(CommandLineOptions options, ClassLoader classLoader, String programName) throws Exception {
 
+	/**
+	 *
+	 * @param options
+	 * @param classLoader
+	 * @param programName
+	 * @param userParallelism The parallelism requested by the user in the CLI frontend.
+	 * @return
+	 * @throws Exception
+	 */
+	protected Client getClient(CommandLineOptions options, ClassLoader classLoader, String programName, int userParallelism) throws Exception {
 		InetSocketAddress jobManagerAddress;
-
+		int maxSlots = -1;
 		if (YARN_DEPLOY_JOBMANAGER.equals(options.getJobManagerAddress())) {
 			logAndSysout("YARN cluster mode detected. Switching Log4j output to console");
 
 			// user wants to run Flink in YARN cluster.
 			CommandLine commandLine = options.getCommandLine();
-			AbstractFlinkYarnClient flinkYarnClient =
-					CliFrontendParser.getFlinkYarnSessionCli().createFlinkYarnClient(commandLine);
+			AbstractFlinkYarnClient flinkYarnClient = CliFrontendParser.getFlinkYarnSessionCli().createFlinkYarnClient(commandLine);
+			// the number of slots available from YARN:
+			maxSlots = flinkYarnClient.getTaskManagerSlots() * flinkYarnClient.getTaskManagerCount();
+		///	TODO getTasKmanagerSlots is -1 here.
+			if(userParallelism != -1) {
+				int slotsPerTM = userParallelism / flinkYarnClient.getTaskManagerCount();
+				logAndSysout("The YARN cluster has "+maxSlots+" slots available, but the user requested a parallelism of "+userParallelism+" on YARN. " +
+						"Each of the "+flinkYarnClient.getTaskManagerCount()+" TaskManagers will get "+slotsPerTM+" slots.");
+				flinkYarnClient.setTaskManagerSlots(slotsPerTM);
+			}
 
 			if (flinkYarnClient == null) {
 				throw new RuntimeException("Unable to create Flink YARN Client. Check previous log messages");
@@ -738,7 +759,7 @@ public class CliFrontend {
 		else {
 			jobManagerAddress = getJobManagerAddress(options);
 		}
-		return new Client(jobManagerAddress, config, classLoader);
+		return new Client(jobManagerAddress, config, classLoader, maxSlots);
 	}
 
 	// --------------------------------------------------------------------------------------------

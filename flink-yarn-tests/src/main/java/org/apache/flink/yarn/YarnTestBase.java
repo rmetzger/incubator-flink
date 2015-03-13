@@ -306,7 +306,7 @@ public abstract class YarnTestBase {
 
 	public static void startYARNWithConfig(Configuration conf) {
 		flinkUberjar = findFile("..", new RootDirFilenameFilter());
-		Assert.assertNotNull(flinkUberjar);
+		Assert.assertNotNull("Flink uberjar not found", flinkUberjar);
 		String flinkDistRootDir = flinkUberjar.getParentFile().getParent();
 
 		if (!flinkUberjar.exists()) {
@@ -396,7 +396,7 @@ public abstract class YarnTestBase {
 	/**
 	 * The test has been passed once the "terminateAfterString" has been seen.
 	 */
-	protected void runWithArgs(String[] args, String terminateAfterString, RunTypes type) {
+	protected void runWithArgs(String[] args, String terminateAfterString, String[] failOnStrings, RunTypes type) {
 		LOG.info("Running with args {}", Arrays.toString(args));
 
 		outContent = new ByteArrayOutputStream();
@@ -413,9 +413,23 @@ public abstract class YarnTestBase {
 		boolean expectedStringSeen = false;
 		for(int second = 0; second <  START_TIMEOUT_SECONDS; second++) {
 			sleep(1000);
+			String outContentString = outContent.toString();
+			String errContentString = errContent.toString();
+			if(failOnStrings != null) {
+				for(int i = 0; i < failOnStrings.length; i++) {
+					if(outContentString.contains(failOnStrings[i])
+							|| errContentString.contains(failOnStrings[i])) {
+						LOG.warn("Failing test. Output contained illegal string '"+ failOnStrings[i]+"'");
+						sendOutput();
+						// stopping runner.
+						runner.sendStop();
+						Assert.fail("Output contained illegal string '"+ failOnStrings[i]+"'");
+					}
+				}
+			}
 			// check output for correct TaskManager startup.
-			if(outContent.toString().contains(terminateAfterString)
-					|| errContent.toString().contains(terminateAfterString) ) {
+			if(outContentString.contains(terminateAfterString)
+					|| errContentString.contains(terminateAfterString) ) {
 				expectedStringSeen = true;
 				LOG.info("Found expected output in redirected streams");
 				// send "stop" command to command line interface

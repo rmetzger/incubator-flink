@@ -96,8 +96,10 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 						"-n", "1",
 						"-jm", "512",
-						"-tm", "1024"},
-				"Number of connected TaskManagers changed to 1. Slots available: 1", RunTypes.YARN_SESSION);
+						"-tm", "1024",
+						"-s", "2" // Test that 2 slots are started on the TaskManager.
+				},
+				"Number of connected TaskManagers changed to 1. Slots available: 2",null, RunTypes.YARN_SESSION);
 		LOG.info("Finished testClientStartup()");
 	}
 
@@ -287,7 +289,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	@Test
 	public void testQueryCluster() {
 		LOG.info("Starting testQueryCluster()");
-		runWithArgs(new String[] {"-q"}, "Summary: totalMemory 8192 totalCores 1332", RunTypes.YARN_SESSION); // we have 666*2 cores.
+		runWithArgs(new String[] {"-q"}, "Summary: totalMemory 8192 totalCores 1332",null, RunTypes.YARN_SESSION); // we have 666*2 cores.
 		LOG.info("Finished testQueryCluster()");
 	}
 
@@ -302,7 +304,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				"-n", "1",
 				"-jm", "512",
 				"-tm", "1024",
-				"-qu", "doesntExist"}, "Number of connected TaskManagers changed to 1. Slots available: 1", RunTypes.YARN_SESSION);
+				"-qu", "doesntExist"}, "Number of connected TaskManagers changed to 1. Slots available: 1",null, RunTypes.YARN_SESSION);
 		LOG.info("Finished testNonexistingQueue()");
 	}
 
@@ -319,7 +321,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "10",
 				"-jm", "512",
-				"-tm", "1024"}, "Number of connected TaskManagers changed to", RunTypes.YARN_SESSION); // the number of TMs depends on the speed of the test hardware
+				"-tm", "1024"}, "Number of connected TaskManagers changed to",null, RunTypes.YARN_SESSION); // the number of TMs depends on the speed of the test hardware
 		LOG.info("Finished testMoreNodesThanAvailable()");
 		checkForLogString("This YARN session requires 10752MB of memory in the cluster. There are currently only 8192MB available.");
 	}
@@ -346,7 +348,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "5",
 				"-jm", "256",
-				"-tm", "1585"}, "Number of connected TaskManagers changed to", RunTypes.YARN_SESSION);
+				"-tm", "1585"}, "Number of connected TaskManagers changed to",null, RunTypes.YARN_SESSION);
 		LOG.info("Finished testResourceComputation()");
 		checkForLogString("This YARN session requires 8437MB of memory in the cluster. There are currently only 8192MB available.");
 	}
@@ -376,7 +378,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "2",
 				"-jm", "256",
-				"-tm", "3840"}, "Number of connected TaskManagers changed to", RunTypes.YARN_SESSION);
+				"-tm", "3840"}, "Number of connected TaskManagers changed to", null, RunTypes.YARN_SESSION);
 		LOG.info("Finished testfullAlloc()");
 		checkForLogString("There is not enough memory available in the YARN cluster. The TaskManager(s) require 3840MB each. NodeManagers available: [4096, 4096]\n" +
 				"After allocating the JobManager (512MB) and (1/2) TaskManagers, the following NodeManagers are available: [3584, 256]");
@@ -395,8 +397,38 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		runWithArgs(new String[] {"run", "-m", "yarn-cluster",
 				"-yj", flinkUberjar.getAbsolutePath(),
 				"-yn", "1",
+				"-ys", "2", //test that the job is executed with a DOP of 2
 				"-yjm", "512",
-				"-ytm", "1024", exampleJarLocation.getAbsolutePath()}, "Job execution switched to status FINISHED.", RunTypes.CLI_FRONTEND);
+				"-ytm", "1024", exampleJarLocation.getAbsolutePath()},
+				/* test succeeded after this string */
+				"Job execution switched to status FINISHED.",
+				/* prohibited strings: (we want to see (2/2)) */
+				new String[] {"System.out)(1/1) switched to FINISHED "},
+				RunTypes.CLI_FRONTEND);
+		LOG.info("Finished perJobYarnCluster()");
+		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
+	}
+
+	/**
+	 * Test per-job yarn cluster with the parallelism set at the CliFrontend instead of the YARN client.
+	 */
+	@Test
+	public void perJobYarnClusterWithParallelism() {
+		LOG.info("Starting perJobYarnCluster()");
+		File exampleJarLocation = YarnTestBase.findFile("..", new ContainsName("-WordCount.jar", "streaming")); // exclude streaming wordcount here.
+		Assert.assertNotNull("Could not find wordcount jar", exampleJarLocation);
+		runWithArgs(new String[] {"run",
+						"-p", "2", //test that the job is executed with a DOP of 2
+						"-m", "yarn-cluster",
+						"-yj", flinkUberjar.getAbsolutePath(),
+						"-yn", "1",
+						"-yjm", "512",
+						"-ytm", "1024", exampleJarLocation.getAbsolutePath()},
+				/* test succeeded after this string */
+				"Job execution switched to status FINISHED.",
+				/* prohibited strings: (we want to see (2/2)) */
+				new String[] {"System.out)(1/1) switched to FINISHED "},
+				RunTypes.CLI_FRONTEND);
 		LOG.info("Finished perJobYarnCluster()");
 	}
 
