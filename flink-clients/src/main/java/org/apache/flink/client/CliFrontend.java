@@ -708,8 +708,11 @@ public class CliFrontend {
 			CommandLine commandLine = options.getCommandLine();
 			AbstractFlinkYarnClient flinkYarnClient = CliFrontendParser.getFlinkYarnSessionCli().createFlinkYarnClient(commandLine);
 			// the number of slots available from YARN:
-			maxSlots = flinkYarnClient.getTaskManagerSlots() * flinkYarnClient.getTaskManagerCount();
-		///	TODO getTasKmanagerSlots is -1 here.
+			int yarnTmSlots = flinkYarnClient.getTaskManagerSlots();
+			if(yarnTmSlots == -1) {
+				yarnTmSlots = 1;
+			}
+			maxSlots = yarnTmSlots * flinkYarnClient.getTaskManagerCount();
 			if(userParallelism != -1) {
 				int slotsPerTM = userParallelism / flinkYarnClient.getTaskManagerCount();
 				logAndSysout("The YARN cluster has "+maxSlots+" slots available, but the user requested a parallelism of "+userParallelism+" on YARN. " +
