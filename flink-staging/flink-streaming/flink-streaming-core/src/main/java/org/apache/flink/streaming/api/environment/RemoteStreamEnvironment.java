@@ -109,7 +109,7 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 
 		Configuration configuration = jobGraph.getJobConfiguration();
 		Client client = new Client(new InetSocketAddress(host, port), configuration,
-				JobWithJars.buildUserCodeClassLoader(jarFiles, JobWithJars.class.getClassLoader()));
+				JobWithJars.buildUserCodeClassLoader(jarFiles, JobWithJars.class.getClassLoader()), -1);
 
 		try {
 			client.run(jobGraph, true);
