@@ -27,6 +27,8 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.taskmanager.TaskManager;
 import org.apache.flink.runtime.util.EnvironmentInformation;
 import org.apache.flink.yarn.YarnTaskManager;
+import org.jboss.netty.logging.InternalLoggerFactory;
+import org.jboss.netty.logging.Slf4JLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.flink.yarn.FlinkYarnClient;
@@ -45,6 +47,8 @@ public class YarnTaskManagerRunner {
 
 
 	public static void main(final String[] args) throws IOException {
+		// Initialize slf4j as logger of Akka's Netty instead of java.util.logging(FLINK-1650)
+		InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
 
 		EnvironmentInformation.logEnvironmentInfo(LOG, "YARN TaskManager", args);
 		EnvironmentInformation.checkJavaVersion();

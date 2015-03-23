@@ -59,6 +59,7 @@ import org.apache.flink.runtime.security.SecurityUtils
 import org.apache.flink.runtime.security.SecurityUtils.FlinkSecuredRunner
 import org.apache.flink.runtime.util.{MathUtils, EnvironmentInformation}
 import org.apache.flink.util.ExceptionUtils
+import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent._
@@ -777,6 +778,9 @@ object TaskManager {
    * @param args The command line arguments.
    */
   def main(args: Array[String]): Unit = {
+    // Initialize slf4j as logger of Akka's Netty instead of java.util.logging(FLINK-1650)
+    InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory())
+
     // startup checks and logging
     EnvironmentInformation.logEnvironmentInfo(LOG, "TaskManager", args)
     EnvironmentInformation.checkJavaVersion()

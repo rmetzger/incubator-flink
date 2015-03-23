@@ -49,6 +49,7 @@ import org.apache.flink.runtime.messages.RegistrationMessages._
 import org.apache.flink.runtime.messages.TaskManagerMessages.{SendStackTrace, NextInputSplit, Heartbeat}
 import org.apache.flink.runtime.profiling.ProfilingUtils
 import org.apache.flink.util.InstantiationUtil
+import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 
 import org.slf4j.LoggerFactory
 
@@ -647,6 +648,8 @@ object JobManager {
    * @param args The command line arguments.
    */
   def main(args: Array[String]): Unit = {
+    // Initialize slf4j as logger of Akka's Netty instead of java.util.logging(FLINK-1650)
+    InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory())
 
     // startup checks and logging
     EnvironmentInformation.logEnvironmentInfo(LOG, "JobManager", args)

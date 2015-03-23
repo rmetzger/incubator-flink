@@ -32,6 +32,7 @@ import org.apache.flink.yarn.Messages.StartYarnSession
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import org.apache.hadoop.yarn.conf.YarnConfiguration
+import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.slf4j.LoggerFactory
 
 import scala.io.Source
@@ -45,7 +46,10 @@ object ApplicationMaster {
   val MODIFIED_CONF_FILE = "flink-conf-modified.yaml"
   val MAX_REGISTRATION_DURATION = "5 minutes"
 
-  def main(args: Array[String]): Unit ={
+  def main(args: Array[String]): Unit = {
+    // Initialize slf4j as logger of Akka's Netty instead of java.util.logging(FLINK-1650)
+    InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory())
+
     val yarnClientUsername = System.getenv(FlinkYarnClient.ENV_CLIENT_USERNAME)
     LOG.info(s"YARN daemon runs as ${UserGroupInformation.getCurrentUser.getShortUserName} " +
       s"setting user to execute Flink ApplicationMaster/JobManager to ${yarnClientUsername}")
