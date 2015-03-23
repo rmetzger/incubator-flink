@@ -36,6 +36,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,13 +84,15 @@ public abstract class YarnTestBase {
 	};
 
 	// Temp directory which is deleted after the unit test.
-	private static TemporaryFolder tmp = new TemporaryFolder();
+	@ClassRule
+	public static TemporaryFolder tmp = new TemporaryFolder();
 
 	protected static MiniYARNCluster yarnCluster = null;
 
 	protected static File flinkUberjar;
 
 	protected static final Configuration yarnConfiguration;
+
 	static {
 		yarnConfiguration = new YarnConfiguration();
 		yarnConfiguration.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 512);
@@ -305,6 +308,16 @@ public abstract class YarnTestBase {
 	}
 
 	public static void startYARNWithConfig(Configuration conf) {
+		// set the home directory to a tmp directory. Flink on YARN is using the home dir to distribute the files
+		File homeDir = null;
+		try {
+			homeDir = tmp.newFolder();
+		} catch (IOException e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+		System.setProperty("user.home", homeDir.getAbsolutePath());
+
 		flinkUberjar = findFile("..", new RootDirFilenameFilter());
 		Assert.assertNotNull("Flink uberjar not found", flinkUberjar);
 		String flinkDistRootDir = flinkUberjar.getParentFile().getParent();
