@@ -66,12 +66,13 @@ public class YARNSessionCapacitySchedulerITCase extends YarnTestBase {
 	@Test
 	public void testNonexistingQueue() {
 		addTestAppender(FlinkYarnClient.class, Level.WARN);
-		runWithArgs(new String[] {"-j", flinkUberjar.getAbsolutePath(),
+		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
 				"-n", "1",
 				"-jm", "512",
 				"-tm", "1024",
-				"-qu", "doesntExist"}, "to unknown queue: doesntExist", RunTypes.YARN_SESSION);
+				"-qu", "doesntExist"}, "to unknown queue: doesntExist", null, RunTypes.YARN_SESSION);
 		checkForLogString("The specified queue 'doesntExist' does not exist. Available queues: default, qa-team");
+	}
 
 	@After
 	public void checkForProhibitedLogContents() {

@@ -406,7 +406,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				new String[] {"System.out)(1/1) switched to FINISHED "},
 				RunTypes.CLI_FRONTEND);
 		LOG.info("Finished perJobYarnCluster()");
-		ensureNoProhibitedStringInLogFiles(prohibtedStrings);
 	}
 
 	/**
