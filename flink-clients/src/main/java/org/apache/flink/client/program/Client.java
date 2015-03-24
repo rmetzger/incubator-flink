@@ -96,7 +96,7 @@ public class Client {
 		configuration.setString(ConfigConstants.JOB_MANAGER_IPC_ADDRESS_KEY, jobManagerAddress.getAddress().getHostAddress());
 		configuration.setInteger(ConfigConstants.JOB_MANAGER_IPC_PORT_KEY, jobManagerAddress.getPort());
 		
-		this.compiler = new Optimizer(new DataStatistics(), new DefaultCostEstimator());
+		this.compiler = new Optimizer(new DataStatistics(), new DefaultCostEstimator(), configuration);
 		this.userCodeClassLoader = userCodeClassLoader;
 		this.maxSlots = maxSlots;
 	}
@@ -122,7 +122,7 @@ public class Client {
 			throw new CompilerException("Cannot find port to job manager's RPC service in the global configuration.");
 		}
 
-		this.compiler = new Optimizer(new DataStatistics(), new DefaultCostEstimator());
+		this.compiler = new Optimizer(new DataStatistics(), new DefaultCostEstimator(), configuration);
 		this.userCodeClassLoader = userCodeClassLoader;
 	}
 	
@@ -210,8 +210,10 @@ public class Client {
 	
 	public FlinkPlan getOptimizedPlan(Plan p, int parallelism) throws CompilerException {
 		if (parallelism > 0 && p.getDefaultParallelism() <= 0) {
+			LOG.debug("Changing plan default parallelism from {} to {}",p.getDefaultParallelism(), parallelism);
 			p.setDefaultParallelism(parallelism);
 		}
+		LOG.debug("Set parallelism {}, plan default parallelism {}", parallelism, p.getDefaultParallelism());
 
 		return this.compiler.compile(p);
 	}

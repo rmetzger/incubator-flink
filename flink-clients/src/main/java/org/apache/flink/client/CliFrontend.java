@@ -266,9 +266,10 @@ public class CliFrontend {
 
 		try {
 			int userParallelism = options.getParallelism();
+			LOG.debug("User parallelism is set to {}", userParallelism);
 
 			Client client = getClient(options, program.getUserCodeClassLoader(), program.getMainClassName(), userParallelism);
-
+			LOG.debug("Client slots is set to {}", client.getMaxSlots());
 			if(client.getMaxSlots() != -1 && userParallelism == -1) {
 				logAndSysout("Using the parallelism provided by the remote cluster ("+client.getMaxSlots()+"). " +
 						"To use another parallelism, set it at the ./bin/flink client.");
