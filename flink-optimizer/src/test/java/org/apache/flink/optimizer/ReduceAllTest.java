@@ -29,6 +29,7 @@ import org.apache.flink.optimizer.plantranslate.JobGraphGenerator;
 import org.apache.flink.optimizer.util.DummyInputFormat;
 import org.apache.flink.optimizer.util.DummyOutputFormat;
 import org.apache.flink.optimizer.util.IdentityReduce;
+import org.apache.flink.test.compiler.util.CompilerTestBase;
 import org.junit.Test;
 
 /**
