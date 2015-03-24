@@ -122,12 +122,6 @@ public class FlinkYarnSessionCli {
 		} else {
 			LOG.info("No path for the flink jar passed. Using the location of "+flinkYarnClient.getClass()+" to locate the jar");
 			localJarPath = new Path("file://"+flinkYarnClient.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
-			if(!localJarPath.toString().contains("uberjar")) {
-				// we need to have a proper uberjar because otherwise we don't have the required classes available on the cluster.
-				// most likely the user did try to start yarn in a regular hadoop2 flink build (not a yarn package) (using ./bin/flink -m yarn-cluster)
-				LOG.error("The detected jar file '"+localJarPath+"' is not a uberjar.");
-				return null;
-			}
 		}
 
 		flinkYarnClient.setLocalJarPath(localJarPath);
