@@ -89,15 +89,20 @@ public class LocalExecutor extends PlanExecutor {
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+
+	public Configuration getConfiguration() {
+		Configuration configuration = new Configuration();
+		configuration.setInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS, getTaskManagerNumSlots());
+		configuration.setBoolean(ConfigConstants.FILESYSTEM_DEFAULT_OVERWRITE_KEY, isDefaultOverwriteFiles());
+		return configuration;
+	}
+
 	public void start() throws Exception {
 		synchronized (this.lock) {
 			if (this.flink == null) {
 				
 				// create the embedded runtime
-				Configuration configuration = new Configuration();
-				configuration.setInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS, getTaskManagerNumSlots());
-				configuration.setBoolean(ConfigConstants.FILESYSTEM_DEFAULT_OVERWRITE_KEY, isDefaultOverwriteFiles());
+				Configuration configuration = getConfiguration();
 				// start it up
 				this.flink = new LocalFlinkMiniCluster(configuration, true);
 			} else {
@@ -186,7 +191,7 @@ public class LocalExecutor extends PlanExecutor {
 	 * @throws Exception
 	 */
 	public String getOptimizerPlanAsJSON(Plan plan) throws Exception {
-		Optimizer pc = new Optimizer(new DataStatistics(), this.flink.getConfiguration());
+		Optimizer pc = new Optimizer(new DataStatistics(), getConfiguration());
 		OptimizedPlan op = pc.compile(plan);
 		PlanJSONDumpGenerator gen = new PlanJSONDumpGenerator();
 	
