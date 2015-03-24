@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.test.compiler.util;
+package org.apache.flink.optimizer.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
