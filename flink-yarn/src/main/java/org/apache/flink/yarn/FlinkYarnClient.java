@@ -325,6 +325,11 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 		this.detached = detachedMode;
 	}
 
+	@Override
+	public boolean isDetached() {
+		return detached;
+	}
+
 	/**
 	 * This method will block until the ApplicationMaster/JobManager have been
 	 * deployed on YARN.

@@ -129,6 +129,10 @@ trait ApplicationMasterActor extends ActorLogMessages {
       messageListener = Some(client)
       sender ! Acknowledge
 
+    case UnregisterClient =>
+      messageListener = None
+
+
     case PollYarnClusterStatus =>
       sender() ! new FlinkYarnClusterStatus(instanceManager.getNumberOfRegisteredTaskManagers,
         instanceManager.getTotalNumberOfSlots)

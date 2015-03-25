@@ -125,6 +125,8 @@ public abstract class AbstractFlinkYarnClient {
 	 */
 	public abstract void setDetachedMode(boolean detachedMode);
 
+	public abstract boolean isDetached();
+
 	/**
 	 * @return The string representation of the Path to the YARN session files. This is a temporary
 	 * directory in HDFS that contains the jar files and configuration which is shipped to all the containers.
