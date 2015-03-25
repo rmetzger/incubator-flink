@@ -28,6 +28,7 @@ import akka.pattern.{Patterns, ask => akkaAsk}
 import akka.remote.{RemotingLifecycleEvent, AssociationEvent}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.configuration.{ConfigConstants, Configuration}
+import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future, Await}
 import scala.concurrent.duration._
@@ -68,6 +69,8 @@ object AkkaUtils {
    * @return created actor system
    */
   def createActorSystem(akkaConfig: Config): ActorSystem = {
+    // Initialize slf4j as logger of Akka's Netty instead of java.util.logging (FLINK-1650)
+    InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
     ActorSystem.create("flink", akkaConfig)
   }
 

@@ -82,6 +82,10 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	private final Timeout akkaTimeout;
 	private final ApplicationId applicationId;
 	private final boolean detached;
+	private final org.apache.flink.configuration.Configuration flinkConfig;
+	private final ApplicationId appId;
+
+	private boolean isConnected = false;
 
 
 	/**
@@ -106,66 +110,106 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		this.sessionFilesDir = sessionFilesDir;
 		this.applicationId = appId;
 		this.detached = detached;
+		this.flinkConfig = flinkConfig;
+		this.appId = appId;
 
 		// get one application report manually
 		intialAppReport = yarnClient.getApplicationReport(appId);
 		String jobManagerHost = intialAppReport.getHost();
 		int jobManagerPort = intialAppReport.getRpcPort();
 		this.jobManagerAddress = new InetSocketAddress(jobManagerHost, jobManagerPort);
+	}
 
-		if(!detached) {
-			// start actor system
-			LOG.info("Start actor system.");
-			InetAddress ownHostname = NetUtils.resolveAddress(jobManagerAddress); // find name of own public interface, able to connect to the JM
-			actorSystem = AkkaUtils.createActorSystem(flinkConfig,
-					new Some(new Tuple2<String, Integer>(ownHostname.getCanonicalHostName(), 0)));
-
-			// start application client
-			LOG.info("Start application client.");
-
-			applicationClient = actorSystem.actorOf(Props.create(ApplicationClient.class), "applicationClient");
-
-			// instruct ApplicationClient to start a periodical status polling
-			applicationClient.tell(new Messages.LocalRegisterClient(this.jobManagerAddress), applicationClient);
-
-
-			// add hook to ensure proper shutdown
-			Runtime.getRuntime().addShutdownHook(clientShutdownHook);
-
-			actorRunner = new Thread(new Runnable() {
-				@Override
-				public void run() {
-				// blocks until ApplicationMaster has been stopped
-				actorSystem.awaitTermination();
-
-				// get final application report
-				try {
-					ApplicationReport appReport = yarnClient.getApplicationReport(appId);
-
-					LOG.info("Application " + appId + " finished with state " + appReport
-							.getYarnApplicationState() + " and final state " + appReport
-							.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
-
-					if (appReport.getYarnApplicationState() == YarnApplicationState.FAILED || appReport.getYarnApplicationState()
-							== YarnApplicationState.KILLED) {
-						LOG.warn("Application failed. Diagnostics " + appReport.getDiagnostics());
-						LOG.warn("If log aggregation is activated in the Hadoop cluster, we recommend to retrieve "
-								+ "the full application log using this command:\n"
-								+ "\tyarn logs -applicationId " + appReport.getApplicationId() + "\n"
-								+ "(It sometimes takes a few seconds until the logs are aggregated)");
-					}
-				} catch (Exception e) {
-					LOG.warn("Error while getting final application report", e);
-				}
-				}
-			});
-			actorRunner.setDaemon(true);
-			actorRunner.start();
-
-			pollingRunner = new PollingThread(yarnClient, appId);
-			pollingRunner.setDaemon(true);
-			pollingRunner.start();
+	/**
+	 * Connect the FlinkYarnCluster to the ApplicationMaster.
+	 *
+	 * Detached YARN sessions don't need to connect to the ApplicationMaster.
+	 * Detached per job YARN sessions need to connect until the required number of TaskManagers have been started.
+	 * 
+	 * @throws IOException
+	 */
+	public void connectToCluster() throws IOException {
+		if(isConnected) {
+			throw new IllegalStateException("Can not connect to the cluster again");
 		}
+
+		// start actor system
+		LOG.info("Start actor system.");
+		InetAddress ownHostname = NetUtils.resolveAddress(jobManagerAddress); // find name of own public interface, able to connect to the JM
+		actorSystem = AkkaUtils.createActorSystem(flinkConfig,
+				new Some(new Tuple2<String, Integer>(ownHostname.getCanonicalHostName(), 0)));
+
+		// start application client
+		LOG.info("Start application client.");
+
+		applicationClient = actorSystem.actorOf(Props.create(ApplicationClient.class), "applicationClient");
+
+		// instruct ApplicationClient to start a periodical status polling
+		applicationClient.tell(new Messages.LocalRegisterClient(this.jobManagerAddress), applicationClient);
+
+
+		actorRunner = new Thread(new Runnable() {
+			@Override
+			public void run() {
+			// blocks until ApplicationMaster has been stopped
+			actorSystem.awaitTermination();
+
+			// get final application report
+			try {
+				ApplicationReport appReport = yarnClient.getApplicationReport(appId);
+
+				LOG.info("Application " + appId + " finished with state " + appReport
+						.getYarnApplicationState() + " and final state " + appReport
+						.getFinalApplicationStatus() + " at " + appReport.getFinishTime());
+
+				if (appReport.getYarnApplicationState() == YarnApplicationState.FAILED || appReport.getYarnApplicationState()
+						== YarnApplicationState.KILLED) {
+					LOG.warn("Application failed. Diagnostics " + appReport.getDiagnostics());
+					LOG.warn("If log aggregation is activated in the Hadoop cluster, we recommend to retrieve "
+							+ "the full application log using this command:\n"
+							+ "\tyarn logs -applicationId " + appReport.getApplicationId() + "\n"
+							+ "(It sometimes takes a few seconds until the logs are aggregated)");
+				}
+			} catch (Exception e) {
+				LOG.warn("Error while getting final application report", e);
+			}
+			}
+		});
+		actorRunner.setDaemon(true);
+		actorRunner.start();
+
+		pollingRunner = new PollingThread(yarnClient, appId);
+		pollingRunner.setDaemon(true);
+		pollingRunner.start();
+
+		isConnected = true;
+	}
+
+	@Override
+	public void disconnect() {
+		if(!isConnected) {
+			throw new IllegalStateException("Can not disconnect from an unconnected cluster.");
+		}
+		LOG.info("Disconnecting FlinkYarnCluster from ApplicationMaster");
+
+		Runtime.getRuntime().removeShutdownHook(clientShutdownHook);
+		// tell the actor to shut down.
+		applicationClient.tell(Messages.getLocalUnregisterClient(), applicationClient);
+
+		try {
+			actorRunner.join(1000); // wait for 1 second
+		} catch (InterruptedException e) {
+			LOG.warn("Shutdown of the actor runner was interrupted", e);
+			Thread.currentThread().interrupt();
+		}
+		try {
+			pollingRunner.stopRunner();
+			pollingRunner.join(1000);
+		} catch(InterruptedException e) {
+			LOG.warn("Shutdown of the polling runner was interrupted", e);
+			Thread.currentThread().interrupt();
+		}
+		isConnected = false;
 	}
 
 	// -------------------------- Interaction with the cluster ------------------------
@@ -190,14 +234,18 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		return applicationId.toString();
 	}
 
+	@Override
+	public boolean isDetached() {
+		return this.detached;
+	}
+
 	/**
 	 * This method is only available if the cluster hasn't been started in detached mode.
 	 */
 	@Override
 	public FlinkYarnClusterStatus getClusterStatus() {
-		if(detached) {
-			throw new IllegalArgumentException("The cluster has been started in detached mode." +
-					"Can not request cluster status");
+		if(!isConnected) {
+			throw new IllegalStateException("The cluster has been connected to the ApplicationMaster.");
 		}
 		if(hasBeenStopped()) {
 			throw new RuntimeException("The FlinkYarnCluster has alread been stopped");
@@ -220,9 +268,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	@Override
 	public boolean hasFailed() {
-		if(detached) {
-			throw new IllegalArgumentException("The cluster has been started in detached mode." +
-					"Can not request cluster status");
+		if(!isConnected) {
+			throw new IllegalStateException("The cluster has been connected to the ApplicationMaster.");
 		}
 		if(pollingRunner == null) {
 			LOG.warn("FlinkYarnCluster.hasFailed() has been called on an uninitialized cluster." +
@@ -248,10 +295,10 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	@Override
 	public String getDiagnostics() {
-		if(detached) {
-			throw new IllegalArgumentException("The cluster has been started in detached mode." +
-					"Can not request cluster status");
+		if(!isConnected) {
+			throw new IllegalStateException("The cluster has been connected to the ApplicationMaster.");
 		}
+
 		if (!hasFailed()) {
 			LOG.warn("getDiagnostics() called for cluster which is not in failed state");
 		}
@@ -266,10 +313,10 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 
 	@Override
 	public List<String> getNewMessages() {
-		if(detached) {
-			throw new IllegalArgumentException("The cluster has been started in detached mode." +
-					"Can not request cluster status");
+		if(!isConnected) {
+			throw new IllegalStateException("The cluster has been connected to the ApplicationMaster.");
 		}
+
 		if(hasBeenStopped()) {
 			throw new RuntimeException("The FlinkYarnCluster has already been stopped");
 		}
@@ -320,10 +367,10 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	}
 
 	private void shutdownInternal(boolean removeShutdownHook) {
-		if(detached) {
-			throw new IllegalArgumentException("The cluster has been started in detached mode." +
-					"Can not control a detached cluster");
+		if(!isConnected) {
+			throw new IllegalStateException("The cluster has been connected to the ApplicationMaster.");
 		}
+
 		if(hasBeenShutDown.getAndSet(true)) {
 			return;
 		}

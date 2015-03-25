@@ -386,6 +386,10 @@ public class FlinkYarnSessionCli {
 
 			try {
 				yarnCluster = flinkYarnClient.deploy(null);
+				// only connect to cluster if its not a detached session.
+				if(!flinkYarnClient.isDetached()) {
+					yarnCluster.connectToCluster();
+				}
 			} catch (Exception e) {
 				System.err.println("Error while deploying YARN cluster: "+e.getMessage());
 				e.printStackTrace(System.err);
@@ -417,7 +421,7 @@ public class FlinkYarnSessionCli {
 
 			if (detachedMode) {
 				// print info and quit:
-				LOG.info("The Flink YARN client has been started in detached mode. In order to stop" +
+				LOG.info("The Flink YARN client has been started in detached mode. In order to stop " +
 						"Flink on YARN, use the following command or a YARN web interface to stop it:\n" +
 						"yarn application -kill "+yarnCluster.getApplicationId()+"\n" +
 						"Please also note that the temporary files of the YARN session in {} will not be removed.",

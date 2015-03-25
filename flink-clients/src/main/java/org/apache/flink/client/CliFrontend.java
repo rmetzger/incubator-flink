@@ -275,9 +275,22 @@ public class CliFrontend {
 						"To use another parallelism, set it at the ./bin/flink client.");
 				userParallelism = client.getMaxSlots();
 			}
-			int exitCode = executeProgram(program, client, userParallelism);
+			int exitCode = 0;
 
-			if (yarnCluster != null) {
+			// check if detached per job yarn cluster is used to start flink
+			if(yarnCluster != null && yarnCluster.isDetached()) {
+				logAndSysout("The Flink YARN client has been started in detached mode. In order to stop " +
+						"Flink on YARN, use the following command or a YARN web interface to stop it:\n" +
+						"yarn application -kill "+yarnCluster.getApplicationId()+"\n" +
+						"Please also note that the temporary files of the YARN session in the home directoy will not be removed.");
+				executeProgram(program, client, userParallelism, false);
+			} else {
+				// regular (blocking) execution.
+				exitCode = executeProgram(program, client, userParallelism, true);
+			}
+
+			// show YARN cluster status if its not a detached YARN cluster.
+			if (yarnCluster != null && !yarnCluster.isDetached()) {
 				List<String> msgs = yarnCluster.getNewMessages();
 				if (msgs != null && msgs.size() > 1) {
 
@@ -562,12 +575,12 @@ public class CliFrontend {
 	//  Interaction with programs and JobManager
 	// --------------------------------------------------------------------------------------------
 
-	protected int executeProgram(PackagedProgram program, Client client, int parallelism) {
+	protected int executeProgram(PackagedProgram program, Client client, int parallelism, boolean wait) {
 		LOG.info("Starting execution or program");
 		JobExecutionResult execResult;
 		try {
 			client.setPrintStatusDuringExecution(true);
-			execResult = client.run(program, parallelism, true);
+			execResult = client.run(program, parallelism, wait);
 		}
 		catch (ProgramInvocationException e) {
 			return handleError(e);
@@ -728,6 +741,7 @@ public class CliFrontend {
 
 			try {
 				yarnCluster = flinkYarnClient.deploy("Flink Application: " + programName);
+				yarnCluster.connectToCluster();
 			}
 			catch(Exception e) {
 				throw new RuntimeException("Error deploying the YARN cluster", e);
@@ -749,7 +763,7 @@ public class CliFrontend {
 						break;
 					}
 				} else {
-					logAndSysout("No status updates from YARN cluster received so far. Waiting ...");
+					logAndSysout("No status updates from the YARN cluster received so far. Waiting ...");
 				}
 
 				try {
@@ -760,6 +774,10 @@ public class CliFrontend {
 					System.err.println("Thread is interrupted");
 					Thread.currentThread().interrupt();
 				}
+			}
+			// we needed the connection only until all TMs are registered.
+			if(yarnCluster.isDetached()) {
+				yarnCluster.disconnect();
 			}
 		}
 		else {

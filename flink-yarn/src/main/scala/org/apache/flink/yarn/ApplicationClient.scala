@@ -101,6 +101,14 @@ class ApplicationClient extends Actor with ActorLogMessages with ActorLogging {
       pollingTimer = Some(context.system.scheduler.schedule(INITIAL_POLLING_DELAY,
         WAIT_FOR_YARN_INTERVAL, jm, PollYarnClusterStatus))
 
+    case LocalUnregisterClient =>
+      // unregister client from AM
+      yarnJobManager foreach {
+        _ ! UnregisterClient
+      }
+      // poison ourselves
+      self ! PoisonPill
+
     case msg: StopYarnSession =>
       log.info("Sending StopYarnSession request to ApplicationMaster.")
       stopMessageReceiver = Some(sender)

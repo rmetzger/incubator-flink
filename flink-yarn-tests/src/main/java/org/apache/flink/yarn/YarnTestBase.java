@@ -79,7 +79,7 @@ public abstract class YarnTestBase {
 
 	// The tests are scanning for these strings in the final output.
 	protected final static String[] PROHIBITED_STRINGS = {
-//			"Exception", // we don't want any exceptions to happen
+			"Exception", // we don't want any exceptions to happen
 			"Started SelectChannelConnector@0.0.0.0:8081" // Jetty should start on a random port in YARN mode.
 	};
 
@@ -204,6 +204,7 @@ public abstract class YarnTestBase {
 			return name.startsWith("flink-dist") && name.endsWith(".jar") && dir.toString().contains("/lib");
 		}
 	}
+
 	public static class ContainsName implements FilenameFilter {
 		private String name;
 		private String excludeInPath = null;
