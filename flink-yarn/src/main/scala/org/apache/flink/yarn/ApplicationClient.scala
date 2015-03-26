@@ -138,7 +138,7 @@ class ApplicationClient(flinkConfig: Configuration) extends Actor
       // Forward message to Application Master
     case msg: StopAMAfterJob =>
       yarnJobManager foreach {
-        _ ! msg
+        _ forward msg
       }
 
     // -----------------  handle messages from the cluster -------------------

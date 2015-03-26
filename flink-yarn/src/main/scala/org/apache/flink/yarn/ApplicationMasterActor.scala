@@ -144,6 +144,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
       val jobId = msg.jobId
       log.info("ApplicatonMaster will shut down YARN session when job {} has finished", jobId)
       stopWhenJobFinished = jobId
+      sender() ! Acknowledge
 
 
     case PollYarnClusterStatus =>
@@ -164,16 +165,16 @@ trait ApplicationMasterActor extends ActorLogMessages {
         LOG.warn("Received job status {} which wasn't requested", jobStatus)
       } else {
         if(stopWhenJobFinished != jobStatus.jobID) {
-          LOG.warn("Received job status for job {} but expected status for job {}",
-            jobStatus.jobID, stopWhenJobFinished)
+          LOG.warn(s"Received job status for job ${jobStatus.jobID} but expected status for " +
+            s"job ${stopWhenJobFinished}")
         } else {
           if(jobStatus.status.isTerminalState) {
-            LOG.info("Job with ID {} is in terminal state {}. Shutting down YARN session",
-              jobStatus.jobID, jobStatus.status)
+            LOG.info(s"Job with ID ${jobStatus.jobID} is in terminal state ${jobStatus.status}. " +
+              s"Shutting down YARN session")
             self ! StopYarnSession(FinalApplicationStatus.SUCCEEDED,
               s"The monitored job with ID ${jobStatus.jobID} has finished.")
           } else {
-            LOG.debug("Monitored job with ID {} is in state {}", jobStatus.jobID, jobStatus.status)
+            LOG.debug(s"Monitored job with ID ${jobStatus.jobID} is in state ${jobStatus.status}")
           }
         }
       }
