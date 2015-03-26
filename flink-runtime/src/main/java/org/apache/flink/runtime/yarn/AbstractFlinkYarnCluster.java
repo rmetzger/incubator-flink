@@ -18,6 +18,8 @@
 
 package org.apache.flink.runtime.yarn;
 
+import org.apache.flink.api.common.JobID;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -62,4 +64,12 @@ public abstract class AbstractFlinkYarnCluster {
 	 * (therefore, use the {@see shutdown()} method.
 	 */
 	public abstract void disconnect();
+
+	/**
+	 * Tells the ApplicationMaster to monitor the status of JobId and stop itself once the specified
+	 * job has finished.
+	 *
+	 * @param jobID
+	 */
+	public abstract void stopAfterJob(JobID jobID);
 }

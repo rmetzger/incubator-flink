@@ -356,6 +356,8 @@ public class Client {
 			}
 			else {
 				JobClient.submitJobDetached(jobGraph, client, timeout);
+				// return a "Fake" execution result with the JobId
+				return new JobExecutionResult(jobGraph.getJobID(), -1, null);
 			}
 		}
 		catch (JobExecutionException e) {
@@ -368,8 +370,6 @@ public class Client {
 			actorSystem.shutdown();
 			actorSystem.awaitTermination();
 		}
-
-		return new JobExecutionResult(-1, null);
 	}
 
 	// --------------------------------------------------------------------------------------------

@@ -25,6 +25,7 @@ import static akka.pattern.Patterns.ask;
 import akka.actor.Props;
 import akka.pattern.Patterns;
 import akka.util.Timeout;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.net.NetUtils;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
@@ -216,7 +217,13 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		isConnected = false;
 	}
 
+
 	// -------------------------- Interaction with the cluster ------------------------
+
+	@Override
+	public void stopAfterJob(JobID jobID) {
+		applicationClient.tell(new Messages.StopAMAfterJob(jobID), applicationClient);
+	}
 
 	@Override
 	public InetSocketAddress getJobManagerAddress() {

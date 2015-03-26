@@ -135,6 +135,11 @@ class ApplicationClient(flinkConfig: Configuration) extends Actor
     case LocalGetYarnClusterStatus =>
       sender() ! latestClusterStatus
 
+      // Forward message to Application Master
+    case msg: StopAMAfterJob =>
+      yarnJobManager foreach {
+        _ ! msg
+      }
 
     // -----------------  handle messages from the cluster -------------------
     // receive remote messages

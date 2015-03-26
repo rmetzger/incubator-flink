@@ -23,9 +23,11 @@ import java.nio.ByteBuffer
 import java.util.Collections
 
 import akka.actor.ActorRef
+import org.apache.flink.api.common.JobID
 import org.apache.flink.configuration.ConfigConstants
 import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.jobmanager.JobManager
+import org.apache.flink.runtime.messages.JobManagerMessages.{CurrentJobStatus, JobNotFound, RequestJobStatus}
 import org.apache.flink.runtime.messages.Messages.Acknowledge
 import org.apache.flink.runtime.yarn.FlinkYarnClusterStatus
 import org.apache.flink.yarn.Messages._
@@ -69,6 +71,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
 
   // indicates if this AM has been started in a detached mode.
   val detached = java.lang.Boolean.valueOf(env.get(FlinkYarnClient.ENV_DETACHED))
+  var stopWhenJobFinished: JobID = null
 
   var rmClientOption: Option[AMRMClient[ContainerRequest]] = None
   var nmClientOption: Option[NMClient] = None
@@ -137,6 +140,11 @@ trait ApplicationMasterActor extends ActorLogMessages {
     case UnregisterClient =>
       messageListener = None
 
+    case msg: StopAMAfterJob =>
+      val jobId = msg.jobId
+      log.info("ApplicatonMaster will shut down YARN session when job {} has finished", jobId)
+      stopWhenJobFinished = jobId
+
 
     case PollYarnClusterStatus =>
       sender() ! new FlinkYarnClusterStatus(instanceManager.getNumberOfRegisteredTaskManagers,
@@ -145,7 +153,36 @@ trait ApplicationMasterActor extends ActorLogMessages {
     case StartYarnSession(conf, actorSystemPort, webServerPort) =>
       startYarnSession(conf, actorSystemPort, webServerPort)
 
+    case jnf: JobNotFound =>
+      LOG.warn("Job with ID {} not found in JobManager", jnf.jobID)
+      if(stopWhenJobFinished == null) {
+        LOG.warn("The ApplicationMaster didn't expect to receive this message")
+      }
+
+    case jobStatus: CurrentJobStatus =>
+      if(stopWhenJobFinished == null) {
+        LOG.warn("Received job status {} which wasn't requested", jobStatus)
+      } else {
+        if(stopWhenJobFinished != jobStatus.jobID) {
+          LOG.warn("Received job status for job {} but expected status for job {}",
+            jobStatus.jobID, stopWhenJobFinished)
+        } else {
+          if(jobStatus.status.isTerminalState) {
+            LOG.info("Job with ID {} is in terminal state {}. Shutting down YARN session",
+              jobStatus.jobID, jobStatus.status)
+            self ! StopYarnSession(FinalApplicationStatus.SUCCEEDED,
+              s"The monitored job with ID ${jobStatus.jobID} has finished.")
+          } else {
+            LOG.debug("Monitored job with ID {} is in state {}", jobStatus.jobID, jobStatus.status)
+          }
+        }
+      }
+
     case HeartbeatWithYarn =>
+      // piggyback on the YARN heartbeat to check if the job has finished
+      if(stopWhenJobFinished != null) {
+        self ! RequestJobStatus(stopWhenJobFinished)
+      }
       rmClientOption match {
         case Some(rmClient) =>
           log.debug("Send heartbeat to YARN")

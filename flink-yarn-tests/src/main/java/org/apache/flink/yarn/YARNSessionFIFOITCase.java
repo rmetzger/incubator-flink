@@ -446,6 +446,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		Runner runner = startWithArgs(new String[]{"run", "-m", "yarn-cluster", "-yj", flinkUberjar.getAbsolutePath(),
 						"-yn", "1",
 						"-yjm", "512",
+						"-yD", "yarn.heap-cutoff-ratio=0.5", // test if the cutoff is passed correctly
 						"-ytm", "1024",
 						"--yarndetached", exampleJarLocation.getAbsolutePath()},
 				"Please also note that the temporary files of the YARN session in",
@@ -483,6 +484,18 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			// check for some of the wordcount outputs.
 			Assert.assertTrue("Expected string '(all,2)' not found ", content.contains("(all,2)"));
 			Assert.assertTrue("Expected string '(mind,1)' not found", content.contains("(mind,1)"));
+
+			// check if the heap size for the TaskManager was set correctly
+			File jobmanagerLog = YarnTestBase.findFile("..", new FilenameFilter() {
+				@Override
+				public boolean accept(File dir, String name) {
+					return name.contains("jobmanager-main") && dir.getAbsolutePath().contains(id.toString());
+				}
+			});
+			content = FileUtils.readFileToString(jobmanagerLog);
+			// expecting 512 mb, because TM was started with 1024, we cut off 50% (NOT THE DEFAULT VALUE).
+			Assert.assertTrue("Expected string 'Starting TM with command=$JAVA_HOME/bin/java -Xmx512m' not found in JobManager log",
+					content.contains("Starting TM with command=$JAVA_HOME/bin/java -Xmx512m"));
 
 		} catch(Throwable t) {
 			LOG.warn("Error while detached yarn session was running", t);

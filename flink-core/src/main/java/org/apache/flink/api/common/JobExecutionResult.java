@@ -28,6 +28,7 @@ public class JobExecutionResult {
 
 	private long netRuntime;
 	private Map<String, Object> accumulatorResults;
+	private JobID jobID;
 
 	/**
 	 * Creates a new JobExecutionResult.
@@ -35,9 +36,10 @@ public class JobExecutionResult {
 	 * @param netRuntime The net runtime of the job (excluding pre-flight phase like the optimizer)
 	 * @param accumulators A map of all accumulators produced by the job.
 	 */
-	public JobExecutionResult(long netRuntime, Map<String, Object> accumulators) {
+	public JobExecutionResult(JobID jobID, long netRuntime, Map<String, Object> accumulators) {
 		this.netRuntime = netRuntime;
 		this.accumulatorResults = accumulators;
+		this.jobID = jobID;
 	}
 
 	/**
@@ -90,6 +92,15 @@ public class JobExecutionResult {
 							+ "' should be Integer but has type " + result.getClass());
 		}
 		return (Integer) result;
+	}
+
+	/**
+	 * Returns the JobID assigned to the job by the Flink runtime.
+	 *
+	 * @return jobID, or null if the job has been executed on a runtime without JobIDs or if the execution failed.
+	 */
+	public JobID getJobID() {
+		return jobID;
 	}
 
 	// TODO Create convenience methods for the other shipped accumulator types

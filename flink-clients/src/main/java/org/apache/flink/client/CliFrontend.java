@@ -66,7 +66,7 @@ import org.apache.flink.runtime.messages.JobManagerMessages;
 import org.apache.flink.runtime.security.SecurityUtils;
 import org.apache.flink.runtime.util.EnvironmentInformation;
 import org.apache.flink.runtime.yarn.AbstractFlinkYarnClient;
-import org.apache.flink.runtime.jobgraph.JobID;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.jobmanager.JobManager;
 import org.apache.flink.runtime.messages.JobManagerMessages.CancelJob;
@@ -589,10 +589,22 @@ public class CliFrontend {
 			program.deleteExtractedLibraries();
 		}
 
-		LOG.info("Program execution finished");
+		if(wait) {
+			LOG.info("Program execution finished");
+		}
 
 		// we come here after the job has finished
 		if (execResult != null) {
+			// if the job has been submitted to a detached YARN cluster, there won't be any
+			// exec results, but the object will be set (for the job id)
+			if(yarnCluster != null && yarnCluster.isDetached()) {
+				if(execResult.getJobID() == null) {
+					throw new RuntimeException("Error while starting job. No Job ID set.");
+				}
+				yarnCluster.stopAfterJob(execResult.getJobID());
+				System.out.println("The Job has been submitted with JobID "+execResult.getJobID());
+				return 0;
+			}
 			System.out.println("Job Runtime: " + execResult.getNetRuntime());
 			Map<String, Object> accumulatorsResult = execResult.getAllAccumulatorResults();
 			if (accumulatorsResult.size() > 0) {
@@ -774,10 +786,6 @@ public class CliFrontend {
 					System.err.println("Thread is interrupted");
 					Thread.currentThread().interrupt();
 				}
-			}
-			// we needed the connection only until all TMs are registered.
-			if(yarnCluster.isDetached()) {
-				yarnCluster.disconnect();
 			}
 		}
 		else {
