@@ -22,7 +22,7 @@ import java.net.InetSocketAddress
 
 import akka.actor._
 import akka.pattern.ask
-import org.apache.flink.configuration.GlobalConfiguration
+import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.akka.AkkaUtils
 import org.apache.flink.runtime.jobmanager.JobManager
@@ -34,7 +34,8 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-class ApplicationClient extends Actor with ActorLogMessages with ActorLogging {
+class ApplicationClient(flinkConfig: Configuration) extends Actor
+  with ActorLogMessages with ActorLogging {
   import context._
 
   val INITIAL_POLLING_DELAY = 0 seconds
@@ -52,7 +53,7 @@ class ApplicationClient extends Actor with ActorLogMessages with ActorLogging {
   override def preStart(): Unit = {
     super.preStart()
 
-    timeout = AkkaUtils.getTimeout(GlobalConfiguration.getConfiguration())
+    timeout = AkkaUtils.getTimeout(flinkConfig)
   }
 
   override def postStop(): Unit = {

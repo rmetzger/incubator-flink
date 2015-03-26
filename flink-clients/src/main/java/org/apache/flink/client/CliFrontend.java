@@ -576,7 +576,7 @@ public class CliFrontend {
 	// --------------------------------------------------------------------------------------------
 
 	protected int executeProgram(PackagedProgram program, Client client, int parallelism, boolean wait) {
-		LOG.info("Starting execution or program");
+		LOG.info("Starting execution of program");
 		JobExecutionResult execResult;
 		try {
 			client.setPrintStatusDuringExecution(true);
