@@ -593,7 +593,7 @@ public class CliFrontend {
 			LOG.info("Program execution finished");
 		}
 
-		// we come here after the job has finished
+		// we come here after the job has finished (or the job has been submitted)
 		if (execResult != null) {
 			// if the job has been submitted to a detached YARN cluster, there won't be any
 			// exec results, but the object will be set (for the job id)
@@ -602,6 +602,7 @@ public class CliFrontend {
 					throw new RuntimeException("Error while starting job. No Job ID set.");
 				}
 				yarnCluster.stopAfterJob(execResult.getJobID());
+				yarnCluster.disconnect();
 				System.out.println("The Job has been submitted with JobID "+execResult.getJobID());
 				return 0;
 			}
