@@ -182,6 +182,8 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		pollingRunner.setDaemon(true);
 		pollingRunner.start();
 
+		Runtime.getRuntime().addShutdownHook(clientShutdownHook);
+
 		isConnected = true;
 	}
 
@@ -192,7 +194,9 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		}
 		LOG.info("Disconnecting FlinkYarnCluster from ApplicationMaster");
 
-		Runtime.getRuntime().removeShutdownHook(clientShutdownHook);
+		if(!Runtime.getRuntime().removeShutdownHook(clientShutdownHook)) {
+			LOG.warn("Error while removing the shutdown hook. The YARN session might be killed unintentionally");
+		}
 		// tell the actor to shut down.
 		applicationClient.tell(Messages.getLocalUnregisterClient(), applicationClient);
 
@@ -436,6 +440,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	public class ClientShutdownHook extends Thread {
 		@Override
 		public void run() {
+			LOG.info("Shutting down FlinkYarnCluster from the client shutdown hook");
 			shutdownInternal(false);
 		}
 	}

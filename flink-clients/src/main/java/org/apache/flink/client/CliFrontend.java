@@ -311,7 +311,7 @@ public class CliFrontend {
 			return handleError(t);
 		}
 		finally {
-			if (yarnCluster != null) {
+			if (yarnCluster != null && !yarnCluster.isDetached()) {
 				logAndSysout("Shutting down YARN cluster");
 				yarnCluster.shutdown();
 			}

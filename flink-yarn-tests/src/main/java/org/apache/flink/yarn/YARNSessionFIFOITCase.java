@@ -437,8 +437,8 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	 * Test a fire-and-forget job submission to a YARN cluster.
 	 */
 	@Test(timeout=60000)
-	public void detachedPerJobYarnCluster() {
-		LOG.info("Starting detachedPerJobYarnCluster()");
+	public void testDetachedPerJobYarnCluster() {
+		LOG.info("Starting testDetachedPerJobYarnCluster()");
 
 		File exampleJarLocation = YarnTestBase.findFile("..", new ContainsName("-WordCount.jar", "streaming")); // exclude streaming wordcount here.
 		Assert.assertNotNull("Could not find wordcount jar", exampleJarLocation);
@@ -453,6 +453,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 
 		Assert.assertEquals(2, getRunningContainers());
 		Assert.assertFalse("The runner should detach.", runner.isAlive());
+		LOG.info("CLI Frontend has returned, so the job is running");
 
 		// find out the application id and wait until it has finished.
 		try {
@@ -461,8 +462,9 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			yc.start();
 			List<ApplicationReport> apps = yc.getApplications(EnumSet.of(YarnApplicationState.RUNNING));
 			Assert.assertEquals(1, apps.size()); // Only one running
-			ApplicationId id = apps.get(0).getApplicationId();
+			final ApplicationId id = apps.get(0).getApplicationId();
 
+			LOG.info("waiting for the job with appId {} to finish", id);
 			// wait until the app has finished
 			while(yc.getApplications(EnumSet.of(YarnApplicationState.RUNNING)).size() == 0) {
 				sleep(500);
@@ -472,9 +474,11 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			File taskmanagerOut = YarnTestBase.findFile("..", new FilenameFilter() {
 				@Override
 				public boolean accept(File dir, String name) {
-					return name.contains("taskmanager") && name.contains("stdout");
+					return name.contains("taskmanager") && name.contains("stdout") && dir.getAbsolutePath().contains(id.toString());
 				}
 			});
+			Assert.assertNotNull("Taskmanager output not found", taskmanagerOut);
+			LOG.info("The job has finished. TaskManager output file found {}", taskmanagerOut.getAbsolutePath());
 			String content = FileUtils.readFileToString(taskmanagerOut);
 			// check for some of the wordcount outputs.
 			Assert.assertTrue("Expected string '(all,2)' not found ", content.contains("(all,2)"));
@@ -485,7 +489,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			Assert.fail();
 		}
 
-		LOG.info("Finished detachedPerJobYarnCluster()");
+		LOG.info("Finished testDetachedPerJobYarnCluster()");
 	}
 
 	/**
