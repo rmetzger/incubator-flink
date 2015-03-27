@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.api.common.Plan;
 import org.apache.flink.api.common.PlanExecutor;
 import org.apache.flink.client.program.Client;
@@ -35,11 +36,13 @@ import org.apache.flink.client.program.PackagedProgram;
 import org.apache.flink.optimizer.plan.OptimizedPlan;
 import org.apache.flink.optimizer.plandump.PlanJSONDumpGenerator;
 import org.apache.flink.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RemoteExecutor extends PlanExecutor {
+	private static final Logger LOG = LoggerFactory.getLogger(RemoteExecutor.class);
 
 	private final List<String> jarFiles;
-	
 	private final InetSocketAddress address;
 	
 	public RemoteExecutor(String hostname, int port) {
@@ -87,7 +90,13 @@ public class RemoteExecutor extends PlanExecutor {
 	
 	public JobExecutionResult executePlanWithJars(JobWithJars p) throws Exception {
 		Client c = new Client(this.address, new Configuration(), p.getUserCodeClassLoader(), -1);
-		return c.run(p, -1, true);
+		JobSubmissionResult result = c.run(p, -1, true);
+		if(result instanceof JobExecutionResult) {
+			return (JobExecutionResult) result;
+		} else {
+			LOG.warn("The Client didn't return a JobExecutionResult");
+			return new JobExecutionResult(result.getJobID(), -1, null);
+		}
 	}
 
 	public JobExecutionResult executeJar(String jarPath, String assemblerClass, String... args) throws Exception {
@@ -95,7 +104,13 @@ public class RemoteExecutor extends PlanExecutor {
 		PackagedProgram program = new PackagedProgram(jarFile, assemblerClass, args);
 		
 		Client c = new Client(this.address, new Configuration(), program.getUserCodeClassLoader(), -1);
-		return c.run(program.getPlanWithJars(), -1, true);
+		JobSubmissionResult result = c.run(program.getPlanWithJars(), -1, true);
+		if(result instanceof JobExecutionResult) {
+			return (JobExecutionResult) result;
+		} else {
+			LOG.warn("The Client didn't return a JobExecutionResult");
+			return new JobExecutionResult(result.getJobID(), -1, null);
+		}
 	}
 
 	@Override

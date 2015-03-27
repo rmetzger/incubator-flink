@@ -42,6 +42,7 @@ import akka.pattern.Patterns;
 import akka.util.Timeout;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.client.cli.CancelOptions;
 import org.apache.flink.client.cli.CliArgsException;
 import org.apache.flink.client.cli.CliFrontendParser;
@@ -577,7 +578,7 @@ public class CliFrontend {
 
 	protected int executeProgram(PackagedProgram program, Client client, int parallelism, boolean wait) {
 		LOG.info("Starting execution of program");
-		JobExecutionResult execResult;
+		JobSubmissionResult execResult;
 		try {
 			client.setPrintStatusDuringExecution(true);
 			execResult = client.run(program, parallelism, wait);
@@ -606,11 +607,16 @@ public class CliFrontend {
 				System.out.println("The Job has been submitted with JobID "+execResult.getJobID());
 				return 0;
 			}
-			System.out.println("Job Runtime: " + execResult.getNetRuntime());
-			Map<String, Object> accumulatorsResult = execResult.getAllAccumulatorResults();
-			if (accumulatorsResult.size() > 0) {
-				System.out.println("Accumulator Results: ");
-				System.out.println(AccumulatorHelper.getResultsFormated(accumulatorsResult));
+			if(execResult instanceof JobSubmissionResult) {
+				JobExecutionResult result = (JobExecutionResult) execResult;
+				System.out.println("Job Runtime: " + result.getNetRuntime());
+				Map<String, Object> accumulatorsResult = result.getAllAccumulatorResults();
+				if (accumulatorsResult.size() > 0) {
+					System.out.println("Accumulator Results: ");
+					System.out.println(AccumulatorHelper.getResultsFormated(accumulatorsResult));
+				}
+			} else {
+				LOG.info("The Job did not return an execution result");
 			}
 		}
 		return 0;

@@ -139,7 +139,7 @@ public class ClientTest {
 			jobManagerSystem.actorOf(Props.create(SuccessReturningActor.class), JobManager.JOB_MANAGER_NAME());
 
 			Client out = new Client(config, getClass().getClassLoader());
-			JobExecutionResult result = out.run(program.getPlanWithJars(), -1, false);
+			JobExecutionResult result = (JobExecutionResult) out.run(program.getPlanWithJars(), -1, false);
 
 			assertNotNull(result);
 			assertEquals(-1, result.getNetRuntime());

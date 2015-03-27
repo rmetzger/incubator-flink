@@ -22,17 +22,22 @@ import java.io.File;
 import java.util.List;
 
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.api.common.Plan;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.ExecutionEnvironmentFactory;
 import org.apache.flink.optimizer.plan.OptimizedPlan;
 import org.apache.flink.optimizer.plandump.PlanJSONDumpGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Execution Environment for remote execution with the Client.
  */
 public class ContextEnvironment extends ExecutionEnvironment {
-	
+
+	private static final Logger LOG = LoggerFactory.getLogger(ContextEnvironment.class);
+
 	private final Client client;
 	
 	private final List<File> jarFilesToAttach;
@@ -51,8 +56,14 @@ public class ContextEnvironment extends ExecutionEnvironment {
 	public JobExecutionResult execute(String jobName) throws Exception {
 		Plan p = createProgramPlan(jobName);
 		JobWithJars toRun = new JobWithJars(p, this.jarFilesToAttach, this.userCodeClassLoader);
-		
-		return this.client.run(toRun, getParallelism(), true);
+
+		JobSubmissionResult result = this.client.run(toRun, getParallelism(), true);
+		if(result instanceof JobExecutionResult) {
+			return (JobExecutionResult) result;
+		} else {
+			LOG.warn("The Client didn't return a JobExecutionResult");
+			return new JobExecutionResult(result.getJobID(), -1, null);
+		}
 	}
 
 	@Override
@@ -60,7 +71,7 @@ public class ContextEnvironment extends ExecutionEnvironment {
 		Plan p = createProgramPlan("unnamed job");
 		
 		OptimizedPlan op = (OptimizedPlan) this.client.getOptimizedPlan(p, getParallelism());
-		
+
 		PlanJSONDumpGenerator gen = new PlanJSONDumpGenerator();
 		return gen.getOptimizerPlanAsJSON(op);
 	}
