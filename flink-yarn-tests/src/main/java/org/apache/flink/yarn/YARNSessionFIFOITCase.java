@@ -311,24 +311,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	}
 
 	/**
-	 * Test requesting more resources than available.
-	 */
-	@Test
-	public void testMoreNodesThanAvailable() {
-		if(ignoreOnTravis()) {
-			return;
-		}
-		addTestAppender(FlinkYarnClient.class, Level.WARN);
-		LOG.info("Starting testMoreNodesThanAvailable()");
-		runWithArgs(new String[]{"-j", flinkUberjar.getAbsolutePath(),
-				"-n", "10",
-				"-jm", "512",
-				"-tm", "1024"}, "Number of connected TaskManagers changed to", null, RunTypes.YARN_SESSION); // the number of TMs depends on the speed of the test hardware
-		LOG.info("Finished testMoreNodesThanAvailable()");
-		checkForLogString("This YARN session requires 10752MB of memory in the cluster. There are currently only 8192MB available.");
-	}
-
-	/**
 	 * The test cluster has the following resources:
 	 * - 2 Nodes with 4096 MB each.
 	 * - RM_SCHEDULER_MINIMUM_ALLOCATION_MB is 512
@@ -443,14 +425,18 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		File exampleJarLocation = YarnTestBase.findFile("..", new ContainsName("-WordCount.jar", "streaming")); // exclude streaming wordcount here.
 		Assert.assertNotNull("Could not find wordcount jar", exampleJarLocation);
 
+		YarnClient yc = YarnClient.createYarnClient();
+		yc.init(yarnConfiguration);
+		yc.start();
+
 		Runner runner = startWithArgs(new String[]{"run", "-m", "yarn-cluster", "-yj", flinkUberjar.getAbsolutePath(),
-						"-yn", "1",
-						"-yjm", "512",
-						"-yD", "yarn.heap-cutoff-ratio=0.5", // test if the cutoff is passed correctly
-						"-ytm", "1024",
-						"--yarndetached", exampleJarLocation.getAbsolutePath()},
-				"Please also note that the temporary files of the YARN session in",
-				RunTypes.CLI_FRONTEND);
+					"-yn", "1",
+					"-yjm", "512",
+					"-yD", "yarn.heap-cutoff-ratio=0.5", // test if the cutoff is passed correctly
+					"-ytm", "1024",
+					"--yarndetached", exampleJarLocation.getAbsolutePath()},
+			"The Job has been submitted with JobID",
+			RunTypes.CLI_FRONTEND);
 
 		Assert.assertEquals(2, getRunningContainers());
 		Assert.assertFalse("The runner should detach.", runner.isAlive());
@@ -458,9 +444,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 
 		// find out the application id and wait until it has finished.
 		try {
-			YarnClient yc = YarnClient.createYarnClient();
-			yc.init(yarnConfiguration);
-			yc.start();
 			List<ApplicationReport> apps = yc.getApplications(EnumSet.of(YarnApplicationState.RUNNING));
 			Assert.assertEquals(1, apps.size()); // Only one running
 			final ApplicationId id = apps.get(0).getApplicationId();
@@ -527,6 +510,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		AbstractFlinkYarnCluster yarnCluster = null;
 		try {
 			yarnCluster = flinkYarnClient.deploy(null);
+			yarnCluster.connectToCluster();
 		} catch (Exception e) {
 			System.err.println("Error while deploying YARN cluster: "+e.getMessage());
 			LOG.warn("Failing test", e);
