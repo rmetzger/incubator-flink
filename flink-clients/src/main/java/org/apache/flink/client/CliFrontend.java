@@ -607,7 +607,7 @@ public class CliFrontend {
 				System.out.println("The Job has been submitted with JobID "+execResult.getJobID());
 				return 0;
 			}
-			if(execResult instanceof JobSubmissionResult) {
+			if(execResult instanceof JobExecutionResult) {
 				JobExecutionResult result = (JobExecutionResult) execResult;
 				System.out.println("Job Runtime: " + result.getNetRuntime());
 				Map<String, Object> accumulatorsResult = result.getAllAccumulatorResults();

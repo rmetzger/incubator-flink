@@ -24,6 +24,7 @@ import akka.actor.Status;
 import akka.actor.UntypedActor;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.api.common.Plan;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.optimizer.DataStatistics;
@@ -139,11 +140,9 @@ public class ClientTest {
 			jobManagerSystem.actorOf(Props.create(SuccessReturningActor.class), JobManager.JOB_MANAGER_NAME());
 
 			Client out = new Client(config, getClass().getClassLoader());
-			JobExecutionResult result = (JobExecutionResult) out.run(program.getPlanWithJars(), -1, false);
+			JobSubmissionResult result = out.run(program.getPlanWithJars(), -1, false);
 
 			assertNotNull(result);
-			assertEquals(-1, result.getNetRuntime());
-			assertNull(result.getAllAccumulatorResults());
 
 			program.deleteExtractedLibraries();
 
