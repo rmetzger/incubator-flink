@@ -43,13 +43,16 @@ public class ContextEnvironment extends ExecutionEnvironment {
 	private final List<File> jarFilesToAttach;
 	
 	private final ClassLoader userCodeClassLoader;
+
+	private final boolean wait;
 	
 	
 	
-	public ContextEnvironment(Client remoteConnection, List<File> jarFiles, ClassLoader userCodeClassLoader) {
+	public ContextEnvironment(Client remoteConnection, List<File> jarFiles, ClassLoader userCodeClassLoader, boolean wait) {
 		this.client = remoteConnection;
 		this.jarFilesToAttach = jarFiles;
 		this.userCodeClassLoader = userCodeClassLoader;
+		this.wait = wait;
 	}
 
 	@Override
@@ -57,7 +60,7 @@ public class ContextEnvironment extends ExecutionEnvironment {
 		Plan p = createProgramPlan(jobName);
 		JobWithJars toRun = new JobWithJars(p, this.jarFilesToAttach, this.userCodeClassLoader);
 
-		JobSubmissionResult result = this.client.run(toRun, getParallelism(), true);
+		JobSubmissionResult result = this.client.run(toRun, getParallelism(), wait);
 		if(result instanceof JobExecutionResult) {
 			return (JobExecutionResult) result;
 		} else {
@@ -94,15 +97,15 @@ public class ContextEnvironment extends ExecutionEnvironment {
 	// --------------------------------------------------------------------------------------------
 	
 	static void setAsContext(Client client, List<File> jarFilesToAttach, 
-				ClassLoader userCodeClassLoader, int defaultParallelism)
+				ClassLoader userCodeClassLoader, int defaultParallelism, boolean wait)
 	{
-		initializeContextEnvironment(new ContextEnvironmentFactory(client, jarFilesToAttach, userCodeClassLoader, defaultParallelism));
+		initializeContextEnvironment(new ContextEnvironmentFactory(client, jarFilesToAttach, userCodeClassLoader, defaultParallelism, wait));
 	}
 	
 	protected static void enableLocalExecution(boolean enabled) {
 		ExecutionEnvironment.enableLocalExecution(enabled);
 	}
-	
+
 	// --------------------------------------------------------------------------------------------
 	
 	public static class ContextEnvironmentFactory implements ExecutionEnvironmentFactory {
@@ -114,20 +117,23 @@ public class ContextEnvironment extends ExecutionEnvironment {
 		private final ClassLoader userCodeClassLoader;
 		
 		private final int defaultParallelism;
+
+		private final boolean wait;
 		
 
 		public ContextEnvironmentFactory(Client client, List<File> jarFilesToAttach, 
-				ClassLoader userCodeClassLoader, int defaultParallelism)
+				ClassLoader userCodeClassLoader, int defaultParallelism, boolean wait)
 		{
 			this.client = client;
 			this.jarFilesToAttach = jarFilesToAttach;
 			this.userCodeClassLoader = userCodeClassLoader;
 			this.defaultParallelism = defaultParallelism;
+			this.wait = wait;
 		}
 		
 		@Override
 		public ExecutionEnvironment createExecutionEnvironment() {
-			ContextEnvironment env = new ContextEnvironment(client, jarFilesToAttach, userCodeClassLoader);
+			ContextEnvironment env = new ContextEnvironment(client, jarFilesToAttach, userCodeClassLoader, wait);
 			if (defaultParallelism > 0) {
 				env.setParallelism(defaultParallelism);
 			}

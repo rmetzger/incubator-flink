@@ -265,9 +265,8 @@ public class Client {
 		}
 		else if (prog.isUsingInteractiveMode()) {
 			LOG.info("Starting program in interactive mode");
-			ContextEnvironment.setAsContext(this, prog.getAllLibraries(), prog.getUserCodeClassLoader(), parallelism);
+			ContextEnvironment.setAsContext(this, prog.getAllLibraries(), prog.getUserCodeClassLoader(), parallelism, wait);
 			ContextEnvironment.enableLocalExecution(false);
-
 			// invoke here
 			try {
 				prog.invokeInteractiveModeForExecution();
