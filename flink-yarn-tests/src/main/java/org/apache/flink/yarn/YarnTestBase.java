@@ -324,8 +324,8 @@ public abstract class YarnTestBase {
 			Assert.fail(e.getMessage());
 		}
 		System.setProperty("user.home", homeDir.getAbsolutePath());
-		String uberjarStartLoc = oldHome+"/..";
-		LOG.info("Trying to locate uberjar in {}", uberjarStartLoc);
+		String uberjarStartLoc = "..";
+		LOG.info("Trying to locate uberjar in {}", new File(uberjarStartLoc));
 		flinkUberjar = findFile(uberjarStartLoc, new RootDirFilenameFilter());
 		Assert.assertNotNull("Flink uberjar not found", flinkUberjar);
 		String flinkDistRootDir = flinkUberjar.getParentFile().getParent();

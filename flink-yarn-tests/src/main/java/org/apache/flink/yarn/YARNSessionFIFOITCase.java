@@ -439,7 +439,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			RunTypes.CLI_FRONTEND);
 
 		// it should usually be 2, but on slow machines, the number varies
-		Assert.assertTrue(2 <= getRunningContainers());
+		Assert.assertTrue("There should be at most 2 containers running", getRunningContainers() <= 2);
 		Assert.assertFalse("The runner should detach.", runner.isAlive());
 		LOG.info("CLI Frontend has returned, so the job is running");
 
