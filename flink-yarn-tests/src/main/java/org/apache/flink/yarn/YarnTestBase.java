@@ -93,7 +93,7 @@ public abstract class YarnTestBase {
 	protected static File flinkUberjar;
 
 	protected static final Configuration yarnConfiguration;
-	protected static final String oldHome = System.getenv("user.env");
+	protected static final String oldHome = System.getenv("user.home");
 
 	static {
 		yarnConfiguration = new YarnConfiguration();
@@ -540,12 +540,17 @@ public abstract class YarnTestBase {
 			yarnCluster.stop();
 			yarnCluster = null;
 		}
+		// When we are on travis, we copy the tmp files of JUnit (containing the MiniYARNCluster log files)
+		// to <flinkRoot>/target/flink-yarn-tests-*.
+		// The files from there are picked up by the ./tools/travis_watchdog.sh script
+		// to upload them to Amazon S3.
 		if(isOnTravis()) {
 			File target = new File(oldHome + "/target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
 			if(!target.mkdirs()) {
 				LOG.warn("Error creating dirs to {}", target);
 			}
-			File src = new File("/target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
+			File src = new File("target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
+			LOG.info("copying the final files from {} to {}:", src, target);
 			try {
 				FileUtils.copyDirectoryToDirectory(src, target);
 			} catch (IOException e) {
