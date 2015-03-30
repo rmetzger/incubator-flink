@@ -93,7 +93,7 @@ public abstract class YarnTestBase {
 	protected static File flinkUberjar;
 
 	protected static final Configuration yarnConfiguration;
-	protected static final String oldHome = System.getenv("user.home");
+	protected static final String oldHome = System.getProperty("user.home");
 
 	static {
 		yarnConfiguration = new YarnConfiguration();
@@ -315,7 +315,7 @@ public abstract class YarnTestBase {
 	}
 
 	public static void startYARNWithConfig(Configuration conf) {
-		// set the home directory to a tmp directory. Flink on YARN is using the home dir to distribute the files
+		// set the home directory to a tmp directory. Flink on YARN is using the home dir to distribute the file
 		File homeDir = null;
 		try {
 			homeDir = tmp.newFolder();
@@ -324,8 +324,9 @@ public abstract class YarnTestBase {
 			Assert.fail(e.getMessage());
 		}
 		System.setProperty("user.home", homeDir.getAbsolutePath());
-
-		flinkUberjar = findFile("..", new RootDirFilenameFilter());
+		String uberjarStartLoc = oldHome+"/..";
+		LOG.info("Trying to locate uberjar in {}", uberjarStartLoc);
+		flinkUberjar = findFile(uberjarStartLoc, new RootDirFilenameFilter());
 		Assert.assertNotNull("Flink uberjar not found", flinkUberjar);
 		String flinkDistRootDir = flinkUberjar.getParentFile().getParent();
 
@@ -545,12 +546,12 @@ public abstract class YarnTestBase {
 		// The files from there are picked up by the ./tools/travis_watchdog.sh script
 		// to upload them to Amazon S3.
 		if(isOnTravis()) {
-			File target = new File(oldHome + "/target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
+			File target = new File("../target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
 			if(!target.mkdirs()) {
 				LOG.warn("Error creating dirs to {}", target);
 			}
-			File src = new File("target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
-			LOG.info("copying the final files from {} to {}:", src, target);
+			File src = tmp.getRoot(); //new File("target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
+			LOG.info("copying the final files from {} to {}", src, target);
 			try {
 				FileUtils.copyDirectoryToDirectory(src, target);
 			} catch (IOException e) {
