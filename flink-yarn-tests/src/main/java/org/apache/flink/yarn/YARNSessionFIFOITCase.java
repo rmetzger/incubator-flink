@@ -573,8 +573,9 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		LOG.info("Finished testJavaAPI()");
 	}
 
-	public boolean ignoreOnTravis() {
-		if(System.getenv("TRAVIS") != null && System.getenv("TRAVIS").equals("true")) {
+
+	public static boolean ignoreOnTravis() {
+		if(isOnTravis()) {
 			// we skip the test until we are able to start a smaller yarn clsuter
 			// right now, the miniyarncluster has the size of the nodemanagers fixed on 4 GBs.
 			LOG.warn("Skipping test on travis for now");

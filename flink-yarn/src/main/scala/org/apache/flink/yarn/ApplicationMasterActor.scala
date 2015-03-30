@@ -166,7 +166,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
       } else {
         if(stopWhenJobFinished != jobStatus.jobID) {
           LOG.warn(s"Received job status for job ${jobStatus.jobID} but expected status for " +
-            s"job ${stopWhenJobFinished}")
+            s"job $stopWhenJobFinished")
         } else {
           if(jobStatus.status.isTerminalState) {
             LOG.info(s"Job with ID ${jobStatus.jobID} is in terminal state ${jobStatus.status}. " +
@@ -269,7 +269,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
                             nmClient.startContainer(container, ctx)
                             runningContainers += 1
                             missingContainers -= 1
-                            val message = s"Launching container ${containersLaunched} " +
+                            val message = s"Launching container $containersLaunched " +
                               s"(${container.getId} on host ${container.getNodeId.getHost})."
                             log.info(message)
                             containersLaunched += 1
@@ -329,7 +329,8 @@ trait ApplicationMasterActor extends ActorLogMessages {
             allocatedContainersList.clear()
           }
 
-          if(failedContainers >= maxFailedContainers) {
+          // maxFailedContainers == -1 is infinite number of retries.
+          if(maxFailedContainers != -1 && failedContainers >= maxFailedContainers) {
             val msg = s"Stopping YARN session because the number of failed " +
               s"containers ($failedContainers) exceeded the maximum failed container " +
               s"count ($maxFailedContainers). This number is controlled by " +
@@ -476,7 +477,7 @@ trait ApplicationMasterActor extends ActorLogMessages {
   private def tryToReturnContainers(returnRequest: mutable.Set[PreemptionContainer]): Unit = {
     for(requestedBackContainers <- returnRequest) {
       allocatedContainersList = allocatedContainersList.dropWhile( container => {
-        val result = requestedBackContainers.equals(container)
+        val result = requestedBackContainers.getId.equals(container.getId)
         if(result) {
           log.info("Returning container {} back to ResourceManager.", container)
         }

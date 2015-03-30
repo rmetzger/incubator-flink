@@ -18,6 +18,7 @@
 
 package org.apache.flink.yarn;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.flink.client.CliFrontend;
 import org.apache.flink.client.FlinkYarnSessionCli;
 import org.apache.hadoop.conf.Configuration;
@@ -92,6 +93,7 @@ public abstract class YarnTestBase {
 	protected static File flinkUberjar;
 
 	protected static final Configuration yarnConfiguration;
+	protected static final String oldHome = System.getenv("user.env");
 
 	static {
 		yarnConfiguration = new YarnConfiguration();
@@ -208,6 +210,7 @@ public abstract class YarnTestBase {
 			return name.startsWith("flink-dist") && name.endsWith(".jar") && dir.toString().contains("/lib");
 		}
 	}
+
 	public static class ContainsName implements FilenameFilter {
 		private String name;
 		private String excludeInPath = null;
@@ -533,10 +536,26 @@ public abstract class YarnTestBase {
 	public static void tearDown() {
 		//shutdown YARN cluster
 		if (yarnCluster != null) {
-			LOG.info("shutdown MiniYarn cluster");
+			LOG.info("Shutting down MiniYarn cluster");
 			yarnCluster.stop();
 			yarnCluster = null;
 		}
+		if(isOnTravis()) {
+			File target = new File(oldHome + "/target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
+			if(!target.mkdirs()) {
+				LOG.warn("Error creating dirs to {}", target);
+			}
+			File src = new File("/target/"+yarnConfiguration.get(TEST_CLUSTER_NAME_KEY));
+			try {
+				FileUtils.copyDirectoryToDirectory(src, target);
+			} catch (IOException e) {
+				LOG.warn("Error copying the final files from {} to {}: msg: {}", src, target, e.getMessage(), e);
+			}
+		}
+	}
+
+	public static boolean isOnTravis() {
+		return System.getenv("TRAVIS") != null && System.getenv("TRAVIS").equals("true");
 	}
 
 }
