@@ -45,7 +45,6 @@ import org.codehaus.jettison.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -524,7 +523,6 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 	/**
 	 * Test a fire-and-forget job submission to a YARN cluster.
 	 */
-	@Ignore
 	@Test(timeout=60000)
 	public void testDetachedPerJobYarnClusterWithStreamingJob() {
 		LOG.info("Starting testDetachedPerJobYarnClusterWithStreamingJob()");

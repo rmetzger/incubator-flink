@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.flink.api.common.Plan;
+import org.apache.flink.runtime.execution.librarycache.BlobLibraryCacheManager;
 
 public class JobWithJars {
 	
@@ -115,7 +116,7 @@ public class JobWithJars {
 			// this should not happen, as all files should have been checked before for proper paths and existence.
 			throw new RuntimeException("Cannot create class loader for program jar files: " + e.getMessage(), e);
 		}
-		
-		return new URLClassLoader(urls, parent);
+
+		return new BlobLibraryCacheManager.FlinkUserCodeClassLoader(urls, parent);
 	}
 }
