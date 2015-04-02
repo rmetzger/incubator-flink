@@ -200,7 +200,7 @@ under the License.
                 <version>2.4.1</version>
                 <configuration>
                     <descriptors>
-                        <descriptor>src/assembly/flink-fat-jar.xml</descriptor>
+                        <descriptor>${basedir}/src/assembly/flink-fat-jar.xml</descriptor>
                     </descriptors>
                     <archive>
                         <manifest>
