@@ -55,7 +55,7 @@ public class TPCHGeneratorExample {
 		
 		oxl.print();
 		// execute program
-		env.execute("Flink Java API Skeleton");
+		env.execute("TPC-H Generator Example");
 	}
 	
 	//
