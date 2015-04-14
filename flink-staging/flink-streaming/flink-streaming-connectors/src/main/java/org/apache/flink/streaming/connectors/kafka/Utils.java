@@ -20,21 +20,32 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.api.java.typeutils.runtime.ByteArrayInputView;
+import org.apache.flink.runtime.util.DataOutputSerializer;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.SerializationSchema;
 
-public class Utils {
-	public static class TypeInformationSerializationSchema<T> implements DeserializationSchema<T>, SerializationSchema<T, byte[]> {
-		private final TypeSerializer<T> serializer;
+import java.io.IOException;
 
-		public TypeInformationSerializationSchema(Class<T> type, ExecutionConfig ec) {
-			TypeInformation<T> ti = (TypeInformation<T>) TypeExtractor.createTypeInfo(type);
+public class Utils {
+	public static class TypeInformationSerializationSchema<T>
+			implements DeserializationSchema<T>, SerializationSchema<T, byte[]>, ResultTypeQueryable<T> {
+		private final TypeSerializer<T> serializer;
+		private final TypeInformation<T> ti;
+
+		public TypeInformationSerializationSchema(Object type, ExecutionConfig ec) {
+			this.ti = (TypeInformation<T>) TypeExtractor.getForObject(type);
 			this.serializer = ti.createSerializer(ec);
 		}
 		@Override
 		public T deserialize(byte[] message) {
-			return serializer.deserialize();
+			try {
+				return serializer.deserialize(new ByteArrayInputView(message));
+			} catch (IOException e) {
+				throw new RuntimeException("Unable to deserialize message", e);
+			}
 		}
 
 		@Override
@@ -44,7 +55,18 @@ public class Utils {
 
 		@Override
 		public byte[] serialize(T element) {
-			return new byte[0];
+			DataOutputSerializer dos = new DataOutputSerializer(16);
+			try {
+				serializer.serialize(element, dos);
+			} catch (IOException e) {
+				throw new RuntimeException("Unable to serialize record", e);
+			}
+			return dos.getByteArray();
+		}
+
+		@Override
+		public TypeInformation<T> getProducedType() {
+			return ti;
 		}
 	}
 }

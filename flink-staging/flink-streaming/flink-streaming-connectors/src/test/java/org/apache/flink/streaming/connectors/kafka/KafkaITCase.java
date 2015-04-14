@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.curator.test.TestingServer;
@@ -325,49 +326,32 @@ public class KafkaITCase {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
 
 		// add consuming topology:
-		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new PersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), 5000, 100, Offset.FROM_BEGINNING));
-		consuming.addSink(new SinkFunction<Tuple2<Long, String>>() {
+		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
+				new PersistentKafkaSource<Tuple2<Long, byte[]>>(zookeeperConnectionString, topic,
+						new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig()), 5000, 100, Offset.FROM_BEGINNING));
+		consuming.addSink(new SinkFunction<Tuple2<Long, byte[]>>() {
 			int elCnt = 0;
 			int start = -1;
 			BitSet validator = new BitSet(101);
 
 			@Override
-			public void invoke(Tuple2<Long, String> value) throws Exception {
-				LOG.info("Got " + value);
-				String[] sp = value.f1.split("-");
-				int v = Integer.parseInt(sp[1]);
-
-				assertEquals(value.f0 - 1000, (long) v);
-
-				if (start == -1) {
-					start = v;
-				}
-				Assert.assertFalse("Received tuple twice", validator.get(v - start));
-				validator.set(v - start);
-				elCnt++;
-				if (elCnt == 100) {
-					// check if everything in the bitset is set to true
-					int nc;
-					if ((nc = validator.nextClearBit(0)) != 100) {
-						throw new RuntimeException("The bitset was not set to 1 on all elements. Next clear:" + nc + " Set: " + validator);
-					}
-					throw new SuccessException();
-				}
+			public void invoke(Tuple2<Long, byte[]> value) throws Exception {
+				LOG.info("Got " + value.f1.length);
 			}
 		});
 
 		// add producing topology
-		DataStream<Tuple2<Long, String>> stream = env.addSource(new SourceFunction<Tuple2<Long, String>>() {
+		DataStream<Tuple2<Long, byte[]>> stream = env.addSource(new SourceFunction<Tuple2<Long, byte[]>>() {
 			private static final long serialVersionUID = 1L;
 			boolean running = true;
 
 			@Override
-			public void run(Collector<Tuple2<Long, String>> collector) throws Exception {
+			public void run(Collector<Tuple2<Long, byte[]>> collector) throws Exception {
 				LOG.info("Starting source.");
 				int cnt = 0;
+				Random rnd = new Random(1337);
 				while (running) {
-					collector.collect(new Tuple2<Long, String>(1000L + cnt, "kafka-" + cnt++));
+					collector.collect(new Tuple2<Long, byte[]>(1000L + cnt, new byte[Math.abs(rnd.nextInt(1024 * 1024 * 30))]));
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException ignored) {
@@ -381,7 +365,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema()));
+		stream.addSink(new KafkaSink<Tuple2<Long, byte[]>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig())));
 
 		try {
 			env.setParallelism(1);
