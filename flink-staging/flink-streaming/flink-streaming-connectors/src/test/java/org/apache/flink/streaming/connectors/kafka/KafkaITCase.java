@@ -262,7 +262,7 @@ public class KafkaITCase {
 
 			@Override
 			public void invoke(Tuple2<Long, String> value) throws Exception {
-				LOG.debug("Got value " + value);
+				LOG.info("Got value " + value);
 				String[] sp = value.f1.split("-");
 				int v = Integer.parseInt(sp[1]);
 
@@ -404,7 +404,7 @@ public class KafkaITCase {
 					//
 					byte[] wl = new byte[Math.abs(rnd.nextInt(1024 * 1024 * 30))];
 					collector.collect(new Tuple2<Long, byte[]>(cnt++, wl));
-					LOG.info("Emmitted cnt=" + (cnt - 1) + " with byte.length = " + wl.length);
+					LOG.info("Emitted cnt=" + (cnt - 1) + " with byte.length = " + wl.length);
 
 					try {
 						Thread.sleep(100);
@@ -847,8 +847,8 @@ public class KafkaITCase {
 		private static final long serialVersionUID = 1L;
 	}
 
-	@Test
-	public void learnKafka() {
+/*	@Test
+	public void testKafkaWithoutFlink() {
 
 		// start consumer:
 		new Thread(new Runnable() {
@@ -914,6 +914,5 @@ public class KafkaITCase {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-
-	}
+	} */
 }

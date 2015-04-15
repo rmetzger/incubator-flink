@@ -140,6 +140,7 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 		props.setProperty("zookeeper.sync.time.ms", Integer.toString(zookeeperSyncTimeMillis));
 		props.setProperty(WAIT_ON_EMPTY_FETCH_KEY, Integer.toString(waitOnEmptyFetchMillis));
 		props.setProperty("zookeeper.connect", zookeeperAddress);
+		props.setProperty("group.id", "flink-persistent-kafka-source");
 		return new ConsumerConfig(props);
 	}
 
