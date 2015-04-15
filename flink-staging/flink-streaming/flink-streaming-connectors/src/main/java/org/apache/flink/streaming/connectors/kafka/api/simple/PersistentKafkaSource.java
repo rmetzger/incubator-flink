@@ -66,8 +66,6 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 
 	private transient Map<Integer, KafkaOffset> partitions;
 
-	private volatile boolean isRunning = false;
-
 	/**
 	 * Creates a persistent Kafka source that consumes a topic.
 	 * If there is are no new messages on the topic, this consumer will wait
@@ -158,6 +156,7 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void open(Configuration parameters) throws InterruptedException {
+		LOG.info("Starting PersistentKafkaSource");
 		StreamingRuntimeContext context = (StreamingRuntimeContext) getRuntimeContext();
 		int indexOfSubtask = context.getIndexOfThisSubtask();
 		int numberOfSubtasks = context.getNumberOfParallelSubtasks();
@@ -189,7 +188,7 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 			iterator = new KafkaMultiplePartitionsIterator(topicId, partitions, kafkaTopicUtils, waitOnEmptyFetchMillis, connectTimeoutMs, bufferSize);
 
 			if (LOG.isInfoEnabled()) {
-				LOG.info("KafkaSource ({}/{}) listening to partitions {} of topic {}.",
+				LOG.info("PersistentKafkaSource ({}/{}) listening to partitions {} of topic {}.",
 						indexOfSubtask + 1, numberOfSubtasks, partitions.keySet(), topicId);
 			}
 		}
@@ -199,9 +198,8 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 
 	@Override
 	public void run(Collector<OUT> collector) throws Exception {
-		isRunning = true;
 		MessageWithMetadata msg;
-		while (isRunning && iterator.hasNext()) {
+		while (iterator.hasNext()) {
 			msg = iterator.nextWithOffset();
 			OUT out = schema.deserialize(msg.getMessage());
 
@@ -229,5 +227,6 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 
 	@Override
 	public void cancel() {
+		LOG.info("PersistentKafkaSource has been cancelled");
 	}
 }
