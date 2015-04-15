@@ -356,29 +356,32 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>> serSchema = new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig());
+		Properties consumerProps = new Properties();
+		consumerProps.setProperty("fetch.message.max.bytes", Integer.toString(1024 * 1024 * 30));
+		consumerProps.setProperty("zookeeper.connect", zookeeperConnectionString);
+		consumerProps.setProperty("group.id", "test");
+
+		ConsumerConfig cc = new ConsumerConfig(consumerProps);
 		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
-				new PersistentKafkaSource<Tuple2<Long, byte[]>>(zookeeperConnectionString, topic, serSchema, 5000, 100, Offset.FROM_BEGINNING));
-		consuming.addSink(new RichSinkFunction<Tuple2<Long, byte[]>>() {
+				new PersistentKafkaSource<Tuple2<Long, byte[]>>(topic, serSchema, Offset.FROM_BEGINNING, cc));
+
+		consuming.addSink(new SinkFunction<Tuple2<Long, byte[]>>() {
 			int elCnt = 0;
-			BitSet validator = new BitSet(101);
-
-			@Override
-			public void open(Configuration parameters) throws Exception {
-				LOG.info("++++++ STARTING SINK ++++++++");
-				super.open(parameters);
-				LOG.info("+++++++ SINK STARTED +++++++++");
-			}
-
-			@Override
-			public void close() throws Exception {
-				super.close();
-				LOG.info("+++++++ STOPPING SINK ++++++");
-			}
 
 			@Override
 			public void invoke(Tuple2<Long, byte[]> value) throws Exception {
-				LOG.info("Got " + value.f1.length);
 				elCnt++;
+				if(value.f0 == -1) {
+					// we should have seen 11 elements now.
+					if(elCnt == 11) {
+						throw new SuccessException();
+					} else {
+						throw new RuntimeException("There have been "+elCnt+" elements");
+					}
+				}
+				if(elCnt > 10) {
+					throw new RuntimeException("More than 10 elements seen: "+elCnt);
+				}
 			}
 		});
 
@@ -389,9 +392,7 @@ public class KafkaITCase {
 
 			@Override
 			public void open(Configuration parameters) throws Exception {
-				Thread.sleep(10000);
 				super.open(parameters);
-				LOG.info("+++ starting producing topo");
 			}
 
 			@Override
@@ -400,8 +401,8 @@ public class KafkaITCase {
 				long cnt = 0;
 				Random rnd = new Random(1337);
 				while (running) {
-					// 1024 * 1024 *
-					byte[] wl = new byte[Math.abs(rnd.nextInt( 30))];
+					//
+					byte[] wl = new byte[Math.abs(rnd.nextInt(1024 * 1024 * 30))];
 					collector.collect(new Tuple2<Long, byte[]>(cnt++, wl));
 					LOG.info("Emmitted cnt=" + (cnt - 1) + " with byte.length = " + wl.length);
 
