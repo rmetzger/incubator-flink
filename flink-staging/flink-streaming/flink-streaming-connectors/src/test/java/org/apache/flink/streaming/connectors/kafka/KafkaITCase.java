@@ -176,7 +176,7 @@ public class KafkaITCase {
 
 			@Override
 			public void invoke(Tuple2<Long, String> value) throws Exception {
-				LOG.debug("Got " + value);
+				LOG.debug("Got value = " + value);
 				String[] sp = value.f1.split("-");
 				int v = Integer.parseInt(sp[1]);
 
@@ -302,7 +302,7 @@ public class KafkaITCase {
 				int cnt = 0;
 				while (running) {
 					collector.collect(new Tuple2<Long, String>(1000L + cnt, "kafka-" + cnt++));
-					LOG.info("Produced "+cnt);
+					LOG.info("Produced " + cnt);
 
 					try {
 						Thread.sleep(100);
@@ -355,9 +355,9 @@ public class KafkaITCase {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
 
 		// add consuming topology:
+		Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>> serSchema = new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig());
 		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
-				new PersistentKafkaSource<Tuple2<Long, byte[]>>(zookeeperConnectionString, topic,
-						new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig()), 5000, 100, Offset.FROM_BEGINNING));
+				new PersistentKafkaSource<Tuple2<Long, byte[]>>(zookeeperConnectionString, topic, serSchema, 5000, 100, Offset.FROM_BEGINNING));
 		consuming.addSink(new RichSinkFunction<Tuple2<Long, byte[]>>() {
 			int elCnt = 0;
 			BitSet validator = new BitSet(101);
@@ -400,9 +400,10 @@ public class KafkaITCase {
 				long cnt = 0;
 				Random rnd = new Random(1337);
 				while (running) {
-					byte[] wl = new byte[Math.abs(rnd.nextInt(1024 * 1024 * 30))];
+					// 1024 * 1024 *
+					byte[] wl = new byte[Math.abs(rnd.nextInt( 30))];
 					collector.collect(new Tuple2<Long, byte[]>(cnt++, wl));
-					LOG.info("Emmitted cnt="+(cnt-1)+" with byte.length = "+wl.length);
+					LOG.info("Emmitted cnt=" + (cnt - 1) + " with byte.length = " + wl.length);
 
 					try {
 						Thread.sleep(100);
@@ -751,8 +752,7 @@ public class KafkaITCase {
 					// check if everything in the bitset is set to true
 					int nc;
 					if ((nc = validator.nextClearBit(0)) != numOfMessagesToReceive) {
-//						throw new RuntimeException("The bitset was not set to 1 on all elements. Next clear:" + nc + " Set: " + validator);
-						System.out.println("The bitset was not set to 1 on all elements. Next clear:" + nc + " Set: " + validator);
+						throw new RuntimeException("The bitset was not set to 1 on all elements. Next clear:" + nc + " Set: " + validator);
 					}
 					throw new SuccessException();
 				} else if (elCnt == numOfMessagesToReceive) {
