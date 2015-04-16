@@ -407,3 +407,11 @@ LongAdder), which was released with the following comments:
     http://creativecommons.org/publicdomain/zero/1.0/
 
 
+-----------------------------------------------------------------------
+                     TPC-H data generator in "flink-contrib"
+-----------------------------------------------------------------------
+
+The TPC-H (Transaction Processing Performance Council, http://www.tpc.org/) data generator
+depends on https://github.com/airlift/tpch. The data generator contained in Apache Flink is not an
+offical data generator for generating TPC-H workloads for performance testing or reporting.
+Please use the "dbgen" tool from tpc.org if you are planning to conduct performance evaluations.

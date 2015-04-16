@@ -18,7 +18,6 @@ package org.apache.flink.contrib.api;
  * limitations under the License.
  */
 
-
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.functions.FormattingMapper;
 import org.apache.flink.api.java.io.TextOutputFormat;
@@ -28,8 +27,10 @@ import org.apache.flink.api.java.operators.DataSink;
  * Utilities for the {@see DataSet}.
  */
 public class DataSetUtilities {
-	public static <T> DataSink<T> printAsFormattedText(DataSet<String> ds, TextOutputFormat.TextFormatter<T> formatter) {
+	/**
+	 * Allow to pass custom formatters to the print method.
+	 */
+	public static <T> DataSink<String> printAsFormattedText(DataSet<T> ds, TextOutputFormat.TextFormatter<T> formatter) {
 		return ds.map(new FormattingMapper<T>(formatter)).print();
 	}
-
 }

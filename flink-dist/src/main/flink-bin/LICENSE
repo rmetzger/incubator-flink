@@ -246,6 +246,7 @@ under the Apache License (v 2.0):
  - json-simple (https://code.google.com/p/json-simple/)
  - Akka (http://akka.io)
  - Metrics (https://github.com/dropwizard/metrics)
+ - airlift/tpch (https://github.com/airlift/tpch)
  
 
 -----------------------------------------------------------------------

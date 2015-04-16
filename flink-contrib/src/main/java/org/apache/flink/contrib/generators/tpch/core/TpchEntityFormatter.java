@@ -19,11 +19,36 @@ package org.apache.flink.contrib.generators.tpch.core;
 
 import io.airlift.tpch.TpchEntity;
 import org.apache.flink.api.java.io.TextOutputFormat;
+import org.apache.flink.api.java.tuple.Tuple;
 
-public class TpchEntityFormatter<T extends TpchEntity> implements TextOutputFormat.TextFormatter<T> {
+/**
+ * This formatter is using TpchEntry.toLine() instead of toString().
+ * @param <T>
+ */
+public class TpchEntityFormatter<T> implements TextOutputFormat.TextFormatter<T> {
 
 	@Override
 	public String format(T value) {
-		return value.toLine();
+		return _format(value);
+	}
+
+	private static String _format(Object e) {
+		if(e instanceof Tuple) {
+			Tuple t = (Tuple) e;
+			StringBuilder r = new StringBuilder();
+			r.append("Tuple");
+			r.append(t.getArity());
+			r.append("(");
+			for(int i = 0; i < t.getArity(); i++) {
+				r.append(_format(t.getField(i)));
+				r.append(", ");
+			}
+			r.append(")");
+			return r.toString();
+		} else if(e instanceof TpchEntity) {
+			return ((TpchEntity) e).toLine();
+		} else {
+			return e.toString();
+		}
 	}
 }

@@ -27,7 +27,9 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.contrib.api.DataSetUtilities;
 import org.apache.flink.contrib.generators.tpch.core.DistributedTpch;
+import org.apache.flink.contrib.generators.tpch.core.TpchEntityFormatter;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -52,8 +54,9 @@ public class TPCHGeneratorExample {
 
 		DataSet<Tuple2<Order, LineItem>> oxl = orders.join(lineitem)
 				.where(selectKey("orderKey", Order.class)).equalTo(selectKey("orderKey", LineItem.class));
-		
-		oxl.print();
+
+		DataSetUtilities.printAsFormattedText(oxl, new TpchEntityFormatter<Tuple2<Order, LineItem>>());
+
 		// execute program
 		env.execute("TPC-H Generator Example");
 	}
