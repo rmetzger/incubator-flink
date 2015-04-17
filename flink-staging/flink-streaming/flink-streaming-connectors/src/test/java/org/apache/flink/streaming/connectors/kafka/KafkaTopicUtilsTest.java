@@ -37,6 +37,9 @@ import org.apache.curator.test.TestingServer;
 import org.apache.flink.runtime.net.NetUtils;
 import org.apache.flink.streaming.connectors.kafka.api.simple.KafkaTopicUtils;
 import org.apache.flink.streaming.connectors.kafka.util.KafkaLocalSystemTime;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -53,43 +56,79 @@ public class KafkaTopicUtilsTest {
 	private static final int NUMBER_OF_BROKERS = 2;
 	private static final String TOPIC = "myTopic";
 
-	@Rule
-	public TemporaryFolder tempFolder = new TemporaryFolder();
+	@ClassRule
+	public static TemporaryFolder tempFolder = new TemporaryFolder();
 
+	static int zkPort;
+	static String kafkaHost;
+	static String zookeeperConnectionString;
+
+	static File tmpZkDir;
+	static List<File> tmpKafkaDirs;
+	static Map<String, KafkaServer> kafkaServers = null;
+	static TestingServer zookeeper = null;
+
+	@BeforeClass
+	public static void startZookeeper() throws Exception {
+		LOG.info("Starting Zookeeper");
+
+		tmpZkDir = tempFolder.newFolder();
+
+		tmpKafkaDirs = new ArrayList<File>(NUMBER_OF_BROKERS);
+		for (int i = 0; i < NUMBER_OF_BROKERS; i++) {
+			tmpKafkaDirs.add(tempFolder.newFolder());
+		}
+
+		zkPort = NetUtils.getAvailablePort();
+		kafkaHost = InetAddress.getLocalHost().getHostName();
+		zookeeperConnectionString = "localhost:" + zkPort;
+
+		// init zookeeper
+		zookeeper = new TestingServer(zkPort, tmpZkDir);
+
+		// init kafka kafkaServers
+		kafkaServers = new HashMap<String, KafkaServer>();
+
+		for (int i = 0; i < NUMBER_OF_BROKERS; i++) {
+			KafkaServer kafkaServer = getKafkaServer(kafkaHost, zookeeperConnectionString, i, tmpKafkaDirs.get(i));
+			kafkaServers.put(kafkaServer.config().advertisedHostName() + ":" + kafkaServer.config().advertisedPort(), kafkaServer);
+		}
+	}
+
+	@AfterClass
+	public static void stopZookeeper() {
+		LOG.info("Shutting down all services");
+		for (KafkaServer broker : kafkaServers.values()) {
+			if (broker != null) {
+				broker.shutdown();
+				broker.awaitShutdown();
+			}
+		}
+
+		if (zookeeper != null) {
+			try {
+				zookeeper.stop();
+			} catch (IOException e) {
+				LOG.warn("ZK.stop() failed", e);
+			}
+		}
+	}
+
+
+	/**
+	 * Ensure that Zookeeper is starting / stopping without issues.
+	 */
+	@Test
+	public void testClearStartStopOfZookeeper() {
+		LOG.info("Starting testClearStartStopOfZookeeper()");
+
+	}
 	@Test
 	public void test() {
-		int zkPort;
-		String kafkaHost;
-		String zookeeperConnectionString;
+		LOG.info("Starting test()");
 
-		File tmpZkDir;
-		List<File> tmpKafkaDirs;
-		Map<String, KafkaServer> kafkaServers = null;
-		TestingServer zookeeper = null;
 
 		try {
-			tmpZkDir = tempFolder.newFolder();
-
-			tmpKafkaDirs = new ArrayList<File>(NUMBER_OF_BROKERS);
-			for (int i = 0; i < NUMBER_OF_BROKERS; i++) {
-				tmpKafkaDirs.add(tempFolder.newFolder());
-			}
-
-			zkPort = NetUtils.getAvailablePort();
-			kafkaHost = InetAddress.getLocalHost().getHostName();
-			zookeeperConnectionString = "localhost:" + zkPort;
-
-			// init zookeeper
-			zookeeper = new TestingServer(zkPort, tmpZkDir);
-
-			// init kafka kafkaServers
-			kafkaServers = new HashMap<String, KafkaServer>();
-
-			for (int i = 0; i < NUMBER_OF_BROKERS; i++) {
-				KafkaServer kafkaServer = getKafkaServer(kafkaHost, zookeeperConnectionString, i, tmpKafkaDirs.get(i));
-				kafkaServers.put(kafkaServer.config().advertisedHostName() + ":" + kafkaServer.config().advertisedPort(), kafkaServer);
-			}
-
 			// create Kafka topic
 			final KafkaTopicUtils kafkaTopicUtils = new KafkaTopicUtils(zookeeperConnectionString);
 			kafkaTopicUtils.createTopic(TOPIC, 1, 2);
@@ -107,23 +146,11 @@ public class KafkaTopicUtilsTest {
 			// get broker list
 			assertEquals(new HashSet<String>(kafkaServers.keySet()), kafkaTopicUtils.getBrokerAddresses(TOPIC));
 		} catch (Exception e) {
+			LOG.warn("Test failed", e);
 			fail(e.toString());
-		} finally {
-			LOG.info("Shutting down all services");
-			for (KafkaServer broker : kafkaServers.values()) {
-				if (broker != null) {
-					broker.shutdown();
-				}
-			}
-
-			if (zookeeper != null) {
-				try {
-					zookeeper.stop();
-				} catch (IOException e) {
-					LOG.warn("ZK.stop() failed", e);
-				}
-			}
 		}
+
+		LOG.info("Finished test()");
 	}
 
 	/**

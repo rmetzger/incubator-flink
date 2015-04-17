@@ -265,14 +265,10 @@ public class KafkaSinglePartitionIterator implements KafkaConsumerIterator, Seri
 		if (fetchResponse.hasError()) {
 			short code = fetchResponse.errorCode(topic, partition);
 
-			if (LOG.isErrorEnabled()) {
-				LOG.error("Error fetching data from the Broker:" + leadBroker + " Reason: " + code);
-			}
+			LOG.error("Error fetching data from the Broker:" + leadBroker + " Reason: " + code);
 
 			if (code == ErrorMapping.OffsetOutOfRangeCode()) {
-				if (LOG.isErrorEnabled()) {
-					LOG.error("Asked for invalid offset {}", offset);
-				}
+				LOG.error("Asked for invalid offset {}", offset);
 				String reset = consumerConfig.autoOffsetReset();
 				if(reset.equals("smallest")) {
 					LOG.info("Setting read offset to beginning (smallest)");

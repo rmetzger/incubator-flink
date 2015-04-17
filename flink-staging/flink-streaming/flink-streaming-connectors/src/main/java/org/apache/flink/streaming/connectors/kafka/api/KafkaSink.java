@@ -131,16 +131,12 @@ public class KafkaSink<IN> extends RichSinkFunction<IN> {
 	 */
 	@Override
 	public void open(Configuration configuration) {
-
 		KafkaTopicUtils kafkaTopicUtils = new KafkaTopicUtils(zookeeperAddress);
 		String listOfBrokers = kafkaTopicUtils.getBrokerList(topicId);
 
-		if (LOG.isInfoEnabled()) {
-			LOG.info("Broker list: {}", listOfBrokers);
-		}
+		LOG.info("Broker list: {}", listOfBrokers);
 
 		Properties properties = new Properties();
-
 		properties.put("metadata.broker.list", listOfBrokers);
 		properties.put("request.required.acks", "-1");
 		properties.put("message.send.max.retries", "10");

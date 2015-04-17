@@ -102,7 +102,7 @@ public class KafkaMultiplePartitionsIterator implements KafkaConsumerIterator {
 				try {
 					Thread.sleep(consumerConfig.props().getInt(PersistentKafkaSource.WAIT_ON_EMPTY_FETCH_KEY), consumerConfig.fetchWaitMaxMs());
 				} catch (InterruptedException e) {
-					LOG.warn("Interrupted while waiting for new messages", e);
+					LOG.warn("Interrupted while waiting for the next fetch", e);
 				}
 			}
 

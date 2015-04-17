@@ -49,6 +49,7 @@ public class KafkaTopicUtils {
 
 	private ZkClient zkClient;
 
+	// TODO get rid of these hardcodede values and let the user pass them.
 	public static final int DEFAULT_ZOOKEEPER_SESSION_TIMEOUT_MS = 10000;
 	public static final int DEFAULT_ZOOKEEPER_CONNECTION_TIMEOUT_MS = 10000;
 
@@ -69,16 +70,14 @@ public class KafkaTopicUtils {
 	}
 
 	public void createTopic(String topicName, int numOfPartitions, int replicationFactor) {
-
 		LOG.info("Creating Kafka topic '{}'", topicName);
 		Properties topicConfig = new Properties();
 		if (topicExists(topicName)) {
 			if (LOG.isWarnEnabled()) {
 				LOG.warn("Kafka topic \"{}\" already exists. Returning without action.", topicName);
 			}
+			return;
 		} else {
-			LOG.info("Connecting zookeeper");
-
 			initZkClient();
 			AdminUtils.createTopic(zkClient, topicName, numOfPartitions, replicationFactor, topicConfig);
 			closeZkClient();
@@ -115,7 +114,7 @@ public class KafkaTopicUtils {
 	}
 
 	private static String getBrokerAddressList(Set<String> brokerAddresses) {
-		StringBuilder brokerAddressList = new StringBuilder("");
+		StringBuilder brokerAddressList = new StringBuilder();
 		for (String broker : brokerAddresses) {
 			brokerAddressList.append(broker);
 			brokerAddressList.append(',');
@@ -208,17 +207,17 @@ public class KafkaTopicUtils {
 		initZkClient();
 		boolean topicExists = AdminUtils.topicExists(zkClient, topicName);
 		closeZkClient();
-
 		return topicExists;
 	}
 
 	private void initZkClient() {
-		zkClient = new ZkClient(zookeeperAddress, sessionTimeoutMs, connectionTimeoutMs,
-				new KafkaZKStringSerializer());
+		LOG.info("Connecting to Zookeeper");
+		zkClient = new ZkClient(zookeeperAddress, sessionTimeoutMs, connectionTimeoutMs, new KafkaZKStringSerializer());
 		zkClient.waitUntilConnected();
 	}
 
 	private void closeZkClient() {
+		LOG.info("Closing connection to Zookeeper");
 		zkClient.close();
 		zkClient = null;
 	}
