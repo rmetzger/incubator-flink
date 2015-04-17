@@ -20,7 +20,7 @@ package org.apache.flink.streaming.api.functions.source;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
 
 /**
- * Base class for implementing a data source that has access to context information
+ * Base class for implementing a parallel data source that has access to context information
  * (via {@link #getRuntimeContext()}) and additional life-cycle methods
  * ({@link #open(org.apache.flink.configuration.Configuration)} and {@link #close()}.
  *

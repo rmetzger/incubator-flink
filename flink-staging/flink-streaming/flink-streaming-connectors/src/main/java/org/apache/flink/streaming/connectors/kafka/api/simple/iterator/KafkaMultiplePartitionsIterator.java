@@ -59,7 +59,7 @@ public class KafkaMultiplePartitionsIterator implements KafkaConsumerIterator {
 	}
 
 	@Override
-	public void initialize() throws InterruptedException {
+	public void initialize() {
 		LOG.info("Initializing iterator with {} partitions", partitions.size());
 		String partInfo = "";
 		for (KafkaSinglePartitionIterator partition : partitions) {
@@ -75,7 +75,7 @@ public class KafkaMultiplePartitionsIterator implements KafkaConsumerIterator {
 	}
 
 	@Override
-	public byte[] next() throws InterruptedException {
+	public byte[] next() {
 		return nextWithOffset().getMessage();
 	}
 
@@ -83,7 +83,7 @@ public class KafkaMultiplePartitionsIterator implements KafkaConsumerIterator {
 	private boolean gotNewMessage = false;
 
 	@Override
-	public MessageWithMetadata nextWithOffset() throws InterruptedException {
+	public MessageWithMetadata nextWithOffset() {
 		KafkaSinglePartitionIterator partition;
 
 		while (true) {

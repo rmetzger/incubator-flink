@@ -42,6 +42,7 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSink;
@@ -143,6 +144,11 @@ public class KafkaITCase {
 			}
 		}
 	}
+
+	// ------------------------------ Standalone tests --------------------------
+
+
+	// ------------------------------ Full plan integration tests --------------------------
 
 	@Test
 	public void regularKafkaSourceTest() throws Exception {
@@ -660,6 +666,111 @@ public class KafkaITCase {
 			}
 		}
 	}
+
+	/**
+	 * Test that the PersistentKafkaSource is correctly shutting down if the wrong kafka source has been passed
+	 */
+	public void test() {
+
+	}
+
+	/**
+	 * 4 partitions. Job writes to 4 partitions and reads 3.
+	 */
+	@Test
+	public void testParallelOperation() throws Exception {
+		String topic = "testParallelOperation";
+
+		createTestTopic(topic, 4, 1);
+
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
+
+		// add consuming topology:
+		Properties cp = new Properties();
+		cp.setProperty("zookeeper.connect", zookeeperConnectionString);
+		cp.setProperty("group.id", "flink-tests");
+		ConsumerConfig consumerConfig = new ConsumerConfig(cp);
+		DataStreamSource<String> consuming = env.addSource(
+				new PersistentKafkaSource<String>(topic, new JavaDefaultStringSchema(), Offset.FROM_BEGINNING, consumerConfig)).setParallelism(3);
+		consuming.addSink(new SinkFunction<String>() {
+			int[] elCnt = new int[4];
+			BitSet[] validator = new BitSet[4];
+
+			@Override
+			public void invoke(String value) throws Exception {
+				LOG.debug("Got " + value);
+				String[] sp = value.split("-");
+				int worker = Integer.parseInt(sp[1]);
+				int element = Integer.parseInt(sp[2]);
+
+				if(validator[worker] == null) {
+					validator[worker] = new BitSet(101);
+				}
+				validator[worker].set(element);
+				elCnt[worker]++;
+
+				if (elCnt[0] == 100 &&
+					elCnt[1] == 100 &&
+					elCnt[2] == 100 &&
+					elCnt[3] == 100) {
+					// check if everything in the bitset is set to true
+					for(int i = 0; i < 4; i++) {
+						int nc;
+						if ((nc = validator[i].nextClearBit(0)) != 100) {
+							throw new RuntimeException("The bitset was not set to 1 on all elements. Next clear:" + nc + " Set: " + validator);
+						}
+					}
+					throw new SuccessException();
+				}
+			}
+		}).setParallelism(1);
+
+		// add producing topology
+		DataStream<String> stream = env.addSource(new RichParallelSourceFunction<String>() {
+			private static final long serialVersionUID = 1L;
+			boolean running = true;
+
+			@Override
+			public void run(Collector<String> collector) throws Exception {
+				Assert.assertEquals(4, getRuntimeContext().getNumberOfParallelSubtasks());
+				int worker = getRuntimeContext().getIndexOfThisSubtask();
+
+				LOG.info("Starting source id=" + worker);
+				int cnt = 0;
+				while (running) {
+					collector.collect("kafka-" + worker + "-" + cnt++);
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException ignored) {
+					}
+				}
+			}
+
+			@Override
+			public void cancel() {
+				LOG.info("Source got cancel()");
+				running = false;
+			}
+		}).setParallelism(4);
+		stream.addSink(new KafkaSink<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema())).setParallelism(4);
+
+		try {
+			env.setParallelism(4);
+			env.execute();
+		} catch (JobExecutionException good) {
+			Throwable t = good.getCause();
+			int limit = 0;
+			while (!(t instanceof SuccessException)) {
+				t = t.getCause();
+				if (limit++ == 20) {
+					LOG.warn("Test failed with exception", good);
+					Assert.fail("Test failed with: " + good.getMessage());
+				}
+			}
+		}
+	}
+
+
 
 	private static boolean leaderHasShutDown = false;
 

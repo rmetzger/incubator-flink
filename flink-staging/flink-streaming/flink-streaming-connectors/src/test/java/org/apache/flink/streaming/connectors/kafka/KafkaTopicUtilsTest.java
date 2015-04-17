@@ -106,8 +106,6 @@ public class KafkaTopicUtilsTest {
 
 			// get broker list
 			assertEquals(new HashSet<String>(kafkaServers.keySet()), kafkaTopicUtils.getBrokerAddresses(TOPIC));
-		} catch (IOException e) {
-			fail(e.toString());
 		} catch (Exception e) {
 			fail(e.toString());
 		} finally {

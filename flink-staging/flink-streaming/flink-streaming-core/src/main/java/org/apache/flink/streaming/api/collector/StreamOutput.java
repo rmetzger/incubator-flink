@@ -25,7 +25,6 @@ import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.runtime.io.StreamRecordWriter;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.Collector;
-import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,9 +61,7 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		try {
 			output.emit(serializationDelegate);
 		} catch (Exception e) {
-			if (LOG.isErrorEnabled()) {
-				LOG.error("Emit failed due to: {}", StringUtils.stringifyException(e));
-			}
+			throw new RuntimeException("Error while emitting record", e);
 		}
 	}
 
@@ -76,7 +73,7 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 			try {
 				output.flush();
 			} catch (IOException e) {
-				e.printStackTrace();
+				throw new RuntimeException("Error while flushing the output", e);
 			}
 		}
 	}
