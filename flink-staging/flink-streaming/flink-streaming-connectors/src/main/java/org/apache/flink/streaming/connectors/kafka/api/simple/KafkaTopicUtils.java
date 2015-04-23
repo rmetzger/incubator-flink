@@ -223,7 +223,7 @@ public class KafkaTopicUtils {
 		zkClient = null;
 	}
 
-	private static class KafkaZKStringSerializer implements ZkSerializer {
+	public static class KafkaZKStringSerializer implements ZkSerializer {
 
 		@Override
 		public byte[] serialize(Object data) throws ZkMarshallingError {
