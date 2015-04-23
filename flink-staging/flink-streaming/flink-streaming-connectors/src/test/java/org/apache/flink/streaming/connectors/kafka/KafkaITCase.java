@@ -30,7 +30,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 
+import kafka.common.TopicAndPartition;
 import kafka.consumer.ConsumerConfig;
+import kafka.utils.ZKGroupTopicDirs;
+import kafka.utils.ZKStringSerializer;
+import kafka.utils.ZkUtils;
+import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.curator.test.TestingServer;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -142,6 +147,29 @@ public class KafkaITCase {
 				LOG.warn("ZK.stop() failed", e);
 			}
 		}
+	}
+
+	/**
+	 * This method's code is based on ZookeeperConsumerConnector.commitOffsetToZooKeeper()
+	 */
+	public static void setOffset(ZkClient zkClient, String groupId, String topic, int partition, long offset) {
+		TopicAndPartition tap = TopicAndPartition.apply(topic, partition);
+		ZKGroupTopicDirs topicDirs = new ZKGroupTopicDirs(groupId, tap.topic());
+		ZkUtils.updatePersistentPath(zkClient, topicDirs.consumerOffsetDir() + "/" + tap.partition(), Long.toString(offset));
+	}
+	/**
+	 * We want to use the High level java consumer API but manage the offset in Zookeeper manually.
+	 *
+	 */
+	@Test
+	public void testZKOffsetHacking() {
+		Properties cProps = new Properties();
+		ConsumerConfig cc = new ConsumerConfig(cProps);
+		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new KafkaTopicUtils.KafkaZKStringSerializer());
+
+		final String topicName = "testOffsetHacking";
+
+		setOffset(zk, cc.groupId(), topicName, 0, 5);
 	}
 
 	@Test
