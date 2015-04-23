@@ -19,7 +19,7 @@ package org.apache.flink.streaming.connectors.kafka;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.api.simple.PersistentKafkaSource;
+import org.apache.flink.streaming.connectors.kafka.api.simple.LegacyPersistentKafkaSource;
 import org.apache.flink.streaming.util.serialization.JavaDefaultStringSchema;
 
 public class KafkaSimpleConsumerExample {
@@ -36,7 +36,7 @@ public class KafkaSimpleConsumerExample {
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment().setParallelism(4);
 		DataStream<String> kafkaStream = env
-				.addSource(new PersistentKafkaSource<String>(host + ":" + port, topic, new JavaDefaultStringSchema()));
+				.addSource(new LegacyPersistentKafkaSource<String>(host + ":" + port, topic, new JavaDefaultStringSchema()));
 
 		kafkaStream.print();
 
