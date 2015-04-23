@@ -24,7 +24,7 @@ import java.util.Map;
 import kafka.consumer.ConsumerConfig;
 import org.apache.flink.streaming.connectors.kafka.api.simple.KafkaTopicUtils;
 import org.apache.flink.streaming.connectors.kafka.api.simple.MessageWithMetadata;
-import org.apache.flink.streaming.connectors.kafka.api.simple.PersistentKafkaSource;
+import org.apache.flink.streaming.connectors.kafka.api.simple.LegacyPersistentKafkaSource;
 import org.apache.flink.streaming.connectors.kafka.api.simple.offset.KafkaOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +100,7 @@ public class KafkaMultiplePartitionsIterator implements KafkaConsumerIterator {
 			// do not wait if a new message has been fetched
 			if (!gotNewMessage) {
 				try {
-					Thread.sleep(consumerConfig.props().getInt(PersistentKafkaSource.WAIT_ON_EMPTY_FETCH_KEY), consumerConfig.fetchWaitMaxMs());
+					Thread.sleep(consumerConfig.props().getInt(LegacyPersistentKafkaSource.WAIT_ON_EMPTY_FETCH_KEY), consumerConfig.fetchWaitMaxMs());
 				} catch (InterruptedException e) {
 					LOG.warn("Interrupted while waiting for new messages", e);
 				}

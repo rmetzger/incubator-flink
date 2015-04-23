@@ -30,14 +30,15 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 
+import kafka.admin.AdminUtils;
 import kafka.common.TopicAndPartition;
 import kafka.consumer.ConsumerConfig;
 import kafka.utils.ZKGroupTopicDirs;
-import kafka.utils.ZKStringSerializer;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.curator.test.TestingServer;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
@@ -51,8 +52,9 @@ import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSink;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSource;
+import org.apache.flink.streaming.connectors.kafka.api.persistent.PersistentKafkaSource;
 import org.apache.flink.streaming.connectors.kafka.api.simple.KafkaTopicUtils;
-import org.apache.flink.streaming.connectors.kafka.api.simple.PersistentKafkaSource;
+import org.apache.flink.streaming.connectors.kafka.api.simple.LegacyPersistentKafkaSource;
 import org.apache.flink.streaming.connectors.kafka.api.simple.offset.Offset;
 import org.apache.flink.streaming.connectors.kafka.partitioner.SerializableKafkaPartitioner;
 import org.apache.flink.streaming.connectors.kafka.util.KafkaLocalSystemTime;
@@ -157,19 +159,86 @@ public class KafkaITCase {
 		ZKGroupTopicDirs topicDirs = new ZKGroupTopicDirs(groupId, tap.topic());
 		ZkUtils.updatePersistentPath(zkClient, topicDirs.consumerOffsetDir() + "/" + tap.partition(), Long.toString(offset));
 	}
+
 	/**
 	 * We want to use the High level java consumer API but manage the offset in Zookeeper manually.
 	 *
 	 */
 	@Test
-	public void testZKOffsetHacking() {
+	public void testZKOffsetHacking() throws Exception {
 		Properties cProps = new Properties();
 		ConsumerConfig cc = new ConsumerConfig(cProps);
 		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new KafkaTopicUtils.KafkaZKStringSerializer());
 
 		final String topicName = "testOffsetHacking";
 
-		setOffset(zk, cc.groupId(), topicName, 0, 5);
+		// create topic
+		Properties topicConfig = new Properties();
+		AdminUtils.createTopic(zk, topicName, 3, 2, topicConfig);
+
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
+		// write a sequence from 0 to 99 to each of the three partitions.
+		writeSequence(env, topicName, 0, 99);
+
+		// use the high level consumer to read from 0 to 99
+		int[][] offsets = {
+				{0, 99},
+				{0, 99},
+				{0, 99}
+		};
+		readSequence(env, topicName, offsets);
+
+		// set the offset to 25, 50, and 75 for the three partitions
+		setOffset(zk, cc.groupId(), topicName, 0, 25);
+		setOffset(zk, cc.groupId(), topicName, 1, 50);
+		setOffset(zk, cc.groupId(), topicName, 2, 75);
+
+		// read from the offsets with the consumer.
+		int[][] verifyOffsets = {
+				{25, 99},
+				{50, 99},
+				{75, 99}
+		};
+		readSequence(env, topicName, verifyOffsets);
+	}
+
+	private void readSequence(StreamExecutionEnvironment env, String topicName, int[][] offsets) {
+		Properties properties = new Properties();
+		ConsumerConfig cc = new ConsumerConfig(properties);
+		DataStream<Integer> source = env.addSource(
+				new PersistentKafkaSource<Integer>(topicName, new Utils.TypeInformationSerializationSchema<Integer>(1, env.getConfig()), cc)
+		);
+		continue here
+	}
+
+	private void writeSequence(StreamExecutionEnvironment env, String topicName, final int from, final int to) throws Exception {
+		DataStream<Integer> stream = env.addSource(new RichSourceFunction<Integer>() {
+			private static final long serialVersionUID = 1L;
+			boolean running = true;
+
+			@Override
+			public void run(Collector<Integer> collector) throws Exception {
+				LOG.info("Starting source.");
+				int cnt = from;
+				int partition = getRuntimeContext().getIndexOfThisSubtask();
+				while (running) {
+					LOG.info("Writing "+cnt+" to partition "+partition);
+					collector.collect(cnt++);
+					if(cnt == to) {
+						LOG.info("Writer reached end.");
+						return;
+					}
+				}
+			}
+
+			@Override
+			public void cancel() {
+				LOG.info("Source got cancel()");
+				running = false;
+			}
+		}).setParallelism(3);
+		stream.addSink(new KafkaSink<Integer>(zookeeperConnectionString, topicName, new Utils.TypeInformationSerializationSchema<Integer>(1, env.getConfig()))).setParallelism(3);
+		env.execute("Write sequence from "+from+" to "+to+" to topic "+topicName);
 	}
 
 	@Test
@@ -269,7 +338,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new PersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), 5000, 100, Offset.FROM_BEGINNING));
+				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), 5000, 100, Offset.FROM_BEGINNING));
 		consuming.addSink(new RichSinkFunction<Tuple2<Long, String>>() {
 			int elCnt = 0;
 			int start = -1;
@@ -378,7 +447,7 @@ public class KafkaITCase {
 
 		ConsumerConfig cc = new ConsumerConfig(consumerProps);
 		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
-				new PersistentKafkaSource<Tuple2<Long, byte[]>>(topic, serSchema, Offset.FROM_BEGINNING, cc));
+				new LegacyPersistentKafkaSource<Tuple2<Long, byte[]>>(topic, serSchema, Offset.FROM_BEGINNING, cc));
 
 		consuming.addSink(new SinkFunction<Tuple2<Long, byte[]>>() {
 			int elCnt = 0;
@@ -477,7 +546,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new PersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), 5000, 100, Offset.FROM_BEGINNING));
+				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), 5000, 100, Offset.FROM_BEGINNING));
 		consuming.addSink(new SinkFunction<Tuple2<Long, String>>() {
 			int start = -1;
 			BitSet validator = new BitSet(101);
@@ -619,7 +688,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<String> consuming = env.addSource(
-				new PersistentKafkaSource<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema(), 5000, 100, Offset.FROM_BEGINNING));
+				new LegacyPersistentKafkaSource<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema(), 5000, 100, Offset.FROM_BEGINNING));
 		consuming.addSink(new SinkFunction<String>() {
 			int elCnt = 0;
 			int start = -1;
@@ -732,7 +801,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<String> consuming = env.addSource(
-				new PersistentKafkaSource<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema(), 5000, 10, Offset.FROM_BEGINNING));
+				new LegacyPersistentKafkaSource<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema(), 5000, 10, Offset.FROM_BEGINNING));
 		consuming.setParallelism(1);
 
 		consuming.addSink(new SinkFunction<String>() {

@@ -29,7 +29,7 @@ import java.util.Set;
 import kafka.consumer.ConsumerConfig;
 import org.apache.flink.streaming.connectors.kafka.api.simple.KafkaTopicUtils;
 import org.apache.flink.streaming.connectors.kafka.api.simple.MessageWithMetadata;
-import org.apache.flink.streaming.connectors.kafka.api.simple.PersistentKafkaSource;
+import org.apache.flink.streaming.connectors.kafka.api.simple.LegacyPersistentKafkaSource;
 import org.apache.flink.streaming.connectors.kafka.api.simple.offset.BeginningOffset;
 import org.apache.flink.streaming.connectors.kafka.api.simple.offset.CurrentOffset;
 import org.apache.flink.streaming.connectors.kafka.api.simple.offset.KafkaOffset;
@@ -140,7 +140,7 @@ public class KafkaSinglePartitionIterator implements KafkaConsumerIterator, Seri
 	private PartitionMetadata getPartitionMetadata() {
 		PartitionMetadata metadata;
 		int retry = 0;
-		int waitTime = consumerConfig.props().getInt(PersistentKafkaSource.WAIT_ON_FAILED_LEADER_MS_KEY, PersistentKafkaSource.WAIT_ON_FAILED_LEADER__MS_DEFAULT);
+		int waitTime = consumerConfig.props().getInt(LegacyPersistentKafkaSource.WAIT_ON_FAILED_LEADER_MS_KEY, LegacyPersistentKafkaSource.WAIT_ON_FAILED_LEADER__MS_DEFAULT);
 		do {
 			metadata = findLeader(hosts, topic, partition);
 			/*try {
@@ -150,7 +150,7 @@ public class KafkaSinglePartitionIterator implements KafkaConsumerIterator, Seri
 			} */
 			if(metadata == null) {
 				retry++;
-				if(retry == consumerConfig.props().getInt(PersistentKafkaSource.MAX_FAILED_LEADER_RETRIES_KEY, PersistentKafkaSource.MAX_FAILED_LEADER_RETRIES_DEFAULT)) {
+				if(retry == consumerConfig.props().getInt(LegacyPersistentKafkaSource.MAX_FAILED_LEADER_RETRIES_KEY, LegacyPersistentKafkaSource.MAX_FAILED_LEADER_RETRIES_DEFAULT)) {
 					throw new RuntimeException("Tried finding a leader "+retry+" times without success");
 				}
 				LOG.warn("Unable to get leader and partition metadata. Waiting {} ms until retrying. Retries so far {}",waitTime, retry-1);

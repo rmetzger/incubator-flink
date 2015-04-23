@@ -51,10 +51,10 @@ import org.slf4j.LoggerFactory;
  * @param <OUT>
  * 		Type of the messages on the topic.
  */
-public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
+public class LegacyPersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 
 	private static final long serialVersionUID = 1L;
-	private static final Logger LOG = LoggerFactory.getLogger(PersistentKafkaSource.class);
+	private static final Logger LOG = LoggerFactory.getLogger(LegacyPersistentKafkaSource.class);
 
 	public static final String WAIT_ON_EMPTY_FETCH_KEY = "flink.waitOnEmptyFetchMillis";
 	public static final String WAIT_ON_FAILED_LEADER_MS_KEY = "flink.waitOnFailedLeaderDetection";
@@ -85,8 +85,8 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 	 * @param deserializationSchema
 	 * 		User defined deserialization schema.
 	 */
-	public PersistentKafkaSource(String zookeeperAddress, String topicId,
-			DeserializationSchema<OUT> deserializationSchema) {
+	public LegacyPersistentKafkaSource(String zookeeperAddress, String topicId,
+									   DeserializationSchema<OUT> deserializationSchema) {
 		this(zookeeperAddress, topicId, deserializationSchema, KafkaTopicUtils.DEFAULT_ZOOKEEPER_CONNECTION_TIMEOUT_MS, 100);
 	}
 
@@ -107,8 +107,8 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 	 * @param waitOnEmptyFetchMillis
 	 * 		Time to wait before fetching for new message.
 	 */
-	public PersistentKafkaSource(String zookeeperAddress, String topicId,
-			DeserializationSchema<OUT> deserializationSchema, int zookeeperSyncTimeMillis, int waitOnEmptyFetchMillis) {
+	public LegacyPersistentKafkaSource(String zookeeperAddress, String topicId,
+									   DeserializationSchema<OUT> deserializationSchema, int zookeeperSyncTimeMillis, int waitOnEmptyFetchMillis) {
 		this(zookeeperAddress, topicId, deserializationSchema, zookeeperSyncTimeMillis, waitOnEmptyFetchMillis, Offset.FROM_CURRENT);
 	}
 
@@ -134,7 +134,7 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 	 * 		The offset to start from (beginning or current).
 	 */
 	@Deprecated
-	public PersistentKafkaSource(String zookeeperAddress, String topicId,DeserializationSchema<OUT> deserializationSchema, int zookeeperSyncTimeMillis, int waitOnEmptyFetchMillis, Offset startOffsetType) {
+	public LegacyPersistentKafkaSource(String zookeeperAddress, String topicId, DeserializationSchema<OUT> deserializationSchema, int zookeeperSyncTimeMillis, int waitOnEmptyFetchMillis, Offset startOffsetType) {
 		this(topicId, deserializationSchema, startOffsetType, legacyParametersToConsumerConfig(zookeeperAddress, zookeeperSyncTimeMillis, waitOnEmptyFetchMillis));
 	}
 
@@ -162,7 +162,7 @@ public class PersistentKafkaSource<OUT> extends ConnectorSource<OUT> {
 	 * 		Additional configuration for the PersistentKafkaSource.
 	 * 		NOTE: This source will only respect certain configuration values from the config!
 	 */
-	public PersistentKafkaSource(String topicId, DeserializationSchema<OUT> deserializationSchema, Offset startOffsetType, ConsumerConfig consumerConfig) {
+	public LegacyPersistentKafkaSource(String topicId, DeserializationSchema<OUT> deserializationSchema, Offset startOffsetType, ConsumerConfig consumerConfig) {
 		super(deserializationSchema);
 		Preconditions.checkNotNull(topicId, "The topic id can not be null");
 		Preconditions.checkNotNull(deserializationSchema, "The deserialization schema can not be null");
