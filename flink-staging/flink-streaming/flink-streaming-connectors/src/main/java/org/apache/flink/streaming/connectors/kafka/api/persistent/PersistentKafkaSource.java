@@ -9,6 +9,9 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import org.apache.commons.math.optimization.general.Preconditioner;
 import org.apache.flink.api.common.functions.RuntimeContext;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.source.ParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
@@ -31,7 +34,7 @@ import java.util.Properties;
  *
  * Note that the autocommit feature of Kafka needs to be disabled for using this source.
  */
-public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implements ParallelSourceFunction<OUT> {
+public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implements ParallelSourceFunction<OUT>, ResultTypeQueryable<OUT> {
 	private static final Logger LOG = LoggerFactory.getLogger(PersistentKafkaSource.class);
 
 	protected transient ConsumerConfig consumerConfig;
@@ -127,6 +130,8 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 		running = false;
 	}
 
+
+
 	// ---------------------- (Java)Serialization methods for the consumerConfig -----------------
 
 	private void writeObject(ObjectOutputStream out)
@@ -140,5 +145,11 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 		in.defaultReadObject();
 		Properties props = (Properties) in.readObject();
 		consumerConfig = new ConsumerConfig(props);
+	}
+
+
+	@Override
+	public TypeInformation<OUT> getProducedType() {
+		return deserializationSchema.getProducedType();
 	}
 }

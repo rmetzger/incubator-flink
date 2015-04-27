@@ -249,6 +249,11 @@ public class DataStream<OUT> {
 		return environment.getConfig();
 	}
 
+	public DataStream<OUT> setName(String newName) {
+		streamGraph.getVertex(this.id).setOperatorName(newName);
+		return this;
+	}
+
 	/**
 	 * Creates a new {@link DataStream} by merging {@link DataStream} outputs of
 	 * the same type with each other. The DataStreams merged using this operator
