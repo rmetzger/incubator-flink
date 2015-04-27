@@ -91,7 +91,7 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 		if(kafkaStreams.size() != parallelInstances) {
 			throw new RuntimeException("Requested "+parallelInstances+" streams from Kafka, bot got "+kafkaStreams.size()+" streams");
 		}
-		LOG.info("Opening Consumer instance {} out of {} parallel instances for topic '{}'", instanceId, parallelInstances, topicName);
+		LOG.info("Opening Consumer instance {} out of {} parallel instances for topic '{}'", instanceId + 1, parallelInstances, topicName);
 		this.streamToRead = kafkaStreams.get(instanceId).iterator();
 	}
 
