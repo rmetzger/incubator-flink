@@ -39,9 +39,12 @@ import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.curator.test.TestingServer;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.net.NetUtils;
@@ -181,13 +184,15 @@ public class KafkaITCase {
 
 		final String topicName = "testOffsetHacking";
 
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
+
 		// create topic
 		Properties topicConfig = new Properties();
 		LOG.info("Creating topic {}", topicName);
 		AdminUtils.createTopic(zk, topicName, 3, 2, topicConfig);
 
 
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
+
 		// write a sequence from 0 to 99 to each of the three partitions.
 		writeSequence(env, topicName, 0, 99);
 
@@ -197,9 +202,10 @@ public class KafkaITCase {
 			{0, 99},
 			{0, 99}
 		};
+
 		readSequence(env, cc, topicName, offsets);
 
-	/*	// set the offset to 25, 50, and 75 for the three partitions
+		// set the offset to 25, 50, and 75 for the three partitions
 		setOffset(zk, cc.groupId(), topicName, 0, 25);
 		setOffset(zk, cc.groupId(), topicName, 1, 50);
 		setOffset(zk, cc.groupId(), topicName, 2, 75);
@@ -210,7 +216,7 @@ public class KafkaITCase {
 			{50, 99},
 			{75, 99}
 		};
-		readSequence(env, cc, topicName, verifyOffsets); */
+		readSequence(env, cc, topicName, verifyOffsets);
 
 		LOG.info("Finished testZKOffsetHacking()");
 	}
@@ -220,6 +226,8 @@ public class KafkaITCase {
 		DataStream<Integer> source = env.addSource(
 				new PersistentKafkaSource<Integer>(topicName, new Utils.TypeInformationSerializationSchema<Integer>(1, env.getConfig()), cc)
 		).setParallelism(3);
+		source.setName("PersistentKafkaSource to topic "+topicName);
+
 		// verify data
 		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Integer, Integer>() {
 			BitSet validator = new BitSet(101);
@@ -236,7 +244,8 @@ public class KafkaITCase {
 				}
 			}
 
-		}).setParallelism(3);
+		}).setParallelism(3).setName("readSequence-indexValidator");
+
 		validIndexes.window(Count.of(3)).mapWindow(new WindowMapFunction<Integer, Void>() {
 			int[] vals = {-1, -1, -1};
 			@Override
@@ -281,8 +290,8 @@ public class KafkaITCase {
 				LOG.info("Source got cancel()");
 				running = false;
 			}
-		}).setParallelism(3);
-		stream.addSink(new KafkaSink<Integer>(zookeeperConnectionString, topicName, new Utils.TypeInformationSerializationSchema<Integer>(1, env.getConfig()))).setParallelism(3);
+		}).setParallelism(3).setName("write sequence from "+from+" to "+to);
+		stream.addSink(new KafkaSink<Integer>(zookeeperConnectionString, topicName, new Utils.TypeInformationSerializationSchema<Integer>(1, env.getConfig()))).setParallelism(3).setName("Kafka Sink");
 		env.execute("Write sequence from " + from + " to " + to + " to topic " + topicName);
 		LOG.info("Finished writing sequence");
 	}
@@ -298,7 +307,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new KafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, "myFlinkGroup", new TupleSerializationSchema(), 5000));
+				new KafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, "myFlinkGroup", new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), 5000));
 		consuming.addSink(new SinkFunction<Tuple2<Long, String>>() {
 			int elCnt = 0;
 			int start = -1;
@@ -353,7 +362,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema()));
+		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig())));
 
 		try {
 			env.setParallelism(1);
@@ -384,7 +393,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), 5000, 100, Offset.FROM_BEGINNING));
+				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), 5000, 100, Offset.FROM_BEGINNING));
 		consuming.addSink(new RichSinkFunction<Tuple2<Long, String>>() {
 			int elCnt = 0;
 			int start = -1;
@@ -447,7 +456,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema()));
+		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig())));
 
 		try {
 			env.setParallelism(1);
@@ -592,7 +601,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), 5000, 100, Offset.FROM_BEGINNING));
+				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), 5000, 100, Offset.FROM_BEGINNING));
 		consuming.addSink(new SinkFunction<Tuple2<Long, String>>() {
 			int start = -1;
 			BitSet validator = new BitSet(101);
@@ -662,7 +671,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new TupleSerializationSchema(), new CustomPartitioner()));
+		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), new CustomPartitioner()));
 
 		try {
 			env.setParallelism(1);
@@ -704,7 +713,7 @@ public class KafkaITCase {
 		}
 	}
 
-	private static class TupleSerializationSchema implements DeserializationSchema<Tuple2<Long, String>>, SerializationSchema<Tuple2<Long, String>, byte[]> {
+	/*private static class TupleSerializationSchema implements DeserializationSchema<Tuple2<Long, String>>, SerializationSchema<Tuple2<Long, String>, byte[]> {
 
 		@SuppressWarnings("unchecked")
 		@Override
@@ -722,7 +731,12 @@ public class KafkaITCase {
 		public boolean isEndOfStream(Tuple2<Long, String> nextElement) {
 			return false;
 		}
-	}
+
+		@Override
+		public TypeInformation<Tuple2<Long, String>> getProducedType() {
+			return TypeExtractor.getForClass(Tuple2<Long, String>.class);
+		}
+	} */
 
 	@Test
 	public void simpleTestTopology() throws Exception {
@@ -860,7 +874,7 @@ public class KafkaITCase {
 
 			@Override
 			public void invoke(String value) throws Exception {
-				LOG.info("Got message = " + value + " leader has shut down "+leaderHasShutDown+" el cnt = "+elCnt+" to rec"+ numOfMessagesToBeCorrect);
+				LOG.info("Got message = " + value + " leader has shut down " + leaderHasShutDown + " el cnt = " + elCnt + " to rec" + numOfMessagesToBeCorrect);
 				String[] sp = value.split("-");
 				int v = Integer.parseInt(sp[1]);
 
@@ -879,8 +893,8 @@ public class KafkaITCase {
 					shutdownKafkaBroker = true;
 				}
 
-				if(leaderHasShutDown) { // it only makes sence to check once the shutdown is completed
-					if (elCnt >= stopAfterMessages ) {
+				if (leaderHasShutDown) { // it only makes sence to check once the shutdown is completed
+					if (elCnt >= stopAfterMessages) {
 						// check if everything in the bitset is set to true
 						int nc;
 						if ((nc = validator.nextClearBit(0)) < numOfMessagesToBeCorrect) {

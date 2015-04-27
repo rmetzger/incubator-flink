@@ -30,7 +30,7 @@ import java.io.IOException;
 
 public class Utils {
 	public static class TypeInformationSerializationSchema<T>
-			implements DeserializationSchema<T>, SerializationSchema<T, byte[]>, ResultTypeQueryable<T> {
+			implements DeserializationSchema<T>, SerializationSchema<T, byte[]> {
 		private final TypeSerializer<T> serializer;
 		private final TypeInformation<T> ti;
 
