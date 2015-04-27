@@ -67,6 +67,8 @@ import com.esotericsoftware.kryo.Serializer;
  */
 public abstract class StreamExecutionEnvironment {
 
+	public final static String DEFAULT_JOB_NAME = "Flink Streaming Job";
+
 	private static int defaultLocalParallelism = Runtime.getRuntime().availableProcessors();
 
 	private long bufferTimeout = 100;
