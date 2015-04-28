@@ -138,8 +138,7 @@ public abstract class StreamOperator<IN, OUT> implements Serializable {
 			callUserFunction();
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
-				LOG.error("Calling user function failed due to: {}",
-						StringUtils.stringifyException(e));
+				LOG.error("Calling user function failed due to: {}", e);
 			}
 			throw new RuntimeException(e);
 		}
@@ -168,7 +167,7 @@ public abstract class StreamOperator<IN, OUT> implements Serializable {
 		try {
 			FunctionUtils.closeFunction(userFunction);
 		} catch (Exception e) {
-			throw new RuntimeException("Error when closing the function: " + e.getMessage());
+			throw new RuntimeException("Error when closing the function", e);
 		}
 	}
 
@@ -187,8 +186,7 @@ public abstract class StreamOperator<IN, OUT> implements Serializable {
 	public void setChainingStrategy(ChainingStrategy strategy) {
 		if (strategy == ChainingStrategy.ALWAYS) {
 			if (!(this instanceof ChainableStreamOperator)) {
-				throw new RuntimeException(
-						"Operator needs to extend ChainableOperator to be chained");
+				throw new RuntimeException("Operator needs to extend ChainableOperator to be chained");
 			}
 		}
 		this.chainingStrategy = strategy;
