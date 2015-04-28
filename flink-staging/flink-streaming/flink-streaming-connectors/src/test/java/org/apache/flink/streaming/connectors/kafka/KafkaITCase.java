@@ -224,6 +224,11 @@ public class KafkaITCase {
 
 		readSequence(env, cc, topicName, offsets);
 
+		// check offsets
+		Assert.assertEquals(99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 0));
+		Assert.assertEquals(99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 1));
+		Assert.assertEquals(99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 2));
+
 		LOG.info("Manipulating offsets");
 		// set the offset to 25, 50, and 75 for the three partitions
 		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 0, 50);

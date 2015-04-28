@@ -23,6 +23,8 @@ import org.apache.flink.util.Collector;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Int;
+import scala.Option;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
 
@@ -115,7 +117,9 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 			new KafkaTopicUtils.KafkaZKStringSerializer());
 
 		// most likely the number of offsets we're going to store here will be lower than the number of partitions.
-		this.lastOffsets = new long[getNumberOfPartitions()];
+		int numPartitions = getNumberOfPartitions();
+		LOG.debug("The topic {} has {} partitions", topicName, numPartitions);
+		this.lastOffsets = new long[numPartitions];
 		Arrays.fill(this.lastOffsets, -1);
 	}
 
@@ -181,7 +185,7 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 		for(int partition = 0; partition < lastOffsets.length; partition++) {
 			long offset = lastOffsets[partition];
 			if(offset != -1) {
-
+				setOffset(partition, offset);
 			}
 		}
 		this.consumer.shutdown();
@@ -191,15 +195,24 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 	// --------------------- Zookeeper / Offset handling -----------------------------
 
 	private int getNumberOfPartitions() {
-		scala.collection.immutable.List<String> scalaSeq = JavaConversions.asScalaBuffer(Collections.singletonList("test")).toList();
-		return ZkUtils.getPartitionsForTopics(zkClient, scalaSeq).size();
+		scala.collection.immutable.List<String> scalaSeq = JavaConversions.asScalaBuffer(Collections.singletonList(topicName)).toList();
+		scala.collection.mutable.Map<String, Seq<Object>> list =  ZkUtils.getPartitionsForTopics(zkClient, scalaSeq);
+		Option<Seq<Object>> topicOption = list.get(topicName);
+		if(topicOption.isEmpty()) {
+			throw new IllegalArgumentException("Unable to get number of partitions for topic "+topicName+" from "+list.toString());
+		}
+		Seq<Object> topic = topicOption.get();
+		return topic.size();
 	}
-
-	// the following two methods are static to allow access from the outside as well (Testcases)
 
 	protected void setOffset(int partition, long offset) {
 		setOffset(zkClient, consumerConfig.groupId(), topicName, partition, offset);
 	}
+
+
+
+	// the following two methods are static to allow access from the outside as well (Testcases)
+
 	/**
 	 * This method's code is based on ZookeeperConsumerConnector.commitOffsetToZooKeeper()
 	 */
