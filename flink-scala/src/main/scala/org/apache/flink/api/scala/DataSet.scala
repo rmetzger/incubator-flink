@@ -1327,8 +1327,8 @@ class DataSet[T: ClassTag](set: JavaDataSet[T]) {
    * Writes a DataSet to the standard output stream (stdout). This uses [[AnyRef.toString]] on
    * each element.
    */
-  def print(): DataSink[T] = {
-    output(new PrintingOutputFormat[T](false))
+  def print() = {
+    javaSet.print()
   }
 
   /**
@@ -1345,8 +1345,8 @@ class DataSet[T: ClassTag](set: JavaDataSet[T]) {
    * Writes a DataSet to the standard error stream (stderr). This uses [[AnyRef.toString]] on
    * each element.
    */
-  def printToErr(): DataSink[T] = {
-    output(new PrintingOutputFormat[T](true))
+  def printToErr() = {
+    javaSet.printToErr()
   }
 
   /**
