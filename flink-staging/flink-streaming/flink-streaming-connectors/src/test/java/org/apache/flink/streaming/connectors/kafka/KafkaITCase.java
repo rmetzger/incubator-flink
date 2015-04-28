@@ -70,6 +70,7 @@ import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.JavaDefaultStringSchema;
 import org.apache.flink.streaming.util.serialization.SerializationSchema;
 import org.apache.flink.util.Collector;
+import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -159,22 +160,39 @@ public class KafkaITCase {
 		}
 	}
 
-	/**
-	 * This method's code is based on ZookeeperConsumerConnector.commitOffsetToZooKeeper()
-	 */
-	public static void setOffset(ZkClient zkClient, String groupId, String topic, int partition, long offset) {
-		TopicAndPartition tap = new TopicAndPartition(topic, partition);
-		ZKGroupTopicDirs topicDirs = new ZKGroupTopicDirs(groupId, tap.topic());
-		ZkUtils.updatePersistentPath(zkClient, topicDirs.consumerOffsetDir() + "/" + tap.partition(), Long.toString(offset));
-	}
 
+	@Test
+	public void testOffsetManipulation() {
+		Properties cProps = new Properties();
+		cProps.setProperty("zookeeper.connect", zookeeperConnectionString);
+		cProps.setProperty("group.id", "flink-tests");
+		cProps.setProperty("auto.commit.enable", "false");
+
+		cProps.setProperty("auto.offset.reset", "smallest"); // read from the beginning.
+
+		ConsumerConfig cc = new ConsumerConfig(cProps);
+		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new KafkaTopicUtils.KafkaZKStringSerializer());
+
+		final String topicName = "testOffsetManipulation";
+
+		// create topic
+		Properties topicConfig = new Properties();
+		LOG.info("Creating topic {}", topicName);
+		AdminUtils.createTopic(zk, topicName, 3, 2, topicConfig);
+
+		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 0, 1337);
+
+		Assert.assertEquals(1337L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 0));
+
+		zk.close();
+	}
 	/**
 	 * We want to use the High level java consumer API but manage the offset in Zookeeper manually.
 	 *
 	 */
 	@Test
-	public void testZKOffsetHacking() throws Exception {
-		LOG.info("Starting testZKOffsetHacking()");
+	public void testPersistentSourceWithOffsetUpdates() throws Exception {
+		LOG.info("Starting testPersistentSourceWithOffsetUpdates()");
 		Properties cProps = new Properties();
 		cProps.setProperty("zookeeper.connect", zookeeperConnectionString);
 		cProps.setProperty("group.id", "flink-tests");
@@ -194,8 +212,6 @@ public class KafkaITCase {
 		LOG.info("Creating topic {}", topicName);
 		AdminUtils.createTopic(zk, topicName, 3, 2, topicConfig);
 
-
-
 		// write a sequence from 0 to 99 to each of the three partitions.
 		writeSequence(env, topicName, 0, 99);
 
@@ -208,10 +224,11 @@ public class KafkaITCase {
 
 		readSequence(env, cc, topicName, offsets);
 
-	/*	// set the offset to 25, 50, and 75 for the three partitions
-		setOffset(zk, cc.groupId(), topicName, 0, 25);
-		setOffset(zk, cc.groupId(), topicName, 1, 50);
-		setOffset(zk, cc.groupId(), topicName, 2, 75);
+		LOG.info("Manipulating offsets");
+		// set the offset to 25, 50, and 75 for the three partitions
+		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 0, 50);
+		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 1, 50);
+		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 2, 50);
 
 		// read from the offsets with the consumer.
 		int[][] verifyOffsets = {
@@ -219,9 +236,11 @@ public class KafkaITCase {
 			{50, 99},
 			{75, 99}
 		};
-		readSequence(env, cc, topicName, verifyOffsets); */
+		readSequence(env, cc, topicName, verifyOffsets);
 
-		LOG.info("Finished testZKOffsetHacking()");
+		zk.close();
+
+		LOG.info("Finished testPersistentSourceWithOffsetUpdates()");
 	}
 
 	private void readSequence(StreamExecutionEnvironment env, ConsumerConfig cc, String topicName, final int[][] offsets) throws Exception {
@@ -233,43 +252,66 @@ public class KafkaITCase {
 
 		// verify data
 		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Integer, Integer>() {
-			BitSet validator = new BitSet(101);
+			int[] values = new int[100];
+			int count = 0;
 
 			@Override
 			public void flatMap(Integer value, Collector<Integer> out) throws Exception {
-				LOG.info("Reader "+getRuntimeContext().getIndexOfThisSubtask()+" got "+value);
-				validator.set(value);
-				int pIndex = getRuntimeContext().getIndexOfThisSubtask();
-				if (value == offsets[pIndex][1]) {
-					LOG.info("Reader is finished");
-					if (validator.nextClearBit(0) != offsets[pIndex][1] + 1) {
-						throw new RuntimeException("Validation failed. Bitset " + validator);
+				values[value]++;
+				count++;
+				LOG.info("Reader "+getRuntimeContext().getIndexOfThisSubtask()+" got "+value+" count="+count);
+				// verify if we've seen everything
+
+				if(count == 300) {
+					LOG.info("Received all values");
+					for(int v: values) {
+						if(v != 3) {
+							throw new RuntimeException("Expected v to be 3, but was "+v);
+						}
 					}
-					out.collect(pIndex);
+					// test has passed
+					throw new SuccessException();
 				}
 			}
 
-		}).setParallelism(3).setName("readSequence-indexValidator");
+		}).setParallelism(1).setName("readSequence-indexValidator");
 
 		validIndexes.window(Count.of(3)).mapWindow(new WindowMapFunction<Integer, Void>() {
 			int[] vals = {-1, -1, -1};
+
 			@Override
 			public void mapWindow(Iterable<Integer> values, Collector<Void> out) throws Exception {
 				LOG.info("Validator got values: ");
 				BitSet vali = new BitSet(4);
-				for(Integer val: values) {
-					LOG.info("value = "+val);
+				for (Integer val : values) {
+					LOG.info("value = " + val);
 					vali.set(val);
 				}
 				LOG.info("Validator finished");
-				if(vali.nextClearBit(0) != 4) {
+				if (vali.nextClearBit(0) != 4) {
 					throw new RuntimeException("Not all parallel instances set ocrrectly");
 				}
 			}
 		});
-		env.execute("Read data from Kafka");
+		tryExecute(env, "Read data from Kafka");
 
 		LOG.info("Successfully read sequence for verification");
+	}
+
+	public static void tryExecute(StreamExecutionEnvironment see, String name) throws Exception {
+		try {
+			see.execute(name);
+		} catch (JobExecutionException good) {
+			Throwable t = good.getCause();
+			int limit = 0;
+			while (!(t instanceof SuccessException)) {
+				t = t.getCause();
+				if (limit++ == 20) {
+					LOG.warn("Test failed with exception", good);
+					Assert.fail("Test failed with: " + good.getMessage());
+				}
+			}
+		}
 	}
 
 	private void writeSequence(StreamExecutionEnvironment env, String topicName, final int from, final int to) throws Exception {
