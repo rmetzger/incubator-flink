@@ -138,7 +138,7 @@ public abstract class StreamOperator<IN, OUT> implements Serializable {
 			callUserFunction();
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
-				LOG.error("Calling user function failed due to: {}", e);
+				LOG.error("Calling user function failed", e);
 			}
 			throw new RuntimeException(e);
 		}
