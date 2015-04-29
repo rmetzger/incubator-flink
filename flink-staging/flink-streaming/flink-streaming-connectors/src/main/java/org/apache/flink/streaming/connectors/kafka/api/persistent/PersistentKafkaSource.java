@@ -138,18 +138,21 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 				MessageAndMetadata<byte[], byte[]> message = iteratorToRead.next();
 				lastOffsets[message.partition()] = message.offset();
 
+
+
 				OUT out = deserializationSchema.deserialize(message.message());
 				if (deserializationSchema.isEndOfStream(out)) {
 					LOG.info("DeserializationSchema signaled end of stream for this source");
 					break;
 				}
+				LOG.info("Processed record with offset {} from partition {}, out = {}", message.offset(), message.partition(), out);
 
 				// we have the offset here: message.offset()
 
 				collector.collect(out);
 				if (LOG.isTraceEnabled()) {
 					RuntimeContext rc = getRuntimeContext();
-					LOG.trace("Processed record with offset {} from parallel source {}/{}", message.offset(), rc.getIndexOfThisSubtask(), rc.getNumberOfParallelSubtasks());
+					LOG.trace("Processed record with offset {} from partition {}", message.offset(), message.partition());
 				}
 			}
 		} catch(Exception ie) {

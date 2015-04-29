@@ -205,7 +205,7 @@ public class KafkaITCase {
 
 		final String topicName = "testOffsetHacking";
 
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
 
 		// create topic
 		Properties topicConfig = new Properties();
@@ -215,19 +215,12 @@ public class KafkaITCase {
 		// write a sequence from 0 to 99 to each of the three partitions.
 		writeSequence(env, topicName, 0, 99);
 
-		// use the high level consumer to read from 0 to 99
-		int[][] offsets = {
-			{0, 99},
-			{0, 99},
-			{0, 99}
-		};
-
-		readSequence(env, cc, topicName, offsets);
+		readSequence(env, cc, topicName, 0, 100, 300);
 
 		// check offsets
-		Assert.assertEquals(99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 0));
-		Assert.assertEquals(99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 1));
-		Assert.assertEquals(99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 2));
+		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 0));
+		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 1));
+		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 2));
 
 		LOG.info("Manipulating offsets");
 		// set the offset to 25, 50, and 75 for the three partitions
@@ -235,43 +228,41 @@ public class KafkaITCase {
 		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 1, 50);
 		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 2, 50);
 
-		// read from the offsets with the consumer.
-		int[][] verifyOffsets = {
-			{25, 99},
-			{50, 99},
-			{75, 99}
-		};
-		readSequence(env, cc, topicName, verifyOffsets);
+		// create new env
+		env = StreamExecutionEnvironment.createLocalEnvironment(3);
+
+		readSequence(env, cc, topicName, 50, 50, 150);
 
 		zk.close();
 
 		LOG.info("Finished testPersistentSourceWithOffsetUpdates()");
 	}
 
-	private void readSequence(StreamExecutionEnvironment env, ConsumerConfig cc, String topicName, final int[][] offsets) throws Exception {
-		LOG.info("Reading sequence for verification. Offsets "+ Arrays.toString(offsets));
-		DataStream<Integer> source = env.addSource(
-				new PersistentKafkaSource<Integer>(topicName, new Utils.TypeInformationSerializationSchema<Integer>(1, env.getConfig()), cc)
+	private void readSequence(StreamExecutionEnvironment env, ConsumerConfig cc, String topicName, final int valuesStartFrom, final int valuesCount, final int finalCount) throws Exception {
+		LOG.info("Reading sequence for verification until final count {}", finalCount);
+		DataStream<Tuple2<Integer, Integer>> source = env.addSource(
+				new PersistentKafkaSource<Tuple2<Integer, Integer>>(topicName, new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1,1), env.getConfig()), cc)
 		).setParallelism(3);
 		source.setName("PersistentKafkaSource from topic "+topicName);
 
 		// verify data
-		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Integer, Integer>() {
-			int[] values = new int[100];
+		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Tuple2<Integer, Integer>, Integer>() {
+			int[] values = new int[valuesCount];
 			int count = 0;
 
 			@Override
-			public void flatMap(Integer value, Collector<Integer> out) throws Exception {
-				values[value]++;
+			public void flatMap(Tuple2<Integer, Integer> value, Collector<Integer> out) throws Exception {
+				values[value.f1 - valuesStartFrom]++;
 				count++;
-				LOG.info("Reader "+getRuntimeContext().getIndexOfThisSubtask()+" got "+value+" count="+count);
+				LOG.info("Reader "+getRuntimeContext().getIndexOfThisSubtask()+" got "+value+" count="+count+"/"+finalCount);
 				// verify if we've seen everything
 
-				if(count == 300) {
+				if(count == finalCount) {
 					LOG.info("Received all values");
-					for(int v: values) {
+					for(int i = 0; i < values.length; i++) {
+						int v = values[i];
 						if(v != 3) {
-							throw new RuntimeException("Expected v to be 3, but was "+v);
+							throw new RuntimeException("Expected v to be 3, but was "+v+" on element "+i);
 						}
 					}
 					// test has passed
@@ -279,7 +270,7 @@ public class KafkaITCase {
 				}
 			}
 
-		}).setParallelism(1).setName("readSequence-indexValidator");
+		}).setParallelism(1).setName("readSequence-indexValidator to "+finalCount);
 
 		validIndexes.window(Count.of(3)).mapWindow(new WindowMapFunction<Integer, Void>() {
 			int[] vals = {-1, -1, -1};
@@ -303,6 +294,56 @@ public class KafkaITCase {
 		LOG.info("Successfully read sequence for verification");
 	}
 
+
+
+	private void writeSequence(StreamExecutionEnvironment env, String topicName, final int from, final int to) throws Exception {
+		LOG.info("Writing sequence from {} to {} to topic {}", from, to, topicName);
+		DataStream<Tuple2<Integer, Integer>> stream = env.addSource(new RichParallelSourceFunction<Tuple2<Integer, Integer>>() {
+			private static final long serialVersionUID = 1L;
+			boolean running = true;
+
+			@Override
+			public void run(Collector<Tuple2<Integer, Integer>> collector) throws Exception {
+				LOG.info("Starting source.");
+				int cnt = from;
+				int partition = getRuntimeContext().getIndexOfThisSubtask();
+				while (running) {
+					LOG.info("Writing " + cnt + " to partition " + partition);
+					collector.collect(new Tuple2<Integer, Integer>(getRuntimeContext().getIndexOfThisSubtask(), cnt));
+					if (cnt == to) {
+						LOG.info("Writer reached end.");
+						return;
+					}
+					cnt++;
+				}
+			}
+
+			@Override
+			public void cancel() {
+				LOG.info("Source got cancel()");
+				running = false;
+			}
+		}).setParallelism(3).setName("write sequence from "+from+" to "+to);
+		stream.addSink(new KafkaSink<Tuple2<Integer, Integer>>(zookeeperConnectionString,
+				topicName,
+				new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1, 1), env.getConfig()),
+				new T2Partitioner()
+		)).setParallelism(3).setName("Kafka Sink");
+		env.execute("Write sequence from " + from + " to " + to + " to topic " + topicName);
+		LOG.info("Finished writing sequence");
+	}
+
+	private static class T2Partitioner implements SerializableKafkaPartitioner {
+		@Override
+		public int partition(Object key, int numPartitions) {
+			if(numPartitions != 3) {
+				throw new IllegalArgumentException("Expected three partitions");
+			}
+			Tuple2<Integer, Integer> element = (Tuple2<Integer, Integer>) key;
+			return element.f0;
+		}
+	}
+
 	public static void tryExecute(StreamExecutionEnvironment see, String name) throws Exception {
 		try {
 			see.execute(name);
@@ -319,38 +360,6 @@ public class KafkaITCase {
 		}
 	}
 
-	private void writeSequence(StreamExecutionEnvironment env, String topicName, final int from, final int to) throws Exception {
-		LOG.info("Writing sequence from {} to {} to topic {}", from, to , topicName);
-		DataStream<Integer> stream = env.addSource(new RichParallelSourceFunction<Integer>() {
-			private static final long serialVersionUID = 1L;
-			boolean running = true;
-
-			@Override
-			public void run(Collector<Integer> collector) throws Exception {
-				LOG.info("Starting source.");
-				int cnt = from;
-				int partition = getRuntimeContext().getIndexOfThisSubtask();
-				while (running) {
-					LOG.info("Writing "+cnt+" to partition "+partition);
-					collector.collect(cnt);
-					if(cnt == to) {
-						LOG.info("Writer reached end.");
-						return;
-					}
-					cnt++;
-				}
-			}
-
-			@Override
-			public void cancel() {
-				LOG.info("Source got cancel()");
-				running = false;
-			}
-		}).setParallelism(3).setName("write sequence from "+from+" to "+to);
-		stream.addSink(new KafkaSink<Integer>(zookeeperConnectionString, topicName, new Utils.TypeInformationSerializationSchema<Integer>(1, env.getConfig()))).setParallelism(3).setName("Kafka Sink");
-		env.execute("Write sequence from " + from + " to " + to + " to topic " + topicName);
-		LOG.info("Finished writing sequence");
-	}
 
 	@Test
 	public void regularKafkaSourceTest() throws Exception {
