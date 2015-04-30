@@ -101,16 +101,6 @@ public class KafkaITCase {
 
 	private static ConsumerConfig standardCC;
 
-	static {
-		Properties cProps = new Properties();
-		cProps.setProperty("zookeeper.connect", zookeeperConnectionString);
-		cProps.setProperty("group.id", "flink-tests");
-		cProps.setProperty("auto.commit.enable", "false");
-
-		cProps.setProperty("auto.offset.reset", "smallest"); // read from the beginning.
-
-		standardCC = new ConsumerConfig(cProps);
-	}
 
 	@BeforeClass
 	public static void prepare() throws IOException {
@@ -149,6 +139,15 @@ public class KafkaITCase {
 			LOG.warn("Test failed with exception", t);
 			Assert.fail("Test failed with: " + t.getMessage());
 		}
+
+		Properties cProps = new Properties();
+		cProps.setProperty("zookeeper.connect", zookeeperConnectionString);
+		cProps.setProperty("group.id", "flink-tests");
+		cProps.setProperty("auto.commit.enable", "false");
+
+		cProps.setProperty("auto.offset.reset", "smallest"); // read from the beginning.
+
+		standardCC = new ConsumerConfig(cProps);
 	}
 
 	@AfterClass
@@ -237,7 +236,7 @@ public class KafkaITCase {
 		DataStream<Tuple2<Integer, Integer>> source = env.addSource(
 				new PersistentKafkaSource<Tuple2<Integer, Integer>>(topicName, new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1,1), env.getConfig()), cc)
 		).setParallelism(3);
-		source.setName("PersistentKafkaSource from topic "+topicName);
+		source.setName("PersistentKafkaSource from topic " + topicName);
 
 		// verify data
 		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Tuple2<Integer, Integer>, Integer>() {
@@ -421,22 +420,9 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig())));
+		stream.addSink(new KafkaSink<Tuple2<Long, String>>(brokerConnectionStrings, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig())));
 
-		try {
-			env.setParallelism(1);
-			env.execute();
-		} catch (JobExecutionException good) {
-			Throwable t = good.getCause();
-			int limit = 0;
-			while (!(t instanceof SuccessException)) {
-				t = t.getCause();
-				if (limit++ == 20) {
-					LOG.warn("Test failed with exception", good);
-					Assert.fail("Test failed with: " + good.getMessage());
-				}
-			}
-		}
+		tryExecute(env, "regular kafka source test");
 
 		LOG.info("Finished KafkaITCase.regularKafkaSourceTest()");
 	}
@@ -519,7 +505,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig())));
+		stream.addSink(new KafkaSink<Tuple2<Long, String>>(brokerConnectionStrings, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig())));
 
 		tryExecute(env, "tupletesttopology");
 
@@ -549,6 +535,7 @@ public class KafkaITCase {
 		consumerProps.setProperty("fetch.message.max.bytes", Integer.toString(1024 * 1024 * 30));
 		consumerProps.setProperty("zookeeper.connect", zookeeperConnectionString);
 		consumerProps.setProperty("group.id", "test");
+		consumerProps.setProperty("auto.commit.enable", "false");
 
 		ConsumerConfig cc = new ConsumerConfig(consumerProps);
 		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
@@ -614,7 +601,7 @@ public class KafkaITCase {
 			}
 		});
 
-		stream.addSink(new KafkaSink<Tuple2<Long, byte[]>>(zookeeperConnectionString, topic,
+		stream.addSink(new KafkaSink<Tuple2<Long, byte[]>>(brokerConnectionStrings, topic,
 				new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig()))
 		);
 
@@ -710,7 +697,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), new CustomPartitioner()));
+		stream.addSink(new KafkaSink<Tuple2<Long, String>>(brokerConnectionStrings, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), new CustomPartitioner()));
 
 		tryExecute(env, "custom partitioning test");
 
@@ -801,7 +788,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema()));
+		stream.addSink(new KafkaSink<String>(brokerConnectionStrings, topic, new JavaDefaultStringSchema()));
 
 		tryExecute(env, "simpletest");
 	}
@@ -924,7 +911,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema()))
+		stream.addSink(new KafkaSink<String>(brokerConnectionStrings, topic, new JavaDefaultStringSchema()))
 				.setParallelism(1);
 
 		tryExecute(env, "broker failure test");
