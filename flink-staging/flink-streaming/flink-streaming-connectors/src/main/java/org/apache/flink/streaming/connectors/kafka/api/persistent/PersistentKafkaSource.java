@@ -136,6 +136,10 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 					break;
 				}
 				MessageAndMetadata<byte[], byte[]> message = iteratorToRead.next();
+				if(lastOffsets[message.partition()] >= message.offset()) {
+					LOG.info("Skipping message with offset {} from partition {}", message.offset(), message.partition());
+					continue;
+				}
 				lastOffsets[message.partition()] = message.offset();
 
 
@@ -166,8 +170,6 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 			} else {
 				throw ie;
 			}
-		} finally {
-			this.close();
 		}
 
 		LOG.info("Source has finished reading data from the KafkaStream");
@@ -179,10 +181,7 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 		running = false;
 	}
 
-	/**
-	 * Close the PersistentKafkaSource.
-	 * NOTE: This method is not called by the framework.
-	 */
+	@Override
 	public void close() {
 		LOG.info("Closing Kafka consumer");
 		for(int partition = 0; partition < lastOffsets.length; partition++) {

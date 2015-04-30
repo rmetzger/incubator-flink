@@ -42,7 +42,10 @@ import scala.collection.Seq;
 /**
  * For retrieving Kafka topic information (e.g. number of partitions),
  * or creating a topic.
+ *
+ * DO NOT USE THIS CLASS ANYMORE. ITS OPENING MORE ZK CONNECTIONS THAN ITS CLOSING.
  */
+@Deprecated
 public class KafkaTopicUtils {
 
 	private static final Logger LOG = LoggerFactory.getLogger(KafkaTopicUtils.class);
@@ -213,12 +216,14 @@ public class KafkaTopicUtils {
 	}
 
 	private void initZkClient() {
+		LOG.info("Connecting to Zookeeper");
 		zkClient = new ZkClient(zookeeperAddress, sessionTimeoutMs, connectionTimeoutMs,
 				new KafkaZKStringSerializer());
 		zkClient.waitUntilConnected();
 	}
 
 	private void closeZkClient() {
+		LOG.info("Closing connection to ZK");
 		zkClient.close();
 		zkClient = null;
 	}
