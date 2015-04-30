@@ -159,16 +159,11 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 				}
 				lastOffsets[message.partition()] = message.offset();
 
-
-
 				OUT out = deserializationSchema.deserialize(message.message());
 				if (deserializationSchema.isEndOfStream(out)) {
 					LOG.info("DeserializationSchema signaled end of stream for this source");
 					break;
 				}
-				LOG.info("Processed record with offset {} from partition {}, out = {}", message.offset(), message.partition(), out);
-
-				// we have the offset here: message.offset()
 
 				collector.collect(out);
 				if (LOG.isTraceEnabled()) {
