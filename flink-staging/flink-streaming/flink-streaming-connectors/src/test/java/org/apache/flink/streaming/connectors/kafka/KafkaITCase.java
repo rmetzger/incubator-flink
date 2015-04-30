@@ -54,7 +54,6 @@ import org.apache.flink.streaming.api.windowing.helper.Count;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSink;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSource;
 import org.apache.flink.streaming.connectors.kafka.api.persistent.PersistentKafkaSource;
-import org.apache.flink.streaming.connectors.kafka.api.simple.KafkaTopicUtils;
 import org.apache.flink.streaming.connectors.kafka.partitioner.SerializableKafkaPartitioner;
 import org.apache.flink.streaming.connectors.kafka.util.KafkaLocalSystemTime;
 import org.apache.flink.streaming.util.serialization.JavaDefaultStringSchema;
@@ -809,7 +808,7 @@ public class KafkaITCase {
 
 	private static boolean leaderHasShutDown = false;
 
-	@Test
+/*	@Test
 	public void brokerFailureTest() throws Exception {
 		String topic = "brokerFailureTestTopic";
 
@@ -929,7 +928,7 @@ public class KafkaITCase {
 				.setParallelism(1);
 
 		tryExecute(env, "broker failure test");
-	}
+	} */
 
 
 	private void createTestTopic(String topic, int numberOfPartitions, int replicationFactor) {
