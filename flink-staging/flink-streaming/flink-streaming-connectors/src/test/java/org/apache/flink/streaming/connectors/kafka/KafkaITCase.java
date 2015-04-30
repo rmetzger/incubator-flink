@@ -34,6 +34,7 @@ import java.util.Random;
 import kafka.admin.AdminUtils;
 import kafka.common.TopicAndPartition;
 import kafka.consumer.ConsumerConfig;
+import kafka.network.SocketServer;
 import kafka.utils.ZKGroupTopicDirs;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
@@ -107,6 +108,7 @@ public class KafkaITCase {
 
 	private static TestingServer zookeeper;
 	private static List<KafkaServer> brokers;
+	private static String brokerConnectionStrings = "";
 
 	private static boolean shutdownKafkaBroker;
 
@@ -134,6 +136,12 @@ public class KafkaITCase {
 			brokers = new ArrayList<KafkaServer>(NUMBER_OF_KAFKA_SERVERS);
 			for (int i = 0; i < NUMBER_OF_KAFKA_SERVERS; i++) {
 				brokers.add(getKafkaServer(i, tmpKafkaDirs.get(i)));
+				SocketServer socketServer = brokers.get(i).socketServer();
+				String host = "localhost";
+				if(socketServer.host() != null) {
+					host = socketServer.host();
+				}
+				brokerConnectionStrings += host+":"+socketServer.port()+",";
 			}
 
 			LOG.info("ZK and KafkaServer started.");
@@ -206,6 +214,7 @@ public class KafkaITCase {
 		final String topicName = "testOffsetHacking";
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
+		env.getConfig().disableSysoutLogging();
 
 		// create topic
 		Properties topicConfig = new Properties();
@@ -230,7 +239,7 @@ public class KafkaITCase {
 
 		// create new env
 		env = StreamExecutionEnvironment.createLocalEnvironment(3);
-
+		env.getConfig().disableSysoutLogging();
 		readSequence(env, cc, topicName, 50, 50, 150);
 
 		zk.close();
@@ -262,7 +271,7 @@ public class KafkaITCase {
 					for(int i = 0; i < values.length; i++) {
 						int v = values[i];
 						if(v != 3) {
-							throw new RuntimeException("Expected v to be 3, but was "+v+" on element "+i);
+							throw new RuntimeException("Expected v to be 3, but was "+v+" on element "+i+" array="+Arrays.toString(values));
 						}
 					}
 					// test has passed
@@ -324,7 +333,7 @@ public class KafkaITCase {
 				running = false;
 			}
 		}).setParallelism(3).setName("write sequence from "+from+" to "+to);
-		stream.addSink(new KafkaSink<Tuple2<Integer, Integer>>(zookeeperConnectionString,
+		stream.addSink(new KafkaSink<Tuple2<Integer, Integer>>(brokerConnectionStrings,
 				topicName,
 				new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1, 1), env.getConfig()),
 				new T2Partitioner()
@@ -1022,8 +1031,15 @@ public class KafkaITCase {
 
 
 	private void createTestTopic(String topic, int numberOfPartitions, int replicationFactor) {
-		KafkaTopicUtils kafkaTopicUtils = new KafkaTopicUtils(zookeeperConnectionString);
-		kafkaTopicUtils.createTopic(topic, numberOfPartitions, replicationFactor);
+		Properties props = new Properties();
+		props.setProperty("zookeeper.connect", zookeeperConnectionString);
+		ConsumerConfig cc = new ConsumerConfig(props);
+		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new KafkaTopicUtils.KafkaZKStringSerializer());
+
+		// create topic
+		Properties topicConfig = new Properties();
+		LOG.info("Creating topic {}", topic);
+		AdminUtils.createTopic(zk, topic, numberOfPartitions, replicationFactor, topicConfig);
 	}
 
 	private static TestingServer getZookeeper() throws Exception {
