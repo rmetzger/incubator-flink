@@ -27,6 +27,7 @@ import java.util.Set;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkMarshallingError;
 import org.I0Itec.zkclient.serialize.ZkSerializer;
+import org.apache.flink.streaming.connectors.kafka.api.persistent.PersistentKafkaSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,7 +219,7 @@ public class KafkaTopicUtils {
 	private void initZkClient() {
 		LOG.info("Connecting to Zookeeper");
 		zkClient = new ZkClient(zookeeperAddress, sessionTimeoutMs, connectionTimeoutMs,
-				new KafkaZKStringSerializer());
+				new PersistentKafkaSource.KafkaZKStringSerializer());
 		zkClient.waitUntilConnected();
 	}
 
@@ -226,30 +227,5 @@ public class KafkaTopicUtils {
 		LOG.info("Closing connection to ZK");
 		zkClient.close();
 		zkClient = null;
-	}
-
-	public static class KafkaZKStringSerializer implements ZkSerializer {
-
-		@Override
-		public byte[] serialize(Object data) throws ZkMarshallingError {
-			try {
-				return ((String) data).getBytes("UTF-8");
-			} catch (UnsupportedEncodingException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public Object deserialize(byte[] bytes) throws ZkMarshallingError {
-			if (bytes == null) {
-				return null;
-			} else {
-				try {
-					return new String(bytes, "UTF-8");
-				} catch (UnsupportedEncodingException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
 	}
 }

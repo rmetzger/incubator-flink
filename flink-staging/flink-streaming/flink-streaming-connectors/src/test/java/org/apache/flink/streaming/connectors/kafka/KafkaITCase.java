@@ -32,20 +32,12 @@ import java.util.Properties;
 import java.util.Random;
 
 import kafka.admin.AdminUtils;
-import kafka.common.TopicAndPartition;
 import kafka.consumer.ConsumerConfig;
 import kafka.network.SocketServer;
-import kafka.utils.ZKGroupTopicDirs;
-import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.commons.lang.SerializationUtils;
 import org.apache.curator.test.TestingServer;
-import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.net.NetUtils;
@@ -63,19 +55,15 @@ import org.apache.flink.streaming.connectors.kafka.api.KafkaSink;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSource;
 import org.apache.flink.streaming.connectors.kafka.api.persistent.PersistentKafkaSource;
 import org.apache.flink.streaming.connectors.kafka.api.simple.KafkaTopicUtils;
-import org.apache.flink.streaming.connectors.kafka.api.simple.LegacyPersistentKafkaSource;
-import org.apache.flink.streaming.connectors.kafka.api.simple.offset.Offset;
 import org.apache.flink.streaming.connectors.kafka.partitioner.SerializableKafkaPartitioner;
 import org.apache.flink.streaming.connectors.kafka.util.KafkaLocalSystemTime;
-import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.JavaDefaultStringSchema;
-import org.apache.flink.streaming.util.serialization.SerializationSchema;
 import org.apache.flink.util.Collector;
-import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
@@ -111,6 +99,19 @@ public class KafkaITCase {
 	private static String brokerConnectionStrings = "";
 
 	private static boolean shutdownKafkaBroker;
+
+	private static ConsumerConfig standardCC;
+
+	static {
+		Properties cProps = new Properties();
+		cProps.setProperty("zookeeper.connect", zookeeperConnectionString);
+		cProps.setProperty("group.id", "flink-tests");
+		cProps.setProperty("auto.commit.enable", "false");
+
+		cProps.setProperty("auto.offset.reset", "smallest"); // read from the beginning.
+
+		standardCC = new ConsumerConfig(cProps);
+	}
 
 	@BeforeClass
 	public static void prepare() throws IOException {
@@ -171,15 +172,7 @@ public class KafkaITCase {
 
 	@Test
 	public void testOffsetManipulation() {
-		Properties cProps = new Properties();
-		cProps.setProperty("zookeeper.connect", zookeeperConnectionString);
-		cProps.setProperty("group.id", "flink-tests");
-		cProps.setProperty("auto.commit.enable", "false");
-
-		cProps.setProperty("auto.offset.reset", "smallest"); // read from the beginning.
-
-		ConsumerConfig cc = new ConsumerConfig(cProps);
-		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new KafkaTopicUtils.KafkaZKStringSerializer());
+		ZkClient zk = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new PersistentKafkaSource.KafkaZKStringSerializer());
 
 		final String topicName = "testOffsetManipulation";
 
@@ -188,9 +181,9 @@ public class KafkaITCase {
 		LOG.info("Creating topic {}", topicName);
 		AdminUtils.createTopic(zk, topicName, 3, 2, topicConfig);
 
-		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 0, 1337);
+		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 0, 1337);
 
-		Assert.assertEquals(1337L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 0));
+		Assert.assertEquals(1337L, PersistentKafkaSource.getOffset(zk, standardCC.groupId(), topicName, 0));
 
 		zk.close();
 	}
@@ -201,15 +194,8 @@ public class KafkaITCase {
 	@Test
 	public void testPersistentSourceWithOffsetUpdates() throws Exception {
 		LOG.info("Starting testPersistentSourceWithOffsetUpdates()");
-		Properties cProps = new Properties();
-		cProps.setProperty("zookeeper.connect", zookeeperConnectionString);
-		cProps.setProperty("group.id", "flink-tests");
-		cProps.setProperty("auto.commit.enable", "false");
 
-		cProps.setProperty("auto.offset.reset", "smallest"); // read from the beginning.
-
-		ConsumerConfig cc = new ConsumerConfig(cProps);
-		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new KafkaTopicUtils.KafkaZKStringSerializer());
+		ZkClient zk = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new PersistentKafkaSource.KafkaZKStringSerializer());
 
 		final String topicName = "testOffsetHacking";
 
@@ -224,23 +210,23 @@ public class KafkaITCase {
 		// write a sequence from 0 to 99 to each of the three partitions.
 		writeSequence(env, topicName, 0, 99);
 
-		readSequence(env, cc, topicName, 0, 100, 300);
+		readSequence(env, standardCC, topicName, 0, 100, 300);
 
 		// check offsets
-		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 0));
-		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 1));
-		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, cc.groupId(), topicName, 2));
+		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, standardCC.groupId(), topicName, 0));
+		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, standardCC.groupId(), topicName, 1));
+		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, standardCC.groupId(), topicName, 2));
 
 		LOG.info("Manipulating offsets");
 		// set the offset to 25, 50, and 75 for the three partitions
-		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 0, 50);
-		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 1, 50);
-		PersistentKafkaSource.setOffset(zk, cc.groupId(), topicName, 2, 50);
+		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 0, 50);
+		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 1, 50);
+		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 2, 50);
 
 		// create new env
 		env = StreamExecutionEnvironment.createLocalEnvironment(3);
 		env.getConfig().disableSysoutLogging();
-		readSequence(env, cc, topicName, 50, 50, 150);
+		readSequence(env, standardCC, topicName, 50, 50, 150);
 
 		zk.close();
 
@@ -465,9 +451,13 @@ public class KafkaITCase {
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
 
+
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), 5000, 100, Offset.FROM_BEGINNING));
+				new PersistentKafkaSource<Tuple2<Long, String>>(topic,
+						new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()),
+						standardCC
+				));
 		consuming.addSink(new RichSinkFunction<Tuple2<Long, String>>() {
 			int elCnt = 0;
 			int start = -1;
@@ -532,20 +522,7 @@ public class KafkaITCase {
 		});
 		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig())));
 
-		try {
-			env.setParallelism(1);
-			env.execute();
-		} catch (JobExecutionException good) {
-			Throwable t = good.getCause();
-			int limit = 0;
-			while (!(t instanceof SuccessException)) {
-				t = t.getCause();
-				if (limit++ == 20) {
-					LOG.warn("Test failed with exception", good);
-					Assert.fail("Test failed with: " + good.getMessage());
-				}
-			}
-		}
+		tryExecute(env, "tupletesttopology");
 
 		LOG.info("Finished KafkaITCase.tupleTestTopology()");
 	}
@@ -576,7 +553,7 @@ public class KafkaITCase {
 
 		ConsumerConfig cc = new ConsumerConfig(consumerProps);
 		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
-				new LegacyPersistentKafkaSource<Tuple2<Long, byte[]>>(topic, serSchema, Offset.FROM_BEGINNING, cc));
+				new PersistentKafkaSource<Tuple2<Long, byte[]>>(topic, serSchema, cc));
 
 		consuming.addSink(new SinkFunction<Tuple2<Long, byte[]>>() {
 			int elCnt = 0;
@@ -642,20 +619,7 @@ public class KafkaITCase {
 				new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig()))
 		);
 
-		try {
-			env.setParallelism(1);
-			env.execute();
-		} catch (JobExecutionException good) {
-			Throwable t = good.getCause();
-			int limit = 0;
-			while (!(t instanceof SuccessException)) {
-				t = t.getCause();
-				if (limit++ == 20) {
-					LOG.warn("Test failed with exception", good);
-					Assert.fail("Test failed with: " + good.getMessage());
-				}
-			}
-		}
+		tryExecute(env, "big topology test");
 
 		LOG.info("Finished KafkaITCase.bigRecordTestTopology()");
 	}
@@ -675,7 +639,9 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new LegacyPersistentKafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), 5000, 100, Offset.FROM_BEGINNING));
+				new PersistentKafkaSource<Tuple2<Long, String>>(topic,
+						new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()),
+						standardCC));
 		consuming.addSink(new SinkFunction<Tuple2<Long, String>>() {
 			int start = -1;
 			BitSet validator = new BitSet(101);
@@ -747,21 +713,7 @@ public class KafkaITCase {
 		});
 		stream.addSink(new KafkaSink<Tuple2<Long, String>>(zookeeperConnectionString, topic, new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), new CustomPartitioner()));
 
-		try {
-			env.setParallelism(1);
-			env.execute();
-		} catch (JobExecutionException good) {
-			Throwable t = good.getCause();
-			int limit = 0;
-			while (!(t instanceof SuccessException)) {
-				t = t.getCause();
-				if (limit++ == 20) {
-					throw good;
-				}
-			}
-
-			assertTrue(partitionerHasBeenCalled);
-		}
+		tryExecute(env, "custom partitioning test");
 
 		LOG.info("Finished KafkaITCase.customPartitioningTestTopology()");
 	}
@@ -787,30 +739,6 @@ public class KafkaITCase {
 		}
 	}
 
-	/*private static class TupleSerializationSchema implements DeserializationSchema<Tuple2<Long, String>>, SerializationSchema<Tuple2<Long, String>, byte[]> {
-
-		@SuppressWarnings("unchecked")
-		@Override
-		public Tuple2<Long, String> deserialize(byte[] message) {
-			Object deserializedObject = SerializationUtils.deserialize(message);
-			return (Tuple2<Long, String>) deserializedObject;
-		}
-
-		@Override
-		public byte[] serialize(Tuple2<Long, String> element) {
-			return SerializationUtils.serialize(element);
-		}
-
-		@Override
-		public boolean isEndOfStream(Tuple2<Long, String> nextElement) {
-			return false;
-		}
-
-		@Override
-		public TypeInformation<Tuple2<Long, String>> getProducedType() {
-			return TypeExtractor.getForClass(Tuple2<Long, String>.class);
-		}
-	} */
 
 	@Test
 	public void simpleTestTopology() throws Exception {
@@ -822,7 +750,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<String> consuming = env.addSource(
-				new LegacyPersistentKafkaSource<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema(), 5000, 100, Offset.FROM_BEGINNING));
+				new PersistentKafkaSource<String>(topic, new JavaDefaultStringSchema(), standardCC));
 		consuming.addSink(new SinkFunction<String>() {
 			int elCnt = 0;
 			int start = -1;
@@ -876,20 +804,7 @@ public class KafkaITCase {
 		});
 		stream.addSink(new KafkaSink<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema()));
 
-		try {
-			env.setParallelism(1);
-			env.execute();
-		} catch (JobExecutionException good) {
-			Throwable t = good.getCause();
-			int limit = 0;
-			while (!(t instanceof SuccessException)) {
-				t = t.getCause();
-				if (limit++ == 20) {
-					LOG.warn("Test failed with exception", good);
-					Assert.fail("Test failed with: " + good.getMessage());
-				}
-			}
-		}
+		tryExecute(env, "simpletest");
 	}
 
 	private static boolean leaderHasShutDown = false;
@@ -935,7 +850,7 @@ public class KafkaITCase {
 
 		// add consuming topology:
 		DataStreamSource<String> consuming = env.addSource(
-				new LegacyPersistentKafkaSource<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema(), 5000, 10, Offset.FROM_BEGINNING));
+				new PersistentKafkaSource<String>(topic, new JavaDefaultStringSchema(), standardCC));
 		consuming.setParallelism(1);
 
 		consuming.addSink(new SinkFunction<String>() {
@@ -1013,28 +928,16 @@ public class KafkaITCase {
 		stream.addSink(new KafkaSink<String>(zookeeperConnectionString, topic, new JavaDefaultStringSchema()))
 				.setParallelism(1);
 
-		try {
-			env.setParallelism(1);
-			env.execute();
-		} catch (JobExecutionException good) {
-			Throwable t = good.getCause();
-			int limit = 0;
-			while (!(t instanceof SuccessException)) {
-				t = t.getCause();
-				if (limit++ == 20) {
-					LOG.warn("Test failed with exception", good);
-					Assert.fail("Test failed with: " + good.getMessage());
-				}
-			}
-		}
+		tryExecute(env, "broker failure test");
 	}
 
 
 	private void createTestTopic(String topic, int numberOfPartitions, int replicationFactor) {
 		Properties props = new Properties();
 		props.setProperty("zookeeper.connect", zookeeperConnectionString);
+		props.setProperty("group.id", "kafkaitcase");
 		ConsumerConfig cc = new ConsumerConfig(props);
-		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new KafkaTopicUtils.KafkaZKStringSerializer());
+		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new PersistentKafkaSource.KafkaZKStringSerializer());
 
 		// create topic
 		Properties topicConfig = new Properties();

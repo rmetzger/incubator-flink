@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.flink.streaming.connectors.kafka.api.persistent;
 
 import com.google.common.base.Preconditions;
@@ -11,6 +28,8 @@ import kafka.message.MessageAndMetadata;
 import kafka.utils.ZKGroupTopicDirs;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.exception.ZkMarshallingError;
+import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
@@ -31,6 +50,7 @@ import scala.collection.Seq;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -114,7 +134,7 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 		zkClient = new ZkClient(consumerConfig.zkConnect(),
 			consumerConfig.zkSessionTimeoutMs(),
 			consumerConfig.zkConnectionTimeoutMs(),
-			new KafkaTopicUtils.KafkaZKStringSerializer());
+			new KafkaZKStringSerializer());
 
 		// most likely the number of offsets we're going to store here will be lower than the number of partitions.
 		int numPartitions = getNumberOfPartitions();
@@ -233,7 +253,6 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 	}
 
 
-
 	// ---------------------- (Java)Serialization methods for the consumerConfig -----------------
 
 	private void writeObject(ObjectOutputStream out)
@@ -253,5 +272,33 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 	@Override
 	public TypeInformation<OUT> getProducedType() {
 		return deserializationSchema.getProducedType();
+	}
+
+
+	// ---------------------- Zookeeper Serializer copied from Kafka (because it has private access there)  -----------------
+
+	public static class KafkaZKStringSerializer implements ZkSerializer {
+
+		@Override
+		public byte[] serialize(Object data) throws ZkMarshallingError {
+			try {
+				return ((String) data).getBytes("UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public Object deserialize(byte[] bytes) throws ZkMarshallingError {
+			if (bytes == null) {
+				return null;
+			} else {
+				try {
+					return new String(bytes, "UTF-8");
+				} catch (UnsupportedEncodingException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
 	}
 }
