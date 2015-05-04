@@ -37,6 +37,7 @@ import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 import kafka.serializer.DefaultEncoder;
 
+
 /**
  * Sink that emits its inputs to a Kafka topic.
  *
@@ -106,8 +107,7 @@ public class KafkaSink<IN> extends RichSinkFunction<IN> {
 	 * Creates a KafkaSink for a given topic. The sink produces its input to
 	 * the topic.
 	 *
-	 * @param zookeeperAddress
-	 * 		Address of the Zookeeper host (with port number).
+	 * @param brokerList
 	 * @param topicId
 	 * 		ID of the Kafka topic.
 	 * @param serializationSchema
@@ -115,18 +115,18 @@ public class KafkaSink<IN> extends RichSinkFunction<IN> {
 	 * @param partitioner
 	 * 		User defined partitioner.
 	 */
-	public KafkaSink(String zookeeperAddress, String topicId,
+	public KafkaSink(String brokerList, String topicId,
 			SerializationSchema<IN, byte[]> serializationSchema, SerializableKafkaPartitioner partitioner) {
-		this(zookeeperAddress, topicId, serializationSchema);
+		this(brokerList, topicId, serializationSchema);
 		ClosureCleaner.ensureSerializable(partitioner);
 		this.partitioner = partitioner;
 	}
 
-	public KafkaSink(String zookeeperAddress,
+	public KafkaSink(String brokerList,
 			String topicId,
 			SerializationSchema<IN, byte[]> serializationSchema,
 			Class<? extends SerializableKafkaPartitioner> partitioner) {
-		this(zookeeperAddress, topicId, serializationSchema);
+		this(brokerList, topicId, serializationSchema);
 		this.partitionerClass = partitioner;
 	}
 
