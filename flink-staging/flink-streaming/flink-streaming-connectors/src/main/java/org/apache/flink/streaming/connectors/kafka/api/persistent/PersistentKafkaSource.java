@@ -71,7 +71,7 @@ import java.util.Properties;
 public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> implements
 		ResultTypeQueryable<OUT>,
 		CheckpointCommitter,
-		CheckpointedAsynchronously {
+		CheckpointedAsynchronously<long[]> {
 	private static final Logger LOG = LoggerFactory.getLogger(PersistentKafkaSource.class);
 
 	protected transient ConsumerConfig consumerConfig;
@@ -176,7 +176,6 @@ public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> 
 
 				collector.collect(out);
 				if (LOG.isTraceEnabled()) {
-					RuntimeContext rc = getRuntimeContext();
 					LOG.trace("Processed record with offset {} from partition {}", message.offset(), message.partition());
 				}
 			}
@@ -214,25 +213,23 @@ public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> 
 	// this source is keeping the partition offsets in Zookeeper
 
 	private Map<Long, long[]> pendingCheckpoints = new HashMap<Long, long[]>();
-	private OperatorState<long[]> operatorState;
 
 	@Override
-	public OperatorState<?> snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
+	public long[] snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
+		if(lastOffsets == null) {
+			LOG.warn("State snapshot requested on not yet opened source. Returning null");
+			return null;
+		}
 		LOG.info("Snapshotting state. Offsets: {}, checkpoint id {}, timestamp {}", Arrays.toString(lastOffsets), checkpointId, checkpointTimestamp);
 
 		long[] currentOffsets = Arrays.copyOf(lastOffsets, lastOffsets.length);
-		if(operatorState == null) {
-			operatorState = new OperatorState<long[]>(currentOffsets);
-		} else {
-			operatorState.update(currentOffsets);
-		}
 		pendingCheckpoints.put(checkpointId, currentOffsets);
-		return operatorState;
+		return currentOffsets;
 	}
 
 	@Override
-	public void restoreState(Serializable state) {
-		// right now, nothing to do
+	public void restoreState(long[] state) {
+		// we maintain the offsets in Kafka, so nothing to do.
 	}
 
 
@@ -245,11 +242,13 @@ public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> 
 		LOG.info("Commit checkpoint {}", checkpointId);
 		long[] checkpointOffsets = pendingCheckpoints.remove(checkpointId);
 		if(checkpointOffsets == null) {
-			throw new IllegalStateException("Unable to find pending checkpoint for id "+checkpointId);
+			LOG.warn("Unable to find pending checkpoint for id {}", checkpointId);
+			return;
 		}
+		LOG.info("Got corresponding offsets {}", Arrays.toString(checkpointOffsets));
 
-		for(int partition = 0; partition < lastOffsets.length; partition++) {
-			long offset = lastOffsets[partition];
+		for(int partition = 0; partition < checkpointOffsets.length; partition++) {
+			long offset = checkpointOffsets[partition];
 			if(offset != -1) {
 				setOffset(partition, offset);
 			}

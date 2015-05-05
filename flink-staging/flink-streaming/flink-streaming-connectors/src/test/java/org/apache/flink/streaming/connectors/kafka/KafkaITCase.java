@@ -199,7 +199,7 @@ public class KafkaITCase {
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
 		env.getConfig().disableSysoutLogging();
-		env.getConfig().setNumberOfExecutionRetries(0);
+		env.enableCheckpointing(15);
 
 		// create topic
 		Properties topicConfig = new Properties();
@@ -216,7 +216,8 @@ public class KafkaITCase {
 		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, standardCC.groupId(), topicName, 1));
 		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, standardCC.groupId(), topicName, 2));
 
-		LOG.info("Manipulating offsets");
+
+		/*LOG.info("Manipulating offsets");
 		// set the offset to 25, 50, and 75 for the three partitions
 		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 0, 50);
 		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 1, 50);
@@ -229,7 +230,7 @@ public class KafkaITCase {
 
 		zk.close();
 
-		LOG.info("Finished testPersistentSourceWithOffsetUpdates()");
+		LOG.info("Finished testPersistentSourceWithOffsetUpdates()"); */
 	}
 
 	private void readSequence(StreamExecutionEnvironment env, ConsumerConfig cc, String topicName, final int valuesStartFrom, final int valuesCount, final int finalCount) throws Exception {
@@ -363,7 +364,6 @@ public class KafkaITCase {
 		createTestTopic(topic, 1, 1);
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
-		env.getConfig().setNumberOfExecutionRetries(0);
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
 				new KafkaSource<Tuple2<Long, String>>(zookeeperConnectionString, topic, "myFlinkGroup", new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()), 5000));
@@ -436,7 +436,6 @@ public class KafkaITCase {
 		createTestTopic(topic, 1, 1);
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
-		env.getConfig().setNumberOfExecutionRetries(0);
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
@@ -529,7 +528,6 @@ public class KafkaITCase {
 		createTestTopic(topic, 1, 1);
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
-		env.getConfig().setNumberOfExecutionRetries(0);
 
 		// add consuming topology:
 		Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>> serSchema = new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig());
@@ -625,7 +623,6 @@ public class KafkaITCase {
 		createTestTopic(topic, 3, 1);
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
-		env.getConfig().setNumberOfExecutionRetries(0);
 
 		// add consuming topology:
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
@@ -736,8 +733,6 @@ public class KafkaITCase {
 		createTestTopic(topic, 1, 1);
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
-		env.getConfig().setNumberOfExecutionRetries(0);
-		env.enableCheckpointing(50);
 
 		// add consuming topology:
 		DataStreamSource<String> consuming = env.addSource(
