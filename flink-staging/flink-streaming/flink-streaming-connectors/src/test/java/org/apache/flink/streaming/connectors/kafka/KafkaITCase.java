@@ -538,6 +538,7 @@ public class KafkaITCase {
 		consumerProps.setProperty("zookeeper.connect", zookeeperConnectionString);
 		consumerProps.setProperty("group.id", "test");
 		consumerProps.setProperty("auto.commit.enable", "false");
+		consumerProps.setProperty("auto.offset.reset", "smallest");
 
 		ConsumerConfig cc = new ConsumerConfig(consumerProps);
 		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
@@ -548,6 +549,7 @@ public class KafkaITCase {
 
 			@Override
 			public void invoke(Tuple2<Long, byte[]> value) throws Exception {
+				LOG.info("Received {}", value.f0);
 				elCnt++;
 				if(value.f0 == -1) {
 					// we should have seen 11 elements now.
@@ -561,7 +563,7 @@ public class KafkaITCase {
 					throw new RuntimeException("More than 10 elements seen: "+elCnt);
 				}
 			}
-		});
+		}).setParallelism(1);
 
 		// add producing topology
 		DataStream<Tuple2<Long, byte[]>> stream = env.addSource(new RichSourceFunction<Tuple2<Long, byte[]>>() {
@@ -589,6 +591,7 @@ public class KafkaITCase {
 					} catch (InterruptedException ignored) {
 					}
 					if(cnt == 10) {
+						LOG.info("Send end signal");
 						// signal end
 						collector.collect(new Tuple2<Long, byte[]>(-1L, new byte[]{1}));
 						running = false;

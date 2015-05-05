@@ -39,6 +39,7 @@ import org.apache.flink.streaming.api.checkpoint.CheckpointCommitter;
 import org.apache.flink.streaming.api.checkpoint.Checkpointed;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
 import org.apache.flink.streaming.api.functions.source.ParallelSourceFunction;
+import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.util.Collector;
@@ -66,7 +67,7 @@ import java.util.Properties;
  *
  * Note that the autocommit feature of Kafka needs to be disabled for using this source.
  */
-public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implements ParallelSourceFunction<OUT>,
+public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> implements
 		ResultTypeQueryable<OUT>,
 		CheckpointCommitter,
 		CheckpointedAsynchronously {
