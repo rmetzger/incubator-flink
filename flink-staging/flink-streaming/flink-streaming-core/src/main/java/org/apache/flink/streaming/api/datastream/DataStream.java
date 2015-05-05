@@ -250,7 +250,7 @@ public class DataStream<OUT> {
 	}
 
 	public DataStream<OUT> setName(String newName) {
-		streamGraph.getVertex(this.id).setOperatorName(newName);
+		streamGraph.getStreamNode(this.id).setOperatorName(newName);
 		return this;
 	}
 

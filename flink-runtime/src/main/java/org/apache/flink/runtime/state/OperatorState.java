@@ -60,8 +60,8 @@ public class OperatorState<T> implements Serializable {
 	 *            The update applied.
 	 */
 	@SuppressWarnings("unchecked")
-	public synchronized void update(Object stateUpdate) {
-		this.stateObject = (T) stateUpdate;
+	public synchronized void update(T stateUpdate) {
+		this.stateObject = stateUpdate;
 	}
 
 	/**

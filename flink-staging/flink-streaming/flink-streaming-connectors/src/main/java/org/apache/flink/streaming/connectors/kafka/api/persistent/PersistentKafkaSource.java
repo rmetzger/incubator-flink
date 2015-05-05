@@ -34,6 +34,10 @@ import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.state.OperatorState;
+import org.apache.flink.streaming.api.checkpoint.CheckpointCommitter;
+import org.apache.flink.streaming.api.checkpoint.Checkpointed;
+import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
 import org.apache.flink.streaming.api.functions.source.ParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
@@ -51,6 +55,7 @@ import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -61,7 +66,10 @@ import java.util.Properties;
  *
  * Note that the autocommit feature of Kafka needs to be disabled for using this source.
  */
-public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implements ParallelSourceFunction<OUT>, ResultTypeQueryable<OUT> {
+public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implements ParallelSourceFunction<OUT>,
+		ResultTypeQueryable<OUT>,
+		CheckpointCommitter,
+		CheckpointedAsynchronously {
 	private static final Logger LOG = LoggerFactory.getLogger(PersistentKafkaSource.class);
 
 	protected transient ConsumerConfig consumerConfig;
@@ -108,7 +116,6 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 	@Override
 	public void open(Configuration parameters) throws Exception {
 		super.open(parameters);
-
 		ConsumerConnector consumer = Consumer.createJavaConsumerConnector(this.consumerConfig);
 		// we request only one stream per consumer instance. Kafka will make sure that each consumer group
 		// will see each message only once.
@@ -196,14 +203,50 @@ public class PersistentKafkaSource<OUT> extends RichSourceFunction<OUT> implemen
 	@Override
 	public void close() {
 		LOG.info("Closing Kafka consumer");
+		this.consumer.shutdown();
+		zkClient.close();
+	}
+
+
+	// ---------------------- State / Checkpoint handling  -----------------
+	// this source is keeping the partition offsets in Zookeeper
+
+	private Map<Long, long[]> pendingCheckpoints = new HashMap<Long, long[]>();
+	private OperatorState<long[]> operatorState;
+
+	@Override
+	public OperatorState<?> snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
+		LOG.info("Snapshotting state. Offsets: {}, checkpoint id {}, timestamp {}", Arrays.toString(lastOffsets), checkpointId, checkpointTimestamp);
+
+		long[] currentOffsets = Arrays.copyOf(lastOffsets, lastOffsets.length);
+		if(operatorState == null) {
+			operatorState = new OperatorState<long[]>(currentOffsets);
+		} else {
+			operatorState.update(currentOffsets);
+		}
+		pendingCheckpoints.put(checkpointId, currentOffsets);
+		return operatorState;
+	}
+
+
+	/**
+	 * Notification on completed checkpoints
+	 * @param checkpointId The ID of the checkpoint that has been completed.
+	 */
+	@Override
+	public void commitCheckpoint(long checkpointId) {
+		LOG.info("Commit checkpoint {}", checkpointId);
+		long[] checkpointOffsets = pendingCheckpoints.remove(checkpointId);
+		if(checkpointOffsets == null) {
+			throw new IllegalStateException("Unable to find pending checkpoint for id "+checkpointId);
+		}
+
 		for(int partition = 0; partition < lastOffsets.length; partition++) {
 			long offset = lastOffsets[partition];
 			if(offset != -1) {
 				setOffset(partition, offset);
 			}
 		}
-		this.consumer.shutdown();
-		zkClient.close();
 	}
 
 	// --------------------- Zookeeper / Offset handling -----------------------------

@@ -415,7 +415,7 @@ extends Actor with ActorLogMessages with ActorSynchronousLogging {
         if (task != null) {
           task.triggerCheckpointBarrier(checkpointId, timestamp)
         } else {
-          log.debug(s"Taskmanager received a checkpoint request for unknown task $taskExecutionId.")
+          log.info(s"Taskmanager received a checkpoint request for unknown task $taskExecutionId.")
         }
 
       case message: ConfirmCheckpoint =>
@@ -429,7 +429,7 @@ extends Actor with ActorLogMessages with ActorSynchronousLogging {
         if (task != null) {
           task.confirmCheckpoint(checkpointId, timestamp)
         } else {
-          log.debug(
+          log.info(
             s"Taskmanager received a checkpoint confirmation for unknown task $taskExecutionId.")
         }
 
