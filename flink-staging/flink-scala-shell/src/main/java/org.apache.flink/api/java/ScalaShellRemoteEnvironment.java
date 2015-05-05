@@ -76,6 +76,9 @@ public class ScalaShellRemoteEnvironment extends RemoteEnvironment {
 		// call "traditional" execution methods
 		PlanExecutor executor = PlanExecutor.createRemoteExecutor(super.getHost(), super.getPort(), jarFiles);
 		executor.setPrintStatusDuringExecution(p.getExecutionConfig().isSysoutLoggingEnabled());
-		return executor.executePlan(p);
+
+		this.lastJobExecutionResult = executor.executePlan(p);
+
+		return this.lastJobExecutionResult;
 	}
 }
