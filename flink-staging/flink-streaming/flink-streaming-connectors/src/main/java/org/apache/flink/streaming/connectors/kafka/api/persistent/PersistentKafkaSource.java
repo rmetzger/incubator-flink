@@ -53,6 +53,7 @@ import scala.collection.Seq;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -227,6 +228,11 @@ public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> 
 		}
 		pendingCheckpoints.put(checkpointId, currentOffsets);
 		return operatorState;
+	}
+
+	@Override
+	public void restoreState(Serializable state) {
+		// right now, nothing to do
 	}
 
 
