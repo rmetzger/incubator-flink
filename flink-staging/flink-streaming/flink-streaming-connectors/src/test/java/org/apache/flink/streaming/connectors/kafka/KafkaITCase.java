@@ -199,7 +199,8 @@ public class KafkaITCase {
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
 		env.getConfig().disableSysoutLogging();
-		env.enableCheckpointing(15);
+		env.enableCheckpointing(50);
+		env.setNumberOfExecutionRetries(0);
 
 		// create topic
 		Properties topicConfig = new Properties();
@@ -249,6 +250,7 @@ public class KafkaITCase {
 			public void flatMap(Tuple2<Integer, Integer> value, Collector<Integer> out) throws Exception {
 				values[value.f1 - valuesStartFrom]++;
 				count++;
+				Thread.sleep(50);
 				LOG.info("Reader "+getRuntimeContext().getIndexOfThisSubtask()+" got "+value+" count="+count+"/"+finalCount);
 				// verify if we've seen everything
 
@@ -265,25 +267,8 @@ public class KafkaITCase {
 				}
 			}
 
-		}).setParallelism(1).setName("readSequence-indexValidator to "+finalCount);
+		}).setParallelism(1).setName("readSequence-indexValidator to " + finalCount);
 
-		validIndexes.window(Count.of(3)).mapWindow(new WindowMapFunction<Integer, Void>() {
-			int[] vals = {-1, -1, -1};
-
-			@Override
-			public void mapWindow(Iterable<Integer> values, Collector<Void> out) throws Exception {
-				LOG.info("Validator got values: ");
-				BitSet vali = new BitSet(4);
-				for (Integer val : values) {
-					LOG.info("value = " + val);
-					vali.set(val);
-				}
-				LOG.info("Validator finished");
-				if (vali.nextClearBit(0) != 4) {
-					throw new RuntimeException("Not all parallel instances set ocrrectly");
-				}
-			}
-		});
 		tryExecute(env, "Read data from Kafka");
 
 		LOG.info("Successfully read sequence for verification");
