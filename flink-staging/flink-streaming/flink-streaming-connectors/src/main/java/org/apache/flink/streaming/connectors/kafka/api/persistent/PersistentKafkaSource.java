@@ -76,9 +76,9 @@ public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> 
 	private DeserializationSchema<OUT> deserializationSchema;
 	private boolean running = true;
 
-	// private transient Map<Integer, Long> lastOffsets;
 	private transient long[] lastOffsets;
 	private transient ZkClient zkClient;
+	private transient long[] commitedOffsets; // maintain committed offsets, to avoid committing the same over and over again.
 
 
 	/**
@@ -263,7 +263,12 @@ public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> 
 	}
 
 	protected void setOffset(int partition, long offset) {
-		setOffset(zkClient, consumerConfig.groupId(), topicName, partition, offset);
+		if(commitedOffsets[partition] < offset) {
+			setOffset(zkClient, consumerConfig.groupId(), topicName, partition, offset);
+			commitedOffsets[partition] = offset;
+		} else {
+			LOG.debug("Ignoring offset {} for partition {} because it is already committed", offset, partition);
+		}
 	}
 
 
