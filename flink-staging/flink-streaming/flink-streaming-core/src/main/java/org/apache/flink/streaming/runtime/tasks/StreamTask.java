@@ -273,7 +273,7 @@ public class StreamTask<IN, OUT> extends AbstractInvokable implements StreamTask
 		synchronized (checkpointLock) {
 			if (isRunning) {
 				try {
-					LOG.info("Starting checkpoint " + checkpointId);
+					LOG.info("Starting checkpoint {} on task {}", checkpointId, getName());
 					
 					// first draw the state that should go into checkpoint
 					LocalStateHandle state;

@@ -36,6 +36,7 @@ import kafka.consumer.ConsumerConfig;
 import kafka.network.SocketServer;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.curator.test.TestingServer;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -218,7 +219,7 @@ public class KafkaITCase {
 		Assert.assertEquals("The offset seems incorrect", 99L, PersistentKafkaSource.getOffset(zk, standardCC.groupId(), topicName, 2));
 
 
-		/*LOG.info("Manipulating offsets");
+		LOG.info("Manipulating offsets");
 		// set the offset to 25, 50, and 75 for the three partitions
 		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 0, 50);
 		PersistentKafkaSource.setOffset(zk, standardCC.groupId(), topicName, 1, 50);
@@ -231,14 +232,23 @@ public class KafkaITCase {
 
 		zk.close();
 
-		LOG.info("Finished testPersistentSourceWithOffsetUpdates()"); */
+		LOG.info("Finished testPersistentSourceWithOffsetUpdates()");
 	}
 
 	private void readSequence(StreamExecutionEnvironment env, ConsumerConfig cc, String topicName, final int valuesStartFrom, final int valuesCount, final int finalCount) throws Exception {
 		LOG.info("Reading sequence for verification until final count {}", finalCount);
 		DataStream<Tuple2<Integer, Integer>> source = env.addSource(
 				new PersistentKafkaSource<Tuple2<Integer, Integer>>(topicName, new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1,1), env.getConfig()), cc)
-		).setParallelism(3);
+		)
+		//add a sleeper mapper. Since there is no good way of "shutting down" a running topology, we have
+		// to play this trick. The problem is that we have to wait until all checkpoints are confirmed
+		.map(new MapFunction<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>() {
+			@Override
+			public Tuple2<Integer, Integer> map(Tuple2<Integer, Integer> value) throws Exception {
+				Thread.sleep(75);
+				return value;
+			}
+		}).setParallelism(3);
 		source.setName("PersistentKafkaSource from topic " + topicName);
 
 		// verify data
@@ -250,7 +260,7 @@ public class KafkaITCase {
 			public void flatMap(Tuple2<Integer, Integer> value, Collector<Integer> out) throws Exception {
 				values[value.f1 - valuesStartFrom]++;
 				count++;
-				Thread.sleep(50);
+
 				LOG.info("Reader "+getRuntimeContext().getIndexOfThisSubtask()+" got "+value+" count="+count+"/"+finalCount);
 				// verify if we've seen everything
 

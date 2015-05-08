@@ -140,7 +140,9 @@ public class PersistentKafkaSource<OUT> extends RichParallelSourceFunction<OUT> 
 		int numPartitions = getNumberOfPartitions();
 		LOG.debug("The topic {} has {} partitions", topicName, numPartitions);
 		this.lastOffsets = new long[numPartitions];
+		this.commitedOffsets = new long[numPartitions];
 		Arrays.fill(this.lastOffsets, -1);
+		Arrays.fill(this.commitedOffsets, 0); // just to make it clear
 	}
 
 
