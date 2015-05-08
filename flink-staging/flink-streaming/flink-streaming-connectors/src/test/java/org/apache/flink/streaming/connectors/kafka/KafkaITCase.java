@@ -32,6 +32,7 @@ import java.util.Properties;
 import java.util.Random;
 
 import kafka.admin.AdminUtils;
+import kafka.api.PartitionMetadata;
 import kafka.consumer.ConsumerConfig;
 import kafka.network.SocketServer;
 import org.I0Itec.zkclient.ZkClient;
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory;
 
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
+import scala.collection.Seq;
 
 /**
  * Code in this test is based on the following GitHub repository:
@@ -101,6 +103,8 @@ public class KafkaITCase {
 	private static boolean shutdownKafkaBroker;
 
 	private static ConsumerConfig standardCC;
+
+	private static ZkClient zkClient;
 
 
 	@BeforeClass
@@ -149,6 +153,8 @@ public class KafkaITCase {
 		cProps.setProperty("auto.offset.reset", "smallest"); // read from the beginning.
 
 		standardCC = new ConsumerConfig(cProps);
+
+		zkClient = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new PersistentKafkaSource.KafkaZKStringSerializer());
 	}
 
 	@AfterClass
@@ -166,6 +172,7 @@ public class KafkaITCase {
 				LOG.warn("ZK.stop() failed", e);
 			}
 		}
+		zkClient.close();
 	}
 
 
@@ -260,15 +267,15 @@ public class KafkaITCase {
 				values[value.f1 - valuesStartFrom]++;
 				count++;
 
-				LOG.info("Reader "+getRuntimeContext().getIndexOfThisSubtask()+" got "+value+" count="+count+"/"+finalCount);
+				LOG.info("Reader " + getRuntimeContext().getIndexOfThisSubtask() + " got " + value + " count=" + count + "/" + finalCount);
 				// verify if we've seen everything
 
-				if(count == finalCount) {
+				if (count == finalCount) {
 					LOG.info("Received all values");
-					for(int i = 0; i < values.length; i++) {
+					for (int i = 0; i < values.length; i++) {
 						int v = values[i];
-						if(v != 3) {
-							throw new RuntimeException("Expected v to be 3, but was "+v+" on element "+i+" array="+Arrays.toString(values));
+						if (v != 3) {
+							throw new RuntimeException("Expected v to be 3, but was " + v + " on element " + i + " array=" + Arrays.toString(values));
 						}
 					}
 					// test has passed
@@ -340,6 +347,11 @@ public class KafkaITCase {
 			Throwable t = good.getCause();
 			int limit = 0;
 			while (!(t instanceof SuccessException)) {
+				if(t == null) {
+					LOG.warn("Test failed with exception", good);
+					Assert.fail("Test failed with: " + good.getMessage());
+				}
+				
 				t = t.getCause();
 				if (limit++ == 20) {
 					LOG.warn("Test failed with exception", good);
@@ -789,14 +801,27 @@ public class KafkaITCase {
 
 	private static boolean leaderHasShutDown = false;
 
-/*	@Test
+	@Test(timeout=60000)
 	public void brokerFailureTest() throws Exception {
 		String topic = "brokerFailureTestTopic";
 
 		createTestTopic(topic, 2, 2);
 
-		KafkaTopicUtils kafkaTopicUtils = new KafkaTopicUtils(zookeeperConnectionString);
-		final String leaderToShutDown = kafkaTopicUtils.waitAndGetPartitionMetadata(topic, 0).leader().get().connectionString();
+	//	KafkaTopicUtils kafkaTopicUtils = new KafkaTopicUtils(zookeeperConnectionString);
+	//	final String leaderToShutDown = kafkaTopicUtils.waitAndGetPartitionMetadata(topic, 0).leader().get().connectionString();
+
+		PartitionMetadata firstPart = null;
+		do {
+			if(firstPart != null) {
+				LOG.info("Unable to find leader. error code {}", firstPart.errorCode());
+				// not the first try. Sleep a bit
+				Thread.sleep(150);
+			}
+			Seq<PartitionMetadata> partitionMetadata = AdminUtils.fetchTopicMetadataFromZk(topic, zkClient).partitionsMetadata();
+			firstPart = partitionMetadata.head();
+		} while(firstPart.errorCode() != 0);
+
+		final String leaderToShutDown = firstPart.leader().get().connectionString();
 
 		final Thread brokerShutdown = new Thread(new Runnable() {
 			@Override
@@ -909,20 +934,14 @@ public class KafkaITCase {
 				.setParallelism(1);
 
 		tryExecute(env, "broker failure test");
-	} */
+	}
 
 
 	private void createTestTopic(String topic, int numberOfPartitions, int replicationFactor) {
-		Properties props = new Properties();
-		props.setProperty("zookeeper.connect", zookeeperConnectionString);
-		props.setProperty("group.id", "kafkaitcase");
-		ConsumerConfig cc = new ConsumerConfig(props);
-		ZkClient zk = new ZkClient(cc.zkConnect(), cc.zkSessionTimeoutMs(), cc.zkConnectionTimeoutMs(), new PersistentKafkaSource.KafkaZKStringSerializer());
-
 		// create topic
 		Properties topicConfig = new Properties();
 		LOG.info("Creating topic {}", topic);
-		AdminUtils.createTopic(zk, topic, numberOfPartitions, replicationFactor, topicConfig);
+		AdminUtils.createTopic(zkClient, topic, numberOfPartitions, replicationFactor, topicConfig);
 	}
 
 	private static TestingServer getZookeeper() throws Exception {
