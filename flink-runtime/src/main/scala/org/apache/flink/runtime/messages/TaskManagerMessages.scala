@@ -18,6 +18,10 @@
 
 package org.apache.flink.runtime.messages
 
+import java.util
+
+import org.apache.flink.api.common.JobID
+import org.apache.flink.runtime.executiongraph.ExecutionAttemptID
 import org.apache.flink.runtime.instance.InstanceID
 
 /**
@@ -38,14 +42,26 @@ object TaskManagerMessages {
   }
 
   /**
+   * This message part of the heartbeat
+   * @param jobId
+   * @param executionAttemptId
+   * @param serializedReport
+   */
+  case class TaskMetricsReport(jobId: JobID,
+                        executionAttemptId: ExecutionAttemptID,
+                        serializedReport: Array[Byte])
+  /**
    * Reports liveliness of the TaskManager instance with the given instance ID to the
    * This message is sent to the job. This message reports the TaskManagers
    * metrics, as a byte array.
    *
    * @param instanceID The instance ID of the reporting TaskManager.
-   * @param metricsReport utf-8 encoded JSON metrics report from the metricRegistry.
+   * @param metricsReport utf-8 encoded JSON metrics report from the metricRegistry for the TM.
+   * @param taskReports JSON encoded metrics report for the running tasks on the TM
    */
-  case class Heartbeat(instanceID: InstanceID, metricsReport: Array[Byte])
+  case class Heartbeat(instanceID: InstanceID,
+                       metricsReport: Array[Byte],
+                       taskReports: Set[TaskMetricsReport])
 
 
   // --------------------------------------------------------------------------

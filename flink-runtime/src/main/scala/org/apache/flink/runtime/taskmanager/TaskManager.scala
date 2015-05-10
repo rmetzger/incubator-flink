@@ -1032,6 +1032,10 @@ extends Actor with ActorLogMessages with ActorSynchronousLogging {
    */
   private def removeAllTaskResources(task: Task): Unit = {
 
+    for(metric <- taskMetrics) {
+      log.info(s"+++metric $metric ${metricRegistryMapper.writeValueAsString(metric._3)}")
+    }
+
     // release the critical things first, and fail fatally if it does not work
 
     // this releases all task resources, like buffer pools and intermediate result
@@ -1090,12 +1094,15 @@ extends Actor with ActorLogMessages with ActorSynchronousLogging {
   private def sendHeartbeatToJobManager(): Unit = {
     try {
       log.debug("Sending heartbeat to JobManager")
-      for(metric <- taskMetrics) {
-        log.info(s"+++metric $metric ${metricRegistryMapper.writeValueAsString(metric._3)}")
-      }
-      val report: Array[Byte] = metricRegistryMapper.writeValueAsBytes(metricRegistry)
+
+      val taskManagerReport: Array[Byte] = metricRegistryMapper.writeValueAsBytes(metricRegistry)
+      val serializedTaskMetrics = taskMetrics.toSet.map(taskMetric =>
+        TaskMetricsReport(taskMetric._1,
+          taskMetric._2,
+          metricRegistryMapper.writeValueAsBytes(taskMetric._3)))
+
       currentJobManager foreach {
-        jm => jm ! Heartbeat(instanceID, report)
+        jm => jm ! Heartbeat(instanceID, taskManagerReport, serializedTaskMetrics)
       }
     }
     catch {
