@@ -73,7 +73,8 @@ public class IterationSynchronizationSinkTask extends AbstractInvokable implemen
 	
 	@Override
 	public void registerInputOutput() {
-		this.headEventReader = new MutableRecordReader<IntValue>(getEnvironment().getInputGate(0));
+		this.headEventReader = new MutableRecordReader<IntValue>(getEnvironment().getInputGate(0),
+				this.getEnvironment().getTaskMetrics().getIncomingRecordsCounter());
 	}
 
 	@Override

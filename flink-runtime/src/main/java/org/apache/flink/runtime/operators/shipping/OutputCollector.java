@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.codahale.metrics.Counter;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
@@ -39,6 +40,8 @@ public class OutputCollector<T> implements Collector<T> {
 
 	private final SerializationDelegate<T> delegate;
 
+	private final Counter counter;
+
 	
 	/**
 	 * Initializes the output collector with a set of writers. 
@@ -48,9 +51,10 @@ public class OutputCollector<T> implements Collector<T> {
 	 * @param writers List of all writers.
 	 */
 	@SuppressWarnings("unchecked")
-	public OutputCollector(List<RecordWriter<SerializationDelegate<T>>> writers, TypeSerializer<T> serializer) {
+	public OutputCollector(List<RecordWriter<SerializationDelegate<T>>> writers, TypeSerializer<T> serializer, Counter counter) {
 		this.delegate = new SerializationDelegate<T>(serializer);
 		this.writers = (RecordWriter<SerializationDelegate<T>>[]) writers.toArray(new RecordWriter[writers.size()]);
+		this.counter = counter;
 	}
 
 	/**
@@ -58,6 +62,7 @@ public class OutputCollector<T> implements Collector<T> {
 	 */
 	@Override
 	public void collect(T record)  {
+		counter.inc();
 		if (record != null) {
 			this.delegate.setInstance(record);
 			try {
