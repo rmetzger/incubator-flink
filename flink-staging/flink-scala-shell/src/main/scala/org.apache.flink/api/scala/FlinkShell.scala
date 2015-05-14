@@ -23,9 +23,7 @@ import scala.tools.nsc.Settings
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster
 
-/**
- * Created by Nikolaas Steenbergen on 22-4-15.
- */
+
 
 
 object FlinkShell {

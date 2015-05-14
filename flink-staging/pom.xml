@@ -45,7 +45,6 @@ under the License.
 		<module>flink-hcatalog</module>
 		<module>flink-table</module>
 		<module>flink-ml</module>
-		<module>flink-scala-shell</module>
 		<module>flink-language-binding</module>
 	</modules>
 	
@@ -72,5 +71,33 @@ under the License.
                 <module>flink-tez</module>
             </modules>
         </profile>
+		<profile>
+			<id>scala-2.10</id>
+			<activation>
+
+				<property>
+					<!-- this is the default scala profile -->
+					<name>!scala-2.11</name>
+				</property>
+			</activation>
+			<properties>
+				<scala.version>2.10.4</scala.version>
+				<scala.binary.version>2.10</scala.binary.version>
+			</properties>
+			<modules>
+				<module>flink-avro</module>
+				<module>flink-jdbc</module>
+				<module>flink-spargel</module>
+				<module>flink-hadoop-compatibility</module>
+				<module>flink-streaming</module>
+				<module>flink-hbase</module>
+				<module>flink-gelly</module>
+				<module>flink-hcatalog</module>
+				<module>flink-table</module>
+				<module>flink-ml</module>
+				<module>flink-scala-shell</module>
+				<module>flink-language-binding</module>
+			</modules>
+		</profile>
 	</profiles>
 </project>

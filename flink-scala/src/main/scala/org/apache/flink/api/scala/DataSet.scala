@@ -1326,6 +1326,7 @@ class DataSet[T: ClassTag](set: JavaDataSet[T]) {
   /**
    * Writes a DataSet to the standard output stream (stdout). This uses [[AnyRef.toString]] on
    * each element.
+   * This triggers execute() automatically.
    */
   def print() = {
     javaSet.print()
