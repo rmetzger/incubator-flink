@@ -7,6 +7,7 @@ import org.apache.flink.contrib.generators.tpch.core.DistributedTpch;
 import org.apache.flink.contrib.generators.tpch.programs.TPCHGenerator;
 import org.apache.flink.test.util.MultipleProgramsTestBase;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,9 +34,9 @@ import java.lang.reflect.Method;
 
 
 @RunWith(Parameterized.class)
-public class TPCHGeneratorExampleTest extends MultipleProgramsTestBase {
+public class TPCHGeneratorTest extends MultipleProgramsTestBase {
 
-	public TPCHGeneratorExampleTest(TestExecutionMode mode) {
+	public TPCHGeneratorTest(TestExecutionMode mode) {
 		super(mode);
 	}
 
@@ -63,10 +64,9 @@ public class TPCHGeneratorExampleTest extends MultipleProgramsTestBase {
 
 	// --------------------------------- TPCHGenerator tests -------------
 	@Test
-	@Ignore
-	public void wrongArguments() {
+	public void runGenerator() {
 		try {
-			TPCHGenerator.main(new String[]{"a"});
+			TPCHGenerator.main(new String[]{"--scale", "0.001"});
 		} catch (Exception e) {
 			Assert.fail("Failed with : " + e.getMessage());
 			e.printStackTrace();
