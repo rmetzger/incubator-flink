@@ -22,7 +22,7 @@ import java.net.URLClassLoader
 import org.apache.flink.api.scala.FlinkILoop
 import org.apache.flink.test.util.AbstractMultipleProgramsTestBase.TestExecutionMode
 import org.apache.flink.test.util.{AbstractMultipleProgramsTestBase, MultipleProgramsTestBase}
-import org.junit.{BeforeClass, Test}
+import org.junit.{AfterClass, BeforeClass, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
@@ -35,6 +35,11 @@ object ScalaShellITSuite {
   def setup() = {
     AbstractMultipleProgramsTestBase.singleActorSystem = false
     AbstractMultipleProgramsTestBase.setup()
+  }
+
+  @AfterClass
+  def teardown() = {
+    AbstractMultipleProgramsTestBase.singleActorSystem = true
   }
 }
 
