@@ -122,7 +122,9 @@ public class LocalInputChannelTest {
 
 			// Register with the partition manager in order to allow the local input channels to
 			// request their respective partitions.
-			partitionManager.registerResultPartition(partition);
+			partitionManager.registerResultPartitions(
+					partitionIds[i].getProducerId(),
+					new ResultPartition[] { partition });
 		}
 
 		// Test

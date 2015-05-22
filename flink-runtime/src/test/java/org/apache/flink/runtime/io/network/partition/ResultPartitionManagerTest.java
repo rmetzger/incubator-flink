@@ -19,10 +19,14 @@
 package org.apache.flink.runtime.io.network.partition;
 
 import com.google.common.collect.Lists;
+import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
+import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -36,35 +40,59 @@ public class ResultPartitionManagerTest {
 
 	@Test
 	public void testReleasePartitionsProducedBy() throws Exception {
+		// Config
+		final int tasks = 16;
+		final int partitionsPerTask = 16;
 
 		final ResultPartitionManager partitionManager = new ResultPartitionManager();
 
-		ResultPartition[] partitions = new ResultPartition[16384];
-		for (int i = 0; i < partitions.length; i++) {
-			partitions[i] = mock(ResultPartition.class);
-			when(partitions[i].getPartitionId()).thenReturn(new ResultPartitionID());
+		ResultPartition[] partitions = new ResultPartition[tasks * partitionsPerTask];
+		ExecutionAttemptID[] taskIds = new ExecutionAttemptID[tasks];
 
-			partitionManager.registerResultPartition(partitions[i]);
+		for (int i = 0; i < tasks; i++) {
+			taskIds[i] = new ExecutionAttemptID();
+
+			for (int j = 0; j < partitionsPerTask; j++) {
+				ResultPartition partition = mock(ResultPartition.class);
+				when(partition.getPartitionId()).thenReturn(
+						new ResultPartitionID(new IntermediateResultPartitionID(), taskIds[i]));
+
+				partitions[i * partitionsPerTask + j] = partition;
+			}
+
+			partitionManager.registerResultPartitions(
+					taskIds[i],
+					Arrays.copyOfRange(
+							partitions,
+							i * partitionsPerTask,
+							i * partitionsPerTask + partitionsPerTask)
+			);
 		}
 
 		ExecutorService executorService = null;
 
 		try {
-			executorService = Executors.newFixedThreadPool(16);
+			executorService = Executors.newFixedThreadPool(tasks);
 
 			List<Future<?>> results = Lists.newArrayListWithCapacity(partitions.length);
 
-			for(final ResultPartition partition : partitions) {
+			final CountDownLatch sync = new CountDownLatch(tasks + 1);
+
+			for(final ExecutionAttemptID eid : taskIds) {
 				results.add(executorService.submit(new Callable<Void>() {
 					@Override
 					public Void call() throws Exception {
-						partitionManager.releasePartitionsProducedBy(partition
-								.getPartitionId().getProducerId());
+						sync.countDown();
+						sync.await();
+
+						partitionManager.releasePartitionsProducedBy(eid);
 
 						return null;
 					}
 				}));
 			}
+
+			sync.countDown();
 
 			// Wait for all results
 			for (Future<?> f : results) {

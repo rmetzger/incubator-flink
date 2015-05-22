@@ -18,9 +18,7 @@
 
 package org.apache.flink.runtime.io.network.partition;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Table;
+import com.google.common.collect.Maps;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.io.network.buffer.BufferProvider;
 import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
@@ -28,8 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -40,25 +40,33 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ResultPartitionManager.class);
 
-	public final Table<ExecutionAttemptID, IntermediateResultPartitionID, ResultPartition>
-			registeredPartitions = HashBasedTable.create();
+	Map<ExecutionAttemptID, Map<IntermediateResultPartitionID, ResultPartition>>
+			registeredPartitions = Maps.newHashMap();
 
 	private boolean isShutdown;
 
-	public void registerResultPartition(ResultPartition partition) throws IOException {
+	public void registerResultPartitions(
+			ExecutionAttemptID executionId,
+			ResultPartition[] partitions)
+			throws IOException {
+
+		Map<IntermediateResultPartitionID, ResultPartition> newPartitions = Maps.newHashMap();
+
+		for (ResultPartition partition : partitions) {
+			newPartitions.put(partition.getPartitionId().getPartitionId(), partition);
+		}
+
 		synchronized (registeredPartitions) {
 			checkState(!isShutdown, "Result partition manager already shut down.");
 
-			ResultPartitionID partitionId = partition.getPartitionId();
+			Map<IntermediateResultPartitionID, ResultPartition> prev =
+					this.registeredPartitions.put(executionId, newPartitions);
 
-			ResultPartition previous = registeredPartitions.put(
-					partitionId.getProducerId(), partitionId.getPartitionId(), partition);
-
-			if (previous != null) {
+			if (prev != null) {
 				throw new IllegalStateException("Result partition already registered.");
 			}
 
-			LOG.debug("Registered {}.", partition);
+			LOG.debug("Registered partitions: {}.", Arrays.toString(partitions));
 		}
 	}
 
@@ -68,47 +76,58 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 			int subpartitionIndex,
 			BufferProvider bufferProvider) throws IOException {
 
+		ResultPartition partition;
+
 		synchronized (registeredPartitions) {
-			final ResultPartition partition = registeredPartitions.get(partitionId.getProducerId(),
-					partitionId.getPartitionId());
+			Map<IntermediateResultPartitionID, ResultPartition> producerPartitions =
+					registeredPartitions.get(partitionId.getProducerId());
 
-			if (partition == null) {
-				throw new PartitionNotFoundException(partitionId);
-			}
-
-			LOG.debug("Requesting subpartition {} of {}.", subpartitionIndex, partition);
-
-			return partition.createSubpartitionView(subpartitionIndex, bufferProvider);
+			partition = producerPartitions != null
+					? producerPartitions.get(partitionId.getPartitionId())
+					: null;
 		}
+
+		if (partition == null) {
+			throw new PartitionNotFoundException(partitionId);
+		}
+
+		LOG.debug("Requesting subpartition {} of {}.", subpartitionIndex, partition);
+
+		return partition.createSubpartitionView(subpartitionIndex, bufferProvider);
 	}
 
 	public void releasePartitionsProducedBy(ExecutionAttemptID executionId) {
-		synchronized (registeredPartitions) {
-			final Map<IntermediateResultPartitionID, ResultPartition> partitions =
-					registeredPartitions.row(executionId);
 
+		Map<IntermediateResultPartitionID, ResultPartition> partitions;
+
+		synchronized (registeredPartitions) {
+			partitions = registeredPartitions.remove(executionId);
+		}
+
+		if (partitions != null) {
 			for (ResultPartition partition : partitions.values()) {
 				partition.release();
 			}
 
-			for (IntermediateResultPartitionID partitionId : ImmutableList
-					.copyOf(partitions.keySet())) {
-
-				registeredPartitions.remove(executionId, partitionId);
-			}
-
-			LOG.debug("Released all partitions produced by {}.", executionId);
+			partitions.clear();
 		}
+
+		LOG.debug("Released all partitions produced by {}.", executionId);
 	}
 
 	public void shutdown() {
 		synchronized (registeredPartitions) {
-
-			LOG.debug("Releasing {} partitions because of shutdown.",
+			LOG.debug("Releasing partitions of {} producers because of shutdown.",
 					registeredPartitions.values().size());
 
-			for (ResultPartition partition : registeredPartitions.values()) {
-				partition.release();
+			for (Map<IntermediateResultPartitionID, ResultPartition> partitions
+					: registeredPartitions.values()) {
+
+				for (ResultPartition partition : partitions.values()) {
+					partition.release();
+				}
+
+				partitions.clear();
 			}
 
 			registeredPartitions.clear();
@@ -124,6 +143,8 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 	// ------------------------------------------------------------------------
 
 	void onConsumedPartition(ResultPartition partition) {
+		checkNotNull(partition);
+
 		final ResultPartition previous;
 
 		LOG.debug("Received consume notification from {}.", partition);
@@ -131,8 +152,10 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 		synchronized (registeredPartitions) {
 			ResultPartitionID partitionId = partition.getPartitionId();
 
-			previous = registeredPartitions.remove(partitionId.getProducerId(),
-					partitionId.getPartitionId());
+			Map<IntermediateResultPartitionID, ResultPartition> partitions =
+					registeredPartitions.get(partitionId.getProducerId());
+
+			previous = partitions != null ? partitions.remove(partitionId.getPartitionId()) : null;
 		}
 
 		// Release the partition if it was successfully removed

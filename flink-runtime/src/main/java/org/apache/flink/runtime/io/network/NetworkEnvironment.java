@@ -283,8 +283,6 @@ public class NetworkEnvironment {
 				try {
 					bufferPool = networkBufferPool.createBufferPool(partition.getNumberOfSubpartitions(), false);
 					partition.registerBufferPool(bufferPool);
-
-					partitionManager.registerResultPartition(partition);
 				}
 				catch (Throwable t) {
 					if (bufferPool != null) {
@@ -302,6 +300,9 @@ public class NetworkEnvironment {
 				// Register writer with task event dispatcher
 				taskEventDispatcher.registerWriterForIncomingTaskEvents(writer.getPartitionId(), writer);
 			}
+
+			// Register the produced partitions with the partition manager
+			partitionManager.registerResultPartitions(task.getExecutionId(), producedPartitions);
 
 			// Setup the buffer pool for each buffer reader
 			final SingleInputGate[] inputGates = task.getAllInputGates();
