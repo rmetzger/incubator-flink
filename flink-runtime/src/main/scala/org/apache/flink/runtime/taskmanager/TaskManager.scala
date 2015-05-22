@@ -1248,6 +1248,33 @@ object TaskManager {
       }
     }
 
+    // start a deathwatch thread (outside the actor system) for the actor sys.
+    if(configuration.getBoolean(ConfigConstants.START_ACTOR_SYSTEM_DEATHWATCH, false)) {
+      val deathWatch = new Thread(new Runnable {
+        override def run(): Unit = {
+          var running = true
+          while(running) {
+            try {
+              Thread.sleep(30*1000)
+            } catch {
+              case t: Throwable => {
+                running = false
+                LOG.debug("Actor deathwatch got interrupted", t)
+              }
+            }
+            if(taskManagerSystem.isTerminated) {
+              LOG.warn("Actor System is terminated. Killing JVM")
+              System.exit(TaskManager.RUNTIME_FAILURE_RETURN_CODE)
+            }
+          }
+        }
+      })
+      deathWatch.setDaemon(true)
+      deathWatch.setName("TaskManager Actor System Deathwatch")
+      deathWatch.start()
+      LOG.info("Starting deathwatch thread for actor system")
+    }
+
     // start all the TaskManager services (network stack,  library cache, ...)
     // and the TaskManager actor
     try {
