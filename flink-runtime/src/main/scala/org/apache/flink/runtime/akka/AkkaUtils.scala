@@ -139,8 +139,12 @@ object AkkaUtils {
     val lifecycleEvents = configuration.getBoolean(ConfigConstants.AKKA_LOG_LIFECYCLE_EVENTS,
       ConfigConstants.DEFAULT_AKKA_LOG_LIFECYCLE_EVENTS)
 
-    val jvmExitOnFatalError = if (configuration.getBoolean(
-       ConfigConstants.AKKA_JVM_EXIT_ON_FATAL_ERROR, false)) "on" else "off"
+    val jvmExitOnFatalError = if (
+      configuration.getBoolean(ConfigConstants.AKKA_JVM_EXIT_ON_FATAL_ERROR, false)){
+      "on"
+    } else {
+      "off"
+    }
 
     val logLifecycleEvents = if (lifecycleEvents) "on" else "off"
 
