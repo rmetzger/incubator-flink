@@ -191,6 +191,14 @@ public final class ConfigConstants {
 	 */
 	public static final String FS_STREAM_OPENING_TIMEOUT_KEY = "taskmanager.runtime.fs_timeout";
 
+
+	/**
+	 * Start an additional Thread in the TaskManager which is periodically checking
+	 * if the actor system has been terminated.
+	 * Disabled by default.
+	 */
+	public static final String START_ACTOR_SYSTEM_DEATHWATCH = "taskmanager.actor-deathwatch";
+
 	// ------------------------ YARN Configuration ------------------------
 
 	/**
