@@ -79,9 +79,9 @@ public class YarnTaskManagerRunner {
 		LOG.info("YARN daemon runs as '" + UserGroupInformation.getCurrentUser().getShortUserName()
 				+"' setting user to execute Flink TaskManager to '"+yarnClientUsername+"'");
 
-		// enabling TM deathwatch thread
-		configuration.setBoolean(ConfigConstants.START_ACTOR_SYSTEM_DEATHWATCH, true);
-		
+		// tell akka to die in case of an error
+		configuration.setBoolean(ConfigConstants.AKKA_JVM_EXIT_ON_FATAL_ERROR, true);
+
 		UserGroupInformation ugi = UserGroupInformation.createRemoteUser(yarnClientUsername);
 		for (Token<? extends TokenIdentifier> toks : UserGroupInformation.getCurrentUser().getTokens()) {
 			ugi.addToken(toks);

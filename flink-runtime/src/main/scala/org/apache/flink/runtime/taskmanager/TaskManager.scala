@@ -158,7 +158,6 @@ extends Actor with ActorLogMessages with ActorSynchronousLogging {
 
   private var heartbeatScheduler: Option[Cancellable] = None
 
-
   // --------------------------------------------------------------------------
   //  Actor messages and life cycle
   // --------------------------------------------------------------------------
@@ -191,10 +190,11 @@ extends Actor with ActorLogMessages with ActorSynchronousLogging {
    * (like network stack, library cache, memory manager, ...) are properly shut down.
    */
   override def postStop(): Unit = {
+    context.system.settings.JvmExitOnFatalError
     log.info(s"Stopping TaskManager ${self.path.toSerializationFormat}.")
 
-    cancelAndClearEverything(new Exception("TaskManager is shutting down."))
 
+    cancelAndClearEverything(new Exception("TaskManager is shutting down."))
     if (isConnected) {
       try {
         disassociateFromJobManager()
@@ -1255,7 +1255,7 @@ object TaskManager {
       }
     }
 
-    // start a deathwatch thread (outside the actor system) for the actor sys.
+   /* // start a deathwatch thread (outside the actor system) for the actor sys.
     if(configuration.getBoolean(ConfigConstants.START_ACTOR_SYSTEM_DEATHWATCH, false)) {
       val deathWatch = new Thread(new Runnable {
         override def run(): Unit = {
@@ -1280,7 +1280,7 @@ object TaskManager {
       deathWatch.setName("TaskManager Actor System Deathwatch")
       deathWatch.start()
       LOG.info("Starting deathwatch thread for actor system")
-    }
+    } */
 
     // start all the TaskManager services (network stack,  library cache, ...)
     // and the TaskManager actor
@@ -1293,7 +1293,7 @@ object TaskManager {
                                                            None, false,
                                                            taskManagerClass)
 
-      // start a process reaper that watches the JobManager. If the JobManager actor dies,
+      // start a process reaper that watches the JobManager. If the TaskManager actor dies,
       // the process reaper will kill the JVM process (to ensure easy failure detection)
       LOG.debug("Starting TaskManager process reaper")
       taskManagerSystem.actorOf(
