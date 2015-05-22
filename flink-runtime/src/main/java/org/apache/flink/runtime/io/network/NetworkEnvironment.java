@@ -335,42 +335,48 @@ public class NetworkEnvironment {
 
 		final ExecutionAttemptID executionId = task.getExecutionId();
 
+		ResultPartitionManager partitionManager;
+		TaskEventDispatcher taskEventDispatcher;
+
 		synchronized (lock) {
 			if (isShutdown || !isAssociated()) {
 				// no need to do anything when we are not operational
 				return;
 			}
 
-			if (task.isCanceledOrFailed()) {
-				partitionManager.releasePartitionsProducedBy(executionId);
+			partitionManager = this.partitionManager;
+			taskEventDispatcher = this.taskEventDispatcher;
+		}
+
+		if (task.isCanceledOrFailed()) {
+			partitionManager.releasePartitionsProducedBy(executionId);
+		}
+
+		ResultPartitionWriter[] writers = task.getAllWriters();
+		if (writers != null) {
+			for (ResultPartitionWriter writer : writers) {
+				taskEventDispatcher.unregisterWriter(writer);
 			}
+		}
 
-			ResultPartitionWriter[] writers = task.getAllWriters();
-			if (writers != null) {
-				for (ResultPartitionWriter writer : writers) {
-					taskEventDispatcher.unregisterWriter(writer);
-				}
+		ResultPartition[] partitions = task.getProducedPartitions();
+		if (partitions != null) {
+			for (ResultPartition partition : partitions) {
+				partition.destroyBufferPool();
 			}
+		}
 
-			ResultPartition[] partitions = task.getProducedPartitions();
-			if (partitions != null) {
-				for (ResultPartition partition : partitions) {
-					partition.destroyBufferPool();
-				}
-			}
+		final SingleInputGate[] inputGates = task.getAllInputGates();
 
-			final SingleInputGate[] inputGates = task.getAllInputGates();
-
-			if (inputGates != null) {
-				for (SingleInputGate gate : inputGates) {
-					try {
-						if (gate != null) {
-							gate.releaseAllResources();
-						}
+		if (inputGates != null) {
+			for (SingleInputGate gate : inputGates) {
+				try {
+					if (gate != null) {
+						gate.releaseAllResources();
 					}
-					catch (IOException e) {
-						LOG.error("Error during release of reader resources: " + e.getMessage(), e);
-					}
+				}
+				catch (IOException e) {
+					LOG.error("Error during release of input gate resources: " + e.getMessage(), e);
 				}
 			}
 		}

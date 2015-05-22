@@ -26,7 +26,7 @@ import org.apache.flink.runtime.io.network.partition.consumer.LocalInputChannel;
 import org.apache.flink.runtime.io.network.partition.consumer.RemoteInputChannel;
 import org.apache.flink.runtime.util.event.EventListener;
 
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * The task event dispatcher dispatches events flowing backwards from a consuming task to the task
@@ -37,20 +37,18 @@ import java.util.Map;
  */
 public class TaskEventDispatcher {
 
-	private final Map<ResultPartitionID, ResultPartitionWriter> registeredWriters = Maps.newHashMap();
+	private final ConcurrentMap<ResultPartitionID, ResultPartitionWriter> registeredWriters = Maps
+			.newConcurrentMap();
 
 	public void registerWriterForIncomingTaskEvents(ResultPartitionID partitionId, ResultPartitionWriter writer) {
-		synchronized (registeredWriters) {
-			if (registeredWriters.put(partitionId, writer) != null) {
-				throw new IllegalStateException("Already registered at task event dispatcher.");
-			}
+		if (registeredWriters.putIfAbsent(partitionId, writer) != null) {
+			throw new IllegalStateException("Partition with ID " + partitionId + " is already " +
+					"registered at task event dispatcher.");
 		}
 	}
 
 	public void unregisterWriter(ResultPartitionWriter writer) {
-		synchronized (registeredWriters) {
-			registeredWriters.remove(writer.getPartitionId());
-		}
+		registeredWriters.remove(writer.getPartitionId());
 	}
 
 	/**
@@ -71,17 +69,13 @@ public class TaskEventDispatcher {
 	}
 
 	public void clearAll() {
-		synchronized (registeredWriters) {
-			registeredWriters.clear();
-		}
+		registeredWriters.clear();
 	}
 
 	/**
 	 * Returns the number of currently registered writers.
 	 */
 	int getNumberOfRegisteredWriters() {
-		synchronized (registeredWriters) {
-			return registeredWriters.size();
-		}
+		return registeredWriters.size();
 	}
 }
