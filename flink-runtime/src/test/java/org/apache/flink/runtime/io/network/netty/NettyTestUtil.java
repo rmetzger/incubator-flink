@@ -124,19 +124,19 @@ public class NettyTestUtil {
 	// NettyConfig
 	// ---------------------------------------------------------------------------------------------
 
-	static NettyConfig createConfig() throws Exception {
+	public static NettyConfig createConfig() throws Exception {
 		return createConfig(DEFAULT_SEGMENT_SIZE, new Configuration());
 	}
 
-	static NettyConfig createConfig(int segmentSize) throws Exception {
+	public static NettyConfig createConfig(int segmentSize) throws Exception {
 		return createConfig(segmentSize, new Configuration());
 	}
 
-	static NettyConfig createConfig(Configuration config) throws Exception {
+	public static NettyConfig createConfig(Configuration config) throws Exception {
 		return createConfig(DEFAULT_SEGMENT_SIZE, config);
 	}
 
-	static NettyConfig createConfig(int segmentSize, Configuration config) throws Exception {
+	public static NettyConfig createConfig(int segmentSize, Configuration config) throws Exception {
 		checkArgument(segmentSize > 0);
 		checkNotNull(config);
 
