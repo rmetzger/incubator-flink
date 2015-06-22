@@ -32,6 +32,7 @@ public class Utils {
 			implements DeserializationSchema<T>, SerializationSchema<T, byte[]> {
 		private final TypeSerializer<T> serializer;
 		private final TypeInformation<T> ti;
+		private final DataOutputSerializer dos = new DataOutputSerializer(16);
 
 		public TypeInformationSerializationSchema(Object type, ExecutionConfig ec) {
 			this.ti = (TypeInformation<T>) TypeExtractor.getForObject(type);
@@ -53,13 +54,14 @@ public class Utils {
 
 		@Override
 		public byte[] serialize(T element) {
-			DataOutputSerializer dos = new DataOutputSerializer(16);
 			try {
 				serializer.serialize(element, dos);
 			} catch (IOException e) {
 				throw new RuntimeException("Unable to serialize record", e);
 			}
-			return dos.getByteArray();
+			byte[] ret = dos.getByteArray();
+			dos.clear();
+			return ret;
 		}
 
 		@Override
