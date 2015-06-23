@@ -28,8 +28,7 @@ import org.apache.flink.streaming.util.serialization.SerializationSchema;
 import java.io.IOException;
 
 public class Utils {
-	public static class TypeInformationSerializationSchema<T>
-			implements DeserializationSchema<T>, SerializationSchema<T, byte[]> {
+	public static class TypeInformationSerializationSchema<T> implements DeserializationSchema<T>, SerializationSchema<T, byte[]> {
 		private final TypeSerializer<T> serializer;
 		private final TypeInformation<T> ti;
 		private final DataOutputSerializer dos = new DataOutputSerializer(16);
