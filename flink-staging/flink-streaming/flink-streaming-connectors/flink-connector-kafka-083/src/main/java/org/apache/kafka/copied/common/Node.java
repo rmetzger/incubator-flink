@@ -12,10 +12,12 @@
  */
 package org.apache.kafka.copied.common;
 
+import java.io.Serializable;
+
 /**
  * Information about a Kafka node
  */
-public class Node {
+public class Node implements Serializable {
 
     private final int id;
     private final String idString;

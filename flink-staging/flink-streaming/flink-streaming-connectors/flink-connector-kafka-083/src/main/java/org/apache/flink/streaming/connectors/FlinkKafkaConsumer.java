@@ -12,6 +12,7 @@ import org.apache.flink.streaming.api.checkpoint.CheckpointNotifier;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
+import org.apache.kafka.copied.clients.consumer.CommitType;
 import org.apache.kafka.copied.clients.consumer.ConsumerConfig;
 import org.apache.kafka.copied.clients.consumer.ConsumerRecord;
 import org.apache.kafka.copied.clients.consumer.ConsumerRecords;
@@ -27,7 +28,9 @@ import scala.Option;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
@@ -36,20 +39,42 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	public static Logger LOG = LoggerFactory.getLogger(FlinkKafkaConsumer.class);
 
 	public final static String POLL_TIMEOUT = "flink.kafka.consumer.poll.timeout";
+	public final static String OFFSET_STORE = "flink.kafka.consumer.offset.store";
 	public final static long DEFAULT_POLL_TIMEOUT = 50;
+	public final static OffsetStore DEFAULT_OFFSET_STORE = OffsetStore.ZOOKEEPER;
 
 	private final String topic;
 	private final Properties props;
-	private final List<TopicPartition> partitions;
+	private final List<FlinkPartitionInfo> partitions;
 	private final DeserializationSchema<T> valueDeserializer;
 
-	private transient KafkaConsumer<byte[], byte[]> consumer;
-	private boolean running = true;
+	private transient Fetcher fetcher;
 	private final LinkedMap pendingCheckpoints = new LinkedMap();
 	private long[] lastOffsets;
 	private long[] commitedOffsets;
 	private ZkClient zkClient;
 	private long[] restoreToOffset;
+	private final OffsetStore offsetStore;
+	private final FetcherType fetcherType = FetcherType.LEGACY;
+
+	public enum OffsetStore {
+		ZOOKEEPER,
+		/*
+		Let Flink manage the offsets. It will store them in Zookeeper, in the same structure as Kafka 0.8.2.x
+		Use this mode when using the source with Kafka 0.8.x brokers
+		*/
+		BROKER_COORDINATOR
+		/*
+		Use the mechanisms in Kafka to commit offsets. They will be send to the coordinator running
+		in the broker.
+		This works only starting from Kafka 0.8.3 (unreleased)
+		*/
+	}
+
+	public enum FetcherType {
+		LEGACY,  /* Use this fetcher for Kafka 0.8.1 brokers */
+		INCLUDED /* This fetcher works with Kafka 0.8.2 and 0.8.3 */
+	}
 
 	public FlinkKafkaConsumer(String topic, DeserializationSchema<T> valueDeserializer, Properties props) {
 		this.topic = topic;
@@ -61,12 +86,19 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		if(partitionInfos == null) {
 			throw new RuntimeException("The topic "+topic+" does not seem to exist");
 		}
-		partitions = new ArrayList<TopicPartition>(partitionInfos.size());
+		partitions = new ArrayList<FlinkPartitionInfo>(partitionInfos.size());
 		for(int i = 0; i < partitionInfos.size(); i++) {
-			partitions.add(convert(partitionInfos.get(i)));
+			partitions.add(new FlinkPartitionInfo(partitionInfos.get(i)));
 		}
 		LOG.info("Topic {} has {} partitions", topic, partitions.size());
 		consumer.close();
+
+		OffsetStore os = DEFAULT_OFFSET_STORE;
+		if(props.contains(OFFSET_STORE)) {
+			String osString = props.getProperty(OFFSET_STORE);
+			os = Enum.valueOf(OffsetStore.class, osString);
+		}
+		offsetStore = os;
 	}
 
 	// ----------------------------- Source ------------------------------
@@ -75,27 +107,37 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	public void open(Configuration parameters) throws Exception {
 		super.open(parameters);
 
-		List<TopicPartition> partitionsToSub = assignPartitions();
-
 		// make sure that we take care of the committing
 		props.setProperty("enable.auto.commit", "false");
 
-		// create consumer
-		consumer = new KafkaConsumer<byte[], byte[]>(props, null, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+		// create fetcher
+		switch(fetcherType){
+			case INCLUDED:
+				fetcher = new IncludedFetcher(props);
+				break;
+			case LEGACY:
+				fetcher = new LegacyFetcher(props);
+				break;
+			default:
+				throw new RuntimeException("Requested unknown fetcher "+fetcher);
+		}
 
+		// tell which partitions we want:
+		List<FlinkPartitionInfo> partitionsToSub = assignPartitions();
 		LOG.info("This instance is going to subscribe to partitions {}", partitionsToSub);
-		// subscribe
-		consumer.subscribe(partitionsToSub.toArray(new TopicPartition[partitionsToSub.size()]));
+		fetcher.partitionsToRead(partitionsToSub);
 
 		// set up operator state
 		lastOffsets = new long[partitions.size()];
 		Arrays.fill(lastOffsets, -1);
 
 		// prepare Zookeeper
-		zkClient = new ZkClient(props.getProperty("zookeeper.connect"),
-				Integer.valueOf(props.getProperty("zookeeper.session.timeout.ms", "6000")),
-				Integer.valueOf(props.getProperty("zookeeper.connection.timeout.ms", "6000")),
-				new KafkaZKStringSerializer());
+		if(offsetStore == OffsetStore.ZOOKEEPER) {
+			zkClient = new ZkClient(props.getProperty("zookeeper.connect"),
+					Integer.valueOf(props.getProperty("zookeeper.session.timeout.ms", "6000")),
+					Integer.valueOf(props.getProperty("zookeeper.connection.timeout.ms", "6000")),
+					new KafkaZKStringSerializer());
+		}
 		commitedOffsets = new long[partitions.size()];
 
 
@@ -104,28 +146,30 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 			LOG.info("Found offsets to restore to.");
 			for(int i = 0; i < restoreToOffset.length; i++) {
 				// if this fails because we are not subscribed to the topic, the partition assignment is not deterministic!
-				consumer.seek(new TopicPartition(topic, i), restoreToOffset[i]);
+				fetcher.seek(new FlinkPartitionInfo(topic, i, null), restoreToOffset[i]);
 			}
 		} else {
-			// no restore request. See what we have in ZK for this consumer group
-			for(TopicPartition tp: partitionsToSub) {
-				long offset = getOffset(zkClient, props.getProperty(ConsumerConfig.GROUP_ID_CONFIG), topic, tp.partition());
-				if(offset != -1) {
-					LOG.info("Offset for partition {} was set to {} in ZK. Seeking consumer to that position", tp.partition(), offset);
-					consumer.seek(tp, offset);
+			// no restore request. See what we have in ZK for this consumer group. In the non ZK case, Kafka will take care of this.
+			if(offsetStore == OffsetStore.ZOOKEEPER) {
+				for (FlinkPartitionInfo tp : partitionsToSub) {
+					long offset = getOffset(zkClient, props.getProperty(ConsumerConfig.GROUP_ID_CONFIG), topic, tp.partition());
+					if (offset != -1) {
+						LOG.info("Offset for partition {} was set to {} in ZK. Seeking consumer to that position", tp.partition(), offset);
+						fetcher.seek(tp, offset);
+					}
 				}
 			}
 		}
 
 	}
 
-	protected List<TopicPartition> getPartitions() {
+	protected List<FlinkPartitionInfo> getPartitions() {
 		return partitions;
 	}
 
-	public List<TopicPartition> assignPartitions() {
-		List<TopicPartition> parts = getPartitions();
-		List<TopicPartition> partitionsToSub = new ArrayList<TopicPartition>();
+	public List<FlinkPartitionInfo> assignPartitions() {
+		List<FlinkPartitionInfo> parts = getPartitions();
+		List<FlinkPartitionInfo> partitionsToSub = new ArrayList<FlinkPartitionInfo>();
 
 		int machine = 0;
 		for(int i = 0; i < parts.size(); i++) {
@@ -142,47 +186,24 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		return partitionsToSub;
 	}
 
-	private static TopicPartition convert(PartitionInfo info) {
-		return new TopicPartition(info.topic(), info.partition());
-	}
-
 	@Override
 	public void run(SourceContext<T> sourceContext) throws Exception {
-		long pollTimeout = DEFAULT_POLL_TIMEOUT;
-		if(props.contains(POLL_TIMEOUT)) {
-			pollTimeout = Long.valueOf(props.getProperty(POLL_TIMEOUT));
-		}
-		while(running) {
-			synchronized (consumer) {
-				ConsumerRecords<byte[], byte[]> consumed = consumer.poll(pollTimeout);
-				if(!consumed.isEmpty()) {
-					synchronized (sourceContext.getCheckpointLock()) {
-						for(ConsumerRecord<byte[], byte[]> record : consumed) {
-							T value = valueDeserializer.deserialize(record.value());
-							sourceContext.collect(value);
-							lastOffsets[record.partition()] = record.offset();
-							LOG.info("Consumed " + value);
-						}
-					}
-				}
-			}
-		}
+		fetcher.run(sourceContext, valueDeserializer, lastOffsets);
+
 
 	}
 
 	@Override
 	public void cancel() {
-		running = false;
-		synchronized (consumer) { // TODO: cancel leads to a deadlock. Seems that poll is not releasing its lock on consumer.
-			consumer.close();
-		}
+		fetcher.stop();
+		fetcher.close();
 	}
 
 
 	// ----------------------------- State ------------------------------
 	@Override
 	public void notifyCheckpointComplete(long checkpointId) throws Exception {
-		if(consumer == null) {
+		if(fetcher == null) {
 			LOG.info("notifyCheckpointComplete() called on uninitialized source");
 			return;
 		}
@@ -209,24 +230,20 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		}
 
 		if (LOG.isInfoEnabled()) {
-			LOG.info("Committing offsets {} to Kafka Consumer", Arrays.toString(checkpointOffsets));
+			LOG.info("Committing offsets {} to offset store: {}", Arrays.toString(checkpointOffsets), offsetStore);
 		}
 
-		setOffsetsInZooKeeper(checkpointOffsets);
-
-		/*
-		TODO: enable for users using kafka brokers with a central coordinator.
-
-		Map<TopicPartition, Long> offsetsToCommit = new HashMap<TopicPartition, Long>();
-		for(int i = 0; i < checkpointOffsets.length; i++) {
-			if(checkpointOffsets[i] != -1) {
-				offsetsToCommit.put(new TopicPartition(topic, i), checkpointOffsets[i]);
+		if(offsetStore == OffsetStore.ZOOKEEPER) {
+			setOffsetsInZooKeeper(checkpointOffsets);
+		} else {
+			Map<TopicPartition, Long> offsetsToCommit = new HashMap<TopicPartition, Long>();
+			for(int i = 0; i < checkpointOffsets.length; i++) {
+				if(checkpointOffsets[i] != -1) {
+					offsetsToCommit.put(new TopicPartition(topic, i), checkpointOffsets[i]);
+				}
 			}
+			fetcher.commit(offsetsToCommit);
 		}
-
-		synchronized (consumer) {
-			consumer.commit(offsetsToCommit, CommitType.SYNC);
-		} */
 	}
 
 	@Override
