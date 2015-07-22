@@ -80,6 +80,15 @@ under the License.
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- TODO: REMOVEME AGAIN!!! -->
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-kafka-083</artifactId>
+			<version>0.10-SNAPSHOT</version>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>

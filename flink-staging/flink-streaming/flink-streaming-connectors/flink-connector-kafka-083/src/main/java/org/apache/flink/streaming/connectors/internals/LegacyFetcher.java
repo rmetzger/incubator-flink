@@ -10,6 +10,7 @@ import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.MessageAndOffset;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.util.StringUtils;
@@ -89,7 +90,7 @@ public class LegacyFetcher implements Fetcher {
 		}
 		// Create a Queue for the threads to communicate
 		int queueSize = Integer.valueOf(config.getProperty(QUEUE_SIZE_KEY, DEFAULT_QUEUE_SIZE));
-		LinkedBlockingQueue<MessageAndOffset> messageQueue = new LinkedBlockingQueue<MessageAndOffset>(queueSize);
+		LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue = new LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>>(queueSize);
 
 		// create SimpleConsumers for each broker
 		List<SimpleConsumerThread> consumers = new ArrayList<SimpleConsumerThread>(fetchBrokers.size());
@@ -104,7 +105,13 @@ public class LegacyFetcher implements Fetcher {
 		// read from queue:
 		while(running) {
 			try {
-				messageQueue.take();
+				synchronized (sourceContext.getCheckpointLock()) {
+					Tuple2<MessageAndOffset, Integer> msg = messageQueue.take();
+					lastOffsets[msg.f1] = msg.f0.offset();
+					T value = valueDeserializer.deserialize(msg.f0.message().payload().array());
+					sourceContext.collect(value);
+				}
+
 			} catch (InterruptedException e) {
 				LOG.debug("Queue consumption thread got interrupted. Stopping consumption and interrupting other threads");
 				running = false;
@@ -122,7 +129,7 @@ public class LegacyFetcher implements Fetcher {
 
 	@Override
 	public void commit(Map<TopicPartition, Long> offsetsToCommit) {
-		throw new UnsupportedOperationException("This fetcher does not support commiting offsets");
+		throw new UnsupportedOperationException("This fetcher does not support committing offsets");
 	}
 
 	@Override
@@ -148,13 +155,13 @@ public class LegacyFetcher implements Fetcher {
 
 		private final SimpleConsumer consumer;
 		private final List<FetchPartition> partitions;
-		private final LinkedBlockingQueue<MessageAndOffset> messageQueue;
+		private final LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue;
 		private final String clientId;
 		private final String topic;
 		private final int fetchSize;
 		private boolean running = true;
 
-		public SimpleConsumerThread(Properties config, String topic, Node leader, List<FetchPartition> partitions, LinkedBlockingQueue<MessageAndOffset> messageQueue) {
+		public SimpleConsumerThread(Properties config, String topic, Node leader, List<FetchPartition> partitions, LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue) {
 			// these are the actual configuration values of Kafka + their original default values.
 			int soTimeout = Integer.valueOf(config.getProperty("socket.timeout.ms", "30000"));
 			int bufferSize = Integer.valueOf(config.getProperty("socket.receive.buffer.bytes", "65536"));
@@ -217,7 +224,7 @@ public class LegacyFetcher implements Fetcher {
 								// we have seen this message already
 								continue;
 							}
-							messageQueue.put(msg);
+							messageQueue.put(new Tuple2<MessageAndOffset, Integer>(msg, fp.partition));
 							fp.offset = msg.offset(); // advance offset for the next request
 						} catch (InterruptedException e) {
 							LOG.debug("Consumer thread got interrupted. Stopping consumption");
