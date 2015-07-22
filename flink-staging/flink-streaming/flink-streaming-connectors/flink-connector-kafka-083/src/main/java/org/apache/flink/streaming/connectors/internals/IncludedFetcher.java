@@ -1,4 +1,4 @@
-package org.apache.flink.streaming.connectors;
+package org.apache.flink.streaming.connectors.internals;
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
@@ -28,13 +28,8 @@ public class IncludedFetcher implements Fetcher {
 	}
 
 	@Override
-	public void partitionsToRead(List<FlinkPartitionInfo> partitions) {
-		TopicPartition[] partitionsArray = new TopicPartition[partitions.size()];
-		int i = 0;
-		for(FlinkPartitionInfo p: partitions) {
-			partitionsArray[i++] = new TopicPartition(p.topic(), p.partition());
-		}
-		fetcher.subscribe(partitionsArray);
+	public void partitionsToRead(List<TopicPartition> partitions) {
+		fetcher.subscribe(partitions.toArray(new TopicPartition[partitions.size()]));
 	}
 
 	@Override
@@ -46,9 +41,9 @@ public class IncludedFetcher implements Fetcher {
 
 	@Override
 	public <T> void run(SourceFunction.SourceContext<T> sourceContext, DeserializationSchema<T> valueDeserializer, long[] lastOffsets) {
-		long pollTimeout = FlinkKafkaConsumer.DEFAULT_POLL_TIMEOUT;
-		if(props.contains(FlinkKafkaConsumer.POLL_TIMEOUT)) {
-			pollTimeout = Long.valueOf(props.getProperty(FlinkKafkaConsumer.POLL_TIMEOUT));
+		long pollTimeout = FlinkKafkaConsumerBase.DEFAULT_POLL_TIMEOUT;
+		if(props.contains(FlinkKafkaConsumerBase.POLL_TIMEOUT)) {
+			pollTimeout = Long.valueOf(props.getProperty(FlinkKafkaConsumerBase.POLL_TIMEOUT));
 		}
 		while(running) {
 			synchronized (fetcher) {
@@ -79,7 +74,7 @@ public class IncludedFetcher implements Fetcher {
 	}
 
 	@Override
-	public void seek(FlinkPartitionInfo topicPartition, long offset) {
-		fetcher.seek(new TopicPartition(topicPartition.topic(), topicPartition.partition()), offset);
+	public void seek(TopicPartition topicPartition, long offset) {
+		fetcher.seek(topicPartition, offset);
 	}
 }
