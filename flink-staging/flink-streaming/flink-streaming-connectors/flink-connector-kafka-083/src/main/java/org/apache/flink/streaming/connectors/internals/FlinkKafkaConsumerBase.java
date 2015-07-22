@@ -35,14 +35,16 @@ import java.util.Properties;
  *
  * - socket.timeout.ms
  * - socket.receive.buffer.bytes
+ * - fetch.message.max.bytes
+ * - flink.kafka.consumer.queue.size (Size of the queue between the fetching threads)
  */
 public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFunction<T>
 		implements CheckpointNotifier, CheckpointedAsynchronously<long[]> {
 
 	public static Logger LOG = LoggerFactory.getLogger(FlinkKafkaConsumerBase.class);
 
-	public final static String POLL_TIMEOUT = "flink.kafka.consumer.poll.timeout";
-	public final static long DEFAULT_POLL_TIMEOUT = 50;
+	static final long OFFSET_NOT_SET = -1L;
+
 
 	private final String topic;
 	private final Properties props;
@@ -120,12 +122,11 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		// tell which partitions we want:
 		List<TopicPartition> partitionsToSub = assignPartitions();
 		LOG.info("This instance is going to subscribe to partitions {}", partitionsToSub);
-		// TODO in case of a broker failure, the leader information can be wrong here.
 		fetcher.partitionsToRead(partitionsToSub);
 
 		// set up operator state
 		lastOffsets = new long[partitions.length];
-		Arrays.fill(lastOffsets, -1);
+		Arrays.fill(lastOffsets, OFFSET_NOT_SET);
 
 		// prepare Zookeeper
 		if(offsetStore == OffsetStore.ZOOKEEPER) {
@@ -149,7 +150,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			if(offsetStore == OffsetStore.ZOOKEEPER) {
 				for (TopicPartition tp : partitionsToSub) {
 					long offset = getOffset(zkClient, props.getProperty(ConsumerConfig.GROUP_ID_CONFIG), topic, tp.partition());
-					if (offset != -1) {
+					if (offset != OFFSET_NOT_SET) {
 						LOG.info("Offset for partition {} was set to {} in ZK. Seeking consumer to that position", tp.partition(), offset);
 						fetcher.seek(tp, offset);
 					}
@@ -185,8 +186,6 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	@Override
 	public void run(SourceContext<T> sourceContext) throws Exception {
 		fetcher.run(sourceContext, valueDeserializer, lastOffsets);
-
-
 	}
 
 	@Override
@@ -253,7 +252,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		} else {
 			Map<TopicPartition, Long> offsetsToCommit = new HashMap<TopicPartition, Long>();
 			for(int i = 0; i < checkpointOffsets.length; i++) {
-				if(checkpointOffsets[i] != -1) {
+				if(checkpointOffsets[i] != OFFSET_NOT_SET) {
 					offsetsToCommit.put(new TopicPartition(topic, i), checkpointOffsets[i]);
 				}
 			}
@@ -293,7 +292,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	private void setOffsetsInZooKeeper(long[] offsets) {
 		for (int partition = 0; partition < offsets.length; partition++) {
 			long offset = offsets[partition];
-			if(offset != -1) {
+			if(offset != OFFSET_NOT_SET) {
 				setOffset(partition, offset);
 			}
 		}
@@ -331,7 +330,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		ZKGroupTopicDirs topicDirs = new ZKGroupTopicDirs(groupId, tap.topic());
 		scala.Tuple2<Option<String>, Stat> data = ZkUtils.readDataMaybeNull(zkClient, topicDirs.consumerOffsetDir() + "/" + tap.partition());
 		if(data._1().isEmpty()) {
-			return -1;
+			return OFFSET_NOT_SET;
 		} else {
 			return Long.valueOf(data._1().get());
 		}

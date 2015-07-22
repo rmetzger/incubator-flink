@@ -1,26 +1,43 @@
 package org.apache.flink.streaming.connectors.internals;
 
 import kafka.api.FetchRequestBuilder;
+import kafka.api.OffsetRequest;
+import kafka.api.PartitionOffsetRequestInfo;
+import kafka.common.ErrorMapping;
+import kafka.common.TopicAndPartition;
+import kafka.javaapi.FetchResponse;
+import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
+import kafka.javaapi.message.ByteBufferMessageSet;
+import kafka.message.MessageAndOffset;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
+import org.apache.flink.util.StringUtils;
 import org.apache.kafka.copied.common.Node;
 import org.apache.kafka.copied.common.PartitionInfo;
 import org.apache.kafka.copied.common.TopicPartition;
 import org.apache.kafka.copied.common.requests.FetchRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class LegacyFetcher implements Fetcher {
+	public static Logger LOG = LoggerFactory.getLogger(FlinkKafkaConsumerBase.class);
 
 	private final String topic;
 	private Map<TopicPartition, Long> partitionsToRead;
 	private boolean running = true;
 	private Properties config;
+
+	public final static String QUEUE_SIZE_KEY = "flink.kafka.consumer.queue.size";
+	public final static String DEFAULT_QUEUE_SIZE = "10000";
+
 
 	public LegacyFetcher(String topic, Properties props) {
 		config = props;
@@ -70,20 +87,32 @@ public class LegacyFetcher implements Fetcher {
 		if(partitionsToRead.size() != fetchPartitionsCount) {
 			throw new RuntimeException(partitionsToRead.size() + " partitions to read, but got only "+fetchPartitionsCount+" partition infos with lead brokers.");
 		}
-		// create SimpleConsumers for each partition
+		// Create a Queue for the threads to communicate
+		int queueSize = Integer.valueOf(config.getProperty(QUEUE_SIZE_KEY, DEFAULT_QUEUE_SIZE));
+		LinkedBlockingQueue<MessageAndOffset> messageQueue = new LinkedBlockingQueue<MessageAndOffset>(queueSize);
 
-		// these are the actual configuration values of Kafka + their original default values.
-		int soTimeout = Integer.valueOf(config.getProperty("socket.timeout.ms", "30000"));
-		int bufferSize = Integer.valueOf(config.getProperty("socket.receive.buffer.bytes", "65536"));
-		List<SimpleConsumer> consumers = new ArrayList<SimpleConsumer>(fetchPartitions.size());
-		for(int i = 0; i < fetchPartitions.size(); i++) {
-			FetchPartition fp = fetchPartitions.get(i);
-			String clientId = "flink-kafka-consumer-legacy-"+topic+"-"+fp.partition;
-			consumers.add(new SimpleConsumer(fp.leaderHost, fp.leaderPort, soTimeout, bufferSize, clientId));
+		// create SimpleConsumers for each broker
+		List<SimpleConsumerThread> consumers = new ArrayList<SimpleConsumerThread>(fetchBrokers.size());
+		for(Map.Entry<Node, List<FetchPartition>> brokerInfo: fetchBrokers.entrySet()) {
+			SimpleConsumerThread thread = new SimpleConsumerThread(this.config, topic, brokerInfo.getKey(), brokerInfo.getValue(), messageQueue);
+			thread.setDaemon(true);
+			thread.setName("KafkaConsumer-SimpleConsumer-" + brokerInfo.getKey().idString());
+			thread.start();
+			consumers.add(thread);
 		}
-		add threads and a LinkedBlockingQueue here
-		FetchRequest fetchRequest = new FetchRequestBuilder()
-				.clientId(consumers.get(0).clientId()).addFetch()
+
+		// read from queue:
+		while(running) {
+			try {
+				messageQueue.take();
+			} catch (InterruptedException e) {
+				LOG.debug("Queue consumption thread got interrupted. Stopping consumption and interrupting other threads");
+				running = false;
+				for(SimpleConsumerThread t: consumers) {
+					t.interrupt();
+				}
+			}
+		}
 	}
 
 	@Override
@@ -107,18 +136,134 @@ public class LegacyFetcher implements Fetcher {
 		partitionsToRead.put(topicPartition, offset);
 	}
 
-	/*private static class FlinkLegacyConsumerConfig extends ConsumerConfig {
-
-		public FlinkLegacyConsumerConfig(Map<?, ?> props) {
-			super(props);
-		}
-	} */
 
 	private static class FetchPartition {
-	//	public String leaderHost;
-	//	public int leaderPort;
 		public int partition;
 		public long offset;
+	}
+
+	// --------------------------  Thread for a connection to a broker --------------------------
+
+	private static class SimpleConsumerThread extends Thread {
+
+		private final SimpleConsumer consumer;
+		private final List<FetchPartition> partitions;
+		private final LinkedBlockingQueue<MessageAndOffset> messageQueue;
+		private final String clientId;
+		private final String topic;
+		private final int fetchSize;
+		private boolean running = true;
+
+		public SimpleConsumerThread(Properties config, String topic, Node leader, List<FetchPartition> partitions, LinkedBlockingQueue<MessageAndOffset> messageQueue) {
+			// these are the actual configuration values of Kafka + their original default values.
+			int soTimeout = Integer.valueOf(config.getProperty("socket.timeout.ms", "30000"));
+			int bufferSize = Integer.valueOf(config.getProperty("socket.receive.buffer.bytes", "65536"));
+
+			this.fetchSize = Integer.valueOf(config.getProperty("fetch.message.max.bytes", "1048576"));
+			this.topic = topic;
+			this.partitions = partitions;
+			this.messageQueue = messageQueue;
+			this.clientId = "flink-kafka-consumer-legacy-"+leader.idString();
+			// create consumer
+			consumer = new SimpleConsumer(leader.host(), leader.port(), bufferSize, soTimeout, clientId);
+			// check offsets
+			List<FetchPartition> getOffsetPartitions = new ArrayList<FetchPartition>();
+			for(FetchPartition fp: partitions) {
+				if (fp.offset == FlinkKafkaConsumerBase.OFFSET_NOT_SET) {
+					// retrieve the offset from the consumer
+					getOffsetPartitions.add(fp);
+				}
+			}
+			if(getOffsetPartitions.size() > 0) {
+				long timeType = 0;
+				if(config.getProperty("auto.offset.reset", OffsetRequest.LargestTimeString() ).equals(OffsetRequest.LargestTimeString())) {
+					timeType = OffsetRequest.LatestTime();
+				} else {
+					timeType = OffsetRequest.EarliestTime();
+				}
+				getLastOffset(consumer, topic, getOffsetPartitions, timeType);
+				LOG.info("No offsets found for topic "+topic+", fetched the following start offsets {}", getOffsetPartitions);
+			}
+		}
+
+		@Override
+		public void run() {
+
+			while(running) {
+				FetchRequestBuilder frb = new FetchRequestBuilder();
+				frb.clientId(this.clientId);
+				for (FetchPartition fp : partitions) {
+					frb.addFetch(topic, fp.partition, fp.offset, this.fetchSize);
+				}
+				kafka.api.FetchRequest fetchRequest = frb.build();
+				FetchResponse fetchResponse = consumer.fetch(fetchRequest);
+
+				if (fetchResponse.hasError()) {
+					String exception = "";
+					for(FetchPartition fp: partitions) {
+						short code;
+						if( (code=fetchResponse.errorCode(topic, fp.partition)) != ErrorMapping.NoError()) {
+							exception += "\nException for partition "+fp.partition+": "+ StringUtils.stringifyException(ErrorMapping.exceptionFor(code));
+						}
+					}
+					throw new RuntimeException("Error while fetching from broker: "+exception);
+				}
+
+				for (FetchPartition fp : partitions) {
+					ByteBufferMessageSet messageSet = fetchResponse.messageSet(topic, fp.partition);
+					for (MessageAndOffset msg : messageSet) {
+						try {
+							if(msg.offset() <= fp.offset ) {
+								// we have seen this message already
+								continue;
+							}
+							messageQueue.put(msg);
+							fp.offset = msg.offset(); // advance offset for the next request
+						} catch (InterruptedException e) {
+							LOG.debug("Consumer thread got interrupted. Stopping consumption");
+							running = false;
+						}
+					}
+				}
+			}
+
+		}
+	}
+
+	/**
+	 * Request latest offsets from Kafka.
+	 *
+	 * @param consumer consumer connected to lead broker
+	 * @param topic topic name
+	 * @param partitions list of partitions we need offsets for
+	 * @param whichTime type of time we are requesting. -1 and -2 are special constants (See OffsetRequest)
+	 */
+	private static void getLastOffset(SimpleConsumer consumer, String topic, List<FetchPartition> partitions, long whichTime) {
+
+		Map<TopicAndPartition, PartitionOffsetRequestInfo> requestInfo = new HashMap<TopicAndPartition, PartitionOffsetRequestInfo>();
+		for(FetchPartition fp: partitions) {
+			TopicAndPartition topicAndPartition = new TopicAndPartition(topic, fp.partition);
+			requestInfo.put(topicAndPartition, new PartitionOffsetRequestInfo(whichTime, 1));
+		}
+
+		kafka.javaapi.OffsetRequest request = new kafka.javaapi.OffsetRequest(requestInfo, kafka.api.OffsetRequest.CurrentVersion(), consumer.clientId());
+		OffsetResponse response = consumer.getOffsetsBefore(request);
+
+		if (response.hasError()) {
+			String exception = "";
+			for(FetchPartition fp: partitions) {
+				short code;
+				if( (code=response.errorCode(topic, fp.partition)) != ErrorMapping.NoError()) {
+					exception += "\nException for partition "+fp.partition+": "+ StringUtils.stringifyException(ErrorMapping.exceptionFor(code));
+				}
+			}
+			throw new RuntimeException("Unable to get last offset for topic "+topic+" and partitions "+partitions +". "+exception);
+		}
+
+		for(FetchPartition fp: partitions) {
+			fp.offset = response.offsets(topic, fp.partition)[0];
+		}
+
 	}
 
 }

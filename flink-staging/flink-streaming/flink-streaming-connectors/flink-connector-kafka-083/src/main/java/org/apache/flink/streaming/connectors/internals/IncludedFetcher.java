@@ -18,6 +18,9 @@ import java.util.Properties;
 public class IncludedFetcher implements Fetcher {
 	public static Logger LOG = LoggerFactory.getLogger(IncludedFetcher.class);
 
+	public final static String POLL_TIMEOUT = "flink.kafka.consumer.poll.timeout";
+	public final static long DEFAULT_POLL_TIMEOUT = 50;
+
 	final KafkaConsumer<byte[], byte[]> fetcher;
 	final Properties props;
 	boolean running = true;
@@ -41,9 +44,9 @@ public class IncludedFetcher implements Fetcher {
 
 	@Override
 	public <T> void run(SourceFunction.SourceContext<T> sourceContext, DeserializationSchema<T> valueDeserializer, long[] lastOffsets) {
-		long pollTimeout = FlinkKafkaConsumerBase.DEFAULT_POLL_TIMEOUT;
-		if(props.contains(FlinkKafkaConsumerBase.POLL_TIMEOUT)) {
-			pollTimeout = Long.valueOf(props.getProperty(FlinkKafkaConsumerBase.POLL_TIMEOUT));
+		long pollTimeout = DEFAULT_POLL_TIMEOUT;
+		if(props.contains(POLL_TIMEOUT)) {
+			pollTimeout = Long.valueOf(props.getProperty(POLL_TIMEOUT));
 		}
 		while(running) {
 			synchronized (fetcher) {
