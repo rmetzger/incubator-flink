@@ -145,6 +145,7 @@ public class LegacyFetcher implements Fetcher {
 		for(SimpleConsumerThread t: consumers) {
 			t.close();
 		}
+		sourceContext.close();
 	}
 
 	@Override

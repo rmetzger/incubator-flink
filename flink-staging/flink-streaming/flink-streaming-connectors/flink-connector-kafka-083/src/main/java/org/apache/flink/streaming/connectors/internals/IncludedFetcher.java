@@ -78,6 +78,7 @@ public class IncludedFetcher implements Fetcher {
 				}
 			}
 		}
+		sourceContext.close();
 	}
 
 	@Override

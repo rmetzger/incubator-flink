@@ -79,6 +79,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	private long[] restoreToOffset;
 	protected OffsetStore offsetStore = OffsetStore.ZOOKEEPER;
 	protected FetcherType fetcherType = FetcherType.LEGACY;
+	private boolean isNoOp = false; // no-operation instance (for example when there are fewer partitions that flink consumers)
 
 	public enum OffsetStore {
 		ZOOKEEPER,
@@ -142,6 +143,11 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		// tell which partitions we want:
 		List<TopicPartition> partitionsToSub = assignPartitions();
 		LOG.info("This instance (id={}) is going to subscribe to partitions {}", getRuntimeContext().getIndexOfThisSubtask(), partitionsToSub);
+		if(partitionsToSub.size() == 0) {
+			LOG.info("This instance is a no-op instance.");
+			isNoOp = true;
+			return;
+		}
 		fetcher.partitionsToRead(partitionsToSub);
 
 		// set up operator state
@@ -208,11 +214,18 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 	@Override
 	public void run(SourceContext<T> sourceContext) throws Exception {
+		if(isNoOp) {
+			sourceContext.close();
+			return;
+		}
 		fetcher.run(sourceContext, valueDeserializer, lastOffsets);
 	}
 
 	@Override
 	public void cancel() {
+		if(isNoOp) {
+			return;
+		}
 		fetcher.stop();
 		fetcher.close();
 	}
