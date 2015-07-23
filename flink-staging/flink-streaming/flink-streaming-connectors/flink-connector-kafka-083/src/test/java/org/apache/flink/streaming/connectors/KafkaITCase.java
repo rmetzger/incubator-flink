@@ -155,6 +155,8 @@ public class KafkaITCase {
 		cProps.setProperty("auto.commit.enable", "false");
 		cProps.setProperty("auto.offset.reset", "earliest"); // read from the beginning.
 
+		cProps.setProperty("fetch.message.max.bytes", "128"); // make a lot of fetches (MESSAGES MUST BE SMALLER!)
+
 		standardProps = cProps;
 		Properties consumerConfigProps = new Properties();
 		consumerConfigProps.putAll(cProps);
@@ -290,7 +292,6 @@ public class KafkaITCase {
 		@Override
 		public void close() throws Exception {
 			super.close();
-			LOG.info("Starting close " +Arrays.toString(commitedOffsets));
 			synchronized (sync) {
 				if (finalOffset == null) {
 					finalOffset = new long[commitedOffsets.length];
@@ -304,7 +305,6 @@ public class KafkaITCase {
 					}
 				}
 			}
-			LOG.info("Finished closing. Final "+Arrays.toString(finalOffset));
 		}
 	}
 	/**
@@ -321,9 +321,8 @@ public class KafkaITCase {
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
 		env.getConfig().disableSysoutLogging();
-		env.enableCheckpointing(500);
+		env.enableCheckpointing(50);
 		env.setNumberOfExecutionRetries(0);
-		env.setBufferTimeout(0);
 
 		// create topic
 		Properties topicConfig = new Properties();

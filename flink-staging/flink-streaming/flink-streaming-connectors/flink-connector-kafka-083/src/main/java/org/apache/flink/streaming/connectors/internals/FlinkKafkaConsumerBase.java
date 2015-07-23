@@ -40,6 +40,7 @@ import java.util.Properties;
  * - fetch.message.max.bytes
  * - auto.offset.reset with the values "latest", "earliest" (unlike 0.8.2 behavior)
  * - flink.kafka.consumer.queue.size (Size of the queue between the fetching threads)
+ * - fetch.wait.max.ms
  */
 public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFunction<T>
 		implements CheckpointNotifier, CheckpointedAsynchronously<long[]>, ResultTypeQueryable {

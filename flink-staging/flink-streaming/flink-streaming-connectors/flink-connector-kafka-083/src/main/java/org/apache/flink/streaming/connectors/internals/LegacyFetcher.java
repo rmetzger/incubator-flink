@@ -91,7 +91,7 @@ public class LegacyFetcher implements Fetcher {
 		if(partitionsToRead.size() != fetchPartitionsCount) {
 			throw new RuntimeException(partitionsToRead.size() + " partitions to read, but got only "+fetchPartitionsCount+" partition infos with lead brokers.");
 		}
-		// Create a Queue for the threads to communicate
+		// Create a queue for the threads to communicate
 		int queueSize = Integer.valueOf(config.getProperty(QUEUE_SIZE_KEY, DEFAULT_QUEUE_SIZE));
 		LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue = new LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>>(queueSize);
 
@@ -109,15 +109,13 @@ public class LegacyFetcher implements Fetcher {
 		// read from queue:
 		while(running) {
 			try {
+				Tuple2<MessageAndOffset, Integer> msg = messageQueue.take();
+				ByteBuffer payload = msg.f0.message().payload();
+				byte[] valueByte = new byte[payload.limit()];
+				payload.get(valueByte);
+				T value = valueDeserializer.deserialize(valueByte);
 				synchronized (sourceContext.getCheckpointLock()) {
-					Tuple2<MessageAndOffset, Integer> msg = messageQueue.take();
-
 					lastOffsets[msg.f1] = msg.f0.offset();
-					ByteBuffer payload = msg.f0.message().payload();
-					byte[] valueByte = new byte[payload.limit()];
-					payload.get(valueByte);
-					T value = valueDeserializer.deserialize(valueByte);
-					LOG.info("Taken from queue "+msg+" deser to "+value);
 					sourceContext.collect(value);
 				}
 			} catch (InterruptedException e) {
@@ -155,6 +153,7 @@ public class LegacyFetcher implements Fetcher {
 	private static class FetchPartition {
 		public int partition;
 		public long offset;
+	//	public long nextFetch;
 
 
 		@Override
@@ -175,8 +174,13 @@ public class LegacyFetcher implements Fetcher {
 		private final LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue;
 		private final String clientId;
 		private final String topic;
+
 		private final int fetchSize;
+		private final int maxWait;
+		private final int minBytes;
+
 		private boolean running = true;
+
 
 		public SimpleConsumerThread(Properties config, String topic, Node leader, List<FetchPartition> partitions, LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue) {
 			// these are the actual configuration values of Kafka + their original default values.
@@ -184,6 +188,9 @@ public class LegacyFetcher implements Fetcher {
 			int bufferSize = Integer.valueOf(config.getProperty("socket.receive.buffer.bytes", "65536"));
 
 			this.fetchSize = Integer.valueOf(config.getProperty("fetch.message.max.bytes", "1048576"));
+			this.maxWait =  Integer.valueOf(config.getProperty("fetch.wait.max.ms", "100"));
+			this.minBytes = Integer.valueOf(config.getProperty("fetch.min.bytes", "1"));
+
 			this.topic = topic;
 			this.partitions = partitions;
 			this.messageQueue = messageQueue;
@@ -213,13 +220,20 @@ public class LegacyFetcher implements Fetcher {
 		@Override
 		public void run() {
 
+			// initialize offset field for first fetch
+			for (FetchPartition fp : partitions) {
+				fp.offset--;
+			}
 			while(running) {
 				FetchRequestBuilder frb = new FetchRequestBuilder();
 				frb.clientId(this.clientId);
+				frb.maxWait(maxWait);
+				frb.minBytes(minBytes);
 				for (FetchPartition fp : partitions) {
-					frb.addFetch(topic, fp.partition, fp.offset, this.fetchSize);
+					frb.addFetch(topic, fp.partition, fp.offset + 1, this.fetchSize);
 				}
 				kafka.api.FetchRequest fetchRequest = frb.build();
+				LOG.debug("Issuing fetch request {}", fetchRequest);
 				FetchResponse fetchResponse = consumer.fetch(fetchRequest);
 
 				if (fetchResponse.hasError()) {
@@ -233,9 +247,11 @@ public class LegacyFetcher implements Fetcher {
 					throw new RuntimeException("Error while fetching from broker: "+exception);
 				}
 
+				int messagesInFetch = 0;
 				for (FetchPartition fp : partitions) {
 					ByteBufferMessageSet messageSet = fetchResponse.messageSet(topic, fp.partition);
 					for (MessageAndOffset msg : messageSet) {
+						messagesInFetch++;
 						try {
 							if(msg.offset() < fp.offset) {
 								LOG.info("Skipping message with offset " + msg.offset() + " because we have seen messages until " + fp.offset + " from partition "+fp.partition+" already");
@@ -244,13 +260,17 @@ public class LegacyFetcher implements Fetcher {
 							}
 							messageQueue.put(new Tuple2<MessageAndOffset, Integer>(msg, fp.partition));
 							fp.offset = msg.offset(); // advance offset for the next request
+							// fp.nextFetch = msg.nextOffset();
 						} catch (InterruptedException e) {
 							LOG.debug("Consumer thread got interrupted. Stopping consumption");
 							running = false;
 						}
 					}
 				}
+				LOG.debug("This fetch contained {} messages", messagesInFetch);
 			}
+			// end of run loop. close connection to consumer
+			consumer.close();
 
 		}
 	}
