@@ -7,6 +7,8 @@ import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkMarshallingError;
 import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.commons.collections.map.LinkedMap;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.checkpoint.CheckpointNotifier;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
@@ -36,10 +38,11 @@ import java.util.Properties;
  * - socket.timeout.ms
  * - socket.receive.buffer.bytes
  * - fetch.message.max.bytes
+ * - auto.offset.reset with the values "latest", "earliest" (unlike 0.8.2 behavior)
  * - flink.kafka.consumer.queue.size (Size of the queue between the fetching threads)
  */
 public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFunction<T>
-		implements CheckpointNotifier, CheckpointedAsynchronously<long[]> {
+		implements CheckpointNotifier, CheckpointedAsynchronously<long[]>, ResultTypeQueryable {
 
 	public static Logger LOG = LoggerFactory.getLogger(FlinkKafkaConsumerBase.class);
 
@@ -54,7 +57,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	private transient Fetcher fetcher;
 	private final LinkedMap pendingCheckpoints = new LinkedMap();
 	private long[] lastOffsets;
-	private long[] commitedOffsets;
+	protected long[] commitedOffsets;
 	private ZkClient zkClient;
 	private long[] restoreToOffset;
 	protected OffsetStore offsetStore = OffsetStore.ZOOKEEPER;
@@ -192,6 +195,11 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	public void cancel() {
 		fetcher.stop();
 		fetcher.close();
+	}
+
+	@Override
+	public TypeInformation getProducedType() {
+		return valueDeserializer.getProducedType();
 	}
 
 	// ----------------------------- Utilities -------------------------

@@ -64,6 +64,7 @@ public class LegacyFetcher implements Fetcher {
 			throw new IllegalArgumentException("No partitions set");
 		}
 
+		LOG.info("Reading from partitions "+partitionsToRead+" using the legacy fetcher");
 		// get lead broker for each partition
 		List<PartitionInfo> allPartitionsInTopic = FlinkKafkaConsumerBase.getPartitionsForTopic(topic, config);
 
@@ -82,6 +83,7 @@ public class LegacyFetcher implements Fetcher {
 					fp.partition = partitionToRead.getKey().partition();
 					partitions.add(fp);
 					fetchPartitionsCount++;
+					fetchBrokers.put(partitionInfo.leader(), partitions);
 				}
 			}
 		}
@@ -100,6 +102,7 @@ public class LegacyFetcher implements Fetcher {
 			thread.setName("KafkaConsumer-SimpleConsumer-" + brokerInfo.getKey().idString());
 			thread.start();
 			consumers.add(thread);
+			LOG.info("Starting thread "+thread.getName()+" for fetching from broker "+brokerInfo.getKey().host());
 		}
 
 		// read from queue:
@@ -107,13 +110,13 @@ public class LegacyFetcher implements Fetcher {
 			try {
 				synchronized (sourceContext.getCheckpointLock()) {
 					Tuple2<MessageAndOffset, Integer> msg = messageQueue.take();
+					LOG.info("Taken from queue "+msg);
 					lastOffsets[msg.f1] = msg.f0.offset();
 					T value = valueDeserializer.deserialize(msg.f0.message().payload().array());
 					sourceContext.collect(value);
 				}
-
 			} catch (InterruptedException e) {
-				LOG.debug("Queue consumption thread got interrupted. Stopping consumption and interrupting other threads");
+				LOG.info("Queue consumption thread got interrupted. Stopping consumption and interrupting other threads");
 				running = false;
 				for(SimpleConsumerThread t: consumers) {
 					t.interrupt();
@@ -147,6 +150,15 @@ public class LegacyFetcher implements Fetcher {
 	private static class FetchPartition {
 		public int partition;
 		public long offset;
+
+
+		@Override
+		public String toString() {
+			return "FetchPartition{" +
+					"partition=" + partition +
+					", offset=" + offset +
+					'}';
+		}
 	}
 
 	// --------------------------  Thread for a connection to a broker --------------------------
@@ -183,7 +195,7 @@ public class LegacyFetcher implements Fetcher {
 			}
 			if(getOffsetPartitions.size() > 0) {
 				long timeType = 0;
-				if(config.getProperty("auto.offset.reset", OffsetRequest.LargestTimeString() ).equals(OffsetRequest.LargestTimeString())) {
+				if(config.getProperty("auto.offset.reset", "latest" ).equals("latest")) {
 					timeType = OffsetRequest.LatestTime();
 				} else {
 					timeType = OffsetRequest.EarliestTime();
