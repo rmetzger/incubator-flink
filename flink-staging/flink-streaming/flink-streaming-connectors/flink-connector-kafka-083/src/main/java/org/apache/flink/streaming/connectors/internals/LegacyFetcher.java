@@ -65,13 +65,13 @@ public class LegacyFetcher implements Fetcher {
 	public void partitionsToRead(List<TopicPartition> partitions) {
 		partitionsToRead = new HashMap<TopicPartition, Long>(partitions.size());
 		for(TopicPartition tp: partitions) {
-			partitionsToRead.put(tp, -1L);
+			partitionsToRead.put(tp, FlinkKafkaConsumerBase.OFFSET_NOT_SET);
 		}
 	}
 
 	@Override
 	public void close() {
-
+		running = false;
 	}
 
 	@Override
@@ -141,6 +141,10 @@ public class LegacyFetcher implements Fetcher {
 				}
 			}
 		}
+
+		for(SimpleConsumerThread t: consumers) {
+			t.close();
+		}
 	}
 
 	@Override
@@ -159,7 +163,8 @@ public class LegacyFetcher implements Fetcher {
 			throw new IllegalArgumentException("No partitions to read set");
 		}
 		if(!partitionsToRead.containsKey(topicPartition)) {
-			throw new IllegalArgumentException("Can not set offset on partition we are not going to read");
+			throw new IllegalArgumentException("Can not set offset on a partition ("+topicPartition+") we are not going to read. " +
+					"Partitions to read "+partitionsToRead);
 		}
 		partitionsToRead.put(topicPartition, offset);
 	}
@@ -168,8 +173,6 @@ public class LegacyFetcher implements Fetcher {
 	private static class FetchPartition {
 		public int partition;
 		public long offset;
-	//	public long nextFetch;
-
 
 		@Override
 		public String toString() {
@@ -287,6 +290,10 @@ public class LegacyFetcher implements Fetcher {
 			// end of run loop. close connection to consumer
 			consumer.close();
 
+		}
+
+		public void close() {
+			consumer.close();
 		}
 	}
 

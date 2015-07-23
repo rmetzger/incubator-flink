@@ -141,7 +141,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 		// tell which partitions we want:
 		List<TopicPartition> partitionsToSub = assignPartitions();
-		LOG.info("This instance is going to subscribe to partitions {}", partitionsToSub);
+		LOG.info("This instance (id={}) is going to subscribe to partitions {}", getRuntimeContext().getIndexOfThisSubtask(), partitionsToSub);
 		fetcher.partitionsToRead(partitionsToSub);
 
 		// set up operator state
@@ -160,7 +160,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 		// seek to last known pos, from restore request
 		if(restoreToOffset != null) {
-			LOG.info("Found offsets to restore to.");
+			LOG.info("Found offsets to restore to: "+Arrays.toString(restoreToOffset));
 			for(int i = 0; i < restoreToOffset.length; i++) {
 				// if this fails because we are not subscribed to the topic, the partition assignment is not deterministic!
 				fetcher.seek(new TopicPartition(topic, i), restoreToOffset[i]);
@@ -186,6 +186,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 	public List<TopicPartition> assignPartitions() {
 		int[] parts = getPartitions();
+		LOG.info("Assigning partitions from "+Arrays.toString(parts));
 		List<TopicPartition> partitionsToSub = new ArrayList<TopicPartition>();
 
 		int machine = 0;
