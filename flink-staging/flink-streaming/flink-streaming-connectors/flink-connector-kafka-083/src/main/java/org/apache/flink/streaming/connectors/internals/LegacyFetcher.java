@@ -21,6 +21,7 @@ import org.apache.kafka.copied.common.requests.FetchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -110,9 +111,13 @@ public class LegacyFetcher implements Fetcher {
 			try {
 				synchronized (sourceContext.getCheckpointLock()) {
 					Tuple2<MessageAndOffset, Integer> msg = messageQueue.take();
-					LOG.info("Taken from queue "+msg);
+
 					lastOffsets[msg.f1] = msg.f0.offset();
-					T value = valueDeserializer.deserialize(msg.f0.message().payload().array());
+					ByteBuffer payload = msg.f0.message().payload();
+					byte[] valueByte = new byte[payload.limit()];
+					payload.get(valueByte);
+					T value = valueDeserializer.deserialize(valueByte);
+					LOG.info("Taken from queue "+msg+" deser to "+value);
 					sourceContext.collect(value);
 				}
 			} catch (InterruptedException e) {
@@ -232,7 +237,8 @@ public class LegacyFetcher implements Fetcher {
 					ByteBufferMessageSet messageSet = fetchResponse.messageSet(topic, fp.partition);
 					for (MessageAndOffset msg : messageSet) {
 						try {
-							if(msg.offset() <= fp.offset ) {
+							if(msg.offset() < fp.offset) {
+								LOG.info("Skipping message with offset " + msg.offset() + " because we have seen messages until " + fp.offset + " from partition "+fp.partition+" already");
 								// we have seen this message already
 								continue;
 							}

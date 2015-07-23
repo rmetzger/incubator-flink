@@ -119,8 +119,6 @@ public class StreamSource<T> extends AbstractUdfStreamOperator<T, SourceFunction
 		private final Output<StreamRecord<T>> output;
 		StreamRecord<T> reuse;
 
-		long count = 0;
-
 		public NonWatermarkContext(Object lockingObjectParam, Output<StreamRecord<T>> outputParam) {
 			this.lockingObject = lockingObjectParam;
 			this.output = outputParam;
@@ -129,10 +127,8 @@ public class StreamSource<T> extends AbstractUdfStreamOperator<T, SourceFunction
 
 		@Override
 		public void collect(T element) {
-			count++;
 			long currentTime = System.currentTimeMillis();
 			output.collect(reuse.replace(element, currentTime));
-			System.out.println("Source count is "+count);
 		}
 
 		@Override

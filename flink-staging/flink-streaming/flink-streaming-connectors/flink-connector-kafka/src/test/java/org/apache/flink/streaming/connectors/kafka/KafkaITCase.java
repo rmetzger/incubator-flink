@@ -1173,7 +1173,7 @@ public class KafkaITCase {
 
 	private static void printTopic(String topicName, ConsumerConfig config, DeserializationSchema deserializationSchema, int stopAfter){
 		List<MessageAndMetadata<byte[], byte[]>> contents = readTopicToList(topicName, config, stopAfter);
-		LOG.info("Printing contents of topic {} in consumer grouo {}", topicName, config.groupId());
+		LOG.info("Printing contents of topic {} in consumer group {}", topicName, config.groupId());
 		for(MessageAndMetadata<byte[], byte[]> message: contents) {
 			Object out = deserializationSchema.deserialize(message.message());
 			LOG.info("Message: partition: {} offset: {} msg: {}", message.partition(), message.offset(), out.toString());

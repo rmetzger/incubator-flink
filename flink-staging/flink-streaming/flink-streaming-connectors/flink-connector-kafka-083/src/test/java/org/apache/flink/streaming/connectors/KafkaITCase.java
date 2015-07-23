@@ -312,8 +312,8 @@ public class KafkaITCase {
 	 *
 	 */
 	@Test
-	public void testPersistentSourceWithOffsetUpdates() throws Exception {
-		LOG.info("Starting testPersistentSourceWithOffsetUpdates()");
+	public void testFlinkKafkaConsumer081WithOffsetUpdates() throws Exception {
+		LOG.info("Starting testFlinkKafkaConsumer081WithOffsetUpdates()");
 
 		ZkClient zk = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new FlinkKafkaConsumer081.KafkaZKStringSerializer());
 
@@ -373,13 +373,13 @@ public class KafkaITCase {
 
 		zk.close();
 
-		LOG.info("Finished testPersistentSourceWithOffsetUpdates()");
+		LOG.info("Finished testFlinkKafkaConsumer081WithOffsetUpdates()");
 	}
 
 	private void readSequence(StreamExecutionEnvironment env, Properties cc, final String topicName, final int valuesStartFrom, final int valuesCount, final int finalCount) throws Exception {
 		LOG.info("Reading sequence for verification until final count {}", finalCount);
 		TestPersistentKafkaSource<Tuple2<Integer, Integer>> pks = new TestPersistentKafkaSource<Tuple2<Integer, Integer>>(topicName, new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1, 1), env.getConfig()), cc);
-		DataStream<Tuple2<Integer, Integer>> source = env.addSource(pks).map(new MapFunction<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>() {
+		DataStream<Tuple2<Integer, Integer>> source = env.addSource(pks) /* .map(new MapFunction<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>() {
 			// we need to slow down the source so that it can participate in a few checkpoints.
 			// Otherwise it would write its data into buffers and shut down.
 			@Override
@@ -387,7 +387,7 @@ public class KafkaITCase {
 				Thread.sleep(50);
 				return value;
 			}
-		});
+		}) */;
 
 		// verify data
 		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Tuple2<Integer, Integer>, Integer>() {
@@ -440,8 +440,7 @@ public class KafkaITCase {
 				int partition = getRuntimeContext().getIndexOfThisSubtask();
 				while (running) {
 					LOG.info("Writing " + cnt + " to partition " + partition);
-					ctx.collect(new Tuple2<Integer, Integer>(getRuntimeContext().getIndexOfThisSubtask(),
-							cnt));
+					ctx.collect(new Tuple2<Integer, Integer>(partition, cnt));
 					if (cnt == to) {
 						LOG.info("Writer reached end.");
 						return;
