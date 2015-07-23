@@ -65,8 +65,7 @@ public class KafkaSink<IN> extends RichSinkFunction<IN> {
 	 * @param serializationSchema
 	 * 		User defined serialization schema.
 	 */
-	public KafkaSink(String brokerList, String topicId,
-					 SerializationSchema<IN, byte[]> serializationSchema) {
+	public KafkaSink(String brokerList, String topicId, SerializationSchema<IN, byte[]> serializationSchema) {
 		this(brokerList, topicId, new Properties(), serializationSchema);
 	}
 
@@ -84,8 +83,7 @@ public class KafkaSink<IN> extends RichSinkFunction<IN> {
 	 * @param serializationSchema
 	 * 		User defined serialization schema.
 	 */
-	public KafkaSink(String brokerList, String topicId, Properties producerConfig,
-					 SerializationSchema<IN, byte[]> serializationSchema) {
+	public KafkaSink(String brokerList, String topicId, Properties producerConfig, SerializationSchema<IN, byte[]> serializationSchema) {
 		String[] elements = brokerList.split(",");
 		for(String broker: elements) {
 			NetUtils.ensureCorrectHostnamePort(broker);
@@ -111,17 +109,16 @@ public class KafkaSink<IN> extends RichSinkFunction<IN> {
 	 * @param partitioner
 	 * 		User defined partitioner.
 	 */
-	public KafkaSink(String brokerList, String topicId,
-					 SerializationSchema<IN, byte[]> serializationSchema, SerializableKafkaPartitioner partitioner) {
+	public KafkaSink(String brokerList, String topicId, SerializationSchema<IN, byte[]> serializationSchema, SerializableKafkaPartitioner partitioner) {
 		this(brokerList, topicId, serializationSchema);
 		ClosureCleaner.ensureSerializable(partitioner);
 		this.partitioner = partitioner;
 	}
 
 	public KafkaSink(String brokerList,
-					 String topicId,
-					 SerializationSchema<IN, byte[]> serializationSchema,
-					 Class<? extends SerializableKafkaPartitioner> partitioner) {
+					String topicId,
+					SerializationSchema<IN, byte[]> serializationSchema,
+					Class<? extends SerializableKafkaPartitioner> partitioner) {
 		this(brokerList, topicId, serializationSchema);
 		this.partitionerClass = partitioner;
 	}

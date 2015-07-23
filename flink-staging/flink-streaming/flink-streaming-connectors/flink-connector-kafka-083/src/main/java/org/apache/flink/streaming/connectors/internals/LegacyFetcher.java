@@ -33,7 +33,6 @@ import org.apache.flink.util.StringUtils;
 import org.apache.kafka.copied.common.Node;
 import org.apache.kafka.copied.common.PartitionInfo;
 import org.apache.kafka.copied.common.TopicPartition;
-import org.apache.kafka.copied.common.requests.FetchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
