@@ -162,8 +162,10 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		if(restoreToOffset != null) {
 			LOG.info("Found offsets to restore to: "+Arrays.toString(restoreToOffset));
 			for(int i = 0; i < restoreToOffset.length; i++) {
-				// if this fails because we are not subscribed to the topic, the partition assignment is not deterministic!
-				fetcher.seek(new TopicPartition(topic, i), restoreToOffset[i]);
+				if(restoreToOffset[i] != OFFSET_NOT_SET) {
+					// if this fails because we are not subscribed to the topic, the partition assignment is not deterministic!
+					fetcher.seek(new TopicPartition(topic, i), restoreToOffset[i]);
+				}
 			}
 		} else {
 			// no restore request. See what we have in ZK for this consumer group. In the non ZK case, Kafka will take care of this.
