@@ -361,9 +361,9 @@ public class KafkaITCase {
 
 		LOG.info("Manipulating offsets");
 		// set the offset to 50 for the three partitions
-		FlinkKafkaConsumer081.setOffset(zk, standardCC.groupId(), topicName, 0, 50);
-		FlinkKafkaConsumer081.setOffset(zk, standardCC.groupId(), topicName, 1, 50);
-		FlinkKafkaConsumer081.setOffset(zk, standardCC.groupId(), topicName, 2, 50);
+		FlinkKafkaConsumer081.setOffset(zk, standardCC.groupId(), topicName, 0, 49);
+		FlinkKafkaConsumer081.setOffset(zk, standardCC.groupId(), topicName, 1, 49);
+		FlinkKafkaConsumer081.setOffset(zk, standardCC.groupId(), topicName, 2, 49);
 
 		// create new env
 		env = StreamExecutionEnvironment.createLocalEnvironment(3);

@@ -70,6 +70,18 @@ public class LegacyFetcher implements Fetcher {
 	}
 
 	@Override
+	public void seek(TopicPartition topicPartition, long offsetToRead) {
+		if(partitionsToRead == null) {
+			throw new IllegalArgumentException("No partitions to read set");
+		}
+		if(!partitionsToRead.containsKey(topicPartition)) {
+			throw new IllegalArgumentException("Can not set offset on a partition ("+topicPartition+") we are not going to read. " +
+					"Partitions to read "+partitionsToRead);
+		}
+		partitionsToRead.put(topicPartition, offsetToRead);
+	}
+
+	@Override
 	public void close() {
 		running = false;
 	}
@@ -95,7 +107,7 @@ public class LegacyFetcher implements Fetcher {
 						partitions = new ArrayList<FetchPartition>();
 					}
 					FetchPartition fp = new FetchPartition();
-					fp.offset = partitionToRead.getValue();
+					fp.nextOffsetToRead = partitionToRead.getValue();
 					fp.partition = partitionToRead.getKey().partition();
 					partitions.add(fp);
 					fetchPartitionsCount++;
@@ -140,6 +152,13 @@ public class LegacyFetcher implements Fetcher {
 					t.interrupt();
 				}
 			}
+
+			// see how the consumer threads are doing:
+			for(SimpleConsumerThread t: consumers) {
+				if(t.getError() != null) {
+					throw new RuntimeException("Consumer thread "+t.getName()+" had an exception", t.getError());
+				}
+			}
 		}
 
 		for(SimpleConsumerThread t: consumers) {
@@ -158,28 +177,25 @@ public class LegacyFetcher implements Fetcher {
 		throw new UnsupportedOperationException("This fetcher does not support committing offsets");
 	}
 
-	@Override
-	public void seek(TopicPartition topicPartition, long offset) {
-		if(partitionsToRead == null) {
-			throw new IllegalArgumentException("No partitions to read set");
-		}
-		if(!partitionsToRead.containsKey(topicPartition)) {
-			throw new IllegalArgumentException("Can not set offset on a partition ("+topicPartition+") we are not going to read. " +
-					"Partitions to read "+partitionsToRead);
-		}
-		partitionsToRead.put(topicPartition, offset);
-	}
 
-
+	/**
+	 * Representation of a partition to fetch.
+	 */
 	private static class FetchPartition {
+		/**
+		 * ID of the partition within the topic (0 indexed, as given by Kafka)
+		 */
 		public int partition;
-		public long offset;
+		/**
+		 * Offset pointing at the next element to read from that partition.
+		 */
+		public long nextOffsetToRead;
 
 		@Override
 		public String toString() {
 			return "FetchPartition{" +
 					"partition=" + partition +
-					", offset=" + offset +
+					", offset=" + nextOffsetToRead +
 					'}';
 		}
 	}
@@ -199,102 +215,112 @@ public class LegacyFetcher implements Fetcher {
 		private final int minBytes;
 
 		private boolean running = true;
+		private Throwable error = null;
 
 
+		// exceptions are thrown locally
 		public SimpleConsumerThread(Properties config, String topic, Node leader, List<FetchPartition> partitions, LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue) {
 			// these are the actual configuration values of Kafka + their original default values.
 			int soTimeout = Integer.valueOf(config.getProperty("socket.timeout.ms", "30000"));
 			int bufferSize = Integer.valueOf(config.getProperty("socket.receive.buffer.bytes", "65536"));
 
 			this.fetchSize = Integer.valueOf(config.getProperty("fetch.message.max.bytes", "1048576"));
-			this.maxWait =  Integer.valueOf(config.getProperty("fetch.wait.max.ms", "100"));
+			this.maxWait = Integer.valueOf(config.getProperty("fetch.wait.max.ms", "100"));
 			this.minBytes = Integer.valueOf(config.getProperty("fetch.min.bytes", "1"));
 
 			this.topic = topic;
 			this.partitions = partitions;
 			this.messageQueue = messageQueue;
-			this.clientId = "flink-kafka-consumer-legacy-"+leader.idString();
+			this.clientId = "flink-kafka-consumer-legacy-" + leader.idString();
 			// create consumer
 			consumer = new SimpleConsumer(leader.host(), leader.port(), bufferSize, soTimeout, clientId);
-			// check offsets
+
+			// list of partitions for which we need to get offsets (this is only effective if the offset is really not initialized
 			List<FetchPartition> getOffsetPartitions = new ArrayList<FetchPartition>();
-			for(FetchPartition fp: partitions) {
-				if (fp.offset == FlinkKafkaConsumerBase.OFFSET_NOT_SET) {
+			for (FetchPartition fp : partitions) {
+				if (fp.nextOffsetToRead == FlinkKafkaConsumerBase.OFFSET_NOT_SET) {
 					// retrieve the offset from the consumer
 					getOffsetPartitions.add(fp);
 				}
 			}
-			if(getOffsetPartitions.size() > 0) {
+			if (getOffsetPartitions.size() > 0) {
 				long timeType = 0;
-				if(config.getProperty("auto.offset.reset", "latest" ).equals("latest")) {
+				if (config.getProperty("auto.offset.reset", "latest").equals("latest")) {
 					timeType = OffsetRequest.LatestTime();
 				} else {
 					timeType = OffsetRequest.EarliestTime();
 				}
 				getLastOffset(consumer, topic, getOffsetPartitions, timeType);
-				LOG.info("No offsets found for topic "+topic+", fetched the following start offsets {}", getOffsetPartitions);
+				LOG.info("No offsets found for topic " + topic + ", fetched the following start offsets {}", getOffsetPartitions);
 			}
 		}
 
 		@Override
 		public void run() {
-
-			// initialize offset field for first fetch
-			for (FetchPartition fp : partitions) {
-				fp.offset--;
-			}
-			while(running) {
-				FetchRequestBuilder frb = new FetchRequestBuilder();
-				frb.clientId(this.clientId);
-				frb.maxWait(maxWait);
-				frb.minBytes(minBytes);
-				for (FetchPartition fp : partitions) {
-					frb.addFetch(topic, fp.partition, fp.offset + 1, this.fetchSize);
-				}
-				kafka.api.FetchRequest fetchRequest = frb.build();
-				LOG.debug("Issuing fetch request {}", fetchRequest);
-				FetchResponse fetchResponse = consumer.fetch(fetchRequest);
-
-				if (fetchResponse.hasError()) {
-					String exception = "";
-					for(FetchPartition fp: partitions) {
-						short code;
-						if( (code=fetchResponse.errorCode(topic, fp.partition)) != ErrorMapping.NoError()) {
-							exception += "\nException for partition "+fp.partition+": "+ StringUtils.stringifyException(ErrorMapping.exceptionFor(code));
-						}
+			try {
+				while (running) {
+					FetchRequestBuilder frb = new FetchRequestBuilder();
+					frb.clientId(this.clientId);
+					frb.maxWait(maxWait);
+					frb.minBytes(minBytes);
+					for (FetchPartition fp : partitions) {
+						frb.addFetch(topic, fp.partition, fp.nextOffsetToRead, this.fetchSize);
 					}
-					throw new RuntimeException("Error while fetching from broker: "+exception);
-				}
+					kafka.api.FetchRequest fetchRequest = frb.build();
+					LOG.debug("Issuing fetch request {}", fetchRequest);
 
-				int messagesInFetch = 0;
-				for (FetchPartition fp : partitions) {
-					ByteBufferMessageSet messageSet = fetchResponse.messageSet(topic, fp.partition);
-					for (MessageAndOffset msg : messageSet) {
-						messagesInFetch++;
-						try {
-							if(msg.offset() < fp.offset) {
-								LOG.info("Skipping message with offset " + msg.offset() + " because we have seen messages until " + fp.offset + " from partition "+fp.partition+" already");
-								// we have seen this message already
-								continue;
+					FetchResponse fetchResponse = null;
+					fetchResponse = consumer.fetch(fetchRequest);
+
+
+					if (fetchResponse.hasError()) {
+						String exception = "";
+						for (FetchPartition fp : partitions) {
+							short code;
+							if ((code = fetchResponse.errorCode(topic, fp.partition)) != ErrorMapping.NoError()) {
+								exception += "\nException for partition " + fp.partition + ": " + StringUtils.stringifyException(ErrorMapping.exceptionFor(code));
 							}
-							messageQueue.put(new Tuple2<MessageAndOffset, Integer>(msg, fp.partition));
-							fp.offset = msg.offset(); // advance offset for the next request
-							// fp.nextFetch = msg.nextOffset();
-						} catch (InterruptedException e) {
-							LOG.debug("Consumer thread got interrupted. Stopping consumption");
-							running = false;
+						}
+						throw new RuntimeException("Error while fetching from broker: " + exception);
+					}
+
+					int messagesInFetch = 0;
+					for (FetchPartition fp : partitions) {
+						ByteBufferMessageSet messageSet = fetchResponse.messageSet(topic, fp.partition);
+						for (MessageAndOffset msg : messageSet) {
+							messagesInFetch++;
+							try {
+								if (msg.offset() < fp.nextOffsetToRead) {
+									LOG.info("Skipping message with offset " + msg.offset() + " because we have seen messages until " + fp.nextOffsetToRead + " from partition " + fp.partition + " already");
+									// we have seen this message already
+									continue;
+								}
+								messageQueue.put(new Tuple2<MessageAndOffset, Integer>(msg, fp.partition));
+								fp.nextOffsetToRead = msg.offset() + 1; // advance offset for the next request
+							} catch (InterruptedException e) {
+								LOG.debug("Consumer thread got interrupted. Stopping consumption");
+								running = false;
+							}
 						}
 					}
+					LOG.debug("This fetch contained {} messages", messagesInFetch);
 				}
-				LOG.debug("This fetch contained {} messages", messagesInFetch);
+			} catch(Throwable cause) {
+				this.error = new RuntimeException("Error while reading data in thread "+this.getName(), cause);
+			} finally {
+				// end of run loop. close connection to consumer
+				consumer.close();
 			}
-			// end of run loop. close connection to consumer
-			consumer.close();
 
 		}
 
 		public void close() {
+			running = false;
 			consumer.close();
+		}
+
+		public Throwable getError() {
+			return error;
 		}
 	}
 
@@ -329,7 +355,9 @@ public class LegacyFetcher implements Fetcher {
 		}
 
 		for(FetchPartition fp: partitions) {
-			fp.offset = response.offsets(topic, fp.partition)[0];
+			// the resulting offset is the next offset we are going to read
+			// for not-yet-consumed partitions, it is 0.
+			fp.nextOffsetToRead = response.offsets(topic, fp.partition)[0];
 		}
 
 	}

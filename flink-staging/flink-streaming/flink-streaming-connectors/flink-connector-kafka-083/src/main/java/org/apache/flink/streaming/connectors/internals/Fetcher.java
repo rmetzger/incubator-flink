@@ -57,7 +57,8 @@ public interface Fetcher {
 	void commit(Map<TopicPartition, Long> offsetsToCommit);
 
 	/**
-	 * Set offsets for the partitions
+	 * Set offsets for the partitions.
+	 * The offset is the next offset to read. So if set to 0, the Fetcher's first result will be the msg with offset=0.
 	 */
-	void seek(TopicPartition topicPartition, long offset);
+	void seek(TopicPartition topicPartition, long offsetToRead);
 }

@@ -52,6 +52,11 @@ public class IncludedFetcher implements Fetcher {
 	}
 
 	@Override
+	public void seek(TopicPartition topicPartition, long offsetToRead) {
+		fetcher.seek(topicPartition, offsetToRead);
+	}
+
+	@Override
 	public void close() {
 		synchronized (fetcher) {
 			fetcher.close();
@@ -93,8 +98,4 @@ public class IncludedFetcher implements Fetcher {
 		}
 	}
 
-	@Override
-	public void seek(TopicPartition topicPartition, long offset) {
-		fetcher.seek(topicPartition, offset);
-	}
 }

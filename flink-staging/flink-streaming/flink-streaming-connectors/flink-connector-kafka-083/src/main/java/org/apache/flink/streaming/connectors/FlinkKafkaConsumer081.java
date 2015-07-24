@@ -25,7 +25,7 @@ public class FlinkKafkaConsumer081<T> extends FlinkKafkaConsumerBase<T> {
 
 	public FlinkKafkaConsumer081(String topic, DeserializationSchema<T> valueDeserializer, Properties props) {
 		super(topic, valueDeserializer, props);
-		this.offsetStore = OffsetStore.ZOOKEEPER;
+		this.offsetStore = OffsetStore.FLINK_ZOOKEEPER;
 		this.fetcherType = FetcherType.LEGACY;
 	}
 }

@@ -77,21 +77,19 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	protected long[] commitedOffsets;
 	private ZkClient zkClient;
 	private long[] restoreToOffset;
-	protected OffsetStore offsetStore = OffsetStore.ZOOKEEPER;
+	protected OffsetStore offsetStore = OffsetStore.FLINK_ZOOKEEPER;
 	protected FetcherType fetcherType = FetcherType.LEGACY;
 	private boolean isNoOp = false; // no-operation instance (for example when there are fewer partitions that flink consumers)
 
 	public enum OffsetStore {
-		ZOOKEEPER,
+		FLINK_ZOOKEEPER,
 		/*
 		Let Flink manage the offsets. It will store them in Zookeeper, in the same structure as Kafka 0.8.2.x
 		Use this mode when using the source with Kafka 0.8.x brokers
 		*/
-		BROKER_COORDINATOR
+		KAFKA
 		/*
-		Use the mechanisms in Kafka to commit offsets. They will be send to the coordinator running
-		in the broker.
-		This works only starting from Kafka 0.8.3 (unreleased)
+		Use the mechanisms in Kafka to commit offsets. Depending on the Kafka configuration, different mechanism are used (broker coordinator, zookeeper)
 		*/
 	}
 
@@ -140,8 +138,8 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 				throw new RuntimeException("Requested unknown fetcher "+fetcher);
 		}
 
-		// tell which partitions we want:
-		List<TopicPartition> partitionsToSub = assignPartitions();
+		// tell which partitions we want to subscribe
+		List<TopicPartition> partitionsToSub = assignPartitions(this.partitions);
 		LOG.info("This instance (id={}) is going to subscribe to partitions {}", getRuntimeContext().getIndexOfThisSubtask(), partitionsToSub);
 		if(partitionsToSub.size() == 0) {
 			LOG.info("This instance is a no-op instance.");
@@ -155,7 +153,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		Arrays.fill(lastOffsets, OFFSET_NOT_SET);
 
 		// prepare Zookeeper
-		if(offsetStore == OffsetStore.ZOOKEEPER) {
+		if(offsetStore == OffsetStore.FLINK_ZOOKEEPER) {
 			zkClient = new ZkClient(props.getProperty("zookeeper.connect"),
 					Integer.valueOf(props.getProperty("zookeeper.session.timeout.ms", "6000")),
 					Integer.valueOf(props.getProperty("zookeeper.connection.timeout.ms", "6000")),
@@ -170,17 +168,19 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			for(int i = 0; i < restoreToOffset.length; i++) {
 				if(restoreToOffset[i] != OFFSET_NOT_SET) {
 					// if this fails because we are not subscribed to the topic, the partition assignment is not deterministic!
-					fetcher.seek(new TopicPartition(topic, i), restoreToOffset[i]);
+					// we set the offset +1 here, because seek() is accepting the next offset to read, but the restore offset is the last read offset
+					fetcher.seek(new TopicPartition(topic, i), restoreToOffset[i] + 1);
 				}
 			}
 		} else {
 			// no restore request. See what we have in ZK for this consumer group. In the non ZK case, Kafka will take care of this.
-			if(offsetStore == OffsetStore.ZOOKEEPER) {
+			if(offsetStore == OffsetStore.FLINK_ZOOKEEPER) {
 				for (TopicPartition tp : partitionsToSub) {
 					long offset = getOffset(zkClient, props.getProperty(ConsumerConfig.GROUP_ID_CONFIG), topic, tp.partition());
 					if (offset != OFFSET_NOT_SET) {
 						LOG.info("Offset for partition {} was set to {} in ZK. Seeking consumer to that position", tp.partition(), offset);
-						fetcher.seek(tp, offset);
+						// the offset in Zookeeper was the last read offset, seek is accepting the next-to-read-offset.
+						fetcher.seek(tp, offset + 1);
 					}
 				}
 			}
@@ -188,12 +188,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 	}
 
-	protected int[] getPartitions() {
-		return partitions;
-	}
-
-	public List<TopicPartition> assignPartitions() {
-		int[] parts = getPartitions();
+	public List<TopicPartition> assignPartitions(int[] parts) {
 		LOG.info("Assigning partitions from "+Arrays.toString(parts));
 		List<TopicPartition> partitionsToSub = new ArrayList<TopicPartition>();
 
@@ -288,7 +283,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			LOG.info("Committing offsets {} to offset store: {}", Arrays.toString(checkpointOffsets), offsetStore);
 		}
 
-		if(offsetStore == OffsetStore.ZOOKEEPER) {
+		if(offsetStore == OffsetStore.FLINK_ZOOKEEPER) {
 			setOffsetsInZooKeeper(checkpointOffsets);
 		} else {
 			Map<TopicPartition, Long> offsetsToCommit = new HashMap<TopicPartition, Long>();
