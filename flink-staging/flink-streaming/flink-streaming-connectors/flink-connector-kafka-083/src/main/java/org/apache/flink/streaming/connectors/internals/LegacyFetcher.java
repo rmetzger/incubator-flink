@@ -16,6 +16,7 @@
  */
 package org.apache.flink.streaming.connectors.internals;
 
+import com.google.common.base.Preconditions;
 import kafka.api.FetchRequestBuilder;
 import kafka.api.OffsetRequest;
 import kafka.api.PartitionOffsetRequestInfo;
@@ -100,6 +101,9 @@ public class LegacyFetcher implements Fetcher {
 		int fetchPartitionsCount = 0;
 		Map<Node, List<FetchPartition>> fetchBrokers = new HashMap<Node, List<FetchPartition>>();
 		for(PartitionInfo partitionInfo : allPartitionsInTopic) {
+			if(partitionInfo.leader() == null) {
+				throw new RuntimeException("Unable to consume partition "+partitionInfo.partition()+" from topic "+partitionInfo.topic()+" because it does not have a leader");
+			}
 			for(Map.Entry<TopicPartition, Long> partitionToRead: partitionsToRead.entrySet()) {
 				if(partitionToRead.getKey().partition() == partitionInfo.partition()) {
 					List<FetchPartition> partitions = fetchBrokers.get(partitionInfo.leader());
@@ -220,6 +224,8 @@ public class LegacyFetcher implements Fetcher {
 
 		// exceptions are thrown locally
 		public SimpleConsumerThread(Properties config, String topic, Node leader, List<FetchPartition> partitions, LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue) {
+			Preconditions.checkNotNull(leader, "Leader can not be null");
+			Preconditions.checkNotNull(config, "The config properties can not be null");
 			// these are the actual configuration values of Kafka + their original default values.
 			int soTimeout = Integer.valueOf(config.getProperty("socket.timeout.ms", "30000"));
 			int bufferSize = Integer.valueOf(config.getProperty("socket.receive.buffer.bytes", "65536"));

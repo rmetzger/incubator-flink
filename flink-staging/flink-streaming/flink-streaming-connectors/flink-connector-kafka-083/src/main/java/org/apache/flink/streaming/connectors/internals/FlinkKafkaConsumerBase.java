@@ -243,6 +243,9 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			if (partitions == null) {
 				throw new RuntimeException("The topic " + topic + " does not seem to exist");
 			}
+			if(partitions.size() == 0) {
+				throw new RuntimeException("The topic "+topic+" does not seem to have any partitions");
+			}
 			return partitions;
 		} finally {
 			consumer.close();
