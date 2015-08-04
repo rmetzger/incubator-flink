@@ -341,7 +341,6 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		// synchronize because notifyCheckpointComplete is called using asynchronous worker threads (= multiple checkpoints might be confirmed concurrently)
 		synchronized (commitedOffsets) {
 			if(commitedOffsets[partition] < offset) {
-				LOG.info("Committed offsets {}, partition={}, offset={}", Arrays.toString(commitedOffsets), partition, offset);
 				setOffset(zkClient, props.getProperty(ConsumerConfig.GROUP_ID_CONFIG), topic, partition, offset);
 				commitedOffsets[partition] = offset;
 			} else {
@@ -349,8 +348,6 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			}
 		}
 	}
-
-
 
 	// the following two methods are static to allow access from the outside as well (Testcases)
 
