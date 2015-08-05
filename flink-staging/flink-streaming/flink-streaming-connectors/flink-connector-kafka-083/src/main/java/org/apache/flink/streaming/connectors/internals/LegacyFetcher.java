@@ -301,6 +301,7 @@ public class LegacyFetcher implements Fetcher {
 									// we have seen this message already
 									continue;
 								}
+								System.out.println("Fetcher read "+msg);
 								messageQueue.put(new Tuple2<MessageAndOffset, Integer>(msg, fp.partition));
 								fp.nextOffsetToRead = msg.offset() + 1; // advance offset for the next request
 							} catch (InterruptedException e) {

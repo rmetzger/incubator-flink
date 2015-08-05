@@ -32,21 +32,25 @@ import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.curator.test.TestingServer;
 import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.net.NetUtils;
+import org.apache.flink.streaming.api.checkpoint.Checkpointed;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.streaming.connectors.internals.FlinkKafkaConsumerBase;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.JavaDefaultStringSchema;
 import org.apache.flink.util.Collector;
@@ -84,9 +88,9 @@ import static org.junit.Assert.assertEquals;
  * https://github.com/sakserv/hadoop-mini-clusters (ASL licensed)
  */
 
-public class KafkaITCase {
+public abstract class KafkaTestBase {
 
-	private static final Logger LOG = LoggerFactory.getLogger(KafkaITCase.class);
+	private static final Logger LOG = LoggerFactory.getLogger(KafkaTestBase.class);
 	private static final int NUMBER_OF_KAFKA_SERVERS = 3;
 
 	private static int zkPort;
@@ -155,12 +159,13 @@ public class KafkaITCase {
 		cProps.setProperty("auto.commit.enable", "false");
 		cProps.setProperty("auto.offset.reset", "earliest"); // read from the beginning.
 
-		cProps.setProperty("fetch.message.max.bytes", "128"); // make a lot of fetches (MESSAGES MUST BE SMALLER!)
+		cProps.setProperty("fetch.message.max.bytes", "256"); // make a lot of fetches (MESSAGES MUST BE SMALLER!)
 
 		standardProps = cProps;
 		Properties consumerConfigProps = new Properties();
 		consumerConfigProps.putAll(cProps);
 		consumerConfigProps.setProperty("auto.offset.reset", "smallest");
+		consumerConfigProps.setProperty("flink.kafka.consumer.queue.size", "1"); //this makes the behavior of the reader more predictable
 		standardCC = new ConsumerConfig(consumerConfigProps);
 
 		zkClient = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new FlinkKafkaConsumer081.KafkaZKStringSerializer());
@@ -186,6 +191,8 @@ public class KafkaITCase {
 		}
 	}
 
+	abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props);
+
 	// --------------------------  test checkpointing ------------------------
 	@Test
 	public void testCheckpointing() throws Exception {
@@ -196,10 +203,11 @@ public class KafkaITCase {
 		props.setProperty("group.id", "testCheckpointing");
 		props.setProperty("auto.commit.enable", "false");
 
-		FlinkKafkaConsumer081<String> source = new FlinkKafkaConsumer081<String>("testCheckpointing", new FakeDeserializationSchema(), props);
+
+		FlinkKafkaConsumerBase<String> source = getConsumer("testCheckpointing", new FakeDeserializationSchema(), props);
 
 
-		Field pendingCheckpointsField = FlinkKafkaConsumer081.class.getDeclaredField("pendingCheckpoints");
+		Field pendingCheckpointsField = FlinkKafkaConsumerBase.class.getDeclaredField("pendingCheckpoints");
 		pendingCheckpointsField.setAccessible(true);
 		LinkedMap pendingCheckpoints = (LinkedMap) pendingCheckpointsField.get(source);
 
@@ -275,9 +283,9 @@ public class KafkaITCase {
 		LOG.info("Creating topic {}", topicName);
 		AdminUtils.createTopic(zk, topicName, 3, 2, topicConfig);
 
-		FlinkKafkaConsumer081.setOffset(zk, standardCC.groupId(), topicName, 0, 1337);
+		FlinkKafkaConsumerBase.setOffset(zk, standardCC.groupId(), topicName, 0, 1337);
 
-		Assert.assertEquals(1337L, FlinkKafkaConsumer081.getOffset(zk, standardCC.groupId(), topicName, 0));
+		Assert.assertEquals(1337L, FlinkKafkaConsumerBase.getOffset(zk, standardCC.groupId(), topicName, 0));
 
 		zk.close();
 	}
@@ -847,25 +855,45 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<String>(brokerConnectionStrings, topic, new JavaDefaultStringSchema()));
+ 		stream.addSink(new KafkaSink<String>(brokerConnectionStrings, topic, new JavaDefaultStringSchema()));
 
 		tryExecute(env, "simpletest");
 	}
 
+
+	// ------------------------ Broker failure / exactly once test ---------------------------------
+
 	private static boolean leaderHasShutDown = false;
 	private static boolean shutdownKafkaBroker;
+	final static int NUM_MESSAGES = 200;
 
+	/**
+	 * This test covers:
+	 *  - passing of the execution retries into the JobGraph
+	 *  - Restart behavior of the Kafka Sources in case of a broker failure
+	 * @throws Exception
+	 */
 	@Test(timeout=60000)
 	public void brokerFailureTest() throws Exception {
 		String topic = "brokerFailureTestTopic";
+
 
 		createTestTopic(topic, 2, 2);
 
 		// --------------------------- write data to topic ---------------------
 		LOG.info("Writing data to topic {}", topic);
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
 
-		DataStream<String> stream = env.addSource(new SourceFunction<String>() {
+		Configuration conf = new Configuration();
+		conf.setString(ConfigConstants.DEFAULT_EXECUTION_RETRY_DELAY_KEY, "0 s");
+		conf.setString(ConfigConstants.TASK_MANAGER_MEMORY_SEGMENT_SIZE_KEY, "4096");
+		conf.setString(ConfigConstants.TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY, "32");
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(4, conf);
+		env.setParallelism(4);
+		env.getConfig().disableSysoutLogging();
+		env.setNumberOfExecutionRetries(0);
+		env.setBufferTimeout(0);
+
+		DataStreamSource<String> stream = env.addSource(new SourceFunction<String>() {
 			private static final long serialVersionUID = 1L;
 
 			boolean running = true;
@@ -874,15 +902,15 @@ public class KafkaITCase {
 			public void run(SourceContext<String> ctx) throws Exception {
 				LOG.info("Starting source.");
 				int cnt = 0;
+				String payload = "";
+				for(int i = 0; i < 160; i++) {
+					payload += "A";
+				}
 				while (running) {
-					String msg = "kafka-" + cnt++;
+					String msg = "kafka-" + (cnt++) + "-"+payload;
 					ctx.collect(msg);
 					LOG.info("sending message = "+msg);
-
-					if ((cnt - 1) % 20 == 0) {
-						LOG.debug("Sending message #{}", cnt - 1);
-					}
-					if(cnt == 200) {
+					if(cnt == NUM_MESSAGES) {
 						LOG.info("Stopping to produce after 200 msgs");
 						break;
 					}
@@ -896,14 +924,18 @@ public class KafkaITCase {
 				running = false;
 			}
 		});
-		stream.addSink(new KafkaSink<String>(brokerConnectionStrings, topic, new JavaDefaultStringSchema()))
-				.setParallelism(1);
+		// we write with a parallelism of 1 to ensure that only 200 messages are created
+		stream.setParallelism(1);
+		stream.addSink(new KafkaSink<String>(brokerConnectionStrings, topic, new JavaDefaultStringSchema())).setParallelism(1);
 
 		tryExecute(env, "broker failure test - writer");
 
 		// --------------------------- read and let broker fail ---------------------
 
+		env.setNumberOfExecutionRetries(1); // allow for one restart
+		env.enableCheckpointing(150);
 		LOG.info("Reading data from topic {} and let a broker fail", topic);
+		// find leader to shut down
 		PartitionMetadata firstPart = null;
 		do {
 			if(firstPart != null) {
@@ -918,86 +950,102 @@ public class KafkaITCase {
 		final String leaderToShutDown = firstPart.leader().get().connectionString();
 		LOG.info("Leader to shutdown {}", leaderToShutDown);
 
-		final Thread brokerShutdown = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				shutdownKafkaBroker = false;
-				while (!shutdownKafkaBroker) {
-					try {
-						Thread.sleep(10);
-					} catch (InterruptedException e) {
-						LOG.warn("Interruption", e);
-					}
-				}
+		// add consuming topology:
+		DataStreamSource<String> consuming = env.addSource(new FlinkKafkaConsumer081<String>(topic, new JavaDefaultStringSchema(), standardProps));
+		consuming.setParallelism(4); // read in parallel
+		DataStream<String> mapped = consuming.map(new PassThroughCheckpointed());
+		mapped.addSink(new ExactlyOnceSink(leaderToShutDown)).setParallelism(1); // read only in one instance, to have proper counts
 
+		tryExecute(env, "broker failure test - reader");
+	}
+
+	static class PassThroughCheckpointed extends RichMapFunction<String, String> implements Checkpointed<Integer> {
+
+		private Integer count = 0;
+
+		@Override
+		public Integer snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
+			LOG.info("Counter snapshot");
+			return count;
+		}
+
+		@Override
+		public void restoreState(Integer state) {
+			LOG.info("counter restore");
+			this.count = state;
+		}
+
+		@Override
+		public String map(String value) throws Exception {
+			count++;
+			return value;
+		}
+	}
+
+	static class ExactlyOnceSink extends RichSinkFunction<String> implements Checkpointed<ExactlyOnceSink> {
+
+		private static final long serialVersionUID = 1L;
+		int elCnt = 0;
+		BitSet validator = new BitSet(NUM_MESSAGES);
+		private String leaderToShutDown;
+
+		public ExactlyOnceSink(String leaderToShutDown) {
+			this.leaderToShutDown = leaderToShutDown;
+		}
+
+		@Override
+		public void invoke(String value) throws Exception {
+			LOG.info("Got message = " + value + " leader has shut down " + leaderHasShutDown + " el cnt = " + elCnt);
+			String[] sp = value.split("-");
+			int recordId = Integer.parseInt(sp[1]);
+
+			Assert.assertFalse("Received tuple with value " + recordId + " twice", validator.get(recordId));
+			validator.set(recordId);
+
+			elCnt++;
+			if (elCnt == 1 && !shutdownKafkaBroker) {
+				// shut down a Kafka broker
+				shutdownKafkaBroker = true;
+				LOG.info("Stopping lead broker");
 				for (KafkaServer kafkaServer : brokers) {
 					if (leaderToShutDown.equals(kafkaServer.config().advertisedHostName()+ ":"+ kafkaServer.config().advertisedPort())) {
-						LOG.info("Killing Kafka Server {}", leaderToShutDown);
+						LOG.info("Stopping broker {}", leaderToShutDown);
 						kafkaServer.shutdown();
 						leaderHasShutDown = true;
 						break;
 					}
 				}
+				Assert.assertTrue("unable to find leader", leaderHasShutDown);
 			}
-		});
-		brokerShutdown.start();
 
-		// add consuming topology:
-		DataStreamSource<String> consuming = env.addSource(new FlinkKafkaConsumer081<String>(topic, new JavaDefaultStringSchema(), standardProps));
-		consuming.setParallelism(1);
-
-		consuming.addSink(new SinkFunction<String>() {
-			private static final long serialVersionUID = 1L;
-
-			int elCnt = 0;
-			int start = 0;
-			int numOfMessagesToBeCorrect = 100;
-			int stopAfterMessages = 150;
-
-			BitSet validator = new BitSet(numOfMessagesToBeCorrect + 1);
-
-			@Override
-			public void invoke(String value) throws Exception {
-				LOG.info("Got message = " + value + " leader has shut down " + leaderHasShutDown + " el cnt = " + elCnt + " to rec" + numOfMessagesToBeCorrect);
-				String[] sp = value.split("-");
-				int v = Integer.parseInt(sp[1]);
-
-				if (start == -1) {
-					start = v;
-				}
-				int offset = v - start;
-				Assert.assertFalse("Received tuple with value " + offset + " twice", validator.get(offset));
-				if (v - start < 0 && LOG.isWarnEnabled()) {
-					LOG.warn("Not in order: {}", value);
-				}
-
-				validator.set(offset);
-				elCnt++;
-				if (elCnt == 20) {
-					LOG.info("Asking leading broker to shut down");
-					// shut down a Kafka broker
-					shutdownKafkaBroker = true;
-				}
-				if (shutdownKafkaBroker) {
-					// we become a bit slower because the shutdown takes some time and we have
-					// only a fixed nubmer of elements to read
-					Thread.sleep(20);
-				}
-				if (leaderHasShutDown) { // it only makes sence to check once the shutdown is completed
-					if (elCnt >= stopAfterMessages) {
-						// check if everything in the bitset is set to true
-						int nc;
-						if ((nc = validator.nextClearBit(0)) < numOfMessagesToBeCorrect) {
-							throw new RuntimeException("The bitset was not set to 1 on all elements to be checked. Next clear:" + nc + " Set: " + validator);
-						}
-						throw new SuccessException();
+			if (leaderHasShutDown) { // it only makes sense to check once the shutdown is completed
+				if (elCnt >= NUM_MESSAGES) {
+					// check if everything in the bitset is set to true
+					int nc;
+					if ((nc = validator.nextClearBit(0)) != NUM_MESSAGES) {
+						throw new RuntimeException("The bitset was not set to 1 on all elements to be checked. Next clear:" + nc + " Set: " + validator);
 					}
+					throw new SuccessException();
 				}
 			}
-		});
-		tryExecute(env, "broker failure test - reader");
+		}
 
+		@Override
+		public ExactlyOnceSink snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
+			LOG.info("Snapshotting state of sink");
+			return this;
+		}
+
+		@Override
+		public void restoreState(ExactlyOnceSink state) {
+			LOG.info("Restoring state");
+			this.elCnt = state.elCnt;
+			this.validator = state.validator;
+		}
 	}
+
+	// -------------------------------- Utilities --------------------------------------------------
+
 
 	public static void tryExecute(StreamExecutionEnvironment see, String name) throws Exception {
 		try {

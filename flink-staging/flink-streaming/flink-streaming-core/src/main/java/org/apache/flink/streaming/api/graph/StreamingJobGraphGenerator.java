@@ -87,8 +87,7 @@ public class StreamingJobGraphGenerator {
 
 		// make sure that all vertices start immediately
 		jobGraph.setScheduleMode(ScheduleMode.ALL);
-		
-		
+
 		init();
 
 		setChaining();
@@ -98,6 +97,8 @@ public class StreamingJobGraphGenerator {
 		setSlotSharing();
 		
 		configureCheckpointing();
+
+		configureExecutionRetries();
 
 		try {
 			InstantiationUtil.writeObjectToConfig(this.streamGraph.getExecutionConfig(), this.jobGraph.getJobConfiguration(), ExecutionConfig.CONFIG_KEY);
@@ -388,7 +389,6 @@ public class StreamingJobGraphGenerator {
 	}
 	
 	private void configureCheckpointing() {
-
 		if (streamGraph.isCheckpointingEnabled()) {
 			long interval = streamGraph.getCheckpointingInterval();
 			if (interval < 1) {
@@ -420,13 +420,15 @@ public class StreamingJobGraphGenerator {
 			JobSnapshottingSettings settings = new JobSnapshottingSettings(
 					triggerVertices, ackVertices, commitVertices, interval);
 			jobGraph.setSnapshotSettings(settings);
+		}
+	}
 
-			int executionRetries = streamGraph.getExecutionConfig().getNumberOfExecutionRetries();
-			if (executionRetries != -1) {
-				jobGraph.setNumberOfExecutionRetries(executionRetries);
-			} else {
-				jobGraph.setNumberOfExecutionRetries(Integer.MAX_VALUE);
-			}
+	private void configureExecutionRetries() {
+		int executionRetries = streamGraph.getExecutionConfig().getNumberOfExecutionRetries();
+		if (executionRetries != -1) {
+			jobGraph.setNumberOfExecutionRetries(executionRetries);
+		} else {
+			jobGraph.setNumberOfExecutionRetries(Integer.MAX_VALUE);
 		}
 	}
 }
