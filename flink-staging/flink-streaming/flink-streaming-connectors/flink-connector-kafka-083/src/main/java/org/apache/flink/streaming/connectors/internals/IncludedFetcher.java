@@ -70,19 +70,23 @@ public class IncludedFetcher implements Fetcher {
 			pollTimeout = Long.valueOf(props.getProperty(POLL_TIMEOUT));
 		}
 		while(running) {
+			// poll is always returning a new object.
+			ConsumerRecords<byte[], byte[]> consumed;
 			synchronized (fetcher) {
-				ConsumerRecords<byte[], byte[]> consumed = fetcher.poll(pollTimeout);
-				if(!consumed.isEmpty()) {
+				consumed = fetcher.poll(pollTimeout);
+			}
+			if(!consumed.isEmpty()) {
+				for(ConsumerRecord<byte[], byte[]> record : consumed) {
+					// synchronize inside the loop to allow checkpoints in between
 					synchronized (sourceContext.getCheckpointLock()) {
-						for(ConsumerRecord<byte[], byte[]> record : consumed) {
-							T value = valueDeserializer.deserialize(record.value());
-							sourceContext.collect(value);
-							lastOffsets[record.partition()] = record.offset();
-						}
+						T value = valueDeserializer.deserialize(record.value());
+						sourceContext.collect(value);
+						lastOffsets[record.partition()] = record.offset();
 					}
 				}
 			}
 		}
+
 		sourceContext.close();
 	}
 

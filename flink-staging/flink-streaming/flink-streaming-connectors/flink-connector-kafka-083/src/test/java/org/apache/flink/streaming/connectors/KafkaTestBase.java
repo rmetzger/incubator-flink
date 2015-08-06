@@ -54,7 +54,6 @@ import org.apache.flink.runtime.net.NetUtils;
 import org.apache.flink.streaming.api.checkpoint.Checkpointed;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
@@ -65,7 +64,6 @@ import org.apache.flink.streaming.connectors.internals.FlinkKafkaConsumerBase;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.JavaDefaultStringSchema;
 import org.apache.flink.util.Collector;
-import org.apache.zookeeper.Watcher;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -93,7 +91,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -132,6 +129,7 @@ public abstract class KafkaTestBase {
 
 	abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props);
 	abstract long[] getFinalOffsets();
+	abstract void resetOffsets();
 
 	// ----------------- Setup of Zookeeper and Kafka Brokers --------------------------
 
@@ -324,7 +322,7 @@ public abstract class KafkaTestBase {
 	 */
 	@Test
 	public void testFlinkKafkaConsumerWithOffsetUpdates() throws Exception {
-		LOG.info("Starting testFlinkKafkaConsumer081WithOffsetUpdates()");
+		LOG.info("Starting testFlinkKafkaConsumerWithOffsetUpdates()");
 
 		ZkClient zk = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new FlinkKafkaConsumer081.KafkaZKStringSerializer());
 
@@ -343,15 +341,13 @@ public abstract class KafkaTestBase {
 		// write a sequence from 0 to 99 to each of the three partitions.
 		writeSequence(env, topicName, 0, 99);
 
+		resetOffsets();
+
 		readSequence(env, standardProps, topicName, 0, 100, 300);
 
 		long[] finalOffsets = getFinalOffsets();
 		LOG.info("State in persistent kafka sources {}", finalOffsets);
 
-		// check offsets to be set at least higher than 50.
-		// correctly, we would expect them to be set to 99, but right now there is no way of stopping a topology once all pending
-		// checkpoints have been committed.
-		// To work around that limitation, the persistent kafka consumer is throtteled with a thread.sleep().
 
 		long o1 = -1, o2 = -1, o3 = -1;
 		if(finalOffsets[0] > 0) {
@@ -385,21 +381,15 @@ public abstract class KafkaTestBase {
 
 		zk.close();
 
-		LOG.info("Finished testFlinkKafkaConsumer081WithOffsetUpdates()");
+		LOG.info("Finished testFlinkKafkaConsumerWithOffsetUpdates()");
 	}
 
 	private void readSequence(StreamExecutionEnvironment env, Properties cc, final String topicName, final int valuesStartFrom, final int valuesCount, final int finalCount) throws Exception {
 		LOG.info("Reading sequence for verification until final count {}", finalCount);
-		TestPersistentKafkaSource<Tuple2<Integer, Integer>> pks = new TestPersistentKafkaSource<Tuple2<Integer, Integer>>(topicName, new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1, 1), env.getConfig()), cc);
-		DataStream<Tuple2<Integer, Integer>> source = env.addSource(pks) /* .map(new MapFunction<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>() {
-			// we need to slow down the source so that it can participate in a few checkpoints.
-			// Otherwise it would write its data into buffers and shut down.
-			@Override
-			public Tuple2<Integer, Integer> map(Tuple2<Integer, Integer> value) throws Exception {
-				Thread.sleep(50);
-				return value;
-			}
-		}) */;
+
+		DeserializationSchema<Tuple2<Integer, Integer>> deser = new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1, 1), env.getConfig());
+		FlinkKafkaConsumerBase<Tuple2<Integer, Integer>> pks = getConsumer(topicName, deser, cc);
+				DataStream < Tuple2 < Integer, Integer >> source = env.addSource(pks).map(new ThrottleMap<Tuple2<Integer, Integer>>(100));
 
 		// verify data
 		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Tuple2<Integer, Integer>, Integer>() {
@@ -504,12 +494,10 @@ public abstract class KafkaTestBase {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
 		env.setNumberOfExecutionRetries(0);
 
+		DeserializationSchema deser = new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig());
+		FlinkKafkaConsumerBase<Tuple2<Long, String>> source = getConsumer(topic, deser, standardProps);
 		// add consuming topology:
-		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new FlinkKafkaConsumer081<Tuple2<Long, String>>(topic,
-						new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()),
-						standardProps
-				));
+		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(source);
 		consuming.addSink(new RichSinkFunction<Tuple2<Long, String>>() {
 			private static final long serialVersionUID = 1L;
 
@@ -598,14 +586,15 @@ public abstract class KafkaTestBase {
 		Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>> serSchema = new Utils.TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(new Tuple2<Long, byte[]>(0L, new byte[]{0}), env.getConfig());
 		Properties consumerProps = new Properties();
 		consumerProps.setProperty("fetch.message.max.bytes", Integer.toString(1024 * 1024 * 30));
+		consumerProps.setProperty("max.partition.fetch.bytes", Integer.toString(1024 * 1024 * 30)); // for the new fetcher
 		consumerProps.setProperty("bootstrap.servers", brokerConnectionStrings);
 		consumerProps.setProperty("zookeeper.connect", zookeeperConnectionString);
 		consumerProps.setProperty("group.id", "test");
 		consumerProps.setProperty("auto.commit.enable", "false");
 		consumerProps.setProperty("auto.offset.reset", "earliest");
 
-		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(
-				new FlinkKafkaConsumer081<Tuple2<Long, byte[]>>(topic, serSchema, consumerProps));
+		FlinkKafkaConsumerBase<Tuple2<Long, byte[]>> source = getConsumer(topic, serSchema, consumerProps);
+		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(source);
 
 		consuming.addSink(new SinkFunction<Tuple2<Long, byte[]>>() {
 			private static final long serialVersionUID = 1L;
@@ -693,11 +682,11 @@ public abstract class KafkaTestBase {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(1);
 		env.setNumberOfExecutionRetries(0);
 
+		Utils.TypeInformationSerializationSchema<Tuple2<Long, String>> serSchema = new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig());
+		FlinkKafkaConsumerBase<Tuple2<Long, String>> source = getConsumer(topic, serSchema, standardProps);
 		// add consuming topology:
-		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(
-				new FlinkKafkaConsumer081<Tuple2<Long, String>>(topic,
-						new Utils.TypeInformationSerializationSchema<Tuple2<Long, String>>(new Tuple2<Long, String>(1L, ""), env.getConfig()),
-						standardProps));
+		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(source);
+
 		consuming.addSink(new SinkFunction<Tuple2<Long, String>>() {
 			private static final long serialVersionUID = 1L;
 
@@ -887,7 +876,9 @@ public abstract class KafkaTestBase {
 		LOG.info("Leader to shutdown {}", leaderToShutDown);
 
 		// add consuming topology:
-		DataStreamSource<String> consuming = env.addSource(new FlinkKafkaConsumer081<String>(topic, new JavaDefaultStringSchema(), standardProps));
+
+		FlinkKafkaConsumerBase<String> src = getConsumer(topic, new JavaDefaultStringSchema(), standardProps);
+		DataStreamSource<String> consuming = env.addSource(src);
 		consuming.setParallelism(2).map(new ThrottleMap<String>(10)).setParallelism(2); // read in parallel
 		DataStream<String> mapped = consuming.map(new PassThroughCheckpointed()).setParallelism(4);
 		mapped.addSink(new ExactlyOnceSink(leaderToShutDown)).setParallelism(1); // read only in one instance, to have proper counts
@@ -1048,9 +1039,9 @@ public abstract class KafkaTestBase {
 		LOG.info("Creating topic {}", topic);
 		AdminUtils.createTopic(zkClient, topic, numberOfPartitions, replicationFactor, topicConfig);
 		try {
+			// I know, bad style.
 			Thread.sleep(500);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
 		}
 	}
 

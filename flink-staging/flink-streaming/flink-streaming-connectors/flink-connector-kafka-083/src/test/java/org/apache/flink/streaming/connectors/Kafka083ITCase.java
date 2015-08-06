@@ -18,31 +18,32 @@ package org.apache.flink.streaming.connectors;
 
 import org.apache.flink.streaming.connectors.internals.FlinkKafkaConsumerBase;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
+import org.junit.Ignore;
 
 import java.util.Arrays;
 import java.util.Properties;
 
 
-public class Kafka081ITCase extends KafkaTestBase {
+public class Kafka083ITCase extends KafkaTestBase {
 	@Override
 	<T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props) {
-		return new TestFlinkKafkaConsumer081<T>(topic, deserializationSchema, props);
+		return new TestFlinkKafkaConsumer083<T>(topic, deserializationSchema, props);
 	}
 
 	@Override
 	long[] getFinalOffsets() {
-		return TestFlinkKafkaConsumer081.finalOffset;
+		return TestFlinkKafkaConsumer083.finalOffset;
 	}
 
 	@Override
 	void resetOffsets() {
-		TestFlinkKafkaConsumer081.finalOffset = null;
+		TestFlinkKafkaConsumer083.finalOffset = null;
 	}
 
 
-	public static class TestFlinkKafkaConsumer081<OUT> extends FlinkKafkaConsumer081<OUT> {
+	public static class TestFlinkKafkaConsumer083<OUT> extends FlinkKafkaConsumer083<OUT> {
 		public static long[] finalOffset;
-		public TestFlinkKafkaConsumer081(String topicName, DeserializationSchema<OUT> deserializationSchema, Properties consumerConfig) {
+		public TestFlinkKafkaConsumer083(String topicName, DeserializationSchema<OUT> deserializationSchema, Properties consumerConfig) {
 			super(topicName, deserializationSchema, consumerConfig);
 		}
 
@@ -66,4 +67,18 @@ public class Kafka081ITCase extends KafkaTestBase {
 		}
 	}
 
+	@Ignore
+	@Override
+	public void brokerFailureTest() throws Exception {
+		// Skipping test: The test is committing the offsets to the Kafka Broker.
+		// only 0.8.3 brokers support that.
+		return;
+	}
+
+	@Ignore
+	@Override
+	public void testFlinkKafkaConsumerWithOffsetUpdates() throws Exception {
+		// Skipping test (see above)
+		return;
+	}
 }

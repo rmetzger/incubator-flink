@@ -318,7 +318,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 		long[] currentOffsets = Arrays.copyOf(lastOffsets, lastOffsets.length);
 
-		// the map may be asynchronously updates when committing to Kafka, so we synchronize
+		// the map may be asynchronously updated when committing to Kafka, so we synchronize
 		synchronized (pendingCheckpoints) {
 			pendingCheckpoints.put(checkpointId, currentOffsets);
 		}

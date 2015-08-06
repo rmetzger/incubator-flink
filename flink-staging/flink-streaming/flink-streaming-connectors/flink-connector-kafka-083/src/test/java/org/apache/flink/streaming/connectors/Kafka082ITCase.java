@@ -23,26 +23,27 @@ import java.util.Arrays;
 import java.util.Properties;
 
 
-public class Kafka081ITCase extends KafkaTestBase {
+public class Kafka082ITCase extends KafkaTestBase {
 	@Override
 	<T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props) {
-		return new TestFlinkKafkaConsumer081<T>(topic, deserializationSchema, props);
+		return new TestFlinkKafkaConsumer082<T>(topic, deserializationSchema, props);
 	}
 
 	@Override
 	long[] getFinalOffsets() {
-		return TestFlinkKafkaConsumer081.finalOffset;
+		return TestFlinkKafkaConsumer082.finalOffset;
 	}
 
 	@Override
 	void resetOffsets() {
-		TestFlinkKafkaConsumer081.finalOffset = null;
+		TestFlinkKafkaConsumer082.finalOffset = null;
 	}
 
 
-	public static class TestFlinkKafkaConsumer081<OUT> extends FlinkKafkaConsumer081<OUT> {
+	public static class TestFlinkKafkaConsumer082<OUT> extends FlinkKafkaConsumer082<OUT> {
+		private final static Object sync = new Object();
 		public static long[] finalOffset;
-		public TestFlinkKafkaConsumer081(String topicName, DeserializationSchema<OUT> deserializationSchema, Properties consumerConfig) {
+		public TestFlinkKafkaConsumer082(String topicName, DeserializationSchema<OUT> deserializationSchema, Properties consumerConfig) {
 			super(topicName, deserializationSchema, consumerConfig);
 		}
 
