@@ -932,6 +932,7 @@ public abstract class KafkaTestBase {
 
 		// --------------------------- read and let broker fail ---------------------
 
+		env = StreamExecutionEnvironment.createLocalEnvironment(4, conf);
 		env.setNumberOfExecutionRetries(1); // allow for one restart
 		env.enableCheckpointing(150);
 		LOG.info("Reading data from topic {} and let a broker fail", topic);
@@ -959,7 +960,7 @@ public abstract class KafkaTestBase {
 		tryExecute(env, "broker failure test - reader");
 	}
 
-	static class PassThroughCheckpointed extends RichMapFunction<String, String> implements Checkpointed<Integer> {
+	private static class PassThroughCheckpointed extends RichMapFunction<String, String> implements Checkpointed<Integer> {
 
 		private Integer count = 0;
 
@@ -982,7 +983,7 @@ public abstract class KafkaTestBase {
 		}
 	}
 
-	static class ExactlyOnceSink extends RichSinkFunction<String> implements Checkpointed<ExactlyOnceSink> {
+	private static class ExactlyOnceSink extends RichSinkFunction<String> implements Checkpointed<Integer> {
 
 		private static final long serialVersionUID = 1L;
 		int elCnt = 0;
@@ -1031,16 +1032,17 @@ public abstract class KafkaTestBase {
 		}
 
 		@Override
-		public ExactlyOnceSink snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
+		public Integer snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
 			LOG.info("Snapshotting state of sink");
-			return this;
+		//	return this;
+			return 1;
 		}
 
 		@Override
-		public void restoreState(ExactlyOnceSink state) {
+		public void restoreState(Integer state) {
 			LOG.info("Restoring state");
-			this.elCnt = state.elCnt;
-			this.validator = state.validator;
+		//	this.elCnt = state.elCnt;
+		//	this.validator = state.validator;
 		}
 	}
 

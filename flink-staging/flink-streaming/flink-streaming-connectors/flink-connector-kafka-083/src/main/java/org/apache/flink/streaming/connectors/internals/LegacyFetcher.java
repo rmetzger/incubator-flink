@@ -148,6 +148,7 @@ public class LegacyFetcher implements Fetcher {
 				synchronized (sourceContext.getCheckpointLock()) {
 					lastOffsets[msg.f1] = msg.f0.offset();
 					sourceContext.collect(value);
+					Thread.sleep(50);
 				}
 			} catch (InterruptedException e) {
 				LOG.info("Queue consumption thread got interrupted. Stopping consumption and interrupting other threads");
