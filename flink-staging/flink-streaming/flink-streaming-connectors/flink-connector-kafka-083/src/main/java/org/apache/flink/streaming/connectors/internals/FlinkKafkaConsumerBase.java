@@ -154,7 +154,11 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 		// prepare Zookeeper
 		if(offsetStore == OffsetStore.FLINK_ZOOKEEPER) {
-			zkClient = new ZkClient(props.getProperty("zookeeper.connect"),
+			String zkConnect = props.getProperty("zookeeper.connect");
+			if(zkConnect == null) {
+				throw new IllegalArgumentException("Required property 'zookeeper.connect' has not been set");
+			}
+			zkClient = new ZkClient(zkConnect,
 					Integer.valueOf(props.getProperty("zookeeper.session.timeout.ms", "6000")),
 					Integer.valueOf(props.getProperty("zookeeper.connection.timeout.ms", "6000")),
 					new KafkaZKStringSerializer());
@@ -238,6 +242,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	protected static List<PartitionInfo> getPartitionsForTopic(String topic, Properties properties) {
 		KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<byte[], byte[]>(properties, null,
 				new ByteArrayDeserializer(), new ByteArrayDeserializer());
+
 		try {
 			List<PartitionInfo> partitions = consumer.partitionsFor(topic);
 			if (partitions == null) {
