@@ -25,6 +25,38 @@ import java.util.Properties;
 public class Kafka081ITCase extends KafkaTestBase {
 	@Override
 	<T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props) {
-		return new FlinkKafkaConsumer081<T>(topic, deserializationSchema, props);
+		return new TestFlinkKafkaConsumer081<T>(topic, deserializationSchema, props);
 	}
+
+	@Override
+	long[] getFinalOffsets() {
+		return TestFlinkKafkaConsumer081.finalOffset;
+	}
+
+	public static class TestFlinkKafkaConsumer081<OUT> extends FlinkKafkaConsumer081<OUT> {
+		private static Object sync = new Object();
+		public static long[] finalOffset;
+		public TestFlinkKafkaConsumer081(String topicName, DeserializationSchema<OUT> deserializationSchema, Properties consumerConfig) {
+			super(topicName, deserializationSchema, consumerConfig);
+		}
+
+		@Override
+		public void close() throws Exception {
+			super.close();
+			synchronized (sync) {
+				if (finalOffset == null) {
+					finalOffset = new long[commitedOffsets.length];
+				}
+				for(int i = 0; i < commitedOffsets.length; i++) {
+					if(commitedOffsets[i] > 0) {
+						if(finalOffset[i] > 0) {
+							throw new RuntimeException("This is unexpected on i = "+i);
+						}
+						finalOffset[i] = commitedOffsets[i];
+					}
+				}
+			}
+		}
+	}
+
 }

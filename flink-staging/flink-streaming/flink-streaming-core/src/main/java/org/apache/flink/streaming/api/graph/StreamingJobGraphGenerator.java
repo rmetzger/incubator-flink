@@ -420,6 +420,12 @@ public class StreamingJobGraphGenerator {
 			JobSnapshottingSettings settings = new JobSnapshottingSettings(
 					triggerVertices, ackVertices, commitVertices, interval);
 			jobGraph.setSnapshotSettings(settings);
+
+			// if the user enabled checkpointing, the default number of exec retries is infinitive.
+			int executionRetries = streamGraph.getExecutionConfig().getNumberOfExecutionRetries();
+			if(executionRetries == -1) {
+				streamGraph.getExecutionConfig().setNumberOfExecutionRetries(Integer.MAX_VALUE);
+			}
 		}
 	}
 
@@ -428,7 +434,8 @@ public class StreamingJobGraphGenerator {
 		if (executionRetries != -1) {
 			jobGraph.setNumberOfExecutionRetries(executionRetries);
 		} else {
-			jobGraph.setNumberOfExecutionRetries(Integer.MAX_VALUE);
+			// if the user didn't configure anything, the number of retries is 0.
+			jobGraph.setNumberOfExecutionRetries(0);
 		}
 	}
 }

@@ -128,6 +128,12 @@ public abstract class KafkaTestBase {
 
 	private static ZkClient zkClient;
 
+	// ----------------- Required methods by the abstract test base --------------------------
+
+	abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props);
+	abstract long[] getFinalOffsets();
+
+	// ----------------- Setup of Zookeeper and Kafka Brokers --------------------------
 
 	@BeforeClass
 	public static void prepare() throws IOException {
@@ -207,7 +213,6 @@ public abstract class KafkaTestBase {
 		}
 	}
 
-	abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props);
 
 	// --------------------------  test checkpointing ------------------------
 	@Test
@@ -312,39 +317,13 @@ public abstract class KafkaTestBase {
 		zk.close();
 	}
 
-	public static class TestPersistentKafkaSource<OUT> extends FlinkKafkaConsumer081<OUT> {
-		private static Object sync = new Object();
-		public static long[] finalOffset;
-		public TestPersistentKafkaSource(String topicName, DeserializationSchema<OUT> deserializationSchema, Properties consumerConfig) {
-			super(topicName, deserializationSchema, consumerConfig);
-		}
 
-		@Override
-		public void close() throws Exception {
-			super.close();
-			synchronized (sync) {
-				if (finalOffset == null) {
-					finalOffset = new long[commitedOffsets.length];
-				}
-				for(int i = 0; i < commitedOffsets.length; i++) {
-					if(commitedOffsets[i] > 0) {
-						if(finalOffset[i] > 0) {
-							throw new RuntimeException("This is unexpected on i = "+i);
-						}
-						finalOffset[i] = commitedOffsets[i];
-					}
-				}
-			}
-		}
-	}
 	/**
 	 * We want to use the High level java consumer API but manage the offset in Zookeeper manually.
 	 *
 	 */
-
-	@Ignore("Ignore until state retrieval is done")
 	@Test
-	public void testFlinkKafkaConsumer081WithOffsetUpdates() throws Exception {
+	public void testFlinkKafkaConsumerWithOffsetUpdates() throws Exception {
 		LOG.info("Starting testFlinkKafkaConsumer081WithOffsetUpdates()");
 
 		ZkClient zk = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new FlinkKafkaConsumer081.KafkaZKStringSerializer());
@@ -366,7 +345,8 @@ public abstract class KafkaTestBase {
 
 		readSequence(env, standardProps, topicName, 0, 100, 300);
 
-		LOG.info("State in persistent kafka sources {}", TestPersistentKafkaSource.finalOffset);
+		long[] finalOffsets = getFinalOffsets();
+		LOG.info("State in persistent kafka sources {}", finalOffsets);
 
 		// check offsets to be set at least higher than 50.
 		// correctly, we would expect them to be set to 99, but right now there is no way of stopping a topology once all pending
@@ -374,21 +354,21 @@ public abstract class KafkaTestBase {
 		// To work around that limitation, the persistent kafka consumer is throtteled with a thread.sleep().
 
 		long o1 = -1, o2 = -1, o3 = -1;
-		if(TestPersistentKafkaSource.finalOffset[0] > 0) {
+		if(finalOffsets[0] > 0) {
 			o1 = FlinkKafkaConsumer081.getOffset(zk, standardCC.groupId(), topicName, 0);
-			Assert.assertTrue("The offset seems incorrect, got " + o1, o1 == TestPersistentKafkaSource.finalOffset[0]);
+			Assert.assertTrue("The offset seems incorrect, got " + o1, o1 == finalOffsets[0]);
 		}
-		if(TestPersistentKafkaSource.finalOffset[1] > 0) {
+		if(finalOffsets[1] > 0) {
 			o2 = FlinkKafkaConsumer081.getOffset(zk, standardCC.groupId(), topicName, 1);
-			Assert.assertTrue("The offset seems incorrect, got " + o2, o2 == TestPersistentKafkaSource.finalOffset[1]);
+			Assert.assertTrue("The offset seems incorrect, got " + o2, o2 == finalOffsets[1]);
 		}
-		if(TestPersistentKafkaSource.finalOffset[2] > 0) {
+		if(finalOffsets[2] > 0) {
 			o3 = FlinkKafkaConsumer081.getOffset(zk, standardCC.groupId(), topicName, 2);
-			Assert.assertTrue("The offset seems incorrect, got " + o3, o3 == TestPersistentKafkaSource.finalOffset[2]);
+			Assert.assertTrue("The offset seems incorrect, got " + o3, o3 == finalOffsets[2]);
 		}
-		Assert.assertFalse("no offset has been set", TestPersistentKafkaSource.finalOffset[0] == 0 &&
-													TestPersistentKafkaSource.finalOffset[1] == 0 &&
-													TestPersistentKafkaSource.finalOffset[2] == 0);
+		Assert.assertFalse("no offset has been set", finalOffsets[0] == 0 &&
+													finalOffsets[1] == 0 &&
+													finalOffsets[2] == 0);
 		LOG.info("Got final offsets from zookeeper o1={}, o2={}, o3={}", o1, o2, o3);
 
 		LOG.info("Manipulating offsets");
