@@ -80,6 +80,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	protected OffsetStore offsetStore = OffsetStore.FLINK_ZOOKEEPER;
 	protected FetcherType fetcherType = FetcherType.LEGACY;
 	private boolean isNoOp = false; // no-operation instance (for example when there are fewer partitions that flink consumers)
+	private boolean closed = false;
 
 	public enum OffsetStore {
 		FLINK_ZOOKEEPER,
@@ -192,25 +193,6 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 	}
 
-	public List<TopicPartition> assignPartitions(int[] parts) {
-		LOG.info("Assigning partitions from "+Arrays.toString(parts));
-		List<TopicPartition> partitionsToSub = new ArrayList<TopicPartition>();
-
-		int machine = 0;
-		for(int i = 0; i < parts.length; i++) {
-			if(machine == getRuntimeContext().getIndexOfThisSubtask()) {
-				partitionsToSub.add(new TopicPartition(topic, parts[i]));
-			}
-			machine++;
-
-			if(machine == getRuntimeContext().getNumberOfParallelSubtasks()) {
-				machine = 0;
-			}
-		}
-
-		return partitionsToSub;
-	}
-
 	@Override
 	public void run(SourceContext<T> sourceContext) throws Exception {
 		if(isNoOp) {
@@ -230,9 +212,36 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	}
 
 	@Override
+	public void close() throws Exception {
+		super.close();
+		closed = true;
+	}
+
+	@Override
 	public TypeInformation getProducedType() {
 		return valueDeserializer.getProducedType();
 	}
+
+
+	public List<TopicPartition> assignPartitions(int[] parts) {
+		LOG.info("Assigning partitions from "+Arrays.toString(parts));
+		List<TopicPartition> partitionsToSub = new ArrayList<TopicPartition>();
+
+		int machine = 0;
+		for(int i = 0; i < parts.length; i++) {
+			if(machine == getRuntimeContext().getIndexOfThisSubtask()) {
+				partitionsToSub.add(new TopicPartition(topic, parts[i]));
+			}
+			machine++;
+
+			if(machine == getRuntimeContext().getNumberOfParallelSubtasks()) {
+				machine = 0;
+			}
+		}
+
+		return partitionsToSub;
+	}
+
 
 	// ----------------------------- Utilities -------------------------
 
@@ -263,6 +272,10 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	public void notifyCheckpointComplete(long checkpointId) throws Exception {
 		if(fetcher == null) {
 			LOG.info("notifyCheckpointComplete() called on uninitialized source");
+			return;
+		}
+		if(closed) {
+			LOG.info("notifyCheckpointComplete() called on closed source");
 			return;
 		}
 
@@ -310,6 +323,10 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			LOG.warn("State snapshot requested on not yet opened source. Returning null");
 			return null;
 		}
+		if(closed) {
+			LOG.info("snapshotState() called on closed source");
+			return null;
+		}
 
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Snapshotting state. Offsets: {}, checkpoint id {}, timestamp {}",
@@ -345,6 +362,11 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	protected void setOffset(int partition, long offset) {
 		// synchronize because notifyCheckpointComplete is called using asynchronous worker threads (= multiple checkpoints might be confirmed concurrently)
 		synchronized (commitedOffsets) {
+			if(closed) {
+				// it might happen that the source has been closed while the asynchronous commit threads waited for committing the offsets.
+				LOG.warn("setOffset called on closed source");
+				return;
+			}
 			if(commitedOffsets[partition] < offset) {
 				setOffset(zkClient, props.getProperty(ConsumerConfig.GROUP_ID_CONFIG), topic, partition, offset);
 				commitedOffsets[partition] = offset;
