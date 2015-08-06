@@ -18,41 +18,24 @@
 
 package org.apache.flink.test.checkpointing;
 
-import org.apache.flink.api.common.functions.RichFilterFunction;
-import org.apache.flink.api.common.functions.RichFlatMapFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.OperatorState;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.checkpoint.Checkpointed;
-import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
-import org.apache.flink.streaming.api.functions.source.ParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
-import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.test.util.ForkableFlinkMiniCluster;
-import org.apache.flink.util.Collector;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * A simple test that runs a streaming topology with checkpointing enabled.
- * 
- * The test triggers a failure after a while and verifies that, after completion, the
- * state reflects the "exactly once" semantics.
+ * This test ensures that the snapshotState method is always called, also in cases
+ * where the parallelism between operators changes.
  */
 @SuppressWarnings("serial")
 public class ParallelismChangeCheckpoinedITCase {
@@ -92,6 +75,7 @@ public class ParallelismChangeCheckpoinedITCase {
 		}
 	}
 
+	private static boolean snapshotInSink = false;
 
 	/**
 	 * Runs the following program:
@@ -115,6 +99,8 @@ public class ParallelismChangeCheckpoinedITCase {
 			stream.addSink(new ValidatingSink()).setParallelism(1);
 
 			env.execute();
+
+			Assert.assertTrue("Snapshot has never been called in the sink", snapshotInSink);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -129,8 +115,12 @@ public class ParallelismChangeCheckpoinedITCase {
 	private static class Source extends RichParallelSourceFunction<Integer> implements Checkpointed<Integer> {
 		@Override
 		public void run(SourceContext<Integer> ctx) throws Exception {
+			// let only one source generate data
+			if(getRuntimeContext().getIndexOfThisSubtask() != 0) {
+				return;
+			}
 			int id = 0;
-			while(true) {
+			while(id < 500) {
 				Thread.sleep(1);
 				ctx.collect(id++);
 			}
@@ -169,6 +159,7 @@ public class ParallelismChangeCheckpoinedITCase {
 		@Override
 		public ValidatingSink snapshotState(long checkpointId, long checkpointTimestamp) {
 			System.out.println("Snapshot called");
+			snapshotInSink = true;
 			return this;
 		}
 
