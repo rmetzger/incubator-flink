@@ -126,8 +126,19 @@ public abstract class KafkaTestBase {
 
 	// ----------------- Required methods by the abstract test base --------------------------
 
+	/**
+	 * Create a specific KafkaConsumer implementation which also supports reporting committed offsets
+	 */
 	abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema deserializationSchema, Properties props);
+
+	/**
+	 * @return the final operator state = the last committed offsets
+	 */
 	abstract long[] getFinalOffsets();
+
+	/**
+	 * Reset the offsets
+	 */
 	abstract void resetOffsets();
 
 	// ----------------- Setup of Zookeeper and Kafka Brokers --------------------------
@@ -316,8 +327,7 @@ public abstract class KafkaTestBase {
 
 
 	/**
-	 * We want to use the High level java consumer API but manage the offset in Zookeeper manually.
-	 *
+	 * This test ensures that the consumer is able to pick up from an arbitrary offset in ZK.
 	 */
 	@Test
 	public void testFlinkKafkaConsumerWithOffsetUpdates() throws Exception {
@@ -386,7 +396,7 @@ public abstract class KafkaTestBase {
 	private void readSequence(StreamExecutionEnvironment env, Properties cc, final String topicName, final int valuesStartFrom, final int valuesCount, final int finalCount) throws Exception {
 		LOG.info("Reading sequence for verification until final count {}", finalCount);
 
-		DeserializationSchema<Tuple2<Integer, Integer>> deser = new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1, 1), env.getConfig());
+		DeserializationSchema<Tuple2<Integer, Integer>> deser = new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<>(1, 1), env.getConfig());
 		FlinkKafkaConsumerBase<Tuple2<Integer, Integer>> pks = getConsumer(topicName, deser, cc);
 				DataStream < Tuple2 < Integer, Integer >> source = env.addSource(pks).map(new ThrottleMap<Tuple2<Integer, Integer>>(100));
 
@@ -426,8 +436,6 @@ public abstract class KafkaTestBase {
 		LOG.info("Successfully read sequence for verification");
 	}
 
-
-
 	private void writeSequence(StreamExecutionEnvironment env, String topicName, final int from, final int to) throws Exception {
 		LOG.info("Writing sequence from {} to {} to topic {}", from, to, topicName);
 		DataStream<Tuple2<Integer, Integer>> stream = env.addSource(new RichParallelSourceFunction<Tuple2<Integer, Integer>>() {
@@ -441,7 +449,7 @@ public abstract class KafkaTestBase {
 				int partition = getRuntimeContext().getIndexOfThisSubtask();
 				while (running) {
 					LOG.info("Writing " + cnt + " to partition " + partition);
-					ctx.collect(new Tuple2<Integer, Integer>(partition, cnt));
+					ctx.collect(new Tuple2<>(partition, cnt));
 					if (cnt == to) {
 						LOG.info("Writer reached end.");
 						return;
@@ -456,13 +464,29 @@ public abstract class KafkaTestBase {
 				running = false;
 			}
 		}).setParallelism(3);
-		stream.addSink(new KafkaSink<Tuple2<Integer, Integer>>(brokerConnectionStrings,
+		stream.addSink(new KafkaSink<>(brokerConnectionStrings,
 				topicName,
-				new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(1, 1), env.getConfig()),
+				new Utils.TypeInformationSerializationSchema<>(new Tuple2<>(1, 1), env.getConfig()),
 				new T2Partitioner()
 		)).setParallelism(3);
 		env.execute("Write sequence from " + from + " to " + to + " to topic " + topicName);
 		LOG.info("Finished writing sequence");
+	}
+
+
+	/**
+	 * Test how the consumer is picking up offsets.
+	 *
+	 * The test is:
+	 * - writing 200 messages to a topic with 1 partition
+	 * - reading the first 100 messages, then aborting the read process
+	 * - starting the read process again, making sure its not starting from the beginning.
+	 * - Read until the topic has been completely consumed. The reading topology is then going to die with an error
+	 * - ensure that a read process is not reading from the beginning
+	 */
+	@Test
+	public void testOffsetPickupBehavior() {
+
 	}
 
 	private static class T2Partitioner implements SerializableKafkaPartitioner {

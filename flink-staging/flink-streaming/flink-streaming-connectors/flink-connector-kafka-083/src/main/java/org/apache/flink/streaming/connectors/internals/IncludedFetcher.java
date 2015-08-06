@@ -43,7 +43,7 @@ public class IncludedFetcher implements Fetcher {
 
 	public IncludedFetcher(Properties props) {
 		this.props = props;
-		fetcher = new KafkaConsumer<byte[], byte[]>(props, null, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+		fetcher = new KafkaConsumer<>(props, null, new ByteArrayDeserializer(), new ByteArrayDeserializer());
 	}
 
 	@Override

@@ -64,7 +64,7 @@ public class LegacyFetcher implements Fetcher {
 
 	@Override
 	public void partitionsToRead(List<TopicPartition> partitions) {
-		partitionsToRead = new HashMap<TopicPartition, Long>(partitions.size());
+		partitionsToRead = new HashMap<>(partitions.size());
 		for(TopicPartition tp: partitions) {
 			partitionsToRead.put(tp, FlinkKafkaConsumerBase.OFFSET_NOT_SET);
 		}
@@ -124,7 +124,7 @@ public class LegacyFetcher implements Fetcher {
 		}
 		// Create a queue for the threads to communicate
 		int queueSize = Integer.valueOf(config.getProperty(QUEUE_SIZE_KEY, DEFAULT_QUEUE_SIZE));
-		LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue = new LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>>(queueSize);
+		LinkedBlockingQueue<Tuple2<MessageAndOffset, Integer>> messageQueue = new LinkedBlockingQueue<>(queueSize);
 
 		// create SimpleConsumers for each broker
 		List<SimpleConsumerThread> consumers = new ArrayList<SimpleConsumerThread>(fetchBrokers.size());
@@ -301,7 +301,7 @@ public class LegacyFetcher implements Fetcher {
 									// we have seen this message already
 									continue;
 								}
-								messageQueue.put(new Tuple2<MessageAndOffset, Integer>(msg, fp.partition));
+								messageQueue.put(new Tuple2<>(msg, fp.partition));
 								fp.nextOffsetToRead = msg.offset() + 1; // advance offset for the next request
 							} catch (InterruptedException e) {
 								LOG.debug("Consumer thread got interrupted. Stopping consumption");
