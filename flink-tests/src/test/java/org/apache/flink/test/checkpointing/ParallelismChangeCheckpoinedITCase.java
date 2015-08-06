@@ -149,7 +149,7 @@ public class ParallelismChangeCheckpoinedITCase {
 
 		@Override
 		public void invoke(Integer value) {
-
+			System.out.println("Got data "+value);
 		}
 
 		@Override
