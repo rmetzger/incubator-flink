@@ -339,7 +339,7 @@ public abstract class KafkaTestBase {
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
 		env.getConfig().disableSysoutLogging();
-		env.enableCheckpointing(50);
+		env.enableCheckpointing(100);
 		env.setNumberOfExecutionRetries(0);
 
 		// create topic
@@ -348,7 +348,7 @@ public abstract class KafkaTestBase {
 		AdminUtils.createTopic(zk, topicName, 3, 2, topicConfig);
 
 		// write a sequence from 0 to 99 to each of the three partitions.
-		writeSequence(env, topicName, 0, 99);
+		writeSequence(env, topicName, 0, 99, 3);
 
 		resetOffsets();
 
@@ -398,7 +398,7 @@ public abstract class KafkaTestBase {
 
 		DeserializationSchema<Tuple2<Integer, Integer>> deser = new Utils.TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(new Tuple2<>(1, 1), env.getConfig());
 		FlinkKafkaConsumerBase<Tuple2<Integer, Integer>> pks = getConsumer(topicName, deser, cc);
-				DataStream < Tuple2 < Integer, Integer >> source = env.addSource(pks).map(new ThrottleMap<Tuple2<Integer, Integer>>(100));
+				DataStream<Tuple2<Integer, Integer>> source = env.addSource(pks).map(new ThrottleMap<Tuple2<Integer, Integer>>(100));
 
 		// verify data
 		DataStream<Integer> validIndexes = source.flatMap(new RichFlatMapFunction<Tuple2<Integer, Integer>, Integer>() {
@@ -436,7 +436,7 @@ public abstract class KafkaTestBase {
 		LOG.info("Successfully read sequence for verification");
 	}
 
-	private void writeSequence(StreamExecutionEnvironment env, String topicName, final int from, final int to) throws Exception {
+	private void writeSequence(StreamExecutionEnvironment env, String topicName, final int from, final int to, int parallelism) throws Exception {
 		LOG.info("Writing sequence from {} to {} to topic {}", from, to, topicName);
 		DataStream<Tuple2<Integer, Integer>> stream = env.addSource(new RichParallelSourceFunction<Tuple2<Integer, Integer>>() {
 			private static final long serialVersionUID = 1L;
@@ -463,12 +463,12 @@ public abstract class KafkaTestBase {
 				LOG.info("Source got cancel()");
 				running = false;
 			}
-		}).setParallelism(3);
+		}).setParallelism(parallelism);
 		stream.addSink(new KafkaSink<>(brokerConnectionStrings,
 				topicName,
 				new Utils.TypeInformationSerializationSchema<>(new Tuple2<>(1, 1), env.getConfig()),
 				new T2Partitioner()
-		)).setParallelism(3);
+		)).setParallelism(parallelism);
 		env.execute("Write sequence from " + from + " to " + to + " to topic " + topicName);
 		LOG.info("Finished writing sequence");
 	}
@@ -485,8 +485,73 @@ public abstract class KafkaTestBase {
 	 * - ensure that a read process is not reading from the beginning
 	 */
 	@Test
-	public void testOffsetPickupBehavior() {
+	public void testOffsetPickupBehavior() throws Exception {
+		LOG.info("Starting testOffsetPickupBehavior()");
 
+		ZkClient zk = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(), standardCC.zkConnectionTimeoutMs(), new FlinkKafkaConsumer081.KafkaZKStringSerializer());
+
+		final String topicName = "testOffsetPickupBehavior";
+		// create topic
+		LOG.info("Creating topic {}", topicName);
+		AdminUtils.createTopic(zk, topicName, 1, 1, new Properties());
+
+
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(3);
+		env.enableCheckpointing(100);
+		env.getConfig().disableSysoutLogging();
+		env.setNumberOfExecutionRetries(0);
+
+		// write a sequence from 0 to 200 to the topic
+		writeSequence(env, topicName, 0, 199, 1);
+
+		// read 100 messages
+		DeserializationSchema<Tuple2<Integer, Integer>> deser = new Utils.TypeInformationSerializationSchema<>(new Tuple2<>(1, 1), env.getConfig());
+		FlinkKafkaConsumerBase<Tuple2<Integer, Integer>> source = getConsumer(topicName, deser, standardProps);
+		DataStream<Tuple2<Integer, Integer>> data = env.addSource(source);
+		data.map(new StopAfterN<Tuple2<Integer, Integer>>(100));
+
+		tryExecute(env, "read 100 msgs");
+
+		env.setNumberOfExecutionRetries(1);
+		// read again
+		deser = new Utils.TypeInformationSerializationSchema<>(new Tuple2<>(1, 1), env.getConfig());
+	//	Properties p = new Properties();
+	//	p.putAll(standardProps);
+	//	p.setProperty("")
+		source = getConsumer(topicName, deser, standardProps);
+		data = env.addSource(source);
+		//final Boolean[] restart = new Boolean[] {false};
+		data.map(new MapFunction<Tuple2<Integer,Integer>, Tuple2<Integer, Integer>>() {
+			@Override
+			public Tuple2<Integer, Integer> map(Tuple2<Integer, Integer> value) throws Exception {
+				Assert.assertTrue(value.f1 > 0); // ensure we are not starting from the beginning
+				if(value.f1 >= 199) {
+					// intentional fail to trigger a restart
+					throw new SuccessException();
+				}
+				return value;
+			}
+		});
+		tryExecute(env, "re-read (not from start).");
+	}
+
+
+	private static class StopAfterN<T> implements MapFunction<T,T> {
+
+		int cnt = 0;
+		final int stopAfter;
+
+		public StopAfterN(int stopAfter) {
+			this.stopAfter = stopAfter;
+		}
+
+		@Override
+		public T map(T value) throws Exception {
+			if(cnt++ == stopAfter) {
+				throw new SuccessException();
+			}
+			return value;
+		}
 	}
 
 	private static class T2Partitioner implements SerializableKafkaPartitioner {
@@ -494,9 +559,9 @@ public abstract class KafkaTestBase {
 
 		@Override
 		public int partition(Object key, int numPartitions) {
-			if(numPartitions != 3) {
+		/*	if(numPartitions != 3) {
 				throw new IllegalArgumentException("Expected three partitions");
-			}
+			} */
 			Tuple2<Integer, Integer> element = (Tuple2<Integer, Integer>) key;
 			return element.f0;
 		}
