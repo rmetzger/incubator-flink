@@ -43,6 +43,6 @@ public class FlinkKafkaConsumer082<T> extends FlinkKafkaConsumer<T> {
 	 *           The properties used to configure the Kafka consumer client, and the ZooKeeper client.
 	 */
 	public FlinkKafkaConsumer082(String topic, DeserializationSchema<T> valueDeserializer, Properties props) {
-		super(topic, valueDeserializer, props, OffsetStore.FLINK_ZOOKEEPER, FetcherType.NEW_HIGH_LEVEL);
+		super(topic, valueDeserializer, props, OffsetStore.FLINK_ZOOKEEPER, FetcherType.LEGACY_LOW_LEVEL);
 	}
 }

@@ -27,17 +27,17 @@ import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.connectors.internals.Fetcher;
 import org.apache.flink.streaming.connectors.internals.LegacyFetcher;
-import org.apache.flink.streaming.connectors.internals.NewConsumerApiFetcher;
 import org.apache.flink.streaming.connectors.internals.OffsetHandler;
 import org.apache.flink.streaming.connectors.internals.ZookeeperOffsetHandler;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
-import org.apache.flink.kafka_backport.common.KafkaException;
-import org.apache.flink.kafka_backport.clients.consumer.ConsumerConfig;
-import org.apache.flink.kafka_backport.clients.consumer.KafkaConsumer;
-import org.apache.flink.kafka_backport.common.PartitionInfo;
-import org.apache.flink.kafka_backport.common.TopicPartition;
-import org.apache.flink.kafka_backport.common.serialization.ByteArrayDeserializer;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -243,7 +243,11 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 								OffsetStore offsetStore, FetcherType fetcherType) {
 		this.offsetStore = checkNotNull(offsetStore);
 		this.fetcherType = checkNotNull(fetcherType);
-		
+
+		if(fetcherType == FetcherType.NEW_HIGH_LEVEL) {
+			throw new UnsupportedOperationException("The fetcher for Kafka 0.8.3 is not yet " +
+					"supported in Flink");
+		}
 		if (offsetStore == OffsetStore.KAFKA && fetcherType == FetcherType.LEGACY_LOW_LEVEL) {
 			throw new IllegalArgumentException(
 					"The Kafka offset handler cannot be used together with the old low-level fetcher.");
@@ -508,7 +512,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		}
 
 		// build the map of (topic,partition) -> committed offset
-		Map<TopicPartition, Long> offsetsToCommit = new HashMap<TopicPartition, Long>();
+		Map<TopicPartition, Long> offsetsToCommit = new HashMap<>();
 		for (TopicPartition tp : subscribedPartitions) {
 			
 			int partition = tp.partition();
@@ -538,7 +542,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		checkArgument(numConsumers > 0);
 		checkArgument(consumerIndex < numConsumers);
 		
-		List<TopicPartition> partitionsToSub = new ArrayList<TopicPartition>();
+		List<TopicPartition> partitionsToSub = new ArrayList<>();
 
 		for (int i = 0; i < partitions.length; i++) {
 			if (i % numConsumers == consumerIndex) {
@@ -565,6 +569,8 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		try {
 			consumer = new KafkaConsumer<byte[], byte[]>(properties, null,
 				new ByteArrayDeserializer(), new ByteArrayDeserializer());
+			KafkaProducer kp = new KafkaProducer(null);
+			kp.partitionsFor("test");
 		}
 		catch (KafkaException e) {
 			throw new RuntimeException("Cannot access the Kafka partition metadata: " + e.getMessage(), e);
