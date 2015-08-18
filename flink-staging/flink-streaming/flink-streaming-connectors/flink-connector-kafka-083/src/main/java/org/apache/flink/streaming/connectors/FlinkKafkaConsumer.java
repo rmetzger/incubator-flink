@@ -17,6 +17,12 @@
 
 package org.apache.flink.streaming.connectors;
 
+import kafka.cluster.Broker;
+import kafka.common.ErrorMapping;
+import kafka.javaapi.PartitionMetadata;
+import kafka.javaapi.TopicMetadata;
+import kafka.javaapi.TopicMetadataRequest;
+import kafka.javaapi.consumer.SimpleConsumer;
 import org.apache.commons.collections.map.LinkedMap;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -31,23 +37,24 @@ import org.apache.flink.streaming.connectors.internals.OffsetHandler;
 import org.apache.flink.streaming.connectors.internals.ZookeeperOffsetHandler;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 
+import org.apache.flink.util.NetUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -309,8 +316,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		// create fetcher
 		switch (fetcherType){
 			case NEW_HIGH_LEVEL:
-				fetcher = new NewConsumerApiFetcher(props);
-				break;
+				throw new UnsupportedOperationException("Currently unsupported");
 			case LEGACY_LOW_LEVEL:
 				fetcher = new LegacyFetcher(topic, props, getRuntimeContext().getTaskName());
 				break;
@@ -325,12 +331,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 				offsetHandler = new ZookeeperOffsetHandler(props);
 				break;
 			case KAFKA:
-				if (fetcher instanceof NewConsumerApiFetcher) {
-					offsetHandler = (NewConsumerApiFetcher) fetcher;
-				} else {
-					throw new Exception("Kafka offset handler cannot work with legacy fetcher");
-				}
-				break;
+				throw new Exception("Kafka offset handler cannot work with legacy fetcher");
 			default:
 				throw new RuntimeException("Requested unknown offset store " + offsetStore);
 		}
@@ -562,35 +563,83 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	 * @param topic The name of the topic.
 	 * @param properties The properties for the Kafka Consumer that is used to query the partitions for the topic. 
 	 */
-	public static List<PartitionInfo> getPartitionsForTopic(String topic, Properties properties) {
-		// create a Kafka consumer to query the metadata
-		// this is quite heavyweight
-		KafkaConsumer<byte[], byte[]> consumer;
-		try {
-			consumer = new KafkaConsumer<byte[], byte[]>(properties, null,
-				new ByteArrayDeserializer(), new ByteArrayDeserializer());
-			KafkaProducer kp = new KafkaProducer(null);
-			kp.partitionsFor("test");
-		}
-		catch (KafkaException e) {
-			throw new RuntimeException("Cannot access the Kafka partition metadata: " + e.getMessage(), e);
+	public static List<PartitionInfo> getPartitionsForTopic(final String topic, final Properties properties) {
+		String seedBrokersConfString = properties.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG);
+		checkNotNull(seedBrokersConfString, "Configuration property " + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG + " not set");
+		String[] seedBrokers = seedBrokersConfString.split(",");
+		List<PartitionInfo> partitions = new ArrayList<>();
+
+		// we pick a seed broker randomly to avoid overloading the first broker with all the requests when the
+		// parallel source instances start. Still, we try all available brokers.
+		Random rnd = new Random();
+		int index = rnd.nextInt(seedBrokers.length);;
+		for (int arrIdx = 0; arrIdx < seedBrokers.length; arrIdx++) {
+			String seedBroker = seedBrokers[index];
+			if(++index == seedBrokers.length) {
+				index = 0;
+			}
+
+			URL brokerUrl = NetUtils.ensureCorrectHostnamePort(seedBroker);
+			SimpleConsumer consumer = null;
+			try {
+				final String clientId = "flink-kafka-consumer-partition-lookup";
+				final int soTimeout = Integer.valueOf(properties.getProperty("socket.timeout.ms", "30000"));
+				final int bufferSize = Integer.valueOf(properties.getProperty("socket.receive.buffer.bytes", "65536"));
+				consumer = new SimpleConsumer(brokerUrl.getHost(), brokerUrl.getPort(), soTimeout, bufferSize, clientId);
+
+				List<String> topics = Collections.singletonList(topic);
+				TopicMetadataRequest req = new TopicMetadataRequest(topics);
+				kafka.javaapi.TopicMetadataResponse resp = consumer.send(req);
+
+				List<TopicMetadata> metaData = resp.topicsMetadata();
+
+				// clear in case we have an incomplete list from previous tries
+				partitions.clear();
+				for (TopicMetadata item : metaData) {
+					if(item.errorCode() != ErrorMapping.NoError()) {
+						if(item.errorCode() == ErrorMapping.InvalidTopicCode() || item.errorCode() == ErrorMapping.UnknownTopicOrPartitionCode()) {
+							// fail hard if topic is unknown
+							throw new RuntimeException("Requested partitions for unknown topic", ErrorMapping.exceptionFor(item.errorCode()));
+						}
+						// warn and try more brokers
+						LOG.warn("Error while getting metadata from broker " + seedBroker + " to find partitions for " + topic,
+								ErrorMapping.exceptionFor(item.errorCode()));
+						continue;
+					}
+					if(!item.topic().equals(topic)) {
+						LOG.warn("Received metadata from topic " + item.topic() + " even though it was not requested. Skipping ...");
+						continue;
+					}
+					for (PartitionMetadata part : item.partitionsMetadata()) {
+						Node leader = brokerToNode(part.leader());
+						Node[] replicas = new Node[part.replicas().size()];
+						for(int i = 0; i < part.replicas().size(); i++) {
+							replicas[i] = brokerToNode(part.replicas().get(i));
+						}
+
+						Node[] ISRs = new Node[part.isr().size()];
+						for(int i = 0; i < part.isr().size(); i++) {
+							ISRs[i] = brokerToNode(part.isr().get(i));
+						}
+						PartitionInfo pInfo = new PartitionInfo(topic, part.partitionId(), leader, replicas, ISRs);
+						partitions.add(pInfo);
+					}
+				}
+				break; // leave the loop through the brokers
+			} catch (Exception e) {
+				LOG.warn("Error communicating with broker " + seedBroker + " to find partitions for " + topic, e);
+			} finally {
+				if (consumer != null) {
+					consumer.close();
+				}
+			}
 		}
 
-		List<PartitionInfo> partitions;
-		try {
-			partitions = consumer.partitionsFor(topic);
-		}
-		finally {
-			consumer.close();
-		}
-
-		if (partitions == null) {
-			throw new RuntimeException("The topic " + topic + " does not seem to exist");
-		}
-		if (partitions.isEmpty()) {
-			throw new RuntimeException("The topic "+topic+" does not seem to have any partitions");
-		}
 		return partitions;
+	}
+
+	private static Node brokerToNode(Broker broker) {
+		return new Node(broker.id(), broker.host(), broker.port());
 	}
 	
 	protected static void validateZooKeeperConfig(Properties props) {
