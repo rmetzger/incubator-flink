@@ -179,6 +179,13 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 
 	/** The maximum number of pending non-committed checkpoints to track, to avoid memory leaks */
 	public static final int MAX_NUM_PENDING_CHECKPOINTS = 100;
+
+	/** Configuration key for the number of retries for getting the partition info */
+	public static final String GET_PARTITIONS_RETRIES_KEY = "flink.get-partitions.retry";
+
+	/** Default number of retries for getting the partition info. One retry means going through the full list of brokers */
+	public static final int DEFAULT_GET_PARTITIONS_RETRIES = 3;
+
 	
 	
 	// ------  Configuration of the Consumer -------
@@ -565,76 +572,80 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	 */
 	public static List<PartitionInfo> getPartitionsForTopic(final String topic, final Properties properties) {
 		String seedBrokersConfString = properties.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG);
+		final int numRetries = Integer.valueOf(properties.getProperty(GET_PARTITIONS_RETRIES_KEY, Integer.toString(DEFAULT_GET_PARTITIONS_RETRIES)));
+
 		checkNotNull(seedBrokersConfString, "Configuration property " + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG + " not set");
 		String[] seedBrokers = seedBrokersConfString.split(",");
 		List<PartitionInfo> partitions = new ArrayList<>();
 
-		// we pick a seed broker randomly to avoid overloading the first broker with all the requests when the
-		// parallel source instances start. Still, we try all available brokers.
 		Random rnd = new Random();
-		int index = rnd.nextInt(seedBrokers.length);;
-		for (int arrIdx = 0; arrIdx < seedBrokers.length; arrIdx++) {
-			String seedBroker = seedBrokers[index];
-			if(++index == seedBrokers.length) {
-				index = 0;
-			}
+		outerLoop: for(int retry = 0; retry < numRetries; retry++) {
+			// we pick a seed broker randomly to avoid overloading the first broker with all the requests when the
+			// parallel source instances start. Still, we try all available brokers.
+			int index = rnd.nextInt(seedBrokers.length);
+			for (int arrIdx = 0; arrIdx < seedBrokers.length; arrIdx++) {
+				String seedBroker = seedBrokers[index];
+				LOG.info("Trying to get topic metadata from broker {} in try {}/{}", seedBroker, retry, numRetries);
+				if (++index == seedBrokers.length) {
+					index = 0;
+				}
 
-			URL brokerUrl = NetUtils.ensureCorrectHostnamePort(seedBroker);
-			SimpleConsumer consumer = null;
-			try {
-				final String clientId = "flink-kafka-consumer-partition-lookup";
-				final int soTimeout = Integer.valueOf(properties.getProperty("socket.timeout.ms", "30000"));
-				final int bufferSize = Integer.valueOf(properties.getProperty("socket.receive.buffer.bytes", "65536"));
-				consumer = new SimpleConsumer(brokerUrl.getHost(), brokerUrl.getPort(), soTimeout, bufferSize, clientId);
+				URL brokerUrl = NetUtils.ensureCorrectHostnamePort(seedBroker);
+				SimpleConsumer consumer = null;
+				try {
+					final String clientId = "flink-kafka-consumer-partition-lookup";
+					final int soTimeout = Integer.valueOf(properties.getProperty("socket.timeout.ms", "30000"));
+					final int bufferSize = Integer.valueOf(properties.getProperty("socket.receive.buffer.bytes", "65536"));
+					consumer = new SimpleConsumer(brokerUrl.getHost(), brokerUrl.getPort(), soTimeout, bufferSize, clientId);
 
-				List<String> topics = Collections.singletonList(topic);
-				TopicMetadataRequest req = new TopicMetadataRequest(topics);
-				kafka.javaapi.TopicMetadataResponse resp = consumer.send(req);
+					List<String> topics = Collections.singletonList(topic);
+					TopicMetadataRequest req = new TopicMetadataRequest(topics);
+					kafka.javaapi.TopicMetadataResponse resp = consumer.send(req);
 
-				List<TopicMetadata> metaData = resp.topicsMetadata();
+					List<TopicMetadata> metaData = resp.topicsMetadata();
 
-				// clear in case we have an incomplete list from previous tries
-				partitions.clear();
-				for (TopicMetadata item : metaData) {
-					if(item.errorCode() != ErrorMapping.NoError()) {
-						if(item.errorCode() == ErrorMapping.InvalidTopicCode() || item.errorCode() == ErrorMapping.UnknownTopicOrPartitionCode()) {
-							// fail hard if topic is unknown
-							throw new RuntimeException("Requested partitions for unknown topic", ErrorMapping.exceptionFor(item.errorCode()));
+					// clear in case we have an incomplete list from previous tries
+					partitions.clear();
+					for (TopicMetadata item : metaData) {
+						if (item.errorCode() != ErrorMapping.NoError()) {
+							if (item.errorCode() == ErrorMapping.InvalidTopicCode() || item.errorCode() == ErrorMapping.UnknownTopicOrPartitionCode()) {
+								// fail hard if topic is unknown
+								throw new RuntimeException("Requested partitions for unknown topic", ErrorMapping.exceptionFor(item.errorCode()));
+							}
+							// warn and try more brokers
+							LOG.warn("Error while getting metadata from broker " + seedBroker + " to find partitions for " + topic,
+									ErrorMapping.exceptionFor(item.errorCode()));
+							continue;
 						}
-						// warn and try more brokers
-						LOG.warn("Error while getting metadata from broker " + seedBroker + " to find partitions for " + topic,
-								ErrorMapping.exceptionFor(item.errorCode()));
-						continue;
+						if (!item.topic().equals(topic)) {
+							LOG.warn("Received metadata from topic " + item.topic() + " even though it was not requested. Skipping ...");
+							continue;
+						}
+						for (PartitionMetadata part : item.partitionsMetadata()) {
+							Node leader = brokerToNode(part.leader());
+							Node[] replicas = new Node[part.replicas().size()];
+							for (int i = 0; i < part.replicas().size(); i++) {
+								replicas[i] = brokerToNode(part.replicas().get(i));
+							}
+
+							Node[] ISRs = new Node[part.isr().size()];
+							for (int i = 0; i < part.isr().size(); i++) {
+								ISRs[i] = brokerToNode(part.isr().get(i));
+							}
+							PartitionInfo pInfo = new PartitionInfo(topic, part.partitionId(), leader, replicas, ISRs);
+							partitions.add(pInfo);
+						}
 					}
-					if(!item.topic().equals(topic)) {
-						LOG.warn("Received metadata from topic " + item.topic() + " even though it was not requested. Skipping ...");
-						continue;
-					}
-					for (PartitionMetadata part : item.partitionsMetadata()) {
-						Node leader = brokerToNode(part.leader());
-						Node[] replicas = new Node[part.replicas().size()];
-						for(int i = 0; i < part.replicas().size(); i++) {
-							replicas[i] = brokerToNode(part.replicas().get(i));
-						}
-
-						Node[] ISRs = new Node[part.isr().size()];
-						for(int i = 0; i < part.isr().size(); i++) {
-							ISRs[i] = brokerToNode(part.isr().get(i));
-						}
-						PartitionInfo pInfo = new PartitionInfo(topic, part.partitionId(), leader, replicas, ISRs);
-						partitions.add(pInfo);
+					break outerLoop; // leave the loop through the brokers
+				} catch (Exception e) {
+					LOG.warn("Error communicating with broker " + seedBroker + " to find partitions for " + topic, e);
+				} finally {
+					if (consumer != null) {
+						consumer.close();
 					}
 				}
-				break; // leave the loop through the brokers
-			} catch (Exception e) {
-				LOG.warn("Error communicating with broker " + seedBroker + " to find partitions for " + topic, e);
-			} finally {
-				if (consumer != null) {
-					consumer.close();
-				}
-			}
-		}
-
+			} // brokers loop
+		} // retries loop
 		return partitions;
 	}
 
