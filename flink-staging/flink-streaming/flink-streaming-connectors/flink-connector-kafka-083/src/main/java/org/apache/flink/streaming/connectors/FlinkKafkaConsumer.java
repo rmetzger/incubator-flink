@@ -580,7 +580,6 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 
 		Random rnd = new Random();
 		retryLoop: for(int retry = 0; retry < numRetries; retry++) {
-			LOG.info("Starting retry "+retry);
 			// we pick a seed broker randomly to avoid overloading the first broker with all the requests when the
 			// parallel source instances start. Still, we try all available brokers.
 			int index = rnd.nextInt(seedBrokers.length);
