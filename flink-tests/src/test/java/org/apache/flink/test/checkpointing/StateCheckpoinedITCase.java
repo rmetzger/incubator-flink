@@ -72,7 +72,9 @@ public class StateCheckpoinedITCase extends StreamFaultToleranceTestBase {
 		final long failurePosMax = (long) (0.7 * NUM_STRINGS / PARALLELISM);
 
 		final long failurePos = (new Random().nextLong() % (failurePosMax - failurePosMin)) + failurePosMin;
-		
+
+		env.enableCheckpointing(200);
+
 		DataStream<String> stream = env.addSource(new StringGeneratingSourceFunction(NUM_STRINGS));
 
 		stream
