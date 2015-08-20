@@ -37,6 +37,8 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +56,10 @@ public abstract class HadoopInputFormatBase<K, V, T> extends RichInputFormat<T, 
 
 	private static final Logger LOG = LoggerFactory.getLogger(HadoopInputFormatBase.class);
 
+	// NOTE: this class is using a custom serialization logic, without a defaultWriteObject() method.
+	// Hence, all fields here are "transient".
+
+	private Credentials credentials;
 	private org.apache.hadoop.mapreduce.InputFormat<K, V> mapreduceInputFormat;
 	protected Class<K> keyClass;
 	protected Class<V> valueClass;
@@ -70,6 +76,7 @@ public abstract class HadoopInputFormatBase<K, V, T> extends RichInputFormat<T, 
 		this.valueClass = checkNotNull(value);
 		this.configuration = checkNotNull(job).getConfiguration();
 		HadoopUtils.mergeHadoopConf(configuration);
+		this.credentials = job.getCredentials();
 	}
 
 	public org.apache.hadoop.conf.Configuration getConfiguration() {
@@ -134,6 +141,10 @@ public abstract class HadoopInputFormatBase<K, V, T> extends RichInputFormat<T, 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+		// add credentials passed from the plan creation
+		jobContext.getCredentials().mergeAll(this.credentials);
+		Credentials currentUserCreds = UserGroupInformation.getCurrentUser().getCredentials();
+		jobContext.getCredentials().mergeAll(currentUserCreds);
 
 		List<org.apache.hadoop.mapreduce.InputSplit> splits;
 		try {
@@ -259,6 +270,7 @@ public abstract class HadoopInputFormatBase<K, V, T> extends RichInputFormat<T, 
 		out.writeUTF(this.keyClass.getName());
 		out.writeUTF(this.valueClass.getName());
 		this.configuration.write(out);
+		this.credentials.write(out);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -269,6 +281,9 @@ public abstract class HadoopInputFormatBase<K, V, T> extends RichInputFormat<T, 
 
 		org.apache.hadoop.conf.Configuration configuration = new org.apache.hadoop.conf.Configuration();
 		configuration.readFields(in);
+
+		this.credentials = new Credentials();
+		credentials.readFields(in);
 
 		if(this.configuration == null) {
 			this.configuration = configuration;
