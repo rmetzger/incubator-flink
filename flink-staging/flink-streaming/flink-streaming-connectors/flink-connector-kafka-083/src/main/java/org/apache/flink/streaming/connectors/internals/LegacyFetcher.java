@@ -430,8 +430,8 @@ public class LegacyFetcher implements Fetcher {
 								final long offset = msg.offset();
 										
 								synchronized (sourceContext.getCheckpointLock()) {
-									offsetsState[partition] = offset;
 									sourceContext.collect(value);
+									offsetsState[partition] = offset;
 								}
 								
 								// advance offset for the next request
