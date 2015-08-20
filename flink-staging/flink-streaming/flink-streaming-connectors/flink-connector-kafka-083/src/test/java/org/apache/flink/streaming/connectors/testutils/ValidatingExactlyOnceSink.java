@@ -69,11 +69,13 @@ public class ValidatingExactlyOnceSink implements SinkFunction<Integer>, Checkpo
 
 	@Override
 	public Tuple2<Integer, BitSet> snapshotState(long checkpointId, long checkpointTimestamp) {
+		LOG.info("Snapshot of counter "+numElements+" at checkpoint "+checkpointId);
 		return new Tuple2<>(numElements, duplicateChecker);
 	}
 
 	@Override
 	public void restoreState(Tuple2<Integer, BitSet> state) {
+		LOG.info("restoring num elements to {}", state.f0);
 		this.numElements = state.f0;
 		this.duplicateChecker = state.f1;
 	}

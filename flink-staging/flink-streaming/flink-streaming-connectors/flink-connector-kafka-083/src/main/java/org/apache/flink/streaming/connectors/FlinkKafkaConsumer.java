@@ -459,7 +459,8 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		}
 
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("Snapshotting state. Offsets: {}, checkpoint id: {}, timestamp: {}",
+			// TODO turn back to debug
+			LOG.info("Snapshotting state. Offsets: {}, checkpoint id: {}, timestamp: {}",
 					Arrays.toString(lastOffsets), checkpointId, checkpointTimestamp);
 		}
 
