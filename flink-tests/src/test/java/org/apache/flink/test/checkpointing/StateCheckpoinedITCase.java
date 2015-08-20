@@ -219,7 +219,7 @@ public class StateCheckpoinedITCase extends StreamFaultToleranceTestBase {
 		public boolean filter(String value) throws Exception {
 			count++;
 			if (count < failurePos && numTimesCheckpointed < 2) {
-				Thread.sleep(1);
+				// Thread.sleep(1);
 			}
 			return value.length() < 100; // should be always true
 		}
