@@ -20,14 +20,17 @@ package org.apache.flink.streaming.util.serialization;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
+import java.nio.charset.Charset;
+
 public class SimpleStringSchema implements DeserializationSchema<String>,
-		SerializationSchema<String, String> {
+		SerializationSchema<String, byte[]> {
 
 	private static final long serialVersionUID = 1L;
+	private final static Charset utf8 = Charset.forName("UTF-8");
 
 	@Override
 	public String deserialize(byte[] message) {
-		return new String(message);
+		return new String(message, utf8);
 	}
 
 	@Override
@@ -36,8 +39,8 @@ public class SimpleStringSchema implements DeserializationSchema<String>,
 	}
 
 	@Override
-	public String serialize(String element) {
-		return element;
+	public byte[] serialize(String element) {
+		return element.getBytes(utf8);
 	}
 
 	@Override
