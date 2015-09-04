@@ -17,7 +17,6 @@
  */
 package org.apache.flink.api.scala
 
-
 import scala.tools.nsc.Settings
 
 import org.apache.flink.configuration.Configuration
