@@ -306,7 +306,7 @@ public class JobSubmissionServlet extends HttpServlet {
 			// get the retained job
 			JobGraph job = submittedJobs.remove(uid);
 			if (job == null) {
-				resp.sendError(HttpServletResponse.SC_BAD_REQUEST,
+				resp.sendError(HttpServletResponse.SC_BAD_REQUEST,1.8
 					"No job with the given uid was retained for later submission.");
 				return;
 			}
