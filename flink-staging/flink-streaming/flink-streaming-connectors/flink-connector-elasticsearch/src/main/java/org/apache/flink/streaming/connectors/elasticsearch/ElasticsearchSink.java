@@ -236,7 +236,7 @@ public class ElasticsearchSink<T> extends RichSinkFunction<T> {
 						if (response.hasFailures()) {
 							for (BulkItemResponse itemResp : response.getItems()) {
 								if (itemResp.isFailed()) {
-									LOG.error("Failed to index document in Elasticsearch: " + itemResp.getFailureMessage());
+									LOG.error("Failed to index document in Elasticsearch: " + itemResp.getFailureMessage(), itemResp.getFailure());
 									failureThrowable.compareAndSet(null, new RuntimeException(itemResp.getFailureMessage()));
 								}
 							}
@@ -248,7 +248,7 @@ public class ElasticsearchSink<T> extends RichSinkFunction<T> {
 					public void afterBulk(long executionId,
 							BulkRequest request,
 							Throwable failure) {
-						LOG.error(failure.getMessage());
+						LOG.error("Error while bulk-processing data", failure.getMessage());
 						failureThrowable.compareAndSet(null, failure);
 						hasFailure.set(true);
 					}
@@ -277,6 +277,17 @@ public class ElasticsearchSink<T> extends RichSinkFunction<T> {
 
 	@Override
 	public void invoke(T element) {
+		// check for failures first
+		if (hasFailure.get()) {
+			Throwable cause = failureThrowable.get();
+			if (cause != null) {
+				throw new RuntimeException("An error occured in ElasticsearchSink.", cause);
+			} else {
+				throw new RuntimeException("An error occured in ElasticsearchSink.");
+
+			}
+		}
+
 		IndexRequest indexRequest = indexRequestBuilder.createIndexRequest(element, getRuntimeContext());
 
 		if (LOG.isDebugEnabled()) {
@@ -299,16 +310,6 @@ public class ElasticsearchSink<T> extends RichSinkFunction<T> {
 
 		if (node != null) {
 			node.close();
-		}
-
-		if (hasFailure.get()) {
-			Throwable cause = failureThrowable.get();
-			if (cause != null) {
-				throw new RuntimeException("An error occured in ElasticsearchSink.", cause);
-			} else {
-				throw new RuntimeException("An error occured in ElasticsearchSink.");
-
-			}
 		}
 	}
 
