@@ -50,6 +50,9 @@ function deploy_to_s3() {
 	cp -r flink-dist/target/flink-*-bin/flink-$CURRENT_FLINK_VERSION*/* flink-$CURRENT_FLINK_VERSION/
 	tar -czf flink-$CURRENT_FLINK_VERSION-bin-$HD.tgz flink-$CURRENT_FLINK_VERSION
 	travis-artifacts upload --path flink-$CURRENT_FLINK_VERSION-bin-$HD.tgz   --target-path / 
+	# delete files again
+	rm -rf flink-$CURRENT_FLINK_VERSION
+	rm flink-$CURRENT_FLINK_VERSION-bin-$HD.tgz
 }
 
 pwd
@@ -93,13 +96,13 @@ if [[ $TRAVIS_PULL_REQUEST == "false" ]] && [[ $TRAVIS_REPO_SLUG == "rmetzger/fl
 	if [[ $TRAVIS_JOB_NUMBER == *2 ]] && [[ $CURRENT_FLINK_VERSION == *SNAPSHOT* ]] ; then 
 		# deploy hadoop v2 (yarn)
 		echo "deploy standard version (hadoop2)"
-		mvn -B -DskipTests -Pdocs-and-source -Drat.ignoreErrors=true clean deploy --settings deploysettings.xml;
+		mvn -B -DskipTests -Pdocs-and-source -Drat.skip=true -Drat.ignoreErrors=true clean deploy --settings deploysettings.xml;
 
 		deploy_to_s3 $CURRENT_FLINK_VERSION "hadoop2"
 
 		echo "deploy hadoop2 version (standard) for scala 2.11"
 		./tools/change-scala-version.sh 2.11
-		mvn -B -DskipTests -Pdocs-and-source -Drat.ignoreErrors=true clean deploy --settings deploysettings.xml;
+		mvn -B -DskipTests -Pdocs-and-source -Drat.skip=true -Drat.ignoreErrors=true clean deploy --settings deploysettings.xml;
 
 		deploy_to_s3 $CURRENT_FLINK_VERSION "hadoop2_2.11"
 
