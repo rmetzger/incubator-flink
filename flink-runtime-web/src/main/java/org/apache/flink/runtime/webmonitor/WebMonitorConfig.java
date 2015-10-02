@@ -68,11 +68,7 @@ public class WebMonitorConfig {
 	public int getWebFrontendPort() {
 		return config.getInteger(JOB_MANAGER_WEB_PORT_KEY, DEFAULT_JOB_MANAGER_WEB_FRONTEND_PORT);
 	}
-	
-	public String getWebRoot() {
-		return config.getString(JOB_MANAGER_WEB_DOC_ROOT_KEY, null);
-	}
-	
+
 	public long getRefreshInterval() {
 		return config.getLong(JOB_MANAGER_WEB_REFRESH_INTERVAL_KEY, DEFAULT_JOB_MANAGER_WEB_REFRESH_INTERVAL);
 	}
