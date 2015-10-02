@@ -170,8 +170,8 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				"-n", "1",
 				"-jm", "768",
 				"-tm", "1024",
-				"-nm", "customName",
-				"-Dfancy-configuration-value=veryFancy",
+				"-nm", "customName", // test setting a custom application name
+				"-Dfancy-configuration-value=veryFancy", // custom configuration value
 				"-Dyarn.maximum-failed-containers=3"},
 				"Number of connected TaskManagers changed to 1. Slots available: 1",
 				RunTypes.YARN_SESSION);
@@ -196,8 +196,15 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			}
 			LOG.info("Got application URL from YARN {}", url);
 
+			String config = TestBaseUtils.getFromHTTP(url + "overview");
+			JSONObject parsed = new JSONObject(config);
+			Assert.assertEquals("1", parsed.getString("taskmanagers"));
+
+			/**
+			 * TESTS FOR OLD JOB MANAGER WEB INTERFACE
+			 */
 			// get number of TaskManagers:
-			Assert.assertEquals("{\"taskmanagers\": 1, \"slots\": 1}", TestBaseUtils.getFromHTTP(url + "jobsInfo?get=taskmanagers"));
+			/*Assert.assertEquals("{\"taskmanagers\": 1, \"slots\": 1}", TestBaseUtils.getFromHTTP(url + "jobsInfo?get=taskmanagers"));
 
 			// get the configuration from webinterface & check if the dynamic properties from YARN show up there.
 			String config = TestBaseUtils.getFromHTTP(url + "setupInfo?get=globalC");
@@ -223,7 +230,8 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 
 			// test logfile access
 			String logs = TestBaseUtils.getFromHTTP(url + "logInfo");
-			Assert.assertTrue(logs.contains("Starting YARN ApplicationMaster/JobManager (Version"));
+			Assert.assertTrue(logs.contains("Starting YARN ApplicationMaster/JobManager (Version"));  */
+			
 		} catch(Throwable e) {
 			LOG.warn("Error while running test",e);
 			Assert.fail(e.getMessage());

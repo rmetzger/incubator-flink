@@ -32,6 +32,7 @@ import io.netty.handler.codec.http.router.Handler;
 import io.netty.handler.codec.http.router.Router;
 
 import io.netty.handler.stream.ChunkedWriteHandler;
+import org.apache.commons.io.FileUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.leaderretrieval.LeaderRetrievalService;
@@ -115,11 +116,26 @@ public class WebRuntimeMonitor implements WebMonitor {
 		final WebMonitorConfig cfg = new WebMonitorConfig(config);
 
 		// create an empty directory in temp for the web server
-		Path staticContentPath = Files.createTempDirectory("flink-runtime-web-files");
-		File webRootDir = staticContentPath.toFile();
+		Path staticContentPath = Files.createTempDirectory("flink-runtime-web-files-");
+		final File webRootDir = staticContentPath.toFile();
 		LOG.info("Using directory {} for the web interface files", webRootDir);
-		// mark the file for deletion on JVM shutdown
-		webRootDir.deleteOnExit();
+		// add shutdown hook for deleting the directory
+		try {
+			Runtime.getRuntime().addShutdownHook(new Thread() {
+				@Override
+				public void run() {
+					try {
+						LOG.info("Removing web root dir {}", webRootDir);
+						FileUtils.deleteDirectory(webRootDir);
+					} catch (Throwable t) {
+						LOG.warn("Error while deleting web root dir {}", webRootDir, t);
+					}
+				}
+			});
+		} catch(Throwable t) {
+			// these errors usually happen when the shutdown is already in progress
+			LOG.warn("Error while adding shutdown hook", t);
+		}
 
 		// port configuration
 		this.configuredPort = cfg.getWebFrontendPort();
