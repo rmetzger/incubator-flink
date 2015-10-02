@@ -161,21 +161,21 @@ public class StaticFileServerHandler extends SimpleChannelInboundHandler<Routed>
 		// convert to absolute path
 		final File file = new File(rootPath, requestPath);
 
-		logger.info("Requesting path "+requestPath);
-
 		if(!file.exists()) {
 			// file does not exist. Try to load it with the classloader
 			ClassLoader cl = StaticFileServerHandler.class.getClassLoader();
-			InputStream resourceStream = cl.getResourceAsStream("web" + requestPath);
-			if(resourceStream == null) {
-				logger.warn("Unable to load requested file {} from classloader", requestPath);
-				sendError(ctx, NOT_FOUND);
-				return;
+			try(InputStream resourceStream = cl.getResourceAsStream("web" + requestPath)) {
+				if (resourceStream == null) {
+					logger.warn("Unable to load requested file {} from classloader", requestPath);
+					sendError(ctx, NOT_FOUND);
+					return;
+				}
+				logger.debug("Loading missing file from classloader: {}", requestPath);
+				// ensure that directory to file exists.
+				//noinspection ResultOfMethodCallIgnored
+				file.getParentFile().mkdirs();
+				Files.copy(resourceStream, file.toPath());
 			}
-			logger.debug("Loading missing file from classloader: {}", requestPath);
-			// ensure that directory to file exists.
-			file.getParentFile().mkdirs();
-			Files.copy(resourceStream, file.toPath());
 		}
 
 		if (!file.exists() || file.isHidden() || file.isDirectory() || !file.isFile()) {
