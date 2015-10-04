@@ -149,7 +149,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			ApplicationId id = app.getApplicationId();
 
 			// check whether we can access some JSON from the new web interface (activated by default)
-		/*	String url = app.getTrackingUrl();
+			String url = app.getTrackingUrl();
 			if(!url.endsWith("/")) {
 				url += "/";
 			}
@@ -158,9 +158,17 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			}
 			LOG.info("Got application URL from YARN {}", url);
 
-			String config = TestBaseUtils.getFromHTTP(url + "overview");
-			JSONObject parsed = new JSONObject(config);
-			Assert.assertEquals("1", parsed.getString("taskmanagers")); */
+			// it seems that the number of task managers is not available immediately.
+			// wait until it is "1"
+			// if not, the test will fail with a timeout
+			int taskManagerCount = 0;
+			while(taskManagerCount == 0) {
+				sleep(500);
+				String config = TestBaseUtils.getFromHTTP(url + "overview");
+				JSONObject parsed = new JSONObject(config);
+				taskManagerCount = Integer.valueOf(parsed.getString("taskmanagers"));
+				LOG.info("trying to get the number of task managers from the job manager interface. Last value returned {}", taskManagerCount);
+			}
 
 			// kill the application (its detached)
 			yc.killApplication(id);
@@ -189,7 +197,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				"-nm", "customName", // test setting a custom application name
 				"-Dfancy-configuration-value=veryFancy", // custom configuration value
 				"-Dyarn.maximum-failed-containers=3",
-				"-Djobmanager.new-web-frontend", "false" // use old web interface
+				"-Djobmanager.new-web-frontend=false" // use old web interface
 				},
 				"Number of connected TaskManagers changed to 1. Slots available: 1",
 				RunTypes.YARN_SESSION);
