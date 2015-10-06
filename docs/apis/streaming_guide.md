@@ -1780,7 +1780,7 @@ Map<String, String> config = Maps.newHashMap();
 config.put("bulk.flush.max.actions", "1");
 config.put("cluster.name", "my-cluster-name");
 
-List<TransportAddress> transports = new ArrayList<String>();
+List<TransportAddress> transports = new ArrayList<>();
 transports.add(new InetSocketTransportAddress("node-1", 9300));
 transports.add(new InetSocketTransportAddress("node-2", 9300));
 
@@ -1806,7 +1806,7 @@ val config = new util.HashMap[String, String]
 config.put("bulk.flush.max.actions", "1")
 config.put("cluster.name", "my-cluster-name")
 
-val transports = new ArrayList[String]
+val transports = new ArrayList[InetSocketTransportAddress]
 transports.add(new InetSocketTransportAddress("node-1", 9300))
 transports.add(new InetSocketTransportAddress("node-2", 9300))
 
