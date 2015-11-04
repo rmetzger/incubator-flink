@@ -240,4 +240,12 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 	public int getPort() {
 		return port;
 	}
+
+	/**
+	 * Return Flink configuration
+	 * @return Flink configuration
+	 */
+	public Configuration getConfiguration() {
+		return config;
+	}
 }

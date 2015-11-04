@@ -29,6 +29,8 @@ import java.util.Enumeration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.leaderretrieval.LeaderRetrievalException;
 import org.apache.flink.runtime.leaderretrieval.LeaderRetrievalListener;
@@ -93,9 +95,10 @@ public class ConnectionUtils {
 	 * @param maxWaitMillis The maximum time that this method tries to connect, before falling
 	 *                       back to the heuristics.
 	 * @param startLoggingAfter The time after which the method will log on INFO level.
+	 * @param conf				Configuration object for the address detecton
 	 */
 	public static InetAddress findConnectingAddress(InetSocketAddress targetAddress,
-							long maxWaitMillis, long startLoggingAfter) throws IOException
+							long maxWaitMillis, long startLoggingAfter, Configuration conf) throws IOException
 	{
 		if (targetAddress == null) {
 			throw new NullPointerException("targetAddress must not be null");
@@ -119,7 +122,7 @@ public class ConnectionUtils {
 			}
 			// go over the strategies ADDRESS - FAST_CONNECT - SLOW_CONNECT
 			do {
-				InetAddress address = findAddressUsingStrategy(strategy, targetAddress, logging);
+				InetAddress address = findAddressUsingStrategy(strategy, targetAddress, logging, conf);
 				if (address != null) {
 					return address;
 				}
@@ -170,7 +173,7 @@ public class ConnectionUtils {
 
 		// our attempts timed out. use the heuristic fallback
 		LOG.warn("Could not connect to {}. Selecting a local address using heuristics.", targetAddress);
-		InetAddress heuristic = findAddressUsingStrategy(AddressDetectionState.HEURISTIC, targetAddress, true);
+		InetAddress heuristic = findAddressUsingStrategy(AddressDetectionState.HEURISTIC, targetAddress, true, conf);
 		if (heuristic != null) {
 			return heuristic;
 		}
@@ -183,13 +186,19 @@ public class ConnectionUtils {
 
 	private static InetAddress findAddressUsingStrategy(AddressDetectionState strategy,
 														InetSocketAddress targetAddress,
-														boolean logging) throws IOException
+														boolean logging,
+														Configuration conf) throws IOException
 	{
 		// try LOCAL_HOST strategy independent of the network interfaces
 		if(strategy == AddressDetectionState.LOCAL_HOST) {
 			InetAddress localhostName = InetAddress.getLocalHost();
-
-			if(tryToConnect(localhostName, targetAddress, strategy.getTimeout(), logging)) {
+			int timeout = strategy.getTimeout();
+			// check for a custom timeout
+			if(conf.getInteger(ConfigConstants.TASK_MANAGER_ADDRESS_DETECTION_LOCAL_HOST_TIMEOUT, -1) != -1 ) {
+				timeout = conf.getInteger(ConfigConstants.TASK_MANAGER_ADDRESS_DETECTION_LOCAL_HOST_TIMEOUT, -1);
+				LOG.info("Using the custom-configured timeout for the LOCAL_HOST address detection strategy: {}", timeout);
+			}
+			if(tryToConnect(localhostName, targetAddress, timeout, logging)) {
 				LOG.debug("Using InetAddress.getLocalHost() immediately for the connecting address");
 				return localhostName;
 			} else {
@@ -315,6 +324,11 @@ public class ConnectionUtils {
 		private String akkaURL;
 		private LeaderRetrievalState retrievalState = LeaderRetrievalState.NOT_RETRIEVED;
 		private Exception exception;
+		private Configuration configuration;
+
+		public LeaderConnectingAddressListener(Configuration configuration) {
+			this.configuration = configuration;
+		}
 
 		public InetAddress findConnectingAddress(
 				FiniteDuration timeout) throws LeaderRetrievalException {
@@ -369,7 +383,7 @@ public class ConnectionUtils {
 						}
 
 						do {
-							InetAddress address = ConnectionUtils.findAddressUsingStrategy(strategy, targetAddress, logging);
+							InetAddress address = ConnectionUtils.findAddressUsingStrategy(strategy, targetAddress, logging, configuration);
 							if (address != null) {
 								return address;
 							}
@@ -418,7 +432,7 @@ public class ConnectionUtils {
 
 				if (targetAddress != null) {
 					LOG.warn("Could not connect to {}. Selecting a local address using heuristics.", targetAddress);
-					heuristic = findAddressUsingStrategy(AddressDetectionState.HEURISTIC, targetAddress, true);
+					heuristic = findAddressUsingStrategy(AddressDetectionState.HEURISTIC, targetAddress, true, configuration);
 				}
 
 				if (heuristic != null) {

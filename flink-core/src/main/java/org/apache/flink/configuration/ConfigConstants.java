@@ -160,6 +160,16 @@ public final class ConfigConstants {
 	 */
 	public static final String TASK_MANAGER_MAX_REGISTRATION_DURATION = "taskmanager.maxRegistrationDuration";
 
+	/**
+	 * The first strategy of the TaskManager to detect its own (externally reachable) IP address
+	 * is using the address returned by InetAddress.getLocalHost().
+	 * The default timeout for checking that IP address is 50 ms. This configuration parameter allows
+	 * users to set a higher value.
+	 *
+	 * See FLINK-2967 for details.
+	 */
+	public static final String TASK_MANAGER_ADDRESS_DETECTION_LOCAL_HOST_TIMEOUT = "taskmanager.address-detection.local-host-timeout";
+
 	// --------------------------- Runtime Algorithms -------------------------------
 	
 	/**
@@ -665,7 +675,8 @@ public final class ConfigConstants {
 	 * The default path to the file containing the list of access privileged users and passwords.
 	 */
 	public static final String DEFAULT_WEB_ACCESS_FILE_PATH = null;
-	
+
+
 	// ------------------------------ Akka Values ------------------------------
 
 	public static String DEFAULT_AKKA_TRANSPORT_HEARTBEAT_INTERVAL = "1000 s";

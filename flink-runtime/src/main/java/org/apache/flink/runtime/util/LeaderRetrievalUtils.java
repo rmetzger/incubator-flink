@@ -146,8 +146,8 @@ public class LeaderRetrievalUtils {
 
 	public static InetAddress findConnectingAddress(
 			LeaderRetrievalService leaderRetrievalService,
-			FiniteDuration timeout) throws LeaderRetrievalException {
-		ConnectionUtils.LeaderConnectingAddressListener listener = new ConnectionUtils.LeaderConnectingAddressListener();
+			FiniteDuration timeout, Configuration configuration) throws LeaderRetrievalException {
+		ConnectionUtils.LeaderConnectingAddressListener listener = new ConnectionUtils.LeaderConnectingAddressListener(configuration);
 
 		try {
 			leaderRetrievalService.start(listener);

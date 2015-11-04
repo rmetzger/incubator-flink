@@ -185,7 +185,7 @@ public class ZooKeeperLeaderRetrievalTest extends TestLogger{
 		FiniteDuration timeout = new FiniteDuration(10, TimeUnit.SECONDS);
 
 		LeaderRetrievalService leaderRetrievalService = LeaderRetrievalUtils.createLeaderRetrievalService(config);
-		InetAddress result = LeaderRetrievalUtils.findConnectingAddress(leaderRetrievalService, timeout);
+		InetAddress result = LeaderRetrievalUtils.findConnectingAddress(leaderRetrievalService, timeout, config);
 
 		assertEquals(InetAddress.getLocalHost(), result);
 	}
@@ -207,7 +207,7 @@ public class ZooKeeperLeaderRetrievalTest extends TestLogger{
 		public void run() {
 			try {
 				LeaderRetrievalService leaderRetrievalService = LeaderRetrievalUtils.createLeaderRetrievalService(config);
-				result = LeaderRetrievalUtils.findConnectingAddress(leaderRetrievalService, timeout);
+				result = LeaderRetrievalUtils.findConnectingAddress(leaderRetrievalService, timeout, this.config);
 			} catch (Exception e) {
 				exception = e;
 			}
