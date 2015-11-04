@@ -1353,7 +1353,8 @@ object TaskManager {
 
       val taskManagerAddress = LeaderRetrievalUtils.findConnectingAddress(
         leaderRetrievalService,
-        lookupTimeout)
+        lookupTimeout,
+        configuration)
 
       taskManagerHostname = taskManagerAddress.getHostName()
       LOG.info(s"TaskManager will use hostname/address '${taskManagerHostname}' " +

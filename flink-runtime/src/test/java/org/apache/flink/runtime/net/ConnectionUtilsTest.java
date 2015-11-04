@@ -19,6 +19,7 @@ package org.apache.flink.runtime.net;
 
 import static org.junit.Assert.*;
 
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.OperatingSystem;
 import org.junit.Test;
 
@@ -47,7 +48,7 @@ public class ConnectionUtilsTest {
 			InetSocketAddress unreachable = new InetSocketAddress("localhost", unusedPort);
 
 			final long start = System.currentTimeMillis();
-			InetAddress add = ConnectionUtils.findConnectingAddress(unreachable, 2000, 400);
+			InetAddress add = ConnectionUtils.findConnectingAddress(unreachable, 2000, 400, new Configuration());
 
 			// check that it did not take forever
 			assertTrue(System.currentTimeMillis() - start < (OperatingSystem.isWindows() ? 30000 : 8000));

@@ -36,17 +36,18 @@ public final class DataStreamUtils {
 	 * @return The iterator
 	 */
 	public static <OUT> Iterator<OUT> collect(DataStream<OUT> stream) {
-		TypeSerializer serializer = stream.getType().createSerializer(stream.getExecutionEnvironment().getConfig());
-		DataStreamIterator<OUT> it = new DataStreamIterator<OUT>(serializer);
+		TypeSerializer<OUT> serializer = stream.getType().createSerializer(stream.getExecutionEnvironment().getConfig());
+		DataStreamIterator<OUT> it = new DataStreamIterator<>(serializer);
 
 		//Find out what IP of us should be given to CollectSink, that it will be able to connect to
 		StreamExecutionEnvironment env = stream.getExecutionEnvironment();
 		InetAddress clientAddress;
 		if(env instanceof RemoteStreamEnvironment) {
-			String host = ((RemoteStreamEnvironment)env).getHost();
-			int port = ((RemoteStreamEnvironment)env).getPort();
+			RemoteStreamEnvironment rse = (RemoteStreamEnvironment) env;
+			String host = rse.getHost();
+			int port = rse.getPort();
 			try {
-				clientAddress = ConnectionUtils.findConnectingAddress(new InetSocketAddress(host, port), 2000, 400);
+				clientAddress = ConnectionUtils.findConnectingAddress(new InetSocketAddress(host, port), 2000, 400, rse.getConfiguration());
 			} catch (IOException e) {
 				throw new RuntimeException("IOException while trying to connect to the master", e);
 			}
@@ -61,7 +62,7 @@ public final class DataStreamUtils {
 		DataStreamSink<OUT> sink = stream.addSink(new CollectSink<OUT>(clientAddress, it.getPort(), serializer));
 		sink.setParallelism(1); // It would not work if multiple instances would connect to the same port
 
-		(new CallExecute(stream)).start();
+		(new CallExecute<>(stream)).start();
 
 		return it;
 	}

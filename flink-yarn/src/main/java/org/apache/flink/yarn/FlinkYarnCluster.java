@@ -147,9 +147,9 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		LOG.info("Start actor system.");
 		// find name of own public interface, able to connect to the JM
 		// try to find address for 2 seconds. log after 400 ms.
-		InetAddress ownHostname = ConnectionUtils.findConnectingAddress(jobManagerAddress, 2000, 400);
+		InetAddress ownHostname = ConnectionUtils.findConnectingAddress(jobManagerAddress, 2000, 400, this.flinkConfig);
 		actorSystem = AkkaUtils.createActorSystem(flinkConfig,
-				new Some(new Tuple2<String, Integer>(ownHostname.getCanonicalHostName(), 0)));
+				new Some(new Tuple2<>(ownHostname.getCanonicalHostName(), 0)));
 
 		// Create the leader election service
 		flinkConfig.setString(ConfigConstants.JOB_MANAGER_IPC_ADDRESS_KEY, this.jobManagerAddress.getHostName());
