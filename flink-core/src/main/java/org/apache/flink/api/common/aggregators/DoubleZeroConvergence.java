@@ -25,6 +25,7 @@ import org.apache.flink.types.DoubleValue;
  * holds the value zero. The aggregated data type is a {@link DoubleValue}.
  */
 @SuppressWarnings("serial")
+@PublicInterface
 public class DoubleZeroConvergence implements ConvergenceCriterion<DoubleValue> {
 
 	/**

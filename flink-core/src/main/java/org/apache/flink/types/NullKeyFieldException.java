@@ -20,6 +20,8 @@
 package org.apache.flink.types;
 
 
+import org.apache.flink.annotation.PublicInterface;
+
 /**
  * An exception specifying that a required key field was not set in a record, i.e. was <code>null</code>.
  */

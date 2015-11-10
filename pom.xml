@@ -500,7 +500,6 @@ under the License.
 			<build>
 
 				<plugins>
-
 					<!-- We need to clean compiled classes to make sure that genjavadoc
 					is called to generate our fake Java source from Scala source. -->
 					<plugin>
@@ -701,6 +700,26 @@ under the License.
 
 	<build>
 		<plugins>
+			<!--<plugin>
+				<groupId>org.revapi</groupId>
+				<artifactId>revapi-maven-plugin</artifactId>
+				<version>0.3.10</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.revapi</groupId>
+						<artifactId>revapi-java</artifactId>
+						<version>0.5.2</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<id>api-check</id>
+						<goals><goal>check</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
+			-->
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>

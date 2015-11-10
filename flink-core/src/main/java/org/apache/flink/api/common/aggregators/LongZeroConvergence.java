@@ -25,6 +25,7 @@ import org.apache.flink.types.LongValue;
  * holds the value zero. The aggregated data type is a {@link LongValue}.
  */
 @SuppressWarnings("serial")
+@PublicInterface
 public class LongZeroConvergence implements ConvergenceCriterion<LongValue> {
 
 	/**

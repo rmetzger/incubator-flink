@@ -24,6 +24,7 @@ import org.apache.flink.types.LongValue;
  * An {@link Aggregator} that sums up long values.
  */
 @SuppressWarnings("serial")
+@PublicInterface
 public class LongSumAggregator implements Aggregator<LongValue> {
 
 	private long sum;	// the sum

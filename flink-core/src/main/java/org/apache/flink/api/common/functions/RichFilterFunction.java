@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.common.functions;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.RichFunction;
@@ -30,6 +31,7 @@ import org.apache.flink.api.common.functions.RichFunction;
  * 
  * @param <T> The type of the filtered elements.
  */
+@PublicInterface
 public abstract class RichFilterFunction<T> extends AbstractRichFunction implements FilterFunction<T> {
 	
 	private static final long serialVersionUID = 1L;

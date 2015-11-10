@@ -24,6 +24,7 @@ import org.apache.flink.core.io.InputSplit;
  * An input split provider can be successively queried to provide a series of {@link InputSplit} objects a
  * task is supposed to consume in the course of its execution.
  */
+@PublicInterface
 public interface InputSplitProvider {
 
 	/**

@@ -26,6 +26,7 @@ import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.EnumComparator;
 import org.apache.flink.api.common.typeutils.base.EnumSerializer;
+import org.apache.flink.annotation.PublicInterface;
 
 /**
  * A {@link TypeInformation} for java enumeration types. 
@@ -53,9 +54,13 @@ public class EnumTypeInfo<T extends Enum<T>> extends TypeInformation<T> implemen
 		return new EnumComparator<T>(sortOrderAscending);
 	}
 
+	@PublicInterface
 	@Override
 	public boolean isBasicType() {
 		return false;
+	}
+	public int hahah() {
+		return 2;
 	}
 
 	@Override

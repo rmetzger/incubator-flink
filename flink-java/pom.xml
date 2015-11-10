@@ -116,6 +116,56 @@ under the License.
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>com.github.siom79.japicmp</groupId>
+				<artifactId>japicmp-maven-plugin</artifactId>
+				<version>0.6.2-SNAPSHOT</version>
+				<configuration>
+					<oldVersion>
+						<dependency>
+							<groupId>org.apache.flink</groupId>
+							<artifactId>flink-java</artifactId>
+							<version>0.9.1</version>
+							<type>jar</type>
+						</dependency>
+					</oldVersion>
+					<newVersion>
+						<file>
+							<path>${project.build.directory}/${project.artifactId}-${project.version}.${project.packaging}</path>
+						</file>
+					</newVersion>
+					<parameter>
+						<onlyModified>true</onlyModified>
+						<includes>
+							<include>@org.apache.flink.annotation.PublicInterface</include>
+							<include>org.apache.flink.api.java.DataSet</include>
+						</includes>
+						<accessModifier>public</accessModifier>
+						<breakBuildOnModifications>false</breakBuildOnModifications>
+						<breakBuildOnBinaryIncompatibleModifications>true</breakBuildOnBinaryIncompatibleModifications>
+						<onlyBinaryIncompatible>false</onlyBinaryIncompatible>
+						<includeSynthetic>true</includeSynthetic>
+						<ignoreMissingClasses>false</ignoreMissingClasses>
+						<skipPomModules>true</skipPomModules>
+					</parameter>
+					<skip>false</skip>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.flink</groupId>
+						<artifactId>flink-java</artifactId>
+						<version>${project.version}</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<phase>verify</phase>
+						<goals>
+							<goal>cmp</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<executions>

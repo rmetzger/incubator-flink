@@ -19,6 +19,7 @@
 package org.apache.flink.api.java;
 
 import com.google.common.base.Preconditions;
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.accumulators.SerializedListAccumulator;
@@ -103,6 +104,8 @@ import java.util.List;
  *
  * @param <T> The type of the DataSet, i.e., the type of the elements of the DataSet.
  */
+
+@PublicInterface
 public abstract class DataSet<T> {
 	
 	protected final ExecutionEnvironment context;

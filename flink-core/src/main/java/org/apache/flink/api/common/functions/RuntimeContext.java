@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.flink.api.common.accumulators.DoubleCounter;
@@ -40,6 +41,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
  * A function can, during runtime, obtain the RuntimeContext via a call to
  * {@link AbstractRichFunction#getRuntimeContext()}.
  */
+@PublicInterface
 public interface RuntimeContext {
 
 	/**

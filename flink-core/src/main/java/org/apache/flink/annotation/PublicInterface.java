@@ -14,17 +14,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
+package org.apache.flink.annotation;
 
-package org.apache.flink.api.common.accumulators;
-
-import org.apache.flink.annotation.PublicInterface;
-
-import java.io.Serializable;
+import java.lang.annotation.Documented;
 
 /**
- * Similar to Accumulator, but the type of items to add and the result value
- * must be the same.
+ * Annotation for marking classes as public, stable interfaces.
+ *
+ * Classes, methods and fields with this annotation are stable across minor releases (1.0, 1.1, 1.2). In other words,
+ * applications using @PublicInterface annotated classes will compile against newer versions of the same major release.
+ *
+ * Only major releases (1.0, 2.0, 3.0) can break interfaces with this annotation.
  */
-@PublicInterface
-public interface SimpleAccumulator<T extends Serializable> extends Accumulator<T,T> {}
+@Documented
+public @interface PublicInterface {}
