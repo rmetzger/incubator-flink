@@ -539,6 +539,7 @@ class TupleGenerator {
 			w.println(" * @param <" + GEN_TYPE_PREFIX + i + "> The type of field " + i);
 		}
 		w.println(" */");
+		w.println("@PublicInterface");
 		w.print("public class " + className + "<");
 		for (int i = 0; i < numFields; i++) {
 			if (i > 0) {
@@ -801,6 +802,7 @@ class TupleGenerator {
 		w.println();
 
 		// class declaration
+		w.println("@PublicInterface");
 		w.print("public class " + className);
 		printGenericsString(w, numFields);
 		w.println(" {");

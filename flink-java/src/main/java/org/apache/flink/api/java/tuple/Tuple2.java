@@ -40,6 +40,7 @@ import org.apache.flink.util.StringUtils;
  * @param <T0> The type of field 0
  * @param <T1> The type of field 1
  */
+@PublicInterface
 public class Tuple2<T0, T1> extends Tuple {
 
 	private static final long serialVersionUID = 1L;

@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.common.aggregators;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.types.LongValue;
 
 /**

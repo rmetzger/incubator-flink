@@ -30,6 +30,7 @@ import java.util.List;
 
 import org.apache.flink.api.java.tuple.Tuple3;
 
+@PublicInterface
 public class Tuple3Builder<T0, T1, T2> {
 
 	private List<Tuple3<T0, T1, T2>> tuples = new ArrayList<Tuple3<T0, T1, T2>>();

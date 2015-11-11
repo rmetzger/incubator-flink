@@ -33,6 +33,7 @@ import org.apache.flink.annotation.PublicInterface;
  *
  * @param <T> The type represented by this type information.
  */
+@PublicInterface
 public class EnumTypeInfo<T extends Enum<T>> extends TypeInformation<T> implements AtomicType<T> {
 
 	private static final long serialVersionUID = 8936740290137178660L;
