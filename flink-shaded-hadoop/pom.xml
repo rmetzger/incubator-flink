@@ -125,6 +125,11 @@ under the License.
 									<pattern>com.sun.jersey</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.jersey</shadedPattern>
 								</relocation>
+								<!-- Relocate org.apache.httpcomponents:* -->
+								<relocation>
+									<pattern>org.apache.http</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.http</shadedPattern>
+								</relocation>
 							</relocations>
 						</configuration>
 					</execution>
