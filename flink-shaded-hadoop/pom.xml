@@ -102,14 +102,16 @@ under the License.
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
 							</transformers>
 							<relocations>
-								<relocation>
+								<!--<relocation>
 									<pattern>com.google</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.com.google</shadedPattern>
 									<excludes>
 										<exclude>com.google.inject.**</exclude>
 									</excludes>
-								</relocation>
-								<relocation>
+								</relocation> -->
+
+
+								<!--<relocation>
 									<pattern>org.objectweb.asm</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.objectweb.asm</shadedPattern>
 								</relocation>
@@ -121,6 +123,62 @@ under the License.
 									<pattern>org.apache.curator</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.curator</shadedPattern>
 								</relocation>
+								 commons cli, math3,coded, io,net,collections,el,logging,configuration -->
+								<!--<relocation>
+									<pattern>org.apache.commons</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.commons</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.znerd.xmlenc</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.znerd.xmlenc</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.sun.jersey</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.jersey</shadedPattern>
+								</relocation>
+								<- org.apache.httpcomponents:* >
+								<relocation>
+									<pattern>org.apache.http</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.http</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.http</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.http</shadedPattern>
+								</relocation> -->
+
+								<!-- Relocate everything except google inject -->
+								<!--<relocation>
+									<shadedPattern>org.apache.flink.hadoop.shaded.</shadedPattern>
+									<excludes>
+										<exclude>com.google.inject.**</exclude>
+									</excludes>
+								</relocation> -->
+
+								<relocation>
+									<pattern>com</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com</shadedPattern>
+									<excludes>
+										<exclude>com.google.inject.**</exclude>
+									</excludes>
+								</relocation>
+
+								<relocation>
+									<pattern>contribs</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.contribs</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>javax</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>net</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.net</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org</shadedPattern>
+								</relocation>
+
 							</relocations>
 						</configuration>
 					</execution>
