@@ -177,6 +177,9 @@ under the License.
 								<relocation>
 									<pattern>org</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org</shadedPattern>
+									<excludes>
+										<exclude>org.apache.hadoop.**</exclude>
+									</excludes>
 								</relocation>
 
 							</relocations>
