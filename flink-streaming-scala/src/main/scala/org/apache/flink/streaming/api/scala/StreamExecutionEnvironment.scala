@@ -22,6 +22,7 @@ import java.util.Objects
 import java.util.Objects._
 
 import com.esotericsoftware.kryo.Serializer
+import org.apache.flink.annotation.PublicInterface
 import org.apache.flink.api.common.io.{FileInputFormat, InputFormat}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer
@@ -40,6 +41,7 @@ import scala.reflect.ClassTag
 
 import _root_.scala.language.implicitConversions
 
+@PublicInterface
 class StreamExecutionEnvironment(javaEnv: JavaEnv) {
 
   /**

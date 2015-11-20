@@ -17,6 +17,8 @@
 
 package org.apache.flink.streaming.util.serialization;
 
+import org.apache.flink.annotation.PublicInterface;
+
 import java.io.Serializable;
 
 /**
@@ -27,6 +29,7 @@ import java.io.Serializable;
  * @param <T> The type to be serialized.
  * @param <R> The serialized representation type.
  */
+@PublicInterface
 public interface SerializationSchema<T, R> extends Serializable {
 
 	/**
