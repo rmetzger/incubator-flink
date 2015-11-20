@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -95,6 +96,7 @@ import com.google.common.base.Preconditions;
  * 
  * @param <T> The type of the elements in this Stream
  */
+@PublicInterface
 public class DataStream<T> {
 
 	protected final StreamExecutionEnvironment environment;

@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.environment;
 import com.esotericsoftware.kryo.Serializer;
 import com.google.common.base.Preconditions;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.JobExecutionResult;
@@ -92,6 +93,7 @@ import static java.util.Objects.requireNonNull;
  * @see org.apache.flink.streaming.api.environment.LocalStreamEnvironment
  * @see org.apache.flink.streaming.api.environment.RemoteStreamEnvironment
  */
+@PublicInterface
 public abstract class StreamExecutionEnvironment {
 
 	/** The default name to use for a streaming job if no other name has been specified */

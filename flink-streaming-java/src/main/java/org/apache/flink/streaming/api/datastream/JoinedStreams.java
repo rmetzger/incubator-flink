@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.datastream;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.functions.CoGroupFunction;
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
@@ -93,6 +94,7 @@ public class JoinedStreams<T1, T2> {
 	 *
 	 * @param <KEY> The type of the key.
 	 */
+	@PublicInterface
 	public class Where<KEY> {
 
 		private final KeySelector<T1, KEY> keySelector1;

@@ -700,25 +700,6 @@ under the License.
 
 	<build>
 		<plugins>
-			<!--<plugin>
-				<groupId>org.revapi</groupId>
-				<artifactId>revapi-maven-plugin</artifactId>
-				<version>0.3.10</version>
-				<dependencies>
-					<dependency>
-						<groupId>org.revapi</groupId>
-						<artifactId>revapi-java</artifactId>
-						<version>0.5.2</version>
-					</dependency>
-				</dependencies>
-				<executions>
-					<execution>
-						<id>api-check</id>
-						<goals><goal>check</goal></goals>
-					</execution>
-				</executions>
-			</plugin>
-			-->
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

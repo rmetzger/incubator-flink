@@ -17,6 +17,7 @@
  */
 package org.apache.flink.api.scala
 
+import org.apache.flink.annotation.PublicInterface
 import org.apache.flink.api.common.InvalidProgramException
 import org.apache.flink.api.common.accumulators.SerializedListAccumulator
 import org.apache.flink.api.common.aggregators.Aggregator
@@ -83,6 +84,7 @@ import scala.reflect.ClassTag
  *
  * @tparam T The type of the DataSet, i.e., the type of the elements of the DataSet.
  */
+@PublicInterface
 class DataSet[T: ClassTag](set: JavaDataSet[T]) {
   require(set != null, "Java DataSet must not be null.")
 

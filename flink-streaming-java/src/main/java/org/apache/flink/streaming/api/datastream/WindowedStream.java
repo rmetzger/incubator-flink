@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.datastream;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.functions.FoldFunction;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.functions.ReduceFunction;
@@ -74,6 +75,7 @@ import org.apache.flink.streaming.runtime.operators.windowing.buffers.PreAggrega
  * @param <K> The type of the key by which elements are grouped.
  * @param <W> The type of {@code Window} that the {@code WindowAssigner} assigns the elements to.
  */
+@PublicInterface
 public class WindowedStream<T, K, W extends Window> {
 
 	/** The keyed data stream that is windowed by this stream */

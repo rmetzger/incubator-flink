@@ -55,13 +55,9 @@ public class EnumTypeInfo<T extends Enum<T>> extends TypeInformation<T> implemen
 		return new EnumComparator<T>(sortOrderAscending);
 	}
 
-	@PublicInterface
 	@Override
 	public boolean isBasicType() {
 		return false;
-	}
-	public int hahah() {
-		return 2;
 	}
 
 	@Override
