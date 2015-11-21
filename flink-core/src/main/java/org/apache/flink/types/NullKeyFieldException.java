@@ -15,12 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.flink.types;
 
-
-import org.apache.flink.annotation.PublicInterface;
 
 /**
  * An exception specifying that a required key field was not set in a record, i.e. was <code>null</code>.

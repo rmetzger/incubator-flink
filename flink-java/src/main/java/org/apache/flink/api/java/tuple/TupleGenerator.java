@@ -521,6 +521,7 @@ class TupleGenerator {
 		// package and imports
 		w.println("package " + PACKAGE + ';');
 		w.println();
+		w.println("import PublicInterface;");
 		w.println("import org.apache.flink.util.StringUtils;");
 		w.println();
 
@@ -798,6 +799,7 @@ class TupleGenerator {
 		w.println("import java.util.ArrayList;");
 		w.println("import java.util.List;");
 		w.println();
+		w.println("import PublicInterface;");
 		w.println("import " + PACKAGE + ".Tuple" + numFields + ";");
 		w.println();
 

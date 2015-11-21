@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.jobgraph.tasks;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.core.io.InputSplit;
 
 /**

@@ -28,6 +28,7 @@ package org.apache.flink.api.java.tuple.builder;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.java.tuple.Tuple8;
 
 @PublicInterface

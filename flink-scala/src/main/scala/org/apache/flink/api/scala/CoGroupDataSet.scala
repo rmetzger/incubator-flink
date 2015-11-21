@@ -18,8 +18,8 @@
 
 package org.apache.flink.api.scala
 
-import org.apache.commons.lang3.tuple.{ImmutablePair, Pair}
 import org.apache.flink.annotation.PublicInterface
+import org.apache.commons.lang3.tuple.{ImmutablePair, Pair}
 import org.apache.flink.api.common.InvalidProgramException
 import org.apache.flink.api.common.functions.{CoGroupFunction, Partitioner, RichCoGroupFunction}
 import org.apache.flink.api.common.operators.Order

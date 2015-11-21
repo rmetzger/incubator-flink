@@ -19,9 +19,6 @@
 package org.apache.flink.api.common.functions;
 
 import org.apache.flink.annotation.PublicInterface;
-import org.apache.flink.api.common.functions.AbstractRichFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.RichFunction;
 
 /**
  * Rich variant of the {@link MapFunction}. As a {@link RichFunction}, it gives access to the

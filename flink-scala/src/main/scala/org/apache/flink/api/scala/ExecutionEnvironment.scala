@@ -17,9 +17,9 @@
  */
 package org.apache.flink.api.scala
 
+import org.apache.flink.annotation.PublicInterface
 import com.esotericsoftware.kryo.Serializer
 import com.google.common.base.Preconditions
-import org.apache.flink.annotation.PublicInterface
 import org.apache.flink.api.common.io.{FileInputFormat, InputFormat}
 import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, TypeInformation}
 import org.apache.flink.api.common.typeutils.CompositeType

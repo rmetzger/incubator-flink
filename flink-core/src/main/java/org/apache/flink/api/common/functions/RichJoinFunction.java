@@ -19,9 +19,6 @@
 package org.apache.flink.api.common.functions;
 
 import org.apache.flink.annotation.PublicInterface;
-import org.apache.flink.api.common.functions.AbstractRichFunction;
-import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.common.functions.RichFunction;
 
 /**
  * Rich variant of the {@link JoinFunction}. As a {@link RichFunction}, it gives access to the

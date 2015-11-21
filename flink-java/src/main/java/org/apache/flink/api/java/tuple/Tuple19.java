@@ -25,6 +25,7 @@
 
 package org.apache.flink.api.java.tuple;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.util.StringUtils;
 
 /**

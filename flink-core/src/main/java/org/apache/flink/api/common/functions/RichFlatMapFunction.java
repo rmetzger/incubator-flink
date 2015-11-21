@@ -19,9 +19,6 @@
 package org.apache.flink.api.common.functions;
 
 import org.apache.flink.annotation.PublicInterface;
-import org.apache.flink.api.common.functions.AbstractRichFunction;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.RichFunction;
 import org.apache.flink.util.Collector;
 
 /**
