@@ -154,11 +154,6 @@ public class ParameterToolTest {
 		validate(parameter);
 	}
 
-	@Test
-	public void testFromGenericOptionsParser() throws IOException {
-		ParameterTool parameter = ParameterTool.fromGenericOptionsParser(new String[]{"-D", "input=myInput", "-DexpectedCount=15"});
-		validate(parameter);
-	}
 
 	private void validate(ParameterTool parameter) {
 		ClosureCleaner.ensureSerializable(parameter);

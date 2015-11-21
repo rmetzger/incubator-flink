@@ -914,16 +914,35 @@ under the License.
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
 				<version>1.3.1</version><!--$NO-MVN-MAN-VER$-->
+				<dependencies>
+					<dependency>
+						<groupId>de.is24.maven.enforcer.rules</groupId>
+						<artifactId>illegal-transitive-dependency-check</artifactId>
+						<version>1.7.4</version>
+					</dependency>
+				</dependencies>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
+						<phase>verify</phase> <!-- Use verify phase so that the illegal dep check works on the current build -->
 						<goals>
 							<goal>enforce</goal>
 						</goals>
 						<configuration>
 							<rules>
+								<!-- Ensure we are declaring all our dependencies -->
+								<illegalTransitiveDependencyCheck implementation="de.is24.maven.enforcer.rules.IllegalTransitiveDependencyCheck">
+									<reportOnly>false</reportOnly>
+									<useClassesFromLastBuild>true</useClassesFromLastBuild>
+									<suppressTypesFromJavaRuntime>true</suppressTypesFromJavaRuntime>
+									<regexIgnoredClasses>
+										<!-- We ignore hadoop dependencies bc they are in the shaded pom-->
+										<regexIgnoredClass>org\.apache\.hadoop\..+</regexIgnoredClass>
+									</regexIgnoredClasses> -->
+									<listMissingArtifacts>false</listMissingArtifacts>
+								</illegalTransitiveDependencyCheck>
+								<!-- enforce at least mvn version 3.0.3 -->
 								<requireMavenVersion>
-									<!-- enforce at least mvn version 3.0.3 -->
 									<version>[3.0.3,)</version>
 								</requireMavenVersion>
 							</rules>
