@@ -424,7 +424,11 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 			} finally {
 				if (offsetCommitter != null) {
 					offsetCommitter.close();
-					offsetCommitter.join();
+					try {
+						offsetCommitter.join();
+					} catch(InterruptedException ie) {
+						// ignore interrupt
+					}
 				}
 			}
 		}
