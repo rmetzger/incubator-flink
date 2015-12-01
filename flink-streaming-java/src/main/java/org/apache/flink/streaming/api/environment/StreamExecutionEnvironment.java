@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.environment;
 import com.esotericsoftware.kryo.Serializer;
 import com.google.common.base.Preconditions;
 
+import org.apache.flink.annotation.PublicExperimental;
 import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InvalidProgramException;
@@ -314,6 +315,7 @@ public abstract class StreamExecutionEnvironment {
 	 *            If true checkpointing will be enabled for iterative jobs as well.
 	 */
 	@Deprecated
+	@PublicExperimental
 	public StreamExecutionEnvironment enableCheckpointing(long interval, CheckpointingMode mode, boolean force) {
 		this.enableCheckpointing(interval, mode);
 

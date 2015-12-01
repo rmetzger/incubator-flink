@@ -725,6 +725,9 @@ under the License.
 						<includes>
 							<include>@org.apache.flink.annotation.PublicInterface</include>
 						</includes>
+						<excludes>
+							<exclude>@org.apache.flink.annotation.PublicExperimental</exclude>
+						</excludes>
 						<accessModifier>public</accessModifier>
 						<breakBuildOnModifications>false</breakBuildOnModifications>
 						<breakBuildOnBinaryIncompatibleModifications>true</breakBuildOnBinaryIncompatibleModifications>
@@ -734,14 +737,21 @@ under the License.
 						<skipPomModules>true</skipPomModules>
 					</parameter>
 					<skip>false</skip>
+					<newClassPathDependencies>
+						<dependency>
+							<groupId>org.apache.flink</groupId>
+							<artifactId>flink-annotations</artifactId>
+							<version>${project.version}</version>
+						</dependency>
+					</newClassPathDependencies>
+					<oldClassPathDependencies>
+						<dependency>
+							<groupId>org.apache.flink</groupId>
+							<artifactId>flink-annotations</artifactId>
+							<version>${project.version}</version>
+						</dependency>
+					</oldClassPathDependencies>
 				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>org.apache.flink</groupId>
-						<artifactId>flink-annotations</artifactId>
-						<version>${project.version}</version>
-					</dependency>
-				</dependencies>
 				<executions>
 					<execution>
 						<phase>verify</phase>
