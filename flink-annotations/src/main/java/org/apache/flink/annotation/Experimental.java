@@ -30,5 +30,6 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Target({ ElementType.TYPE, ElementType.METHOD })
+@Public
 public @interface Experimental {
 }

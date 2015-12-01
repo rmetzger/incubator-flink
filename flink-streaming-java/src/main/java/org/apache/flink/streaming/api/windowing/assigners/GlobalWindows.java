@@ -17,6 +17,7 @@
  */
 package org.apache.flink.streaming.api.windowing.assigners;
 
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -34,6 +35,7 @@ import java.util.Collections;
  * {@link org.apache.flink.streaming.api.windowing.evictors.Evictor} to do flexible, policy based
  * windows.
  */
+@Experimental
 public class GlobalWindows extends WindowAssigner<Object, GlobalWindow> {
 	private static final long serialVersionUID = 1L;
 

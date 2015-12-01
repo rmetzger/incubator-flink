@@ -20,6 +20,7 @@ package org.apache.flink.api.java.operators;
 
 import com.google.common.base.Preconditions;
 
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.Partitioner;
 import org.apache.flink.api.common.operators.Operator;
 import org.apache.flink.api.common.operators.UnaryOperatorInformation;
@@ -36,6 +37,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
  *
  * @param <T> The type of the data being partitioned.
  */
+@Public
 public class PartitionOperator<T> extends SingleInputOperator<T, T, PartitionOperator<T>> {
 	
 	private final Keys<T> pKeys;

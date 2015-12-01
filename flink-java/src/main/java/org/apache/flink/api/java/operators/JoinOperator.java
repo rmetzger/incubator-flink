@@ -22,6 +22,8 @@ import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
 
+import org.apache.flink.annotation.Public;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
@@ -69,6 +71,7 @@ import org.apache.flink.api.java.tuple.*;
  * 
  * @see DataSet
  */
+@Public
 public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT, JoinOperator<I1, I2, OUT>> {
 
 	protected final Keys<I1> keys1;
@@ -191,6 +194,7 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 	 * @see org.apache.flink.api.common.functions.RichFlatJoinFunction
 	 * @see DataSet
 	 */
+	@Public
 	public static class EquiJoin<I1, I2, OUT> extends JoinOperator<I1, I2, OUT> {
 		
 		private final FlatJoinFunction<I1, I2, OUT> function;
@@ -510,6 +514,7 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 	 * @see Tuple2
 	 * @see DataSet
 	 */
+	@Public
 	public static final class DefaultJoin<I1, I2> extends EquiJoin<I1, I2, Tuple2<I1, I2>> implements JoinFunctionAssigner<I1, I2> {
 
 		public DefaultJoin(DataSet<I1> input1, DataSet<I2> input2,
@@ -643,6 +648,7 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 	 * @see Tuple
 	 * @see DataSet
 	 */
+	@Public
 	public static class ProjectJoin<I1, I2, OUT extends Tuple> extends EquiJoin<I1, I2, OUT> {
 		
 		private JoinProjection<I1, I2> joinProj;
@@ -729,6 +735,7 @@ public abstract class JoinOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, 
 		 */
 		@SuppressWarnings({ "unchecked", "hiding" })
 		@Deprecated
+		@Experimental
 		public <OUT extends Tuple> JoinOperator<I1, I2, OUT> types(Class<?>... types) {
 			TupleTypeInfo<OUT> typeInfo = (TupleTypeInfo<OUT>)this.getResultType();
 

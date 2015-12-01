@@ -19,6 +19,7 @@ package org.apache.flink.api.scala
 
 import com.esotericsoftware.kryo.Serializer
 import com.google.common.base.Preconditions
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.io.{FileInputFormat, InputFormat}
 import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, TypeInformation}
 import org.apache.flink.api.common.typeutils.CompositeType
@@ -61,6 +62,7 @@ import scala.reflect.ClassTag
  *  created. If the program is submitted to a cluster a remote execution environment will
  *  be created.
  */
+@Public
 class ExecutionEnvironment(javaEnv: JavaEnv) {
 
   /**
@@ -630,6 +632,7 @@ class ExecutionEnvironment(javaEnv: JavaEnv) {
   }
 }
 
+@Public
 object ExecutionEnvironment {
 
   /**

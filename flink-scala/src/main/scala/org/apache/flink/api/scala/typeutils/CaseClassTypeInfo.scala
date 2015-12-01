@@ -21,6 +21,7 @@ package org.apache.flink.api.scala.typeutils
 import java.util
 import java.util.regex.{Pattern, Matcher}
 
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.CompositeType.{TypeComparatorBuilder,
@@ -36,6 +37,7 @@ import scala.collection.mutable.ArrayBuffer
  * TypeInformation for Case Classes. Creation and access is different from
  * our Java Tuples so we have to treat them differently.
  */
+@Public
 abstract class CaseClassTypeInfo[T <: Product](
     clazz: Class[T],
     val typeParamTypeInfos: Array[TypeInformation[_]],

@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.GroupCombineFunction;
 import org.apache.flink.api.common.operators.Operator;
 import org.apache.flink.api.common.operators.Order;
@@ -42,6 +43,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
  * @param <IN> The type of the data set consumed by the operator.
  * @param <OUT> The type of the data set created by the operator.
  */
+@Public
 public class GroupCombineOperator<IN, OUT> extends SingleInputUdfOperator<IN, OUT, GroupCombineOperator<IN, OUT>> {
 
 	private final GroupCombineFunction<IN, OUT> function;

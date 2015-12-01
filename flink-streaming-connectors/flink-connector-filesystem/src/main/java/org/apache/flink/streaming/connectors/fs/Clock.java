@@ -17,12 +17,15 @@
  */
 package org.apache.flink.streaming.connectors.fs;
 
+import org.apache.flink.annotation.Public;
+
 /**
  * A clock that can provide the current time.
  *
  * <p>
  * Normally this would be system time, but for testing a custom {@code Clock} can be provided.
  */
+@Public
 public interface Clock {
 
 	/**

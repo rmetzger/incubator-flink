@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.environment;
 
+import org.apache.flink.annotation.Public;
 import org.apache.flink.streaming.api.CheckpointingMode;
 
 import static java.util.Objects.requireNonNull;
@@ -25,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Configuration that captures all checkpointing related settings.
  */
+@Public
 public class CheckpointConfig implements java.io.Serializable {
 
 	private static final long serialVersionUID = -750378776078908147L;

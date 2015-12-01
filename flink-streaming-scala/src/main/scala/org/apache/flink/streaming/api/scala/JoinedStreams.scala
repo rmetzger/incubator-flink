@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.scala
 
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.functions.{FlatJoinFunction, JoinFunction}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.functions.KeySelector
@@ -54,6 +55,7 @@ import scala.reflect.ClassTag
  *     .apply(new MyJoinFunction())
  * } }}}
  */
+@Public
 object JoinedStreams {
 
   /**

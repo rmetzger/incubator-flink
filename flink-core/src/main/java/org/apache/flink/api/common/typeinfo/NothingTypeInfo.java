@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.common.typeinfo;
 
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.types.Nothing;
@@ -25,6 +26,7 @@ import org.apache.flink.types.Nothing;
 /**
  * Placeholder type information for the {@link Nothing} type.
  */
+@Public
 public class NothingTypeInfo extends TypeInformation<Nothing> {
 	
 	private static final long serialVersionUID = 1L;

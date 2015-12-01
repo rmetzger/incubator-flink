@@ -18,6 +18,8 @@
 
 package org.apache.flink.api.java.operators;
 
+import org.apache.flink.annotation.Public;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.io.OutputFormat;
 import org.apache.flink.api.common.operators.GenericDataSinkBase;
@@ -34,7 +36,7 @@ import org.apache.flink.api.java.DataSet;
 
 import java.util.Arrays;
 
-
+@Public
 public class DataSink<T> {
 	
 	private final OutputFormat<T> format;
@@ -107,6 +109,7 @@ public class DataSink<T> {
 	 * @see Order
 	 */
 	@Deprecated
+	@Experimental
 	public DataSink<T> sortLocalOutput(int field, Order order) {
 
 		if (!this.type.isTupleType()) {
@@ -162,6 +165,7 @@ public class DataSink<T> {
 	 * @see Order
 	 */
 	@Deprecated
+	@Experimental
 	public DataSink<T> sortLocalOutput(String fieldExpression, Order order) {
 
 		int numFields;

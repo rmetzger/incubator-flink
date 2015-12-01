@@ -24,10 +24,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Preconditions;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.java.operators.Keys.ExpressionKeys;
 
+@Public
 public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 
 	private static final long serialVersionUID = 1L;
