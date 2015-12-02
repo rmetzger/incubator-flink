@@ -17,17 +17,16 @@
 package org.apache.flink.streaming.connectors.kafka.partitioner;
 
 
-import org.apache.kafka.clients.producer.Partitioner;
+import kafka.producer.Partitioner;
 
 import java.io.Serializable;
 
 /**
- * Partitioner for Kafka producer
- *
+ * Extended Kafka Partitioner.
  * It contains a open() method which is called on each parallel instance.
  * Partitioners have to be serializable!
  */
-public abstract class KafkaPartitioner implements Serializable {
+public abstract class KafkaPartitioner implements Partitioner, Serializable {
 
 	private static final long serialVersionUID = -1974260817778593473L;
 
@@ -40,12 +39,4 @@ public abstract class KafkaPartitioner implements Serializable {
 	public void open(int parallelInstanceId, int parallelInstances, int[] partitions) {
 		// overwrite this method if needed.
 	}
-
-	/**
-	 * Partition method, returning the partition for the element
-	 * @param element Element to partition
-	 * @param numPartitions total number of partitions
-	 * @return partition id for the element
-	 */
-	public abstract int partition(Object element, int numPartitions);
 }

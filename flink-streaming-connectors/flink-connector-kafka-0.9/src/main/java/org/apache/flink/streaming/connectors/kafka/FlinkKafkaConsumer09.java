@@ -19,7 +19,9 @@ package org.apache.flink.streaming.connectors.kafka;
 
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
+import org.apache.kafka.common.PartitionInfo;
 
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -32,7 +34,7 @@ import java.util.Properties;
  *
  * @param <T> The type of elements produced by this consumer.
  */
-public class FlinkKafkaConsumer09<T> extends FlinkKafkaConsumer<T> {
+public class FlinkKafkaConsumer09<T> extends FlinkKafkaConsumerBase<T> {
 
 	private static final long serialVersionUID = -8450689820627198228L;
 
@@ -65,5 +67,10 @@ public class FlinkKafkaConsumer09<T> extends FlinkKafkaConsumer<T> {
 	 */
 	public FlinkKafkaConsumer09(String topic, KeyedDeserializationSchema<T> deserializer, Properties props) {
 		super(topic, deserializer, props, OffsetStore.FLINK_ZOOKEEPER, FetcherType.LEGACY_LOW_LEVEL);
+	}
+
+	@Override
+	protected List<PartitionInfo> getPartitionsForTopic(String topic, Properties props) {
+		return null;
 	}
 }
