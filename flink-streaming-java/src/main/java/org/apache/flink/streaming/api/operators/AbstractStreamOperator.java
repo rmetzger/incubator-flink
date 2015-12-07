@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.operators;
 
+import org.apache.flink.annotation.PublicExperimental;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.state.OperatorState;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -54,6 +55,7 @@ import java.util.Map;
  *
  * @param <OUT> The output type of the operator
  */
+@PublicExperimental
 public abstract class AbstractStreamOperator<OUT> 
 		implements StreamOperator<OUT>, java.io.Serializable {
 

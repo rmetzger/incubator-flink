@@ -617,6 +617,7 @@ public class DataStream<T> {
 	 * @see Tuple
 	 * @see DataStream
 	 */
+	@PublicExperimental
 	public <R extends Tuple> SingleOutputStreamOperator<R, ?> project(int... fieldIndexes) {
 		return new StreamProjection<T>(this, fieldIndexes).projectTupleX();
 	}
@@ -766,6 +767,7 @@ public class DataStream<T> {
 	 * 
 	 * @return The closed DataStream.
 	 */
+	@PublicExperimental
 	public DataStreamSink<T> print() {
 		PrintSinkFunction<T> printFunction = new PrintSinkFunction<T>();
 		return addSink(printFunction);
@@ -780,6 +782,7 @@ public class DataStream<T> {
 	 * 
 	 * @return The closed DataStream.
 	 */
+	@PublicExperimental
 	public DataStreamSink<T> printToErr() {
 		PrintSinkFunction<T> printFunction = new PrintSinkFunction<T>(true);
 		return addSink(printFunction);
@@ -797,6 +800,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream.
 	 */
+	@PublicExperimental
 	public DataStreamSink<T> writeAsText(String path) {
 		return write(new TextOutputFormat<T>(new Path(path)), 0L);
 	}
@@ -816,6 +820,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream
 	 */
+	@PublicExperimental
 	public DataStreamSink<T> writeAsText(String path, long millis) {
 		TextOutputFormat<T> tof = new TextOutputFormat<T>(new Path(path));
 		return write(tof, millis);
@@ -836,6 +841,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream.
 	 */
+	@PublicExperimental
 	public DataStreamSink<T> writeAsText(String path, WriteMode writeMode) {
 		TextOutputFormat<T> tof = new TextOutputFormat<T>(new Path(path));
 		tof.setWriteMode(writeMode);
@@ -859,6 +865,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream.
 	 */
+	@PublicExperimental
 	public DataStreamSink<T> writeAsText(String path, WriteMode writeMode, long millis) {
 		TextOutputFormat<T> tof = new TextOutputFormat<T>(new Path(path));
 		tof.setWriteMode(writeMode);
@@ -878,6 +885,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
+	@PublicExperimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path) {
 		Preconditions.checkArgument(getType().isTupleType(),
 				"The writeAsCsv() method can only be used on data sets of tuples.");
@@ -902,6 +910,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
+	@PublicExperimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path, long millis) {
 		Preconditions.checkArgument(getType().isTupleType(),
 				"The writeAsCsv() method can only be used on data sets of tuples.");
@@ -926,6 +935,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
+	@PublicExperimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path, WriteMode writeMode) {
 		Preconditions.checkArgument(getType().isTupleType(),
 				"The writeAsCsv() method can only be used on data sets of tuples.");
@@ -956,6 +966,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
+	@PublicExperimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path, WriteMode writeMode,
 			long millis) {
 		Preconditions.checkArgument(getType().isTupleType(),
@@ -993,6 +1004,7 @@ public class DataStream<T> {
 	 * @param millis the write frequency
 	 * @return The closed DataStream
 	 */
+	@PublicExperimental
 	public DataStreamSink<T> write(OutputFormat<T> format, long millis) {
 		return addSink(new FileSinkFunctionByMillis<T>(format, millis));
 	}
@@ -1011,6 +1023,7 @@ public class DataStream<T> {
 	 *            type of the return stream
 	 * @return the data stream constructed
 	 */
+	@PublicExperimental
 	public <R> SingleOutputStreamOperator<R, ?> transform(String operatorName, TypeInformation<R> outTypeInfo, OneInputStreamOperator<T, R> operator) {
 
 		// read the output type of the input Transform to coax out errors about MissingTypeInfo
@@ -1075,6 +1088,7 @@ public class DataStream<T> {
 	 *
 	 * @return The Transformation
 	 */
+	@PublicExperimental
 	public StreamTransformation<T> getTransformation() {
 		return transformation;
 	}

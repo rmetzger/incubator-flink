@@ -17,12 +17,14 @@
  */
 package org.apache.flink.streaming.api.windowing.triggers;
 
+import org.apache.flink.annotation.PublicExperimental;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
 /**
  * A {@link Trigger} that fires once the current system time passes the end of the window
  * to which a pane belongs.
  */
+@PublicExperimental
 public class ProcessingTimeTrigger implements Trigger<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;
 

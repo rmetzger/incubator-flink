@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.datastream;
 
+import org.apache.flink.annotation.PublicExperimental;
 import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -33,7 +34,7 @@ import java.util.Collection;
  * 
  * @param <T> Type of the elements in this Stream
  */
-@PublicInterface
+@PublicExperimental
 public class IterativeStream<T> extends SingleOutputStreamOperator<T, IterativeStream<T>> {
 
 	// We store these so that we can create a co-iteration if we need to

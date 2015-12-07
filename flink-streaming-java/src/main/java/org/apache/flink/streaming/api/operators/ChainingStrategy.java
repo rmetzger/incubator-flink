@@ -18,10 +18,13 @@
 
 package org.apache.flink.streaming.api.operators;
 
+import org.apache.flink.annotation.PublicExperimental;
+
 /**
  * Defines the chaining scheme for the operator.
  * By default {@link #ALWAYS} is used, which means operators will be eagerly chained whenever possible.
  */
+@PublicExperimental
 public enum ChainingStrategy {
 
 	/**

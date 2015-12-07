@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.datastream;
 
+import org.apache.flink.annotation.PublicExperimental;
 import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -128,6 +129,7 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	 *            The selected {@link ChainingStrategy}
 	 * @return The operator with the modified chaining strategy
 	 */
+	@PublicExperimental
 	private SingleOutputStreamOperator<T, O> setChainingStrategy(ChainingStrategy strategy) {
 		this.transformation.setChainingStrategy(strategy);
 		return this;
@@ -142,6 +144,7 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	 * 
 	 * @return The operator with chaining disabled
 	 */
+	@PublicExperimental
 	public SingleOutputStreamOperator<T, O> disableChaining() {
 		return setChainingStrategy(ChainingStrategy.NEVER);
 	}
@@ -153,6 +156,7 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	 * 
 	 * @return The operator with chaining set.
 	 */
+	@PublicExperimental
 	public SingleOutputStreamOperator<T, O> startNewChain() {
 		return setChainingStrategy(ChainingStrategy.HEAD);
 	}
@@ -291,6 +295,7 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	 * 
 	 * @return The operator as a part of a new resource group.
 	 */
+	@PublicExperimental
 	public SingleOutputStreamOperator<T, O> startNewResourceGroup() {
 		transformation.setResourceStrategy(ResourceStrategy.NEWGROUP);
 		return this;
@@ -306,6 +311,7 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	 * 
 	 * @return The operator with isolated resource group.
 	 */
+	@PublicExperimental
 	public SingleOutputStreamOperator<T, O> isolateResources() {
 		transformation.setResourceStrategy(ResourceStrategy.ISOLATE);
 		return this;

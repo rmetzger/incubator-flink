@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.functions.co;
 
+import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
 import org.apache.flink.api.common.functions.RichFunction;
 
@@ -33,6 +34,7 @@ import org.apache.flink.api.common.functions.RichFunction;
  * @param <OUT>
  *            Output type.
  */
+@PublicInterface
 public abstract class RichCoFlatMapFunction<IN1, IN2, OUT> extends AbstractRichFunction implements
 		CoFlatMapFunction<IN1, IN2, OUT> {
 

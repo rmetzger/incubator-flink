@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.windowing.time;
 
+import org.apache.flink.annotation.PublicExperimental;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
  * {@link org.apache.flink.streaming.api.TimeCharacteristic#ProcessingTime} for a definition
  * of processing time.
  */
+@PublicExperimental
 public final class ProcessingTime extends AbstractTime {
 
 	/** Instantiation only via factory method */

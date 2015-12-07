@@ -18,7 +18,6 @@
 package org.apache.flink.streaming.api.windowing.triggers;
 
 import org.apache.flink.annotation.PublicExperimental;
-import org.apache.flink.annotation.PublicInterface;
 import org.apache.flink.api.common.state.OperatorState;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 
@@ -83,7 +82,7 @@ public interface Trigger<T, W extends Window> extends Serializable {
 	 * are purged. On {@code CONTINUE} nothing happens, processing continues. On {@code PURGE}
 	 * the contents of the window are discarded and now result is emitted for the window.
 	 */
-	@PublicInterface
+	@PublicExperimental
 	enum TriggerResult {
 		CONTINUE(false, false), FIRE_AND_PURGE(true, true), FIRE(true, false), PURGE(false, true);
 
@@ -132,7 +131,7 @@ public interface Trigger<T, W extends Window> extends Serializable {
 	 * A context object that is given to {@code Trigger} methods to allow them to register timer
 	 * callbacks and deal with state.
 	 */
-	@PublicInterface
+	@PublicExperimental
 	interface TriggerContext {
 
 		/**

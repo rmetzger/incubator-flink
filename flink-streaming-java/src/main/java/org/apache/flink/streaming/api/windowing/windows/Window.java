@@ -17,7 +17,7 @@
  */
 package org.apache.flink.streaming.api.windowing.windows;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.PublicExperimental;
 
 /**
  * A {@code Window} is a grouping of elements into finite buckets. Windows have a maximum timestamp
@@ -27,7 +27,7 @@ import org.apache.flink.annotation.PublicInterface;
  * Subclasses should implement {@code equals()} and {@code hashCode()} so that logically
  * same windows are treated the same.
  */
-@PublicInterface
+@PublicExperimental
 public abstract class Window {
 
 	public abstract long maxTimestamp();
