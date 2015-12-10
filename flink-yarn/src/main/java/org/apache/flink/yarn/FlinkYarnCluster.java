@@ -245,7 +245,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 	// -------------------------- Interaction with the cluster ------------------------
 
 	/*
-	 * This call blocks until the message has been recevied.
+	 * This call blocks until the message has been received.
 	 */
 	@Override
 	public void stopAfterJob(JobID jobID) {
@@ -254,7 +254,7 @@ public class FlinkYarnCluster extends AbstractFlinkYarnCluster {
 		try {
 			Await.result(messageReceived, akkaDuration);
 		} catch (Exception e) {
-			throw new RuntimeException("Unable to tell application master to stop once the specified job has been finised", e);
+			throw new RuntimeException("Unable to tell application master to stop once the specified job has been finished", e);
 		}
 	}
 

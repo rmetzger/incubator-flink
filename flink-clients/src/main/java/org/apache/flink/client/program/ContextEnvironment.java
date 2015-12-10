@@ -27,6 +27,7 @@ import org.apache.flink.api.common.Plan;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.optimizer.plan.OptimizedPlan;
 import org.apache.flink.optimizer.plandump.PlanJSONDumpGenerator;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 
 /**
  * Execution Environment for remote execution with the Client in blocking fashion.
@@ -40,13 +41,16 @@ public class ContextEnvironment extends ExecutionEnvironment {
 	protected final List<URL> classpathsToAttach;
 	
 	protected final ClassLoader userCodeClassLoader;
-	
+
+	protected final AbstractFlinkYarnCluster yarnCluster;
+
 	public ContextEnvironment(Client remoteConnection, List<URL> jarFiles, List<URL> classpaths,
-			ClassLoader userCodeClassLoader) {
+			ClassLoader userCodeClassLoader, AbstractFlinkYarnCluster yarnCluster) {
 		this.client = remoteConnection;
 		this.jarFilesToAttach = jarFiles;
 		this.classpathsToAttach = classpaths;
 		this.userCodeClassLoader = userCodeClassLoader;
+		this.yarnCluster = yarnCluster;
 	}
 
 	@Override
@@ -54,7 +58,7 @@ public class ContextEnvironment extends ExecutionEnvironment {
 		Plan p = createProgramPlan(jobName);
 		JobWithJars toRun = new JobWithJars(p, this.jarFilesToAttach, this.classpathsToAttach,
 				this.userCodeClassLoader);
-		this.lastJobExecutionResult = client.runBlocking(toRun, getParallelism());
+		this.lastJobExecutionResult = client.runBlocking(toRun, getParallelism(), this.yarnCluster);
 		return this.lastJobExecutionResult;
 	}
 
@@ -103,5 +107,9 @@ public class ContextEnvironment extends ExecutionEnvironment {
 	
 	static void unsetContext() {
 		resetContextEnvironment();
+	}
+
+	public AbstractFlinkYarnCluster getYarnCluster() {
+		return yarnCluster;
 	}
 }

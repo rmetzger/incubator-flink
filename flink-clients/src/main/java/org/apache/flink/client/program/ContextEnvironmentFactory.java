@@ -21,6 +21,7 @@ package org.apache.flink.client.program;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.ExecutionEnvironmentFactory;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 
 import java.net.URL;
 import java.util.List;
@@ -43,13 +44,14 @@ public class ContextEnvironmentFactory implements ExecutionEnvironmentFactory {
 	private final int defaultParallelism;
 
 	private final boolean wait;
+	private final AbstractFlinkYarnCluster yarnCluster;
 
 	private ExecutionEnvironment lastEnvCreated;
 
 
 	public ContextEnvironmentFactory(Client client, List<URL> jarFilesToAttach,
 			List<URL> classpathsToAttach, ClassLoader userCodeClassLoader, int defaultParallelism,
-			boolean wait)
+			boolean wait, AbstractFlinkYarnCluster yarnCluster)
 	{
 		this.client = client;
 		this.jarFilesToAttach = jarFilesToAttach;
@@ -57,6 +59,7 @@ public class ContextEnvironmentFactory implements ExecutionEnvironmentFactory {
 		this.userCodeClassLoader = userCodeClassLoader;
 		this.defaultParallelism = defaultParallelism;
 		this.wait = wait;
+		this.yarnCluster = yarnCluster;
 	}
 
 	@Override
@@ -66,7 +69,7 @@ public class ContextEnvironmentFactory implements ExecutionEnvironmentFactory {
 		}
 
 		lastEnvCreated = wait ?
-				new ContextEnvironment(client, jarFilesToAttach, classpathsToAttach, userCodeClassLoader) :
+				new ContextEnvironment(client, jarFilesToAttach, classpathsToAttach, userCodeClassLoader, yarnCluster) :
 				new DetachedEnvironment(client, jarFilesToAttach, classpathsToAttach, userCodeClassLoader);
 		if (defaultParallelism > 0) {
 			lastEnvCreated.setParallelism(defaultParallelism);

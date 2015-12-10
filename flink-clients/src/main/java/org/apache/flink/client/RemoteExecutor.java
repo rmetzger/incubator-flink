@@ -209,7 +209,7 @@ public class RemoteExecutor extends PlanExecutor {
 			}
 
 			try {
-				return client.runBlocking(program, defaultParallelism);
+				return client.runBlocking(program, defaultParallelism, null);
 			}
 			finally {
 				if (shutDownAtEnd) {

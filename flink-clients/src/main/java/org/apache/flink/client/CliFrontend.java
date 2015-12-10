@@ -663,7 +663,7 @@ public class CliFrontend {
 
 		JobSubmissionResult result;
 		try {
-			result = client.runBlocking(program, parallelism);
+			result = client.runBlocking(program, parallelism, this.yarnCluster);
 		}
 		catch (ProgramInvocationException e) {
 			return handleError(e);

@@ -201,7 +201,7 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 		}
 
 		try {
-			return client.runBlocking(streamGraph, jarFiles, globalClasspaths, usercodeClassLoader);
+			return client.runBlocking(streamGraph, jarFiles, globalClasspaths, usercodeClassLoader, null);
 		}
 		catch (ProgramInvocationException e) {
 			throw e;

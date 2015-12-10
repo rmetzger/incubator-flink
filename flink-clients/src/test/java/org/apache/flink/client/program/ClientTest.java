@@ -258,7 +258,7 @@ public class ClientTest {
 			}).when(packagedProgramMock).invokeInteractiveModeForExecution();
 
 			try {
-				new Client(config).runBlocking(packagedProgramMock, 1);
+				new Client(config).runBlocking(packagedProgramMock, 1, null);
 				fail("Creating the local execution environment should not be possible");
 			}
 			catch (InvalidProgramException e) {

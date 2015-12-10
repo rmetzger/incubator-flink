@@ -53,6 +53,7 @@ import org.apache.flink.runtime.util.LeaderRetrievalUtils;
 import org.apache.flink.runtime.messages.accumulators.AccumulatorResultsErroneous;
 import org.apache.flink.runtime.messages.accumulators.AccumulatorResultsFound;
 import org.apache.flink.runtime.messages.accumulators.RequestAccumulatorResults;
+import org.apache.flink.runtime.yarn.AbstractFlinkYarnCluster;
 import org.apache.flink.util.SerializedValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,15 +236,15 @@ public class Client {
 	//  Program submission / execution
 	// ------------------------------------------------------------------------
 
-	public JobSubmissionResult runBlocking(PackagedProgram prog, int parallelism) throws ProgramInvocationException {
+	public JobSubmissionResult runBlocking(PackagedProgram prog, int parallelism, AbstractFlinkYarnCluster yarnCluster) throws ProgramInvocationException {
 		Thread.currentThread().setContextClassLoader(prog.getUserCodeClassLoader());
 		if (prog.isUsingProgramEntryPoint()) {
-			return runBlocking(prog.getPlanWithJars(), parallelism);
+			return runBlocking(prog.getPlanWithJars(), parallelism, yarnCluster);
 		}
 		else if (prog.isUsingInteractiveMode()) {
 			LOG.info("Starting program in interactive mode");
 			ContextEnvironment.setAsContext(new ContextEnvironmentFactory(this, prog.getAllLibraries(),
-					prog.getClasspaths(), prog.getUserCodeClassLoader(), parallelism, true));
+					prog.getClasspaths(), prog.getUserCodeClassLoader(), parallelism, true, yarnCluster));
 			// invoke here
 			try {
 				prog.invokeInteractiveModeForExecution();
@@ -269,7 +270,7 @@ public class Client {
 		else if (prog.isUsingInteractiveMode()) {
 			LOG.info("Starting program in interactive mode");
 			ContextEnvironmentFactory factory = new ContextEnvironmentFactory(this, prog.getAllLibraries(),
-					prog.getClasspaths(), prog.getUserCodeClassLoader(), parallelism, false);
+					prog.getClasspaths(), prog.getUserCodeClassLoader(), parallelism, false, null);
 			ContextEnvironment.setAsContext(factory);
 
 			// invoke here
@@ -300,7 +301,7 @@ public class Client {
 	 *                                    i.e. the job-manager is unreachable, or due to the fact that the
 	 *                                    parallel execution failed.
 	 */
-	public JobExecutionResult runBlocking(JobWithJars program, int parallelism) 
+	public JobExecutionResult runBlocking(JobWithJars program, int parallelism, AbstractFlinkYarnCluster yarnCluster)
 			throws CompilerException, ProgramInvocationException
 	{
 		ClassLoader classLoader = program.getUserCodeClassLoader();
@@ -309,7 +310,7 @@ public class Client {
 		}
 
 		OptimizedPlan optPlan = getOptimizedPlan(compiler, program, parallelism);
-		return runBlocking(optPlan, program.getJarFiles(), program.getClasspaths(), classLoader);
+		return runBlocking(optPlan, program.getJarFiles(), program.getClasspaths(), classLoader, yarnCluster);
 	}
 
 	/**
@@ -339,10 +340,10 @@ public class Client {
 	
 
 	public JobExecutionResult runBlocking(FlinkPlan compiledPlan, List<URL> libraries, List<URL> classpaths,
-			ClassLoader classLoader) throws ProgramInvocationException
+			ClassLoader classLoader, AbstractFlinkYarnCluster yarnCluster) throws ProgramInvocationException
 	{
 		JobGraph job = getJobGraph(compiledPlan, libraries, classpaths);
-		return runBlocking(job, classLoader);
+		return runBlocking(job, classLoader, yarnCluster);
 	}
 
 	public JobSubmissionResult runDetached(FlinkPlan compiledPlan, List<URL> libraries, List<URL> classpaths,
@@ -352,7 +353,7 @@ public class Client {
 		return runDetached(job, classLoader);
 	}
 
-	public JobExecutionResult runBlocking(JobGraph jobGraph, ClassLoader classLoader) throws ProgramInvocationException {
+	public JobExecutionResult runBlocking(JobGraph jobGraph, ClassLoader classLoader, AbstractFlinkYarnCluster yarnCluster) throws ProgramInvocationException {
 		LeaderRetrievalService leaderRetrievalService;
 		try {
 			leaderRetrievalService = LeaderRetrievalUtils.createLeaderRetrievalService(config);
@@ -362,6 +363,9 @@ public class Client {
 
 		try {
 			this.lastJobID = jobGraph.getJobID();
+			if (yarnCluster != null) {
+				yarnCluster.stopAfterJob(jobGraph.getJobID());
+			}
 			return JobClient.submitJobAndWait(actorSystem, leaderRetrievalService, jobGraph, timeout, printStatusDuringExecution, classLoader);
 		} catch (JobExecutionException e) {
 			throw new ProgramInvocationException("The program execution failed: " + e.getMessage(), e);

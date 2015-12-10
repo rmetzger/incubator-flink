@@ -67,7 +67,7 @@ public class AvroExternalJarProgramITCase {
 			Client client = new Client(config);
 
 			client.setPrintStatusDuringExecution(false);
-			client.runBlocking(program, 4);
+			client.runBlocking(program, 4, null);
 
 		}
 		catch (Throwable t) {

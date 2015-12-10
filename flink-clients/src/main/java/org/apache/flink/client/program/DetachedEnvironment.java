@@ -42,7 +42,7 @@ public class DetachedEnvironment extends ContextEnvironment {
 	private static final Logger LOG = LoggerFactory.getLogger(DetachedEnvironment.class);
 
 	public DetachedEnvironment(Client remoteConnection, List<URL> jarFiles, List<URL> classpaths, ClassLoader userCodeClassLoader) {
-		super(remoteConnection, jarFiles, classpaths, userCodeClassLoader);
+		super(remoteConnection, jarFiles, classpaths, userCodeClassLoader, null);
 	}
 
 	@Override
