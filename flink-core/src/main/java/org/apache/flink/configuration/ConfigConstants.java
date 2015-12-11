@@ -265,6 +265,12 @@ public final class ConfigConstants {
 	 */
 	public static final String YARN_TASK_MANAGER_ENV_PREFIX = "yarn.taskmanager.env.";
 
+	/**
+	 * Number of seconds after which the "per job" Flink on YARN submission stops allocating
+	 * TaskManagers. By default, it will wait forever ("0").
+	 */
+	public static final String YARN_TASK_MANAGER_ALLOCATION_TIMEOUT_SECONDS = "yarn.taskmanager.allocation-timeout-seconds";
+
 
 
 	 /**

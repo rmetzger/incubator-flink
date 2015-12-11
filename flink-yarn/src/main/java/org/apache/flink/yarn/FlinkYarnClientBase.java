@@ -636,13 +636,15 @@ public abstract class FlinkYarnClientBase extends AbstractFlinkYarnClient {
 		yarnClient.submitApplication(appContext);
 
 		LOG.info("Waiting for the cluster to be allocated");
-		int waittime = 0;
+		int totalWaitTime = 0;
+		int waitInterval = 1000;
+		boolean longWaitMessagePrinted = false;
 		loop: while( true ) {
 			ApplicationReport report;
 			try {
 				report = yarnClient.getApplicationReport(appId);
 			} catch (IOException e) {
-				throw new YarnDeploymentException("Failed to deploy the cluster: " + e.getMessage());
+				throw new YarnDeploymentException("Failed to deploy the cluster: " + e.getMessage(), e);
 			}
 			YarnApplicationState appState = report.getYarnApplicationState();
 			switch(appState) {
@@ -660,13 +662,19 @@ public abstract class FlinkYarnClientBase extends AbstractFlinkYarnClient {
 					break loop;
 				default:
 					LOG.info("Deploying cluster, current state " + appState);
-					if(waittime > 60000) {
-						LOG.info("Deployment took more than 60 seconds. Please check if the requested resources are available in the YARN cluster");
+					if(totalWaitTime > 120000 && !longWaitMessagePrinted) {
+						LOG.info("Deployment took more than 2 minutes. Please check if the requested resources are available in the YARN cluster");
+						longWaitMessagePrinted = true;
 					}
 
 			}
-			waittime += 1000;
-			Thread.sleep(1000);
+			if(totalWaitTime > 30000 && waitInterval < 10000) {
+				// after ~3.6 minutes, the wait interval will be 10 seconds.
+				waitInterval *= 1.05;
+			}
+
+			totalWaitTime += waitInterval;
+			Thread.sleep(waitInterval);
 		}
 		// print the application id for user to cancel themselves.
 		if (isDetached()) {
@@ -900,5 +908,6 @@ public abstract class FlinkYarnClientBase extends AbstractFlinkYarnClient {
 			}
 		}
 	}
+
 }
 

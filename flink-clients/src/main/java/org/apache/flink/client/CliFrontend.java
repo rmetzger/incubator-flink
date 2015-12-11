@@ -298,6 +298,10 @@ public class CliFrontend {
 			LOG.debug("User parallelism is set to {}", userParallelism);
 
 			Client client = getClient(options, program.getMainClassName(), userParallelism, options.getDetachedMode());
+			if(client == null) {
+				logAndSysout("Unable to get client. Please check previous log entries for details.");
+				return exitCode;
+			}
 			client.setPrintStatusDuringExecution(options.getStdoutLogging());
 			LOG.debug("Client slots is set to {}", client.getMaxSlots());
 
@@ -502,10 +506,10 @@ public class CliFrontend {
 				ArrayList<JobStatusMessage> runningJobs = null;
 				ArrayList<JobStatusMessage> scheduledJobs = null;
 				if (running) {
-					runningJobs = new ArrayList<JobStatusMessage>();
+					runningJobs = new ArrayList<>();
 				}
 				if (scheduled) {
-					scheduledJobs = new ArrayList<JobStatusMessage>();
+					scheduledJobs = new ArrayList<>();
 				}
 
 				for (JobStatusMessage rj : jobs) {
@@ -787,7 +791,7 @@ public class CliFrontend {
 	 * @param options Command line options which contain JobManager address
 	 * @param programName Program name
 	 * @param userParallelism Given user parallelism
-	 * @return
+	 * @return null if we were unable to get the client, otherwise, the client
 	 * @throws Exception
 	 */
 	protected Client getClient(
@@ -800,7 +804,7 @@ public class CliFrontend {
 		int maxSlots = -1;
 
 		if (YARN_DEPLOY_JOBMANAGER.equals(options.getJobManagerAddress())) {
-			logAndSysout("YARN cluster mode detected. Switching Log4j output to console");
+			logAndSysout("YARN cluster mode detected.");
 
 			// user wants to run Flink in YARN cluster.
 			CommandLine commandLine = options.getCommandLine();
@@ -845,6 +849,10 @@ public class CliFrontend {
 			logAndSysout("JobManager web interface address " + yarnCluster.getWebInterfaceURL());
 			logAndSysout("Waiting until all TaskManagers have connected");
 
+			int totalWaitTime = 0;
+			int waitInterval = 500;
+			int tmAllocationTimeout = config.getInteger(ConfigConstants.YARN_TASK_MANAGER_ALLOCATION_TIMEOUT_SECONDS, 0) * 1000;
+
 			while(true) {
 				FlinkYarnClusterStatus status = yarnCluster.getClusterStatus();
 				if (status != null) {
@@ -859,12 +867,23 @@ public class CliFrontend {
 				}
 
 				try {
-					Thread.sleep(500);
+					if(totalWaitTime > 30000 && waitInterval < 10000) {
+						// after ~3.6 minutes, the wait interval will be 10 seconds.
+						waitInterval *= 1.05;
+					}
+					if(tmAllocationTimeout > 0 && totalWaitTime > tmAllocationTimeout) {
+						logAndSysout("The allocation took more than " + (totalWaitTime/1000) + " seconds. " +
+								"The YARN Taskmanager allocation timeout has been reached.");
+						yarnCluster.shutdown(false);
+						return null; // leave loop
+					}
+					totalWaitTime += waitInterval;
+					Thread.sleep(waitInterval);
 				}
 				catch (InterruptedException e) {
-					LOG.error("Interrupted while waiting for TaskManagers");
-					System.err.println("Thread is interrupted");
-					Thread.currentThread().interrupt();
+					LOG.error("Interrupted while waiting for TaskManagers. Shutting YARN cluster down");
+					yarnCluster.shutdown(false);
+					return null; // leave allocation loop
 				}
 			}
 		}
