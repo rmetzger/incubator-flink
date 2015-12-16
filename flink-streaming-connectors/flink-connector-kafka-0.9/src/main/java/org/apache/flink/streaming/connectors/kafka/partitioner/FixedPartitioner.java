@@ -17,7 +17,10 @@
  */
 package org.apache.flink.streaming.connectors.kafka.partitioner;
 
+import org.apache.kafka.common.Cluster;
+
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * A partitioner ensuring that each internal Flink partition ends up in one Kafka partition.
@@ -70,11 +73,29 @@ public class FixedPartitioner extends KafkaPartitioner implements Serializable {
 		}
 	}
 
-	@Override
+	/*@Override
 	public int partition(Object element, int numPartitions) {
 		if (targetPartition == -1) {
 			throw new RuntimeException("The partitioner has not been initialized properly");
 		}
 		return targetPartition;
+	} */
+
+	@Override
+	public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
+		if (targetPartition == -1) {
+			throw new RuntimeException("The partitioner has not been initialized properly");
+		}
+		return targetPartition;
+	}
+
+	@Override
+	public void close() {
+
+	}
+
+	@Override
+	public void configure(Map<String, ?> configs) {
+
 	}
 }

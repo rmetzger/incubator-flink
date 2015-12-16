@@ -17,7 +17,7 @@
 package org.apache.flink.streaming.connectors.kafka.partitioner;
 
 
-import kafka.producer.Partitioner;
+import org.apache.kafka.clients.producer.Partitioner;
 
 import java.io.Serializable;
 
