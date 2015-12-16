@@ -797,7 +797,7 @@ public class TypeExtractor {
 			validateInfo(typeHierarchy, t, inType);
 		}
 		catch(InvalidTypesException e) {
-			throw new InvalidTypesException("Input mismatch: " + e.getMessage());
+			throw new InvalidTypesException("Input mismatch: " + e.getMessage(), e);
 		}
 	}
 	
@@ -817,7 +817,7 @@ public class TypeExtractor {
 			validateInfo(typeHierarchy, inType, inTypeInfo);
 		}
 		catch(InvalidTypesException e) {
-			throw new InvalidTypesException("Input mismatch: " + e.getMessage());
+			throw new InvalidTypesException("Input mismatch: " + e.getMessage(), e);
 		}
 	}
 	
