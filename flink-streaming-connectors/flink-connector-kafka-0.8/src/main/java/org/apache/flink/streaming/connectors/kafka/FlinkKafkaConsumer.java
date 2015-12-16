@@ -349,6 +349,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		// we leave the fetcher as null, if we have no partitions
 		if (subscribedPartitions.isEmpty()) {
 			LOG.info("Kafka consumer {} has no partitions (empty source)", thisConsumerIndex);
+			this.fetcher = null; // fetcher remains null
 			return;
 		}
 		
