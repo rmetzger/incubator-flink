@@ -36,10 +36,10 @@ public interface KeyedDeserializationSchema<T> extends Serializable, ResultTypeQ
 	 *
 	 * @param messageKey the key as a byte array (null if no key has been set)
 	 * @param message The message, as a byte array. (null if the message was empty or deleted)
-	 * @param offset the offset of the message in the original source (for example the Kafka offset)
-	 * @return The deserialized message as an object.
+	 * @param partition The partition the message has originated from
+	 * @param offset the offset of the message in the original source (for example the Kafka offset)  @return The deserialized message as an object.
 	 */
-	T deserialize(byte[] messageKey, byte[] message, String topic, long offset) throws IOException;
+	T deserialize(byte[] messageKey, byte[] message, String topic, int partition, long offset) throws IOException;
 
 	/**
 	 * Method to decide whether the element signals the end of the stream. If
