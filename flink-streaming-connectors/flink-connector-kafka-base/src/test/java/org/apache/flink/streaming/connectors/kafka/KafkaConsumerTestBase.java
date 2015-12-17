@@ -64,6 +64,7 @@ import org.apache.flink.streaming.connectors.kafka.testutils.ThrottledMapper;
 import org.apache.flink.streaming.connectors.kafka.testutils.Tuple2Partitioner;
 import org.apache.flink.streaming.connectors.kafka.testutils.ValidatingExactlyOnceSink;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
+import org.apache.flink.streaming.util.serialization.KeyedSerializationSchemaWrapper;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.util.serialization.TypeInformationKeyValueSerializationSchema;
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
@@ -287,7 +288,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				running = false;
 			}
 		});
-		stream.addSink(new FlinkKafkaProducerBase<>(brokerConnectionStrings, topic, sinkSchema));
+		stream.addSink(getProducer(topic, new KeyedSerializationSchemaWrapper<Tuple2<Long, String>>(sinkSchema), FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings), null));
 
 		// ----------- add consumer dataflow ----------
 
@@ -351,6 +352,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		deleteTestTopic(topic);
 	}
+
 
 	/**
 	 * Tests the proper consumption when having a 1:1 correspondence between kafka partitions and
@@ -837,7 +839,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			}
 		});
 
-		stream.addSink(new FlinkKafkaProducerBase<>(topic, deserSchema, producerProps));
+		stream.addSink(getProducer(topic, new KeyedSerializationSchemaWrapper<Tuple2<Long, byte[]>>(serSchema), FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings), null));
 
 		tryExecute(env, "big topology test");
 
@@ -927,8 +929,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		});
 
 		KeyedSerializationSchema<Tuple2<Long, PojoValue>> schema = new TypeInformationKeyValueSerializationSchema<>(Long.class, PojoValue.class, env.getConfig());
-		kvStream.addSink(new FlinkKafkaProducerBase<>(topic, schema,
-				FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings)));
+		kvStream.addSink(getProducer(topic, schema, FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings), null));
 		env.execute("Write KV to Kafka");
 
 		// ----------- Read the data again -------------------
@@ -1030,7 +1031,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		LOG.info("Successfully read sequence for verification");
 	}
 
-	protected static void writeSequence(StreamExecutionEnvironment env, String topicName, final int numElements, int parallelism) throws Exception {
+	protected void writeSequence(StreamExecutionEnvironment env, String topicName, final int numElements, int parallelism) throws Exception {
 
 		LOG.info("\n===================================\n== Writing sequence of "+numElements+" into "+topicName+" with p="+parallelism+"\n===================================");
 		TypeInformation<Tuple2<Integer, Integer>> resultType = TypeInfoParser.parse("Tuple2<Integer, Integer>");
@@ -1056,11 +1057,10 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			}
 		}).setParallelism(parallelism);
 		
-		stream.addSink(new FlinkKafkaProducerBase<>(topicName,
-				new TypeInformationSerializationSchema<>(resultType, env.getConfig()),
+		stream.addSink(getProducer(topicName,
+				new KeyedSerializationSchemaWrapper<>(new TypeInformationSerializationSchema<>(resultType, env.getConfig())),
 				FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings),
-				new Tuple2Partitioner(parallelism)
-		)).setParallelism(parallelism);
+				new Tuple2Partitioner(parallelism))).setParallelism(parallelism);
 
 		env.execute("Write sequence");
 

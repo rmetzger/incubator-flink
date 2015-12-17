@@ -20,15 +20,19 @@ package org.apache.flink.streaming.connectors.kafka;
 import kafka.consumer.ConsumerConfig;
 
 
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.client.program.ProgramInvocationException;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
+import org.apache.flink.streaming.util.serialization.KeyedSerializationSchema;
 import org.apache.flink.streaming.util.serialization.SerializationSchema;
+import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
 import org.apache.flink.test.util.ForkableFlinkMiniCluster;
 import org.apache.flink.test.util.SuccessException;
 import org.apache.flink.util.InstantiationUtil;
@@ -99,7 +103,7 @@ public abstract class KafkaTestBase extends TestLogger {
 		return getConsumer(Collections.singletonList(topic), deserializationSchema, props);
 	}
 
-	protected abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, SerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner);
+	protected abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner);
 
 
 	// ------------------------------------------------------------------------
