@@ -43,9 +43,15 @@ under the License.
 	<dependencies>
 
 		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-kafka-base</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
-			<version>0.9.0.0</version>
+			<version>${kafka.version}</version>
 		</dependency>
 
 		<dependency>

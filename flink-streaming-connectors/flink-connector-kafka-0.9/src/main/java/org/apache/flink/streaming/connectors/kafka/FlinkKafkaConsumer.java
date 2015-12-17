@@ -37,14 +37,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.collection.immutable.Stream;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -89,6 +86,13 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 
 	/** The maximum number of pending non-committed checkpoints to track, to avoid memory leaks */
 	public static final int MAX_NUM_PENDING_CHECKPOINTS = 100;
+
+	/**
+	 * Configuration key to change the polling timeout
+	 */
+	public static final String KEY_POLL_TIMEOUT = "flink.poll-timeout";
+
+	public static final long DEFAULT_POLL_TIMEOUT = 100L;
 
 
 
@@ -196,7 +200,6 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	@Override
 	public void open(Configuration parameters) throws Exception {
 		super.open(parameters);
-		this.running = true;
 
 		final int numConsumers = getRuntimeContext().getNumberOfParallelSubtasks();
 		final int thisConsumerIndex = getRuntimeContext().getIndexOfThisSubtask();
@@ -205,6 +208,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		if(this.subscribedPartitionsAsFlink.isEmpty()) {
 			LOG.info("This consumer doesn't have any partitions assigned");
 			this.consumer = null;
+			this.running = true;
 			return;
 		} else {
 			StreamingRuntimeContext streamingRuntimeContext = (StreamingRuntimeContext) getRuntimeContext();
@@ -228,16 +232,18 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		} else {
 			this.offsetsState = new HashMap<>();
 		}
+		this.running = true;
 	}
 
 
 	@Override
 	public void run(SourceContext<T> sourceContext) throws Exception {
 		if(consumer != null) {
+			long pollTimeout = Long.parseLong(props.getProperty(KEY_POLL_TIMEOUT, Long.toString(DEFAULT_POLL_TIMEOUT)));
 			while (running) {
 				ConsumerRecords<byte[], byte[]> records;
 				synchronized (consumer) {
-					records = consumer.poll(1337);
+					records = consumer.poll(pollTimeout);
 				}
 				// get the records for each topic partition
 				for (int i = 0; i < subscribedPartitions.size(); i++) {
@@ -306,7 +312,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 
 	@Override
 	public HashMap<KafkaTopicPartition, Long> snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
-		if (!running) {
+		if (!running || this.consumer == null) {
 			LOG.debug("snapshotState() called on closed source");
 			return null;
 		}
@@ -338,7 +344,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 
 	@Override
 	public void notifyCheckpointComplete(long checkpointId) throws Exception {
-		if (!running) {
+		if (!running || this.consumer == null) {
 			LOG.debug("notifyCheckpointComplete() called on closed source");
 			return;
 		}
