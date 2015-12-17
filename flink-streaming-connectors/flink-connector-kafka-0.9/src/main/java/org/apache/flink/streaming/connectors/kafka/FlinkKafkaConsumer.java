@@ -37,12 +37,17 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.immutable.Stream;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +114,10 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	// ------------------------------------------------------------------------
 
 
+	public FlinkKafkaConsumer(String topic, DeserializationSchema<T> deserializer, Properties props) {
+		this(Collections.singletonList(topic), deserializer, props);
+	}
+
 	/**
 	 * Creates a new Flink Kafka Consumer, using the given type of fetcher and offset handler.
 	 *
@@ -145,7 +154,8 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		checkNotNull(topics, "topics");
 		this.props = checkNotNull(props, "props");
 		this.deserializer = checkNotNull(deserializer, "valueDeserializer");
-		try(KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(props)) {
+		setDeserializer(this.props);
+		try(KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(this.props)) {
 			this.partitionInfos = new ArrayList<>();
 			for (String topic : topics) {
 				// get partitions for each topic
@@ -153,6 +163,8 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 			}
 		}
 		// we now have a list of partitions which is the same for all parallel consumer instances.
+
+		LOG.info("Got {} partitions from these topics: {}", partitionInfos.size(), topics);
 	}
 
 	/**
@@ -161,6 +173,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	 * @return A list of KafkaTopicPartitions
 	 */
 	public static List<KafkaTopicPartition> convertToFlinkKafkaTopicPartition(List<PartitionInfo> partitions) {
+		checkNotNull(partitions, "The given list of partitions was null");
 		List<KafkaTopicPartition> ret = new ArrayList<>(partitions.size());
 		for(PartitionInfo pi: partitions) {
 			ret.add(new KafkaTopicPartition(pi.topic(), pi.partition()));
@@ -183,6 +196,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	@Override
 	public void open(Configuration parameters) throws Exception {
 		super.open(parameters);
+		this.running = true;
 
 		final int numConsumers = getRuntimeContext().getNumberOfParallelSubtasks();
 		final int thisConsumerIndex = getRuntimeContext().getIndexOfThisSubtask();
@@ -270,7 +284,9 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	public void cancel() {
 		// set ourselves as not running
 		running = false;
-		this.consumer.wakeup();
+		if(this.consumer != null) {
+			this.consumer.wakeup();
+		}
 	}
 
 	@Override
@@ -394,5 +410,19 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 			}
 		}
 		return partitionsToSub;
+	}
+
+	protected static void setDeserializer(Properties props) {
+		if (!props.contains(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
+			props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
+		} else {
+			LOG.warn("Overwriting the '{}' is not recommended", ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG);
+		}
+
+		if (!props.contains(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
+			props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
+		} else {
+			LOG.warn("Overwriting the '{}' is not recommended", ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG);
+		}
 	}
 }
