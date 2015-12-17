@@ -23,14 +23,9 @@ import kafka.javaapi.PartitionMetadata;
 import kafka.javaapi.TopicMetadata;
 import kafka.javaapi.TopicMetadataRequest;
 import kafka.javaapi.consumer.SimpleConsumer;
-import org.apache.commons.collections.map.LinkedMap;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.streaming.api.checkpoint.CheckpointNotifier;
-import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
-import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.connectors.kafka.internals.Fetcher;
@@ -122,8 +117,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * is constructed. That means that the client that submits the program needs to be able to
  * reach the Kafka brokers or ZooKeeper.</p>
  */
-public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
-		implements CheckpointNotifier, CheckpointedAsynchronously<HashMap<KafkaTopicPartition, Long>>, ResultTypeQueryable<T> {
+public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 	/**
 	 * The offset store defines how acknowledged offsets are committed back to Kafka. Different
@@ -179,8 +173,6 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	 * and we pick a number that is probably (hopefully) not used by Kafka as a magic number for anything else. */
 	public static final long OFFSET_NOT_SET = -915623761776L;
 
-	/** The maximum number of pending non-committed checkpoints to track, to avoid memory leaks */
-	public static final int MAX_NUM_PENDING_CHECKPOINTS = 100;
 
 	/** Configuration key for the number of retries for getting the partition info */
 	public static final String GET_PARTITIONS_RETRIES_KEY = "flink.get-partitions.retry";
@@ -204,14 +196,9 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	/** The properties to parametrize the Kafka consumer and ZooKeeper client */ 
 	private final Properties props;
 
-	/** The schema to convert between Kafka#s byte messages, and Flink's objects */
-	private final KeyedDeserializationSchema<T> deserializer;
-
 
 	// ------  Runtime State  -------
 
-	/** Data for pending but uncommitted checkpoints */
-	private final LinkedMap pendingCheckpoints = new LinkedMap();
 	
 	/** The fetcher used to pull data from the Kafka brokers */
 	private transient Fetcher fetcher;
@@ -279,6 +266,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	 */
 	public FlinkKafkaConsumer(List<String> topics, KeyedDeserializationSchema<T> deserializer, Properties props,
 								OffsetStore offsetStore, FetcherType fetcherType) {
+		super(deserializer, props);
 		this.offsetStore = checkNotNull(offsetStore);
 		this.fetcherType = checkNotNull(fetcherType);
 
@@ -293,7 +281,6 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		
 		checkNotNull(topics, "topics");
 		this.props = checkNotNull(props, "props");
-		this.deserializer = checkNotNull(deserializer, "valueDeserializer");
 
 		// validate the zookeeper properties
 		if (offsetStore == OffsetStore.FLINK_ZOOKEEPER) {

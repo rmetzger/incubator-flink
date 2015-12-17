@@ -20,11 +20,7 @@ package org.apache.flink.streaming.connectors.kafka;
 import org.apache.commons.collections.map.LinkedMap;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.streaming.api.checkpoint.CheckpointNotifier;
-import org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously;
-import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
@@ -50,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -74,8 +69,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * is constructed. That means that the client that submits the program needs to be able to
  * reach the Kafka brokers or ZooKeeper.</p>
  */
-public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
-		implements CheckpointNotifier, CheckpointedAsynchronously<HashMap<KafkaTopicPartition, Long>>, ResultTypeQueryable<T> {
+public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 	// ------------------------------------------------------------------------
 	
@@ -154,7 +148,7 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	 *           The properties that are used to configure both the fetcher and the offset handler.
 	 */
 	public FlinkKafkaConsumer(List<String> topics, KeyedDeserializationSchema<T> deserializer, Properties props) {
-
+		super(deserializer, props);
 		checkNotNull(topics, "topics");
 		this.props = checkNotNull(props, "props");
 		this.deserializer = checkNotNull(deserializer, "valueDeserializer");
@@ -404,19 +398,6 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 	//  Miscellaneous utilities 
 	// ------------------------------------------------------------------------
 
-	protected static <T> List<T> assignPartitions(List<T> partitions, int numConsumers, int consumerIndex) {
-		checkArgument(numConsumers > 0);
-		checkArgument(consumerIndex < numConsumers);
-		
-		List<T> partitionsToSub = new ArrayList<>();
-
-		for (int i = 0; i < partitions.size(); i++) {
-			if (i % numConsumers == consumerIndex) {
-				partitionsToSub.add(partitions.get(i));
-			}
-		}
-		return partitionsToSub;
-	}
 
 	protected static void setDeserializer(Properties props) {
 		if (!props.contains(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {

@@ -18,8 +18,6 @@
 
 package org.apache.flink.streaming.connectors.kafka;
 
-import kafka.admin.AdminUtils;
-import kafka.api.PartitionMetadata;
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
@@ -28,7 +26,6 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import kafka.server.KafkaServer;
 
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.collections.map.LinkedMap;
 
 import org.apache.flink.api.common.ExecutionConfig;
@@ -57,15 +54,12 @@ import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunctio
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
-import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionLeader;
-import org.apache.flink.streaming.connectors.kafka.internals.ZookeeperOffsetHandler;
 import org.apache.flink.streaming.connectors.kafka.testutils.DataGenerators;
 import org.apache.flink.streaming.connectors.kafka.testutils.DiscardingSink;
 import org.apache.flink.streaming.connectors.kafka.testutils.FailingIdentityMapper;
 import org.apache.flink.streaming.connectors.kafka.testutils.JobManagerCommunicationUtils;
 import org.apache.flink.streaming.connectors.kafka.testutils.MockRuntimeContext;
 import org.apache.flink.streaming.connectors.kafka.testutils.PartitionValidatingMapper;
-import org.apache.flink.streaming.connectors.kafka.testutils.SuccessException;
 import org.apache.flink.streaming.connectors.kafka.testutils.ThrottledMapper;
 import org.apache.flink.streaming.connectors.kafka.testutils.Tuple2Partitioner;
 import org.apache.flink.streaming.connectors.kafka.testutils.ValidatingExactlyOnceSink;
@@ -75,6 +69,7 @@ import org.apache.flink.streaming.util.serialization.TypeInformationKeyValueSeri
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
 import org.apache.flink.streaming.util.serialization.KeyedSerializationSchema;
 import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
+import org.apache.flink.test.util.SuccessException;
 import org.apache.flink.testutils.junit.RetryOnException;
 import org.apache.flink.testutils.junit.RetryRule;
 import org.apache.flink.util.Collector;
@@ -85,7 +80,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.junit.Assert;
 
 import org.junit.Rule;
-import scala.collection.Seq;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -102,6 +96,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.apache.flink.test.util.TestUtils.tryExecute;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -119,10 +114,14 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 	//  Required methods by the abstract test base
 	// ------------------------------------------------------------------------
 
-	protected abstract <T> FlinkKafkaConsumer<T> getConsumer(
+	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(
 			List<String> topics, DeserializationSchema<T> deserializationSchema, Properties props);
 
-	protected <T> FlinkKafkaConsumer<T> getConsumer(
+	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props);
+
+	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, KeyedDeserializationSchema<T> readSchema, Properties props);
+
+	protected <T> FlinkKafkaConsumerBase<T> getConsumer(
 			String topic, DeserializationSchema<T> deserializationSchema, Properties props) {
 		return getConsumer(Collections.singletonList(topic), deserializationSchema, props);
 	}
@@ -155,7 +154,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			properties.setProperty("bootstrap.servers", "localhost:80");
 			properties.setProperty("zookeeper.connect", "localhost:80");
 			properties.setProperty("group.id", "test");
-			FlinkKafkaConsumer<String> source = getConsumer("doesntexist", new SimpleStringSchema(), properties);
+			FlinkKafkaConsumerBase<String> source = getConsumer("doesntexist", new SimpleStringSchema(), properties);
 			DataStream<String> stream = see.addSource(source);
 			stream.print();
 			see.execute("No broker test");
@@ -170,8 +169,8 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 	public void runCheckpointingTest() throws Exception {
 		createTestTopic("testCheckpointing", 1, 1);
 
-		FlinkKafkaConsumer<String> source = getConsumer("testCheckpointing", new SimpleStringSchema(), standardProps);
-		Field pendingCheckpointsField = FlinkKafkaConsumer.class.getDeclaredField("pendingCheckpoints");
+		FlinkKafkaConsumerBase<String> source = getConsumer("testCheckpointing", new SimpleStringSchema(), standardProps);
+		Field pendingCheckpointsField = FlinkKafkaConsumerBase.class.getDeclaredField("pendingCheckpoints");
 		pendingCheckpointsField.setAccessible(true);
 		LinkedMap pendingCheckpoints = (LinkedMap) pendingCheckpointsField.get(source);
 
@@ -208,7 +207,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		for (int i = 100; i < 600; i++) {
 			source.snapshotState(i, 15 * i);
 		}
-		Assert.assertEquals(FlinkKafkaConsumer.MAX_NUM_PENDING_CHECKPOINTS, pendingCheckpoints.size());
+		Assert.assertEquals(FlinkKafkaConsumerBase.MAX_NUM_PENDING_CHECKPOINTS, pendingCheckpoints.size());
 
 		// commit only the second last
 		source.notifyCheckpointComplete(598);
@@ -226,116 +225,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		deleteTestTopic("testCheckpointing");
 	}
 
-	/**
-	 * Tests that offsets are properly committed to ZooKeeper and initial offsets are read from ZooKeeper.
-	 *
-	 * This test is only applicable if the Flink Kafka Consumer uses the ZooKeeperOffsetHandler.
-	 */
-	public void runOffsetInZookeeperValidationTest() throws Exception {
-		final String topicName = "testOffsetInZK";
-		final int parallelism = 3;
 
-		createTestTopic(topicName, parallelism, 1);
-
-		StreamExecutionEnvironment env1 = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
-		env1.getConfig().disableSysoutLogging();
-		env1.enableCheckpointing(50);
-		env1.setNumberOfExecutionRetries(0);
-		env1.setParallelism(parallelism);
-
-		StreamExecutionEnvironment env2 = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
-		env2.getConfig().disableSysoutLogging();
-		env2.enableCheckpointing(50);
-		env2.setNumberOfExecutionRetries(0);
-		env2.setParallelism(parallelism);
-
-		StreamExecutionEnvironment env3 = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
-		env3.getConfig().disableSysoutLogging();
-		env3.enableCheckpointing(50);
-		env3.setNumberOfExecutionRetries(0);
-		env3.setParallelism(parallelism);
-
-		// write a sequence from 0 to 99 to each of the 3 partitions.
-		writeSequence(env1, topicName, 100, parallelism);
-
-		readSequence(env2, standardProps, parallelism, topicName, 100, 0);
-
-		ZkClient zkClient = createZookeeperClient();
-
-		long o1 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 0);
-		long o2 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 1);
-		long o3 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 2);
-
-		LOG.info("Got final offsets from zookeeper o1={}, o2={}, o3={}", o1, o2, o3);
-
-		assertTrue(o1 == FlinkKafkaConsumer.OFFSET_NOT_SET || (o1 >= 0 && o1 <= 100));
-		assertTrue(o2 == FlinkKafkaConsumer.OFFSET_NOT_SET || (o2 >= 0 && o2 <= 100));
-		assertTrue(o3 == FlinkKafkaConsumer.OFFSET_NOT_SET || (o3 >= 0 && o3 <= 100));
-
-		LOG.info("Manipulating offsets");
-
-		// set the offset to 50 for the three partitions
-		ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topicName, 0, 49);
-		ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topicName, 1, 49);
-		ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topicName, 2, 49);
-
-		zkClient.close();
-
-		// create new env
-		readSequence(env3, standardProps, parallelism, topicName, 50, 50);
-
-		deleteTestTopic(topicName);
-	}
-
-	public void runOffsetAutocommitTest() throws Exception {
-		final String topicName = "testOffsetAutocommit";
-		final int parallelism = 3;
-
-		createTestTopic(topicName, parallelism, 1);
-
-		StreamExecutionEnvironment env1 = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
-		env1.getConfig().disableSysoutLogging();
-		env1.setNumberOfExecutionRetries(0);
-		env1.setParallelism(parallelism);
-
-		StreamExecutionEnvironment env2 = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
-		// NOTE: We are not enabling the checkpointing!
-		env2.getConfig().disableSysoutLogging();
-		env2.setNumberOfExecutionRetries(0);
-		env2.setParallelism(parallelism);
-
-
-		// write a sequence from 0 to 99 to each of the 3 partitions.
-		writeSequence(env1, topicName, 100, parallelism);
-
-
-		// the readSequence operation sleeps for 20 ms between each record.
-		// setting a delay of 25*20 = 500 for the commit interval makes
-		// sure that we commit roughly 3-4 times while reading, however
-		// at least once.
-		Properties readProps = new Properties();
-		readProps.putAll(standardProps);
-		readProps.setProperty("auto.commit.interval.ms", "500");
-
-		// read so that the offset can be committed to ZK
-		readSequence(env2, readProps, parallelism, topicName, 100, 0);
-
-		// get the offset
-		ZkClient zkClient = createZookeeperClient();
-
-		long o1 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 0);
-		long o2 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 1);
-		long o3 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 2);
-
-		LOG.info("Got final offsets from zookeeper o1={}, o2={}, o3={}", o1, o2, o3);
-
-		// ensure that the offset has been committed
-		assertTrue("Offset of o1=" + o1 + " was not in range", o1 > 0 && o1 <= 100);
-		assertTrue("Offset of o2=" + o2 + " was not in range", o2 > 0 && o2 <= 100);
-		assertTrue("Offset of o3=" + o3 + " was not in range", o3 > 0 && o3 <= 100);
-
-		deleteTestTopic(topicName);
-	}
 
 	/**
 	 * Ensure Kafka is working on both producer and consumer side.
@@ -419,7 +309,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		List<String> topics = new ArrayList<>();
 		topics.add(topic);
 		topics.add(additionalEmptyTopic);
-		FlinkKafkaConsumer<Tuple2<Long, String>> source = getConsumer(topics, sourceSchema, standardProps);
+		FlinkKafkaConsumerBase<Tuple2<Long, String>> source = getConsumer(topics, sourceSchema, standardProps);
 
 		DataStreamSource<Tuple2<Long, String>> consuming = env.addSource(source).setParallelism(parallelism);
 
@@ -507,7 +397,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		env.setNumberOfExecutionRetries(3);
 		env.getConfig().disableSysoutLogging();
 
-		FlinkKafkaConsumer<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
+		FlinkKafkaConsumerBase<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
 
 		env
 				.addSource(kafkaSource)
@@ -552,7 +442,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		env.setNumberOfExecutionRetries(3);
 		env.getConfig().disableSysoutLogging();
 
-		FlinkKafkaConsumer<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
+		FlinkKafkaConsumerBase<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
 
 		env
 				.addSource(kafkaSource)
@@ -598,7 +488,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		env.getConfig().disableSysoutLogging();
 		env.setBufferTimeout(0);
 
-		FlinkKafkaConsumer<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
+		FlinkKafkaConsumerBase<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
 
 		env
 			.addSource(kafkaSource)
@@ -641,7 +531,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 					env.enableCheckpointing(100);
 					env.getConfig().disableSysoutLogging();
 
-					FlinkKafkaConsumer<String> source = getConsumer(topic, new SimpleStringSchema(), standardProps);
+					FlinkKafkaConsumerBase<String> source = getConsumer(topic, new SimpleStringSchema(), standardProps);
 
 					env.addSource(source).addSink(new DiscardingSink<String>());
 
@@ -706,7 +596,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 					env.enableCheckpointing(100);
 					env.getConfig().disableSysoutLogging();
 
-					FlinkKafkaConsumer<String> source = getConsumer(topic, new SimpleStringSchema(), standardProps);
+					FlinkKafkaConsumerBase<String> source = getConsumer(topic, new SimpleStringSchema(), standardProps);
 
 					env.addSource(source).addSink(new DiscardingSink<String>());
 
@@ -752,7 +642,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		env.setParallelism(12); // needs to be more that the mini cluster has slots
 		env.getConfig().disableSysoutLogging();
 
-		FlinkKafkaConsumer<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
+		FlinkKafkaConsumerBase<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
 
 		env
 				.addSource(kafkaSource)
@@ -783,30 +673,6 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		deleteTestTopic(topic);
 	}
 
-	public void runInvalidOffsetTest() throws Exception {
-		final String topic = "invalidOffsetTopic";
-		final int parallelism = 1;
-
-		// create topic
-		createTestTopic(topic, parallelism, 1);
-
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
-
-		// write 20 messages into topic:
-		writeSequence(env, topic, 20, parallelism);
-
-		// set invalid offset:
-		ZkClient zkClient = createZookeeperClient();
-		ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topic, 0, 1234);
-
-		// read from topic
-		final int valuesCount = 20;
-		final int startFrom = 0;
-		readSequence(env, standardCC.props().props(), parallelism, topic, valuesCount, startFrom);
-
-		deleteTestTopic(topic);
-	}
-
 	public void runConsumeMultipleTopics() throws java.lang.Exception {
 		final int NUM_TOPICS = 5;
 		final int NUM_ELEMENTS = 20;
@@ -825,12 +691,8 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			writeSequence(env, topic, NUM_ELEMENTS, i + 1);
 		}
 
-		// validate getPartitionsForTopic method
-		List<KafkaTopicPartitionLeader> topicPartitions = FlinkKafkaConsumer082.getPartitionsForTopic(topics, standardProps);
-		Assert.assertEquals((NUM_TOPICS * (NUM_TOPICS + 1))/2, topicPartitions.size());
-
 		KeyedDeserializationSchema<Tuple3<Integer, Integer, String>> readSchema = new Tuple2WithTopicDeserializationSchema(env.getConfig());
-		DataStreamSource<Tuple3<Integer, Integer, String>> stream = env.addSource(new FlinkKafkaConsumer082<>(topics, readSchema, standardProps));
+		DataStreamSource<Tuple3<Integer, Integer, String>> stream = env.addSource(getConsumer(topics, readSchema, standardProps));
 
 		stream.flatMap(new FlatMapFunction<Tuple3<Integer, Integer, String>, Integer>() {
 			Map<String, Integer> countPerTopic = new HashMap<>(NUM_TOPICS);
@@ -925,7 +787,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		consumerProps.setProperty("max.partition.fetch.bytes", Integer.toString(1024 * 1024 * 40)); // for the new fetcher
 		consumerProps.setProperty("queued.max.message.chunks", "1");
 
-		FlinkKafkaConsumer<Tuple2<Long, byte[]>> source = getConsumer(topic, serSchema, consumerProps);
+		FlinkKafkaConsumerBase<Tuple2<Long, byte[]>> source = getConsumer(topic, serSchema, consumerProps);
 		DataStreamSource<Tuple2<Long, byte[]>> consuming = env.addSource(source);
 
 		consuming.addSink(new SinkFunction<Tuple2<Long, byte[]>>() {
@@ -1016,28 +878,9 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				topic, parallelism, numElementsPerPartition, true);
 
 		// find leader to shut down
-		ZkClient zkClient = createZookeeperClient();
-		PartitionMetadata firstPart = null;
-		do {
-			if (firstPart != null) {
-				LOG.info("Unable to find leader. error code {}", firstPart.errorCode());
-				// not the first try. Sleep a bit
-				Thread.sleep(150);
-			}
+		KafkaServerProvider.LeaderInfo leaderInfo = kafkaServer.getLeaderToShutDown(topic);
 
-			Seq<PartitionMetadata> partitionMetadata = AdminUtils.fetchTopicMetadataFromZk(topic, zkClient).partitionsMetadata();
-			firstPart = partitionMetadata.head();
-		}
-		while (firstPart.errorCode() != 0);
-		zkClient.close();
-
-		final kafka.cluster.Broker leaderToShutDown = firstPart.leader().get();
-		final String leaderToShutDownConnection = 
-				NetUtils.hostAndPortToUrlString(leaderToShutDown.host(), leaderToShutDown.port());
-		
-		
-		final int leaderIdToShutDown = firstPart.leader().get().id();
-		LOG.info("Leader to shutdown {}", leaderToShutDown);
+		LOG.info("Leader to shutdown {}", leaderInfo.leaderConnStr);
 
 
 		// run the topology that fails and recovers
@@ -1052,20 +895,19 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		env.getConfig().disableSysoutLogging();
 
 
-		FlinkKafkaConsumer<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
+		FlinkKafkaConsumerBase<Integer> kafkaSource = getConsumer(topic, schema, standardProps);
 
 		env
 				.addSource(kafkaSource)
 				.map(new PartitionValidatingMapper(parallelism, 1))
-				.map(new BrokerKillingMapper<Integer>(leaderToShutDownConnection, failAfterElements))
+				.map(new BrokerKillingMapper<Integer>(leaderInfo.leaderConnStr, failAfterElements))
 				.addSink(new ValidatingExactlyOnceSink(totalElements)).setParallelism(1);
 
 		BrokerKillingMapper.killedLeaderBefore = false;
 		tryExecute(env, "One-to-one exactly once test");
 
 		// start a new broker:
-		brokers.set(leaderIdToShutDown, getKafkaServer(leaderIdToShutDown, tmpKafkaDirs.get(leaderIdToShutDown), kafkaHost, zookeeperConnectionString));
-
+		kafkaServer.restartBroker(leaderInfo.leaderId);
 	}
 
 	public void runKeyValueTest() throws Exception {
@@ -1114,7 +956,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		KeyedDeserializationSchema<Tuple2<Long, PojoValue>> readSchema = new TypeInformationKeyValueSerializationSchema<>(Long.class, PojoValue.class, env.getConfig());
 
-		DataStream<Tuple2<Long, PojoValue>> fromKafka = env.addSource(new FlinkKafkaConsumer082<>(topic, readSchema, standardProps));
+		DataStream<Tuple2<Long, PojoValue>> fromKafka = env.addSource(getConsumer(topic, readSchema, standardProps));
 		fromKafka.flatMap(new RichFlatMapFunction<Tuple2<Long,PojoValue>, Object>() {
 			long counter = 0;
 			@Override
@@ -1152,7 +994,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 	//  Reading writing test data sets
 	// ------------------------------------------------------------------------
 
-	private void readSequence(StreamExecutionEnvironment env, Properties cc,
+	protected void readSequence(StreamExecutionEnvironment env, Properties cc,
 								final int sourceParallelism,
 								final String topicName,
 								final int valuesCount, final int startFrom) throws Exception {
@@ -1165,7 +1007,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				new TypeInformationSerializationSchema<>(intIntTupleType, env.getConfig());
 
 		// create the consumer
-		FlinkKafkaConsumer<Tuple2<Integer, Integer>> consumer = getConsumer(topicName, deser, cc);
+		FlinkKafkaConsumerBase<Tuple2<Integer, Integer>> consumer = getConsumer(topicName, deser, cc);
 
 		DataStream<Tuple2<Integer, Integer>> source = env
 				.addSource(consumer).setParallelism(sourceParallelism)
@@ -1203,7 +1045,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		LOG.info("Successfully read sequence for verification");
 	}
 
-	private static void writeSequence(StreamExecutionEnvironment env, String topicName, final int numElements, int parallelism) throws Exception {
+	protected static void writeSequence(StreamExecutionEnvironment env, String topicName, final int numElements, int parallelism) throws Exception {
 
 		LOG.info("\n===================================\n== Writing sequence of "+numElements+" into "+topicName+" with p="+parallelism+"\n===================================");
 		TypeInformation<Tuple2<Integer, Integer>> resultType = TypeInfoParser.parse("Tuple2<Integer, Integer>");
@@ -1343,24 +1185,24 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				if (failer && numElementsTotal >= failCount) {
 					// shut down a Kafka broker
 					KafkaServer toShutDown = null;
-					for (KafkaServer kafkaServer : brokers) {
+					for (KafkaServer server : kafkaServer.getBrokers()) {
 						String connectionUrl = 
 								NetUtils.hostAndPortToUrlString(
-										kafkaServer.config().advertisedHostName(),
-										kafkaServer.config().advertisedPort());
+										server.config().advertisedHostName(),
+										server.config().advertisedPort());
 						if (leaderToShutDown.equals(connectionUrl)) {
-							toShutDown = kafkaServer;
+							toShutDown = server;
 							break;
 						}
 					}
 	
 					if (toShutDown == null) {
 						StringBuilder listOfBrokers = new StringBuilder();
-						for (KafkaServer kafkaServer : brokers) {
+						for (KafkaServer server : kafkaServer.getBrokers()) {
 							listOfBrokers.append(
 									NetUtils.hostAndPortToUrlString(
-											kafkaServer.config().advertisedHostName(),
-											kafkaServer.config().advertisedPort()));
+											server.config().advertisedHostName(),
+											server.config().advertisedPort()));
 							listOfBrokers.append(" ; ");
 						}
 						

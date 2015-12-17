@@ -50,7 +50,7 @@ public class KafkaConsumerPartitionAssignmentTest {
 			inPartitions.add(new KafkaTopicPartitionLeader(new KafkaTopicPartition("test-topic", 1), fake));
 
 			for (int i = 0; i < inPartitions.size(); i++) {
-				List<KafkaTopicPartitionLeader> parts = FlinkKafkaConsumer.assignPartitions(
+				List<KafkaTopicPartitionLeader> parts = FlinkKafkaConsumerBase.assignPartitions(
 						inPartitions, inPartitions.size(), i);
 
 				assertNotNull(parts);
@@ -92,7 +92,7 @@ public class KafkaConsumerPartitionAssignmentTest {
 			final int maxPartitionsPerConsumer = partitions.size() / numConsumers + 1;
 
 			for (int i = 0; i < numConsumers; i++) {
-				List<KafkaTopicPartitionLeader> parts = FlinkKafkaConsumer.assignPartitions(partitions, numConsumers, i);
+				List<KafkaTopicPartitionLeader> parts = FlinkKafkaConsumerBase.assignPartitions(partitions, numConsumers, i);
 
 				assertNotNull(parts);
 				assertTrue(parts.size() >= minPartitionsPerConsumer);
@@ -128,7 +128,7 @@ public class KafkaConsumerPartitionAssignmentTest {
 			final int numConsumers = 2 * inPartitions.size() + 3;
 
 			for (int i = 0; i < numConsumers; i++) {
-				List<KafkaTopicPartitionLeader> parts = FlinkKafkaConsumer.assignPartitions(inPartitions, numConsumers, i);
+				List<KafkaTopicPartitionLeader> parts = FlinkKafkaConsumerBase.assignPartitions(inPartitions, numConsumers, i);
 
 				assertNotNull(parts);
 				assertTrue(parts.size() <= 1);
@@ -152,11 +152,11 @@ public class KafkaConsumerPartitionAssignmentTest {
 	public void testAssignEmptyPartitions() {
 		try {
 			List<KafkaTopicPartitionLeader> ep = new ArrayList<>();
-			List<KafkaTopicPartitionLeader> parts1 = FlinkKafkaConsumer.assignPartitions(ep, 4, 2);
+			List<KafkaTopicPartitionLeader> parts1 = FlinkKafkaConsumerBase.assignPartitions(ep, 4, 2);
 			assertNotNull(parts1);
 			assertTrue(parts1.isEmpty());
 
-			List<KafkaTopicPartitionLeader> parts2 = FlinkKafkaConsumer.assignPartitions(ep, 1, 0);
+			List<KafkaTopicPartitionLeader> parts2 = FlinkKafkaConsumerBase.assignPartitions(ep, 1, 0);
 			assertNotNull(parts2);
 			assertTrue(parts2.isEmpty());
 		}
@@ -188,11 +188,11 @@ public class KafkaConsumerPartitionAssignmentTest {
 			final int minNewPartitionsPerConsumer = newPartitions.size() / numConsumers;
 			final int maxNewPartitionsPerConsumer = newPartitions.size() / numConsumers + 1;
 
-			List<KafkaTopicPartitionLeader> parts1 = FlinkKafkaConsumer.assignPartitions(
+			List<KafkaTopicPartitionLeader> parts1 = FlinkKafkaConsumerBase.assignPartitions(
 					initialPartitions, numConsumers, 0);
-			List<KafkaTopicPartitionLeader> parts2 = FlinkKafkaConsumer.assignPartitions(
+			List<KafkaTopicPartitionLeader> parts2 = FlinkKafkaConsumerBase.assignPartitions(
 					initialPartitions, numConsumers, 1);
-			List<KafkaTopicPartitionLeader> parts3 = FlinkKafkaConsumer.assignPartitions(
+			List<KafkaTopicPartitionLeader> parts3 = FlinkKafkaConsumerBase.assignPartitions(
 					initialPartitions, numConsumers, 2);
 
 			assertNotNull(parts1);
@@ -224,11 +224,11 @@ public class KafkaConsumerPartitionAssignmentTest {
 
 			// grow the set of partitions and distribute anew
 
-			List<KafkaTopicPartitionLeader> parts1new = FlinkKafkaConsumer.assignPartitions(
+			List<KafkaTopicPartitionLeader> parts1new = FlinkKafkaConsumerBase.assignPartitions(
 					newPartitions, numConsumers, 0);
-			List<KafkaTopicPartitionLeader> parts2new = FlinkKafkaConsumer.assignPartitions(
+			List<KafkaTopicPartitionLeader> parts2new = FlinkKafkaConsumerBase.assignPartitions(
 					newPartitions, numConsumers, 1);
-			List<KafkaTopicPartitionLeader> parts3new = FlinkKafkaConsumer.assignPartitions(
+			List<KafkaTopicPartitionLeader> parts3new = FlinkKafkaConsumerBase.assignPartitions(
 					newPartitions, numConsumers, 2);
 
 			// new partitions must include all old partitions
