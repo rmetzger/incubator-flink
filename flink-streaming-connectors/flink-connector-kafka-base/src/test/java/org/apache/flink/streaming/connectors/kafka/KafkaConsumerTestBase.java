@@ -110,21 +110,6 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 	@Rule
 	public RetryRule retryRule = new RetryRule();
 	
-	// ------------------------------------------------------------------------
-	//  Required methods by the abstract test base
-	// ------------------------------------------------------------------------
-
-	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(
-			List<String> topics, DeserializationSchema<T> deserializationSchema, Properties props);
-
-	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props);
-
-	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, KeyedDeserializationSchema<T> readSchema, Properties props);
-
-	protected <T> FlinkKafkaConsumerBase<T> getConsumer(
-			String topic, DeserializationSchema<T> deserializationSchema, Properties props) {
-		return getConsumer(Collections.singletonList(topic), deserializationSchema, props);
-	}
 
 	// ------------------------------------------------------------------------
 	//  Suite of Tests
@@ -302,7 +287,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				running = false;
 			}
 		});
-		stream.addSink(new FlinkKafkaProducer<>(brokerConnectionStrings, topic, sinkSchema));
+		stream.addSink(new FlinkKafkaProducerBase<>(brokerConnectionStrings, topic, sinkSchema));
 
 		// ----------- add consumer dataflow ----------
 
@@ -852,7 +837,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			}
 		});
 
-		stream.addSink(new FlinkKafkaProducer<>(topic, deserSchema, producerProps));
+		stream.addSink(new FlinkKafkaProducerBase<>(topic, deserSchema, producerProps));
 
 		tryExecute(env, "big topology test");
 
@@ -942,8 +927,8 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		});
 
 		KeyedSerializationSchema<Tuple2<Long, PojoValue>> schema = new TypeInformationKeyValueSerializationSchema<>(Long.class, PojoValue.class, env.getConfig());
-		kvStream.addSink(new FlinkKafkaProducer<>(topic, schema,
-				FlinkKafkaProducer.getPropertiesFromBrokerList(brokerConnectionStrings)));
+		kvStream.addSink(new FlinkKafkaProducerBase<>(topic, schema,
+				FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings)));
 		env.execute("Write KV to Kafka");
 
 		// ----------- Read the data again -------------------
@@ -1071,9 +1056,9 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			}
 		}).setParallelism(parallelism);
 		
-		stream.addSink(new FlinkKafkaProducer<>(topicName,
+		stream.addSink(new FlinkKafkaProducerBase<>(topicName,
 				new TypeInformationSerializationSchema<>(resultType, env.getConfig()),
-				FlinkKafkaProducer.getPropertiesFromBrokerList(brokerConnectionStrings),
+				FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings),
 				new Tuple2Partitioner(parallelism)
 		)).setParallelism(parallelism);
 

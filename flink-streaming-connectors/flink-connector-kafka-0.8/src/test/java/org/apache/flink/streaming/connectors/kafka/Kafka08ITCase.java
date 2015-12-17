@@ -20,9 +20,11 @@ package org.apache.flink.streaming.connectors.kafka;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.internals.ZookeeperOffsetHandler;
+import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
+import org.apache.flink.streaming.util.serialization.SerializationSchema;
 import org.junit.Test;
 
 import java.util.List;
@@ -46,6 +48,11 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 	@Override
 	protected <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, KeyedDeserializationSchema<T> readSchema, Properties props) {
 		return new FlinkKafkaConsumer082<>(topic, readSchema, props);
+	}
+
+	@Override
+	protected <T> FlinkKafkaProducerBase<T> getProducer(String topic, SerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner) {
+		return null;
 	}
 
 	// ------------------------------------------------------------------------

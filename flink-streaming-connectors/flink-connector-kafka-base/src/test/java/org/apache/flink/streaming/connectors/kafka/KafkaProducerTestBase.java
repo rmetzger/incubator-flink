@@ -30,17 +30,15 @@ import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
 import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
 
 import org.apache.flink.test.util.SuccessException;
-import org.junit.Test;
 
 import java.io.Serializable;
-import java.util.Collections;
 
 import static org.apache.flink.test.util.TestUtils.tryExecute;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @SuppressWarnings("serial")
-public class KafkaProducerITCase extends KafkaTestBase {
+public abstract class KafkaProducerTestBase extends KafkaTestBase {
 
 
 	/**
@@ -59,8 +57,7 @@ public class KafkaProducerITCase extends KafkaTestBase {
 	 * 
 	 * The final sink validates that there are no duplicates and that all partitions are present.
 	 */
-	@Test
-	public void testCustomPartitioning() {
+	public void runCustomPartitioningTest() {
 		try {
 			LOG.info("Starting KafkaProducerITCase.testCustomPartitioning()");
 
@@ -105,15 +102,12 @@ public class KafkaProducerITCase extends KafkaTestBase {
 			.setParallelism(1);
 			
 			// sink partitions into 
-			stream.addSink(new FlinkKafkaProducer<>(topic, serSchema, FlinkKafkaProducer.getPropertiesFromBrokerList(brokerConnectionStrings), new CustomPartitioner(parallelism)))
+			stream.addSink(getProducer(topic, serSchema, FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings), new CustomPartitioner(parallelism)))
 			.setParallelism(parallelism);
 
 			// ------ consuming topology ---------
 			
-			FlinkKafkaConsumer<Tuple2<Long, String>> source = 
-					new FlinkKafkaConsumer<>(Collections.singletonList(topic), deserSchema, standardProps,
-							FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER,
-							FlinkKafkaConsumer.FetcherType.LEGACY_LOW_LEVEL);
+			FlinkKafkaConsumerBase<Tuple2<Long, String>> source = getConsumer(topic, deserSchema, standardProps);
 			
 			env.addSource(source).setParallelism(parallelism)
 
@@ -165,8 +159,13 @@ public class KafkaProducerITCase extends KafkaTestBase {
 			fail(e.getMessage());
 		}
 	}
-	
-	
+
+	/**
+	 * new FlinkKafkaProducer<>
+	 */
+
+
+
 	// ------------------------------------------------------------------------
 
 	public static class CustomPartitioner extends KafkaPartitioner implements Serializable {

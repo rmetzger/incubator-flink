@@ -52,9 +52,9 @@ import java.util.Properties;
  *
  * @param <IN> Type of the messages to write into Kafka.
  */
-public class FlinkKafkaProducer<IN> extends RichSinkFunction<IN>  {
+public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 
-	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaProducer.class);
+	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaProducerBase.class);
 
 	private static final long serialVersionUID = 1L;
 
@@ -62,120 +62,45 @@ public class FlinkKafkaProducer<IN> extends RichSinkFunction<IN>  {
 	 * Array with the partition ids of the given topicId
 	 * The size of this array is the number of partitions
 	 */
-	private final int[] partitions;
+	protected final int[] partitions;
 
 	/**
 	 * User defined properties for the Producer
 	 */
-	private final Properties producerConfig;
+	protected final Properties producerConfig;
 
 	/**
 	 * The name of the topic this producer is writing data to
 	 */
-	private final String topicId;
+	protected final String topicId;
 
 	/**
 	 * (Serializable) SerializationSchema for turning objects used with Flink into
 	 * byte[] for Kafka.
 	 */
-	private final KeyedSerializationSchema<IN> schema;
+	protected final KeyedSerializationSchema<IN> schema;
 
 	/**
 	 * User-provided partitioner for assigning an object to a Kafka partition.
 	 */
-	private final KafkaPartitioner partitioner;
+	protected final KafkaPartitioner partitioner;
 
 	/**
 	 * Flag indicating whether to accept failures (and log them), or to fail on failures
 	 */
-	private boolean logFailuresOnly;
+	protected boolean logFailuresOnly;
 	
 	// -------------------------------- Runtime fields ------------------------------------------
 
 	/** KafkaProducer instance */
-	private transient KafkaProducer<byte[], byte[]> producer;
+	protected transient KafkaProducer<byte[], byte[]> producer;
 
 	/** The callback than handles error propagation or logging callbacks */
-	private transient Callback callback;
+	protected transient Callback callback;
 	
 	/** Errors encountered in the async producer are stored here */
-	private transient volatile Exception asyncException;
+	protected transient volatile Exception asyncException;
 
-	// ------------------- Keyless serialization schema constructors ----------------------
-	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
-	 * the topic.
-	 *
-	 * @param brokerList
-	 *			Comma separated addresses of the brokers
-	 * @param topicId
-	 * 			ID of the Kafka topic.
-	 * @param serializationSchema
-	 * 			User defined (keyless) serialization schema.
-	 */
-	public FlinkKafkaProducer(String brokerList, String topicId, SerializationSchema<IN> serializationSchema) {
-		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), getPropertiesFromBrokerList(brokerList), null);
-	}
-
-	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
-	 * the topic.
-	 *
-	 * @param topicId
-	 * 			ID of the Kafka topic.
-	 * @param serializationSchema
-	 * 			User defined (keyless) serialization schema.
-	 * @param producerConfig
-	 * 			Properties with the producer configuration.
-	 */
-	public FlinkKafkaProducer(String topicId, SerializationSchema<IN> serializationSchema, Properties producerConfig) {
-		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), producerConfig, null);
-	}
-
-	/**
-	 * The main constructor for creating a FlinkKafkaProducer.
-	 *
-	 * @param topicId The topic to write data to
-	 * @param serializationSchema A (keyless) serializable serialization schema for turning user objects into a kafka-consumable byte[]
-	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
-	 * @param customPartitioner A serializable partitioner for assining messages to Kafka partitions.
-	 */
-	public FlinkKafkaProducer(String topicId, SerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner customPartitioner) {
-		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), producerConfig, customPartitioner);
-
-	}
-
-	// ------------------- Key/Value serialization schema constructors ----------------------
-
-	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
-	 * the topic.
-	 *
-	 * @param brokerList
-	 *			Comma separated addresses of the brokers
-	 * @param topicId
-	 * 			ID of the Kafka topic.
-	 * @param serializationSchema
-	 * 			User defined serialization schema supporting key/value messages
-	 */
-	public FlinkKafkaProducer(String brokerList, String topicId, KeyedSerializationSchema<IN> serializationSchema) {
-		this(topicId, serializationSchema, getPropertiesFromBrokerList(brokerList), null);
-	}
-
-	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
-	 * the topic.
-	 *
-	 * @param topicId
-	 * 			ID of the Kafka topic.
-	 * @param serializationSchema
-	 * 			User defined serialization schema supporting key/value messages
-	 * @param producerConfig
-	 * 			Properties with the producer configuration.
-	 */
-	public FlinkKafkaProducer(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig) {
-		this(topicId, serializationSchema, producerConfig, null);
-	}
 
 	/**
 	 * The main constructor for creating a FlinkKafkaProducer.
@@ -185,7 +110,7 @@ public class FlinkKafkaProducer<IN> extends RichSinkFunction<IN>  {
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
 	 * @param customPartitioner A serializable partitioner for assining messages to Kafka partitions.
 	 */
-	public FlinkKafkaProducer(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner customPartitioner) {
+	public FlinkKafkaProducerBase(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner customPartitioner) {
 		Preconditions.checkNotNull(topicId, "TopicID not set");
 		Preconditions.checkNotNull(serializationSchema, "serializationSchema not set");
 		Preconditions.checkNotNull(producerConfig, "producerConfig not set");
@@ -289,18 +214,7 @@ public class FlinkKafkaProducer<IN> extends RichSinkFunction<IN>  {
 	 * 		The incoming data
 	 */
 	@Override
-	public void invoke(IN next) throws Exception {
-		// propagate asynchronous errors
-		checkErroneous();
-
-		byte[] serializedKey = schema.serializeKey(next);
-		byte[] serializedValue = schema.serializeValue(next);
-		ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topicId,
-				partitioner.partition(next, partitions.length),
-				serializedKey, serializedValue);
-		
-		producer.send(record, callback);
-	}
+	public abstract void invoke(IN next) throws Exception;
 
 
 	@Override
@@ -316,7 +230,7 @@ public class FlinkKafkaProducer<IN> extends RichSinkFunction<IN>  {
 
 	// ----------------------------------- Utilities --------------------------
 
-	private void checkErroneous() throws Exception {
+	protected void checkErroneous() throws Exception {
 		Exception e = asyncException;
 		if (e != null) {
 			// prevent double throwing

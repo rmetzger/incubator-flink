@@ -25,6 +25,10 @@ import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
+import org.apache.flink.streaming.util.serialization.DeserializationSchema;
+import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
+import org.apache.flink.streaming.util.serialization.SerializationSchema;
 import org.apache.flink.test.util.ForkableFlinkMiniCluster;
 import org.apache.flink.test.util.SuccessException;
 import org.apache.flink.util.InstantiationUtil;
@@ -40,6 +44,8 @@ import org.slf4j.LoggerFactory;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -64,8 +70,6 @@ public abstract class KafkaTestBase extends TestLogger {
 	
 	protected static final int NUMBER_OF_KAFKA_SERVERS = 3;
 
-	protected static String zookeeperConnectionString;
-
 	protected static String brokerConnectionStrings = "";
 
 	protected static ConsumerConfig standardCC;
@@ -77,9 +81,26 @@ public abstract class KafkaTestBase extends TestLogger {
 
 	protected static FiniteDuration timeout = new FiniteDuration(10, TimeUnit.SECONDS);
 
-	protected static String kafkaHost = "localhost";
-
 	protected static KafkaServerProvider kafkaServer;
+
+	// ------------------------------------------------------------------------
+	//  Required methods by the abstract test base
+	// ------------------------------------------------------------------------
+
+	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(
+			List<String> topics, DeserializationSchema<T> deserializationSchema, Properties props);
+
+	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props);
+
+	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, KeyedDeserializationSchema<T> readSchema, Properties props);
+
+	protected <T> FlinkKafkaConsumerBase<T> getConsumer(
+			String topic, DeserializationSchema<T> deserializationSchema, Properties props) {
+		return getConsumer(Collections.singletonList(topic), deserializationSchema, props);
+	}
+
+	protected abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, SerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner);
+
 
 	// ------------------------------------------------------------------------
 	//  Setup and teardown of the mini clusters

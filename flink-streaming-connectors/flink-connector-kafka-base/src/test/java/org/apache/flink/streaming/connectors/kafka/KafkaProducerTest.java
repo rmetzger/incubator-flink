@@ -47,7 +47,7 @@ import static org.powermock.api.mockito.PowerMockito.whenNew;
 import static org.junit.Assert.*;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest(FlinkKafkaProducer.class)
+@PrepareForTest(FlinkKafkaProducerBase.class)
 public class KafkaProducerTest extends TestLogger {
 	
 	@Test
@@ -77,7 +77,7 @@ public class KafkaProducerTest extends TestLogger {
 			
 			// (1) producer that propagates errors
 			
-			FlinkKafkaProducer<String> producerPropagating = new FlinkKafkaProducer<String>(
+			FlinkKafkaProducerBase<String> producerPropagating = new FlinkKafkaProducerBase<String>(
 					"mock_topic", new SimpleStringSchema(), new Properties(), null);
 
 			producerPropagating.setRuntimeContext(new MockRuntimeContext(17, 3));
@@ -96,7 +96,7 @@ public class KafkaProducerTest extends TestLogger {
 
 			// (2) producer that only logs errors
 			
-			FlinkKafkaProducer<String> producerLogging = new FlinkKafkaProducer<String>(
+			FlinkKafkaProducerBase<String> producerLogging = new FlinkKafkaProducerBase<String>(
 					"mock_topic", new SimpleStringSchema(), new Properties(), null);
 			producerLogging.setLogFailuresOnly(true);
 			
