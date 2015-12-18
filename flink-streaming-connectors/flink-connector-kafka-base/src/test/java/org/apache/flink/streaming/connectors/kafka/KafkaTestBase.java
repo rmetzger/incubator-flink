@@ -74,7 +74,7 @@ public abstract class KafkaTestBase extends TestLogger {
 	
 	protected static final int NUMBER_OF_KAFKA_SERVERS = 3;
 
-	protected static String brokerConnectionStrings = "";
+	protected static String brokerConnectionStrings;
 
 	protected static ConsumerConfig standardCC;
 	protected static Properties standardProps;
@@ -86,25 +86,6 @@ public abstract class KafkaTestBase extends TestLogger {
 	protected static FiniteDuration timeout = new FiniteDuration(10, TimeUnit.SECONDS);
 
 	protected static KafkaServerProvider kafkaServer;
-
-	// ------------------------------------------------------------------------
-	//  Required methods by the abstract test base
-	// ------------------------------------------------------------------------
-
-/*	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(
-			List<String> topics, DeserializationSchema<T> deserializationSchema, Properties props);
-
-	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props);
-
-	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, KeyedDeserializationSchema<T> readSchema, Properties props);
-
-	protected <T> FlinkKafkaConsumerBase<T> getConsumer(
-			String topic, DeserializationSchema<T> deserializationSchema, Properties props) {
-		return getConsumer(Collections.singletonList(topic), deserializationSchema, props);
-	}
-
-	protected abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner); */
-
 
 	// ------------------------------------------------------------------------
 	//  Setup and teardown of the mini clusters
@@ -128,6 +109,7 @@ public abstract class KafkaTestBase extends TestLogger {
 
 		standardProps = kafkaServer.getStandardProperties();
 		standardCC = kafkaServer.getStandardConsumerConfig();
+		brokerConnectionStrings = kafkaServer.getBrokerConnectionString();
 
 		// start also a re-usable Flink mini cluster
 		Configuration flinkConfig = new Configuration();

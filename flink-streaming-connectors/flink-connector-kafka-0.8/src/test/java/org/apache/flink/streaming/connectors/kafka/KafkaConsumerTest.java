@@ -84,7 +84,7 @@ public class KafkaConsumerTest {
 		try {
 			Field offsetsField = FlinkKafkaConsumer.class.getDeclaredField("lastOffsets");
 			Field runningField = FlinkKafkaConsumer.class.getDeclaredField("running");
-			Field mapField = FlinkKafkaConsumer.class.getDeclaredField("pendingCheckpoints");
+			Field mapField = FlinkKafkaConsumerBase.class.getDeclaredField("pendingCheckpoints");
 
 			offsetsField.setAccessible(true);
 			runningField.setAccessible(true);

@@ -97,12 +97,12 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 
 	@Override
 	public <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props) {
-		return new FlinkKafkaConsumer082<T>(topics, readSchema, props);
+		return new FlinkKafkaConsumer082<>(topics, readSchema, props);
 	}
 
 	@Override
 	public <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner) {
-		return new FlinkKafkaProducer<T>(topic, serSchema, props, partitioner);
+		return new FlinkKafkaProducer<>(topic, serSchema, props, partitioner);
 	}
 
 	@Override
