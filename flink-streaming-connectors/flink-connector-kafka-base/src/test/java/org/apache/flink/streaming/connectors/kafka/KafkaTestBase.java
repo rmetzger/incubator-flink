@@ -91,7 +91,7 @@ public abstract class KafkaTestBase extends TestLogger {
 	//  Required methods by the abstract test base
 	// ------------------------------------------------------------------------
 
-	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(
+/*	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(
 			List<String> topics, DeserializationSchema<T> deserializationSchema, Properties props);
 
 	protected abstract <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props);
@@ -103,7 +103,7 @@ public abstract class KafkaTestBase extends TestLogger {
 		return getConsumer(Collections.singletonList(topic), deserializationSchema, props);
 	}
 
-	protected abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner);
+	protected abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner); */
 
 
 	// ------------------------------------------------------------------------

@@ -19,8 +19,14 @@ package org.apache.flink.streaming.connectors.kafka;
 
 import kafka.consumer.ConsumerConfig;
 import kafka.server.KafkaServer;
+import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
+import org.apache.flink.streaming.util.serialization.DeserializationSchema;
+import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
+import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchemaWrapper;
+import org.apache.flink.streaming.util.serialization.KeyedSerializationSchema;
 
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -43,13 +49,37 @@ public abstract class KafkaServerProvider {
 
 	public abstract Properties getStandardProperties();
 
+	public abstract String getBrokerConnectionString();
+
 	public abstract String getVersion();
 
 	public abstract List<KafkaServer> getBrokers();
 
+	// -- consumer / producer instances:
+	public <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, DeserializationSchema<T> deserializationSchema, Properties props) {
+		return getConsumer(topics, new KeyedDeserializationSchemaWrapper<T>(deserializationSchema), props);
+	}
+
+	public <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, KeyedDeserializationSchema<T> readSchema, Properties props) {
+		return getConsumer(Collections.singletonList(topic), readSchema, props);
+	}
+
+	public <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, DeserializationSchema<T> deserializationSchema, Properties props) {
+		return getConsumer(Collections.singletonList(topic), deserializationSchema, props);
+	}
+
+	public abstract <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props);
+
+	public abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner);
+
+
+	// -- leader failure simulation
+
 	public abstract void restartBroker(int leaderId) throws Exception;
 
 	public abstract LeaderInfo getLeaderToShutDown(String topic) throws UnknownHostException, Exception;
+
+
 
 	public static class LeaderInfo {
 		public String leaderConnStr;

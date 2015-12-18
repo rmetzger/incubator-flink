@@ -76,8 +76,8 @@ public class KafkaProducerTest extends TestLogger {
 			whenNew(KafkaProducer.class).withAnyArguments().thenReturn(kafkaProducerMock);
 			
 			// (1) producer that propagates errors
-			
-			FlinkKafkaProducerBase<String> producerPropagating = new FlinkKafkaProducerBase<String>(
+
+			FlinkKafkaProducer<String> producerPropagating = new FlinkKafkaProducer<>(
 					"mock_topic", new SimpleStringSchema(), new Properties(), null);
 
 			producerPropagating.setRuntimeContext(new MockRuntimeContext(17, 3));
@@ -95,8 +95,8 @@ public class KafkaProducerTest extends TestLogger {
 			}
 
 			// (2) producer that only logs errors
-			
-			FlinkKafkaProducerBase<String> producerLogging = new FlinkKafkaProducerBase<String>(
+
+			FlinkKafkaProducer<String> producerLogging = new FlinkKafkaProducer<>(
 					"mock_topic", new SimpleStringSchema(), new Properties(), null);
 			producerLogging.setLogFailuresOnly(true);
 			

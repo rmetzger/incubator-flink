@@ -53,7 +53,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -582,20 +581,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	// ------------------------------------------------------------------------
 	//  Miscellaneous utilities 
 	// ------------------------------------------------------------------------
-
-	protected static List<KafkaTopicPartitionLeader> assignPartitions(List<KafkaTopicPartitionLeader> partitions, int numConsumers, int consumerIndex) {
-		checkArgument(numConsumers > 0);
-		checkArgument(consumerIndex < numConsumers);
-		
-		List<KafkaTopicPartitionLeader> partitionsToSub = new ArrayList<>();
-
-		for (int i = 0; i < partitions.size(); i++) {
-			if (i % numConsumers == consumerIndex) {
-				partitionsToSub.add(partitions.get(i));
-			}
-		}
-		return partitionsToSub;
-	}
 
 	/**
 	 * Thread to periodically commit the current read offset into Zookeeper.

@@ -27,7 +27,9 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducerBase;
+import org.apache.flink.streaming.connectors.kafka.KafkaServerProvider;
 import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
+import org.apache.flink.streaming.util.serialization.KeyedSerializationSchemaWrapper;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
 
@@ -37,7 +39,7 @@ import java.util.Random;
 public class DataGenerators {
 	
 	public static void generateLongStringTupleSequence(StreamExecutionEnvironment env,
-														String brokerConnection, String topic,
+														KafkaServerProvider testServer, String topic,
 														int numPartitions,
 														final int from, final int to) throws Exception {
 
@@ -69,9 +71,9 @@ public class DataGenerators {
 					}
 				});
 
-		stream.addSink(new FlinkKafkaProducerBase<>(topic,
-				new TypeInformationSerializationSchema<>(resultType, env.getConfig()),
-				FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnection),
+		stream.addSink(testServer.getProducer(topic,
+				new KeyedSerializationSchemaWrapper<>(new TypeInformationSerializationSchema<>(resultType, env.getConfig())),
+				FlinkKafkaProducerBase.getPropertiesFromBrokerList(testServer.getBrokerConnectionString()),
 				new Tuple2Partitioner(numPartitions)
 		));
 
@@ -81,7 +83,7 @@ public class DataGenerators {
 	// ------------------------------------------------------------------------
 	
 	public static void generateRandomizedIntegerSequence(StreamExecutionEnvironment env,
-															String brokerConnection, String topic,
+														 	KafkaServerProvider testServer, String topic,
 															final int numPartitions,
 															final int numElements,
 															final boolean randomizeOrder) throws Exception {
@@ -132,9 +134,9 @@ public class DataGenerators {
 
 		stream
 				.rebalance()
-				.addSink(new FlinkKafkaProducerBase<>(topic,
-						new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, env.getConfig()),
-						FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnection),
+				.addSink(testServer.getProducer(topic,
+						new KeyedSerializationSchemaWrapper<>(new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, env.getConfig())),
+						FlinkKafkaProducerBase.getPropertiesFromBrokerList(testServer.getBrokerConnectionString()),
 						new KafkaPartitioner() {
 							@Override
 							public int partition(Object key, int numPartitions) {
@@ -149,7 +151,7 @@ public class DataGenerators {
 	
 	public static class InfiniteStringsGenerator extends Thread {
 
-		private final String kafkaConnectionString;
+		private final KafkaServerProvider server;
 		
 		private final String topic;
 		
@@ -158,8 +160,8 @@ public class DataGenerators {
 		private volatile boolean running = true;
 
 		
-		public InfiniteStringsGenerator(String kafkaConnectionString, String topic) {
-			this.kafkaConnectionString = kafkaConnectionString;
+		public InfiniteStringsGenerator(KafkaServerProvider server, String topic) {
+			this.server = server;
 			this.topic = topic;
 		}
 
@@ -168,7 +170,9 @@ public class DataGenerators {
 			// we manually feed data into the Kafka sink
 			FlinkKafkaProducerBase<String> producer = null;
 			try {
-				producer = new FlinkKafkaProducerBase<>(kafkaConnectionString, topic, new SimpleStringSchema());
+				producer = server.getProducer(topic,
+						new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()),
+						FlinkKafkaProducerBase.getPropertiesFromBrokerList(server.getBrokerConnectionString()), null);
 				producer.setRuntimeContext(new MockRuntimeContext(1,0));
 				producer.open(new Configuration());
 				

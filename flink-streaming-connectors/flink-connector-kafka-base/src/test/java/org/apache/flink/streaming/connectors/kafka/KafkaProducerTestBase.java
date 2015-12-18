@@ -27,9 +27,10 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
+import org.apache.flink.streaming.util.serialization.KeyedSerializationSchemaWrapper;
 import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
-
 import org.apache.flink.test.util.SuccessException;
+
 
 import java.io.Serializable;
 
@@ -102,12 +103,15 @@ public abstract class KafkaProducerTestBase extends KafkaTestBase {
 			.setParallelism(1);
 			
 			// sink partitions into 
-			stream.addSink(getProducer(topic, serSchema, FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings), new CustomPartitioner(parallelism)))
+			stream.addSink(kafkaServer.getProducer(topic,
+					new KeyedSerializationSchemaWrapper<>(serSchema),
+					FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings),
+					new CustomPartitioner(parallelism)))
 			.setParallelism(parallelism);
 
 			// ------ consuming topology ---------
 			
-			FlinkKafkaConsumerBase<Tuple2<Long, String>> source = getConsumer(topic, deserSchema, standardProps);
+			FlinkKafkaConsumerBase<Tuple2<Long, String>> source = kafkaServer.getConsumer(topic, deserSchema, standardProps);
 			
 			env.addSource(source).setParallelism(parallelism)
 
@@ -159,12 +163,6 @@ public abstract class KafkaProducerTestBase extends KafkaTestBase {
 			fail(e.getMessage());
 		}
 	}
-
-	/**
-	 * new FlinkKafkaProducer<>
-	 */
-
-
 
 	// ------------------------------------------------------------------------
 

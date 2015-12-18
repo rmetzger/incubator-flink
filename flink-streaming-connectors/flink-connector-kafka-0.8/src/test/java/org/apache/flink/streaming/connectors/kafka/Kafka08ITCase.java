@@ -24,6 +24,7 @@ import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
+import org.apache.flink.streaming.util.serialization.KeyedSerializationSchema;
 import org.apache.flink.streaming.util.serialization.SerializationSchema;
 import org.junit.Test;
 
@@ -34,26 +35,6 @@ import static org.junit.Assert.assertTrue;
 
 
 public class Kafka08ITCase extends KafkaConsumerTestBase {
-	
-	@Override
-	protected <T> FlinkKafkaConsumer<T> getConsumer(List<String> topics, DeserializationSchema<T> deserializationSchema, Properties props) {
-		return new FlinkKafkaConsumer082<>(topics, deserializationSchema, props);
-	}
-
-	@Override
-	protected <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props) {
-		return new FlinkKafkaConsumer082<>(topics, readSchema, props);
-	}
-
-	@Override
-	protected <T> FlinkKafkaConsumerBase<T> getConsumer(String topic, KeyedDeserializationSchema<T> readSchema, Properties props) {
-		return new FlinkKafkaConsumer082<>(topic, readSchema, props);
-	}
-
-	@Override
-	protected <T> FlinkKafkaProducerBase<T> getProducer(String topic, SerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner) {
-		return null;
-	}
 
 	// ------------------------------------------------------------------------
 	//  Suite of Tests
