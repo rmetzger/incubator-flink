@@ -31,6 +31,7 @@ import org.apache.flink.util.NetUtils;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -80,7 +81,7 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 	/**
 	 * User-provided partitioner for assigning an object to a Kafka partition.
 	 */
-	protected final KafkaPartitioner partitioner;
+	protected final KafkaPartitioner<IN> partitioner;
 
 	/**
 	 * Flag indicating whether to accept failures (and log them), or to fail on failures
@@ -105,9 +106,9 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 	 * @param topicId The topic to write data to
 	 * @param serializationSchema A serializable serialization schema for turning user objects into a kafka-consumable byte[] supporting key/value messages
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
-	 * @param customPartitioner A serializable partitioner for assining messages to Kafka partitions.
+	 * @param customPartitioner A serializable partitioner for assigning messages to Kafka partitions. Passing null will use Kafka's partitioner
 	 */
-	public FlinkKafkaProducerBase(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner customPartitioner) {
+	public FlinkKafkaProducerBase(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner<IN> customPartitioner) {
 		Preconditions.checkNotNull(topicId, "TopicID not set");
 		Preconditions.checkNotNull(serializationSchema, "serializationSchema not set");
 		Preconditions.checkNotNull(producerConfig, "producerConfig not set");
@@ -145,11 +146,7 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 			getPartitionsProd.close();
 		}
 
-		if (customPartitioner == null) {
-			this.partitioner = new FixedPartitioner();
-		} else {
-			this.partitioner = customPartitioner;
-		}
+		this.partitioner = customPartitioner;
 	}
 
 	// ---------------------------------- Properties --------------------------
@@ -211,7 +208,21 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 	 * 		The incoming data
 	 */
 	@Override
-	public abstract void invoke(IN next) throws Exception;
+	public void invoke(IN next) throws Exception {
+		// propagate asynchronous errors
+		checkErroneous();
+
+		byte[] serializedKey = schema.serializeKey(next);
+		byte[] serializedValue = schema.serializeValue(next);
+		ProducerRecord<byte[], byte[]> record;
+		if(partitioner == null) {
+			record = new ProducerRecord<>(topicId, serializedKey, serializedValue);
+		} else {
+			record = new ProducerRecord<>(topicId, partitioner.partition(next, serializedKey, serializedValue, partitions.length), serializedKey, serializedValue);
+		}
+
+		producer.send(record, callback);
+	}
 
 
 	@Override

@@ -51,7 +51,7 @@ import java.io.Serializable;
  *
  *
  */
-public class FixedPartitioner extends KafkaPartitioner implements Serializable {
+public class FixedPartitioner<T> extends KafkaPartitioner<T> implements Serializable {
 	private static final long serialVersionUID = 1627268846962918126L;
 
 	int targetPartition = -1;
@@ -71,7 +71,7 @@ public class FixedPartitioner extends KafkaPartitioner implements Serializable {
 	}
 
 	@Override
-	public int partition(Object element, int numPartitions) {
+	public int partition(T next, byte[] serializedKey, byte[] serializedValue, int numPartitions) {
 		if (targetPartition == -1) {
 			throw new RuntimeException("The partitioner has not been initialized properly");
 		}

@@ -32,15 +32,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.curator.test.TestingServer;
 import org.apache.flink.streaming.connectors.kafka.internals.ZooKeeperStringSerializer;
 import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
+import org.apache.flink.streaming.runtime.tasks.ExceptionInChainedOperatorException;
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
 import org.apache.flink.streaming.util.serialization.KeyedSerializationSchema;
 import org.apache.flink.util.NetUtils;
 import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.None;
-import scala.None$;
-import scala.Option;
 import scala.collection.Seq;
 
 import java.io.File;
@@ -141,6 +139,11 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 		} finally {
 			zkUtils.close();
 		}
+	}
+
+	@Override
+	public String getConnectonUrl(KafkaServer server) throws Exception {
+		return NetUtils.hostAndPortToUrlString(KAFKA_HOST, server.boundPort(SecurityProtocol.PLAINTEXT));
 	}
 
 
@@ -244,8 +247,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 	public ZkUtils getZkUtils() {
 		ZkClient creator = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(),
 				standardCC.zkConnectionTimeoutMs(), new ZooKeeperStringSerializer());
-		ZkUtils zkUtils = ZkUtils.apply(creator, false);
-		return zkUtils;
+		return ZkUtils.apply(creator, false);
 	}
 
 	@Override

@@ -35,6 +35,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -237,7 +238,16 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			while (running) {
 				ConsumerRecords<byte[], byte[]> records;
 				synchronized (consumer) {
-					records = consumer.poll(pollTimeout);
+					try {
+						records = consumer.poll(pollTimeout);
+					} catch(WakeupException we) {
+						LOG.info("Consumer got interrupted", we);
+						if(running) {
+							throw we;
+						}
+						// leave loop
+						continue;
+					}
 				}
 				// get the records for each topic partition
 				for (int i = 0; i < subscribedPartitions.size(); i++) {
@@ -284,7 +294,10 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	public void cancel() {
 		// set ourselves as not running
 		running = false;
+		LOG.info("cancel received");
 		if(this.consumer != null) {
+			LOG.info("Waking up the consumer");
+			this.consumer.unsubscribe();
 			this.consumer.wakeup();
 		}
 	}

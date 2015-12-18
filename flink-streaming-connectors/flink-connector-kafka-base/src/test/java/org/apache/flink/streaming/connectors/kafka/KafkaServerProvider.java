@@ -79,6 +79,8 @@ public abstract class KafkaServerProvider {
 
 	public abstract LeaderInfo getLeaderToShutDown(String topic) throws UnknownHostException, Exception;
 
+	// this method is needed because the KafkaServer interface has changed between the releases
+	public abstract String getConnectonUrl(KafkaServer server) throws Exception;
 
 
 	public static class LeaderInfo {

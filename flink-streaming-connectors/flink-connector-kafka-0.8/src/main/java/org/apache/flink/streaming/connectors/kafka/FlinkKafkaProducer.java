@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.connectors.kafka;
 
+import org.apache.flink.streaming.connectors.kafka.partitioner.FixedPartitioner;
 import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
 import org.apache.flink.streaming.util.serialization.KeyedSerializationSchema;
 import org.apache.flink.streaming.util.serialization.KeyedSerializationSchemaWrapper;
@@ -39,7 +40,6 @@ import java.util.Properties;
  */
 public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 
-	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaProducer.class);
 
 	private static final long serialVersionUID = 1L;
 
@@ -56,7 +56,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 	 * 			User defined (keyless) serialization schema.
 	 */
 	public FlinkKafkaProducer(String brokerList, String topicId, SerializationSchema<IN> serializationSchema) {
-		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), getPropertiesFromBrokerList(brokerList), null);
+		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), getPropertiesFromBrokerList(brokerList), new FixedPartitioner<IN>());
 	}
 
 	/**
@@ -71,7 +71,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 	 * 			Properties with the producer configuration.
 	 */
 	public FlinkKafkaProducer(String topicId, SerializationSchema<IN> serializationSchema, Properties producerConfig) {
-		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), producerConfig, null);
+		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), producerConfig, new FixedPartitioner<IN>());
 	}
 
 	/**
@@ -82,7 +82,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
 	 * @param customPartitioner A serializable partitioner for assining messages to Kafka partitions.
 	 */
-	public FlinkKafkaProducer(String topicId, SerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner customPartitioner) {
+	public FlinkKafkaProducer(String topicId, SerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner<IN> customPartitioner) {
 		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), producerConfig, customPartitioner);
 
 	}
@@ -101,7 +101,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 	 * 			User defined serialization schema supporting key/value messages
 	 */
 	public FlinkKafkaProducer(String brokerList, String topicId, KeyedSerializationSchema<IN> serializationSchema) {
-		this(topicId, serializationSchema, getPropertiesFromBrokerList(brokerList), null);
+		this(topicId, serializationSchema, getPropertiesFromBrokerList(brokerList), new FixedPartitioner<IN>());
 	}
 
 	/**
@@ -116,7 +116,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 	 * 			Properties with the producer configuration.
 	 */
 	public FlinkKafkaProducer(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig) {
-		this(topicId, serializationSchema, producerConfig, null);
+		this(topicId, serializationSchema, producerConfig, new FixedPartitioner<IN>());
 	}
 
 	/**
@@ -127,29 +127,8 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
 	 * @param customPartitioner A serializable partitioner for assining messages to Kafka partitions.
 	 */
-	public FlinkKafkaProducer(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner customPartitioner) {
+	public FlinkKafkaProducer(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner<IN> customPartitioner) {
 		super(topicId, serializationSchema, producerConfig, customPartitioner);
-	}
-
-
-	/**
-	 * Called when new data arrives to the sink, and forwards it to Kafka.
-	 *
-	 * @param next
-	 * 		The incoming data
-	 */
-	@Override
-	public void invoke(IN next) throws Exception {
-		// propagate asynchronous errors
-		checkErroneous();
-
-		byte[] serializedKey = schema.serializeKey(next);
-		byte[] serializedValue = schema.serializeValue(next);
-		ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topicId,
-				partitioner.partition(next, partitions.length),
-				serializedKey, serializedValue);
-		
-		producer.send(record, callback);
 	}
 
 }

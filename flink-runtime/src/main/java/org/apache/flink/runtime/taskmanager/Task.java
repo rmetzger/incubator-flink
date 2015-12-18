@@ -1057,7 +1057,7 @@ public class Task implements Runnable {
 				}
 
 				// interrupt the running thread initially 
-				executer.interrupt();
+				// executer.interrupt();
 				try {
 					executer.join(30000);
 				}
@@ -1080,7 +1080,7 @@ public class Task implements Runnable {
 					logger.warn("Task '{}' did not react to cancelling signal, but is stuck in method:\n {}",
 							taskName, bld.toString());
 
-					executer.interrupt();
+					// executer.interrupt();
 					try {
 						executer.join(30000);
 					}

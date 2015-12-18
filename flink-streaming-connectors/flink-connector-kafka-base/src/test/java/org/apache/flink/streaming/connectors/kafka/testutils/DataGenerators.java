@@ -137,10 +137,10 @@ public class DataGenerators {
 				.addSink(testServer.getProducer(topic,
 						new KeyedSerializationSchemaWrapper<>(new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, env.getConfig())),
 						FlinkKafkaProducerBase.getPropertiesFromBrokerList(testServer.getBrokerConnectionString()),
-						new KafkaPartitioner() {
+						new KafkaPartitioner<Integer>() {
 							@Override
-							public int partition(Object key, int numPartitions) {
-								return ((Integer) key) % numPartitions;
+							public int partition(Integer next, byte[] serializedKey, byte[] serializedValue, int numPartitions) {
+								return next % numPartitions;
 							}
 						}));
 

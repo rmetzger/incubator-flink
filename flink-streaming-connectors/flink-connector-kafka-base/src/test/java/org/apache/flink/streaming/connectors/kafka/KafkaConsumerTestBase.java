@@ -1171,10 +1171,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 					// shut down a Kafka broker
 					KafkaServer toShutDown = null;
 					for (KafkaServer server : kafkaServer.getBrokers()) {
-						String connectionUrl = 
-								NetUtils.hostAndPortToUrlString(
-										server.config().advertisedHostName(),
-										server.config().advertisedPort());
+						String connectionUrl = kafkaServer.getConnectonUrl(server);
 						if (leaderToShutDown.equals(connectionUrl)) {
 							toShutDown = server;
 							break;
@@ -1184,10 +1181,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 					if (toShutDown == null) {
 						StringBuilder listOfBrokers = new StringBuilder();
 						for (KafkaServer server : kafkaServer.getBrokers()) {
-							listOfBrokers.append(
-									NetUtils.hostAndPortToUrlString(
-											server.config().advertisedHostName(),
-											server.config().advertisedPort()));
+							listOfBrokers.append(kafkaServer.getConnectonUrl(server));
 							listOfBrokers.append(" ; ");
 						}
 						

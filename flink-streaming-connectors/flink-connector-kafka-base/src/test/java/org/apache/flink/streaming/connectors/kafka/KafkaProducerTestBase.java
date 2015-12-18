@@ -174,13 +174,13 @@ public abstract class KafkaProducerTestBase extends KafkaTestBase {
 			this.expectedPartitions = expectedPartitions;
 		}
 
+
 		@Override
-		public int partition(Object key, int numPartitions) {
-			@SuppressWarnings("unchecked")
-			Tuple2<Long, String> tuple = (Tuple2<Long, String>) key;
-			
+		public int partition(Object next, byte[] serializedKey, byte[] serializedValue, int numPartitions) {
+			Tuple2<Long, String> tuple = (Tuple2<Long, String>) next;
+
 			assertEquals(expectedPartitions, numPartitions);
-			
+
 			return (int) (tuple.f0 % numPartitions);
 		}
 	}

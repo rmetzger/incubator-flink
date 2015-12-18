@@ -27,7 +27,7 @@ import java.io.Serializable;
  * Special partitioner that uses the first field of a 2-tuple as the partition,
  * and that expects a specific number of partitions.
  */
-public class Tuple2Partitioner extends KafkaPartitioner implements Serializable {
+public class Tuple2Partitioner extends KafkaPartitioner<Tuple2<Integer, Integer>> implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 
@@ -39,13 +39,13 @@ public class Tuple2Partitioner extends KafkaPartitioner implements Serializable 
 	}
 
 	@Override
-	public int partition(Object key, int numPartitions) {
+	public int partition(Tuple2<Integer, Integer> next, byte[] serializedKey, byte[] serializedValue, int numPartitions) {
 		if (numPartitions != expectedPartitions) {
 			throw new IllegalArgumentException("Expected " + expectedPartitions + " partitions");
 		}
 		@SuppressWarnings("unchecked")
-		Tuple2<Integer, Integer> element = (Tuple2<Integer, Integer>) key;
-		
+		Tuple2<Integer, Integer> element = next;
+
 		return element.f0;
 	}
 }
