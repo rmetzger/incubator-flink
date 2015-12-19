@@ -96,13 +96,16 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	/** Data for pending but uncommitted checkpoints */
 	private final LinkedMap pendingCheckpoints = new LinkedMap();
 	private final KeyedDeserializationSchema<T> deserializer;
-	private final Properties props;
+	private final Properties properties;
 	private final List<KafkaTopicPartition> partitionInfos;
 
 	/** The partitions actually handled by this consumer at runtime */
 	private transient List<TopicPartition> subscribedPartitions;
 	private transient KafkaConsumer<byte[], byte[]> consumer;
 	private transient HashMap<KafkaTopicPartition, Long> offsetsState;
+	private transient ConsumerThread<T> consumerThread;
+	/** Exception set from the ConsumerThread */
+	private transient Throwable consumerThreadException;
 
 
 	private transient volatile boolean running = true;
@@ -151,10 +154,10 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	public FlinkKafkaConsumer(List<String> topics, KeyedDeserializationSchema<T> deserializer, Properties props) {
 		super(deserializer, props);
 		checkNotNull(topics, "topics");
-		this.props = checkNotNull(props, "props");
+		this.properties = checkNotNull(props, "props");
 		this.deserializer = checkNotNull(deserializer, "valueDeserializer");
-		setDeserializer(this.props);
-		try(KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(this.props)) {
+		setDeserializer(this.properties);
+		try(KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(this.properties)) {
 			this.partitionInfos = new ArrayList<>();
 			for (String topic : topics) {
 				// get partitions for each topic
@@ -208,8 +211,8 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		} else {
 			StreamingRuntimeContext streamingRuntimeContext = (StreamingRuntimeContext) getRuntimeContext();
 			// if checkpointing is enabled, we are not automatically committing to Kafka.
-			props.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.toString(!streamingRuntimeContext.isCheckpointingEnabled()));
-			this.consumer = new KafkaConsumer<>(props);
+			properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.toString(!streamingRuntimeContext.isCheckpointingEnabled()));
+			this.consumer = new KafkaConsumer<>(properties);
 		}
 
 		// pick which partitions we work on
@@ -234,35 +237,22 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	@Override
 	public void run(SourceContext<T> sourceContext) throws Exception {
 		if(consumer != null) {
-			long pollTimeout = Long.parseLong(props.getProperty(KEY_POLL_TIMEOUT, Long.toString(DEFAULT_POLL_TIMEOUT)));
-			while (running) {
-				ConsumerRecords<byte[], byte[]> records;
-				synchronized (consumer) {
-					try {
-						records = consumer.poll(pollTimeout);
-					} catch(WakeupException we) {
-						LOG.info("Consumer got interrupted", we);
-						if(running) {
-							throw we;
-						}
-						// leave loop
-						continue;
-					}
+			consumerThread = new ConsumerThread<>(this, sourceContext);
+			consumerThread.start();
+			// wait for the consumer to stop
+			while(consumerThread.isAlive()) {
+				if(consumerThreadException != null) {
+					throw new RuntimeException("ConsumerThread threw an exception", consumerThreadException);
 				}
-				// get the records for each topic partition
-				for (int i = 0; i < subscribedPartitions.size(); i++) {
-					TopicPartition partition = subscribedPartitions.get(i);
-					KafkaTopicPartition flinkPartition = subscribedPartitionsAsFlink.get(i);
-					List<ConsumerRecord<byte[], byte[]>> partitionRecords = records.records(partition);
-					for (int j = 0; j < partitionRecords.size(); j++) {
-						ConsumerRecord<byte[], byte[]> record = partitionRecords.get(j);
-						T value = deserializer.deserialize(record.key(), record.value(), record.topic(), record.offset());
-						synchronized (sourceContext.getCheckpointLock()) {
-							sourceContext.collect(value);
-							offsetsState.put(flinkPartition, record.offset());
-						}
-					}
+				try {
+					consumerThread.join(50);
+				} catch (InterruptedException ie) {
+					consumerThread.shutdown();
 				}
+			}
+			// check again for an exception
+			if(consumerThreadException != null) {
+				throw new RuntimeException("ConsumerThread threw an exception", consumerThreadException);
 			}
 		} else {
 			// this source never completes, so emit a Long.MAX_VALUE watermark
@@ -294,11 +284,8 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	public void cancel() {
 		// set ourselves as not running
 		running = false;
-		LOG.info("cancel received");
-		if(this.consumer != null) {
-			LOG.info("Waking up the consumer");
-			this.consumer.unsubscribe();
-			this.consumer.wakeup();
+		if(this.consumerThread != null) {
+			this.consumerThread.shutdown();
 		}
 	}
 
@@ -424,5 +411,78 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		} else {
 			LOG.warn("Overwriting the '{}' is not recommended", ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG);
 		}
+	}
+
+	/**
+	 * We use a separate thread for executing the KafkaConsumer.poll(timeout) call because Kafka is not
+	 * handling interrups properly. On an interrupt (which happens automatically by Flink if the task
+	 * doesn't react to cancel() calls), the poll() method might never return.
+	 * On cancel, we'll wakeup the .poll() call and wait for it to return
+	 */
+	private static class ConsumerThread<T> extends Thread {
+		private final FlinkKafkaConsumer<T> flinkKafkaConsumer;
+		private final SourceContext<T> sourceContext;
+		private boolean running = true;
+
+		public ConsumerThread(FlinkKafkaConsumer<T> flinkKafkaConsumer, SourceContext<T> sourceContext) {
+			this.flinkKafkaConsumer = flinkKafkaConsumer;
+			this.sourceContext = sourceContext;
+		}
+
+		@Override
+		public void run() {
+			try {
+				long pollTimeout = Long.parseLong(flinkKafkaConsumer.properties.getProperty(KEY_POLL_TIMEOUT, Long.toString(DEFAULT_POLL_TIMEOUT)));
+				while (running) {
+					ConsumerRecords<byte[], byte[]> records;
+					//noinspection SynchronizeOnNonFinalField
+					synchronized (flinkKafkaConsumer.consumer) {
+						try {
+							records = flinkKafkaConsumer.consumer.poll(pollTimeout);
+						} catch (WakeupException we) {
+							LOG.info("Consumer got interrupted", we);
+							if (running) {
+								throw we;
+							}
+							// leave loop
+							continue;
+						}
+					}
+					// get the records for each topic partition
+					for (int i = 0; i < flinkKafkaConsumer.subscribedPartitions.size(); i++) {
+						TopicPartition partition = flinkKafkaConsumer.subscribedPartitions.get(i);
+						KafkaTopicPartition flinkPartition = flinkKafkaConsumer.subscribedPartitionsAsFlink.get(i);
+						List<ConsumerRecord<byte[], byte[]>> partitionRecords = records.records(partition);
+						//noinspection ForLoopReplaceableByForEach
+						for (int j = 0; j < partitionRecords.size(); j++) {
+							ConsumerRecord<byte[], byte[]> record = partitionRecords.get(j);
+							T value = flinkKafkaConsumer.deserializer.deserialize(record.key(), record.value(), record.topic(), record.offset());
+							synchronized (sourceContext.getCheckpointLock()) {
+								sourceContext.collect(value);
+								flinkKafkaConsumer.offsetsState.put(flinkPartition, record.offset());
+							}
+						}
+					}
+				}
+			} catch(Throwable t) {
+				if(running) {
+					this.flinkKafkaConsumer.stopWithError(t);
+				} else {
+					LOG.debug("Stopped ConsumerThread threw exception", t);
+				}
+			}
+		}
+
+		/**
+		 * Try to shutdown the thread
+		 */
+		public void shutdown() {
+			this.running = false;
+			this.flinkKafkaConsumer.consumer.wakeup();
+		}
+	}
+
+	private void stopWithError(Throwable t) {
+		this.consumerThreadException = t;
 	}
 }

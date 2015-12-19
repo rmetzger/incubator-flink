@@ -64,8 +64,6 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	/** The offsets to restore to, if the consumer restores state from a checkpoint */
 	protected transient HashMap<KafkaTopicPartition, Long> restoreToOffset;
 
-	protected volatile boolean running = true;
-
 	// ------------------------------------------------------------------------
 
 
