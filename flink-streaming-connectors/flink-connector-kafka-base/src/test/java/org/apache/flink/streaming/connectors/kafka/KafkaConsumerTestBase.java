@@ -43,6 +43,7 @@ import org.apache.flink.client.program.ProgramInvocationException;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.jobmanager.scheduler.NoResourceAvailableException;
+import org.apache.flink.runtime.taskmanager.RuntimeEnvironment;
 import org.apache.flink.streaming.api.checkpoint.CheckpointNotifier;
 import org.apache.flink.streaming.api.checkpoint.Checkpointed;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -146,6 +147,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			see.execute("No broker test");
 		} catch(RuntimeException re){
 			Assert.assertTrue("Wrong RuntimeException thrown: " + StringUtils.stringifyException(re),
+					re.getClass().equals(RuntimeException.class) &&
 					re.getMessage().contains("Unable to retrieve any partitions for the requested topics [doesntexist]"));
 		}
 	}

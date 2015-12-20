@@ -161,8 +161,16 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			this.partitionInfos = new ArrayList<>();
 			for (String topic : topics) {
 				// get partitions for each topic
-				partitionInfos.addAll(convertToFlinkKafkaTopicPartition(consumer.partitionsFor(topic)));
+				try {
+					partitionInfos.addAll(convertToFlinkKafkaTopicPartition(consumer.partitionsFor(topic)));
+				} catch(NullPointerException npe) {
+					// workaround for KAFKA-2880: Fetcher.getTopicMetadata NullPointerException when broker cannot be reached
+					// we ignore the NPE.
+				}
 			}
+		}
+		if(partitionInfos.isEmpty()) {
+			throw new RuntimeException("Unable to retrieve any partitions for the requested topics " + topics);
 		}
 		// we now have a list of partitions which is the same for all parallel consumer instances.
 
@@ -440,7 +448,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 						try {
 							records = flinkKafkaConsumer.consumer.poll(pollTimeout);
 						} catch (WakeupException we) {
-							LOG.info("Consumer got interrupted", we);
 							if (running) {
 								throw we;
 							}

@@ -173,7 +173,9 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 		producer = new org.apache.kafka.clients.producer.KafkaProducer<>(this.producerConfig);
 
 		RuntimeContext ctx = getRuntimeContext();
-		partitioner.open(ctx.getIndexOfThisSubtask(), ctx.getNumberOfParallelSubtasks(), partitions);
+		if(partitioner != null) {
+			partitioner.open(ctx.getIndexOfThisSubtask(), ctx.getNumberOfParallelSubtasks(), partitions);
+		}
 
 		LOG.info("Starting FlinkKafkaProducer ({}/{}) to produce into topic {}", 
 				ctx.getIndexOfThisSubtask(), ctx.getNumberOfParallelSubtasks(), topicId);
