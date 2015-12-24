@@ -70,21 +70,14 @@ public abstract class KafkaServerProvider {
 
 	public abstract <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props);
 
-	public abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner);
+	public abstract <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner<T> partitioner);
 
 
 	// -- leader failure simulation
 
 	public abstract void restartBroker(int leaderId) throws Exception;
 
-	public abstract LeaderInfo getLeaderToShutDown(String topic) throws UnknownHostException, Exception;
+	public abstract int getLeaderToShutDown(String topic) throws Exception;
 
-	// this method is needed because the KafkaServer interface has changed between the releases
-	public abstract String getConnectonUrl(KafkaServer server) throws Exception;
-
-
-	public static class LeaderInfo {
-		public String leaderConnStr;
-		public int leaderId;
-	}
+	public abstract int getBrokerId(KafkaServer server);
 }

@@ -50,7 +50,7 @@ public class ValidatingExactlyOnceSink implements SinkFunction<Integer>, Checkpo
 		numElements++;
 		
 		if (duplicateChecker.get(value)) {
-			throw new Exception("Received a duplicate");
+			throw new Exception("Received a duplicate: " + value);
 		}
 		duplicateChecker.set(value);
 		if (numElements == numElementsTotal) {

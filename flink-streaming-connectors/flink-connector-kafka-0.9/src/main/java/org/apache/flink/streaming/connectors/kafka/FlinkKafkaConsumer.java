@@ -17,9 +17,6 @@
 
 package org.apache.flink.streaming.connectors.kafka;
 
-import org.apache.commons.collections.map.LinkedMap;
-
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
@@ -78,10 +75,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaConsumer.class);
 
-
-	/** The maximum number of pending non-committed checkpoints to track, to avoid memory leaks */
-	public static final int MAX_NUM_PENDING_CHECKPOINTS = 100;
-
 	/**
 	 * Configuration key to change the polling timeout
 	 */
@@ -91,26 +84,22 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 
 
-	// ------  Runtime State  -------
-
 	/** Data for pending but uncommitted checkpoints */
-	private final LinkedMap pendingCheckpoints = new LinkedMap();
-	private final KeyedDeserializationSchema<T> deserializer;
 	private final Properties properties;
 	private final List<KafkaTopicPartition> partitionInfos;
+
+	// ------  Runtime State  -------
+
 
 	/** The partitions actually handled by this consumer at runtime */
 	private transient List<TopicPartition> subscribedPartitions;
 	private transient KafkaConsumer<byte[], byte[]> consumer;
-	private transient HashMap<KafkaTopicPartition, Long> offsetsState;
+	// private transient HashMap<KafkaTopicPartition, Long> offsetsState;
 	private transient ConsumerThread<T> consumerThread;
 	/** Exception set from the ConsumerThread */
 	private transient Throwable consumerThreadException;
 
-
-	private transient volatile boolean running = true;
 	private transient List<KafkaTopicPartition> subscribedPartitionsAsFlink;
-	private HashMap<KafkaTopicPartition, Long> restoreToOffset;
 
 
 	// ------------------------------------------------------------------------
@@ -155,7 +144,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		super(deserializer, props);
 		checkNotNull(topics, "topics");
 		this.properties = checkNotNull(props, "props");
-		this.deserializer = checkNotNull(deserializer, "valueDeserializer");
 		setDeserializer(this.properties);
 		try(KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(this.properties)) {
 			this.partitionInfos = new ArrayList<>();
@@ -213,7 +201,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		this.subscribedPartitionsAsFlink = assignPartitions(this.partitionInfos, numConsumers, thisConsumerIndex);
 		if(this.subscribedPartitionsAsFlink.isEmpty()) {
 			LOG.info("This consumer doesn't have any partitions assigned");
-			this.consumer = null;
+			this.offsetsState = null;
 			this.running = true;
 			return;
 		} else {
@@ -303,93 +291,16 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		super.close();
 	}
 
-	@Override
-	public TypeInformation<T> getProducedType() {
-		return deserializer.getProducedType();
-	}
-
 	// ------------------------------------------------------------------------
 	//  Checkpoint and restore
 	// ------------------------------------------------------------------------
 
-	@Override
-	public HashMap<KafkaTopicPartition, Long> snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
-		if (!running || this.consumer == null) {
-			LOG.debug("snapshotState() called on closed source");
-			return null;
-		}
-
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("Snapshotting state. Offsets: {}, checkpoint id: {}, timestamp: {}",
-					KafkaTopicPartition.toString(offsetsState), checkpointId, checkpointTimestamp);
-		}
-
-		// the use of clone() is okay here is okay, we just need a new map, the keys are not changed
-		//noinspection unchecked
-		HashMap<KafkaTopicPartition, Long> currentOffsets = (HashMap<KafkaTopicPartition, Long>) offsetsState.clone();
-
-		// the map cannot be asynchronously updated, because only one checkpoint call can happen
-		// on this function at a time: either snapshotState() or notifyCheckpointComplete()
-		pendingCheckpoints.put(checkpointId, currentOffsets);
-			
-		while (pendingCheckpoints.size() > MAX_NUM_PENDING_CHECKPOINTS) {
-			pendingCheckpoints.remove(0);
-		}
-
-		return currentOffsets;
-	}
 
 	@Override
-	public void restoreState(HashMap<KafkaTopicPartition, Long> restoredOffsets) {
-		restoreToOffset = restoredOffsets;
-	}
-
-	@Override
-	public void notifyCheckpointComplete(long checkpointId) throws Exception {
-		if (!running || this.consumer == null) {
-			LOG.debug("notifyCheckpointComplete() called on closed source");
-			return;
-		}
-		
-		// only one commit operation must be in progress
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("Committing offsets externally for checkpoint {}", checkpointId);
-		}
-
-		try {
-			HashMap<KafkaTopicPartition, Long> checkpointOffsets;
-	
-			// the map may be asynchronously updates when snapshotting state, so we synchronize
-			synchronized (pendingCheckpoints) {
-				final int posInMap = pendingCheckpoints.indexOf(checkpointId);
-				if (posInMap == -1) {
-					LOG.warn("Received confirmation for unknown checkpoint id {}", checkpointId);
-					return;
-				}
-
-				//noinspection unchecked
-				checkpointOffsets = (HashMap<KafkaTopicPartition, Long>) pendingCheckpoints.remove(posInMap);
-
-				
-				// remove older checkpoints in map
-				for (int i = 0; i < posInMap; i++) {
-					pendingCheckpoints.remove(0);
-				}
-			}
-			if (checkpointOffsets == null || checkpointOffsets.size() == 0) {
-				LOG.info("Checkpoint state was empty.");
-				return;
-			}
-			Map<TopicPartition, OffsetAndMetadata> kafkaCheckpointOffsets = convertToCommitMap(checkpointOffsets);
-			synchronized (this.consumer) {
-				this.consumer.commitSync(kafkaCheckpointOffsets);
-			}
-		}
-		catch (Exception e) {
-			if (running) {
-				throw e;
-			}
-			// else ignore exception if we are no longer running
+	protected void commitOffsets(HashMap<KafkaTopicPartition, Long> checkpointOffsets) {
+		Map<TopicPartition, OffsetAndMetadata> kafkaCheckpointOffsets = convertToCommitMap(checkpointOffsets);
+		synchronized (this.consumer) {
+			this.consumer.commitSync(kafkaCheckpointOffsets);
 		}
 	}
 

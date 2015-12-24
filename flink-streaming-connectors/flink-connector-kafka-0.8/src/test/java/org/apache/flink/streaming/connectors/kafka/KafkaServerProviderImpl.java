@@ -71,9 +71,6 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 		return brokerConnectionString;
 	}
 
-	public String getZookeeperConnectionString() {
-		return zookeeperConnectionString;
-	}
 
 	@Override
 	public ConsumerConfig getStandardConsumerConfig() {
@@ -101,8 +98,8 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 	}
 
 	@Override
-	public <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner) {
-		return new FlinkKafkaProducer<>(topic, serSchema, props, partitioner);
+	public <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner<T> partitioner) {
+		return new FlinkKafkaProducer<T>(topic, serSchema, props, partitioner);
 	}
 
 	@Override
@@ -111,7 +108,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 	}
 
 	@Override
-	public LeaderInfo getLeaderToShutDown(String topic) throws Exception {
+	public int getLeaderToShutDown(String topic) throws Exception {
 		ZkClient zkClient = createZookeeperClient();
 		PartitionMetadata firstPart = null;
 		do {
@@ -127,13 +124,12 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 		while (firstPart.errorCode() != 0);
 		zkClient.close();
 
-		final kafka.cluster.Broker leaderToShutDown = firstPart.leader().get();
-		LeaderInfo leaderInfo = new LeaderInfo();
+		return firstPart.leader().get().id();
+	}
 
-		leaderInfo.leaderConnStr = NetUtils.hostAndPortToUrlString(leaderToShutDown.host(), leaderToShutDown.port());
-		leaderInfo.leaderId = firstPart.leader().get().id();
-
-		return leaderInfo;
+	@Override
+	public int getBrokerId(KafkaServer server) {
+		return server.socketServer().brokerId();
 	}
 
 
@@ -291,6 +287,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 	protected static KafkaServer getKafkaServer(int brokerId, File tmpFolder,
 												String kafkaHost,
 												String zookeeperConnectionString) throws Exception {
+		LOG.info("Starting broker with id {}", brokerId);
 		Properties kafkaProperties = new Properties();
 
 		// properties have to be Strings

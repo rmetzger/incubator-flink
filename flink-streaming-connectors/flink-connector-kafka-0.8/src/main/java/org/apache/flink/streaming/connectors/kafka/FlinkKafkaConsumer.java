@@ -208,18 +208,10 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	/** The partitions actually handled by this consumer at runtime */
 	private transient List<KafkaTopicPartitionLeader> subscribedPartitions;
 
-	/** The offsets of the last returned elements */
-	private transient HashMap<KafkaTopicPartition, Long> lastOffsets;
-
 	/** The latest offsets that have been committed to Kafka or ZooKeeper. These are never
 	 * newer then the last offsets (Flink's internal view is fresher) */
 	private transient HashMap<KafkaTopicPartition, Long> committedOffsets;
-	
-	/** The offsets to restore to, if the consumer restores state from a checkpoint */
-	private transient HashMap<KafkaTopicPartition, Long> restoreToOffset;
-	
-	private volatile boolean running = true;
-	
+
 	// ------------------------------------------------------------------------
 
 
@@ -377,12 +369,12 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 				fetcher.seek(restorePartition.getKey(), restorePartition.getValue() + 1);
 			}
 			// initialize offsets with restored state
-			this.lastOffsets = restoreToOffset;
+			this.offsetsState = restoreToOffset;
 			restoreToOffset = null;
 		}
 		else {
 			// start with empty offsets
-			lastOffsets = new HashMap<>();
+			offsetsState = new HashMap<>();
 
 			// no restore request. Let the offset handler take care of the initial offset seeking
 			offsetHandler.seekFetcherToInitialOffsets(subscribedPartitions, fetcher);
@@ -409,7 +401,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			}
 
 			try {
-				fetcher.run(sourceContext, deserializer, lastOffsets);
+				fetcher.run(sourceContext, deserializer, offsetsState);
 			} finally {
 				if (offsetCommitter != null) {
 					offsetCommitter.close();
@@ -483,101 +475,47 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		super.close();
 	}
 
-	@Override
-	public TypeInformation<T> getProducedType() {
-		return deserializer.getProducedType();
-	}
-
 	// ------------------------------------------------------------------------
 	//  Checkpoint and restore
 	// ------------------------------------------------------------------------
 
-	@Override
-	public HashMap<KafkaTopicPartition, Long> snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
-		if (lastOffsets == null) {
-			LOG.debug("snapshotState() requested on not yet opened source; returning null.");
-			return null;
-		}
-		if (!running) {
-			LOG.debug("snapshotState() called on closed source");
-			return null;
-		}
-
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("Snapshotting state. Offsets: {}, checkpoint id: {}, timestamp: {}",
-					KafkaTopicPartition.toString(lastOffsets), checkpointId, checkpointTimestamp);
-		}
-
-		// the use of clone() is okay here is okay, we just need a new map, the keys are not changed
-		//noinspection unchecked
-		HashMap<KafkaTopicPartition, Long> currentOffsets = (HashMap<KafkaTopicPartition, Long>) lastOffsets.clone();
-
-		// the map cannot be asynchronously updated, because only one checkpoint call can happen
-		// on this function at a time: either snapshotState() or notifyCheckpointComplete()
-		pendingCheckpoints.put(checkpointId, currentOffsets);
-			
-		while (pendingCheckpoints.size() > MAX_NUM_PENDING_CHECKPOINTS) {
-			pendingCheckpoints.remove(0);
-		}
-
-		return currentOffsets;
-	}
-
-	@Override
-	public void restoreState(HashMap<KafkaTopicPartition, Long> restoredOffsets) {
-		restoreToOffset = restoredOffsets;
-	}
-
-	@Override
-	public void notifyCheckpointComplete(long checkpointId) throws Exception {
-		if (fetcher == null) {
-			LOG.debug("notifyCheckpointComplete() called on uninitialized source");
-			return;
-		}
-		if (!running) {
-			LOG.debug("notifyCheckpointComplete() called on closed source");
-			return;
-		}
-		
-		// only one commit operation must be in progress
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("Committing offsets externally for checkpoint {}", checkpointId);
-		}
-
-		try {
-			HashMap<KafkaTopicPartition, Long> checkpointOffsets;
-	
-			// the map may be asynchronously updates when snapshotting state, so we synchronize
-			synchronized (pendingCheckpoints) {
-				final int posInMap = pendingCheckpoints.indexOf(checkpointId);
-				if (posInMap == -1) {
-					LOG.warn("Received confirmation for unknown checkpoint id {}", checkpointId);
-					return;
-				}
-
-				//noinspection unchecked
-				checkpointOffsets = (HashMap<KafkaTopicPartition, Long>) pendingCheckpoints.remove(posInMap);
-
-				
-				// remove older checkpoints in map
-				for (int i = 0; i < posInMap; i++) {
-					pendingCheckpoints.remove(0);
+	/**
+	 * Utility method to commit offsets.
+	 *
+	 * @param toCommit the offsets to commit
+	 * @throws Exception
+	 */
+	protected void commitOffsets(HashMap<KafkaTopicPartition, Long> toCommit) throws Exception {
+		Map<KafkaTopicPartition, Long> offsetsToCommit = new HashMap<>();
+		for (KafkaTopicPartitionLeader tp : this.subscribedPartitions) {
+			Long offset = toCommit.get(tp.getTopicPartition());
+			if(offset == null) {
+				// There was no data ever consumed from this topic, that's why there is no entry
+				// for this topicPartition in the map.
+				continue;
+			}
+			Long lastCommitted = this.committedOffsets.get(tp.getTopicPartition());
+			if (lastCommitted == null) {
+				lastCommitted = OFFSET_NOT_SET;
+			}
+			if (offset != OFFSET_NOT_SET) {
+				if (offset > lastCommitted) {
+					offsetsToCommit.put(tp.getTopicPartition(), offset);
+					this.committedOffsets.put(tp.getTopicPartition(), offset);
+					LOG.debug("Committing offset {} for partition {}", offset, tp.getTopicPartition());
+				} else {
+					LOG.debug("Ignoring offset {} for partition {} because it is already committed", offset, tp.getTopicPartition());
 				}
 			}
-			if (checkpointOffsets == null || checkpointOffsets.size() == 0) {
-				LOG.info("Checkpoint state was empty.");
-				return;
-			}
-			commitOffsets(checkpointOffsets, this);
 		}
-		catch (Exception e) {
-			if (running) {
-				throw e;
-			}
-			// else ignore exception if we are no longer running
+
+		if (LOG.isDebugEnabled() && offsetsToCommit.size() > 0) {
+			LOG.debug("Committing offsets {} to offset store: {}", KafkaTopicPartition.toString(offsetsToCommit), this.offsetStore);
 		}
+
+		this.offsetHandler.commit(offsetsToCommit);
 	}
-	
+
 	// ------------------------------------------------------------------------
 	//  Miscellaneous utilities 
 	// ------------------------------------------------------------------------
@@ -605,8 +543,8 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 						//  ------------  commit current offsets ----------------
 
 						// create copy of current offsets
-						HashMap<KafkaTopicPartition, Long> currentOffsets = (HashMap<KafkaTopicPartition, Long>) consumer.lastOffsets.clone();
-						commitOffsets(currentOffsets, this.consumer);
+						HashMap<KafkaTopicPartition, Long> currentOffsets = (HashMap<KafkaTopicPartition, Long>) consumer.offsetsState.clone();
+						consumer.commitOffsets(currentOffsets);
 					} catch (InterruptedException e) {
 						if (running) {
 							// throw unexpected interruption
@@ -629,45 +567,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 	}
 
-	/**
-	 * Utility method to commit offsets.
-	 *
-	 * @param toCommit the offsets to commit
-	 * @param consumer consumer reference
-	 * @param <T> message type
-	 * @throws Exception
-	 */
-	private static <T> void commitOffsets(HashMap<KafkaTopicPartition, Long> toCommit, FlinkKafkaConsumer<T> consumer) throws Exception {
-		Map<KafkaTopicPartition, Long> offsetsToCommit = new HashMap<>();
-		for (KafkaTopicPartitionLeader tp : consumer.subscribedPartitions) {
-			Long offset = toCommit.get(tp.getTopicPartition());
-			if(offset == null) {
-				// There was no data ever consumed from this topic, that's why there is no entry
-				// for this topicPartition in the map.
-				continue;
-			}
-			Long lastCommitted = consumer.committedOffsets.get(tp.getTopicPartition());
-			if (lastCommitted == null) {
-				lastCommitted = OFFSET_NOT_SET;
-			}
-			if (offset != OFFSET_NOT_SET) {
-				if (offset > lastCommitted) {
-					offsetsToCommit.put(tp.getTopicPartition(), offset);
-					consumer.committedOffsets.put(tp.getTopicPartition(), offset);
-					LOG.debug("Committing offset {} for partition {}", offset, tp.getTopicPartition());
-				} else {
-					LOG.debug("Ignoring offset {} for partition {} because it is already committed", offset, tp.getTopicPartition());
-				}
-			}
-		}
 
-		if (LOG.isDebugEnabled() && offsetsToCommit.size() > 0) {
-			LOG.debug("Committing offsets {} to offset store: {}", KafkaTopicPartition.toString(offsetsToCommit), consumer.offsetStore);
-		}
-
-		consumer.offsetHandler.commit(offsetsToCommit);
-	}
-	
 	// ------------------------------------------------------------------------
 	//  Kafka / ZooKeeper communication utilities
 	// ------------------------------------------------------------------------

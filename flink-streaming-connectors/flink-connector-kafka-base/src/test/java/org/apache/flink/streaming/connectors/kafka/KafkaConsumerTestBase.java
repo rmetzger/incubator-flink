@@ -867,9 +867,9 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				topic, parallelism, numElementsPerPartition, true);
 
 		// find leader to shut down
-		KafkaServerProvider.LeaderInfo leaderInfo = kafkaServer.getLeaderToShutDown(topic);
+		int leaderId = kafkaServer.getLeaderToShutDown(topic);
 
-		LOG.info("Leader to shutdown {}", leaderInfo.leaderConnStr);
+		LOG.info("Leader to shutdown {}", leaderId);
 
 
 		// run the topology that fails and recovers
@@ -889,14 +889,14 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		env
 				.addSource(kafkaSource)
 				.map(new PartitionValidatingMapper(parallelism, 1))
-				.map(new BrokerKillingMapper<Integer>(leaderInfo.leaderConnStr, failAfterElements))
+				.map(new BrokerKillingMapper<Integer>(leaderId, failAfterElements))
 				.addSink(new ValidatingExactlyOnceSink(totalElements)).setParallelism(1);
 
 		BrokerKillingMapper.killedLeaderBefore = false;
 		tryExecute(env, "One-to-one exactly once test");
 
 		// start a new broker:
-		kafkaServer.restartBroker(leaderInfo.leaderId);
+		kafkaServer.restartBroker(leaderId);
 	}
 
 	public void runKeyValueTest() throws Exception {
@@ -1144,7 +1144,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		public static volatile boolean killedLeaderBefore;
 		public static volatile boolean hasBeenCheckpointedBeforeFailure;
 		
-		private final String leaderToShutDown;
+		private final int shutdownBrokerId;
 		private final int failCount;
 		private int numElementsTotal;
 
@@ -1152,8 +1152,8 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		private boolean hasBeenCheckpointed;
 
 
-		public BrokerKillingMapper(String leaderToShutDown, int failCount) {
-			this.leaderToShutDown = leaderToShutDown;
+		public BrokerKillingMapper(int shutdownBrokerId, int failCount) {
+			this.shutdownBrokerId = shutdownBrokerId;
 			this.failCount = failCount;
 		}
 
@@ -1173,8 +1173,8 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 					// shut down a Kafka broker
 					KafkaServer toShutDown = null;
 					for (KafkaServer server : kafkaServer.getBrokers()) {
-						String connectionUrl = kafkaServer.getConnectonUrl(server);
-						if (leaderToShutDown.equals(connectionUrl)) {
+
+						if (kafkaServer.getBrokerId(server) == shutdownBrokerId) {
 							toShutDown = server;
 							break;
 						}
@@ -1183,11 +1183,11 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 					if (toShutDown == null) {
 						StringBuilder listOfBrokers = new StringBuilder();
 						for (KafkaServer server : kafkaServer.getBrokers()) {
-							listOfBrokers.append(kafkaServer.getConnectonUrl(server));
+							listOfBrokers.append(kafkaServer.getBrokerId(server));
 							listOfBrokers.append(" ; ");
 						}
 						
-						throw new Exception("Cannot find broker to shut down: " + leaderToShutDown
+						throw new Exception("Cannot find broker to shut down: " + shutdownBrokerId
 								+ " ; available brokers: " + listOfBrokers.toString());
 					}
 					else {

@@ -73,10 +73,6 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 		return brokerConnectionString;
 	}
 
-	public String getZookeeperConnectionString() {
-		return zookeeperConnectionString;
-	}
-
 	@Override
 	public ConsumerConfig getStandardConsumerConfig() {
 		return standardCC;
@@ -103,7 +99,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 	}
 
 	@Override
-	public <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner partitioner) {
+	public <T> FlinkKafkaProducerBase<T> getProducer(String topic, KeyedSerializationSchema<T> serSchema, Properties props, KafkaPartitioner<T> partitioner) {
 		return new FlinkKafkaProducer<>(topic, serSchema, props, partitioner);
 	}
 
@@ -113,7 +109,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 	}
 
 	@Override
-	public LeaderInfo getLeaderToShutDown(String topic) throws Exception {
+	public int getLeaderToShutDown(String topic) throws Exception {
 		ZkUtils zkUtils = getZkUtils();
 		try {
 			PartitionMetadata firstPart = null;
@@ -129,23 +125,16 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 			}
 			while (firstPart.errorCode() != 0);
 
-			final kafka.cluster.BrokerEndPoint leaderToShutDown = firstPart.leader().get();
-			LeaderInfo leaderInfo = new LeaderInfo();
-
-			leaderInfo.leaderConnStr = NetUtils.hostAndPortToUrlString(leaderToShutDown.host(), leaderToShutDown.port());
-			leaderInfo.leaderId = firstPart.leader().get().id();
-
-			return leaderInfo;
+			return firstPart.leader().get().id();
 		} finally {
 			zkUtils.close();
 		}
 	}
 
 	@Override
-	public String getConnectonUrl(KafkaServer server) throws Exception {
-		return NetUtils.hostAndPortToUrlString(KAFKA_HOST, server.boundPort(SecurityProtocol.PLAINTEXT));
+	public int getBrokerId(KafkaServer server) {
+		return server.config().brokerId();
 	}
-
 
 	@Override
 	public void prepare(int numKafkaServers) {
