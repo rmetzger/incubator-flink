@@ -121,4 +121,12 @@ public class KafkaTopicPartition implements Serializable {
 		}
 		return false;
 	}
+
+	public static List<KafkaTopicPartition> convertToPartitionInfo(List<KafkaTopicPartitionLeader> partitionInfos) {
+		List<KafkaTopicPartition> ret = new ArrayList<>(partitionInfos.size());
+		for(KafkaTopicPartitionLeader ktpl: partitionInfos) {
+			ret.add(ktpl.getTopicPartition());
+		}
+		return ret;
+	}
 }

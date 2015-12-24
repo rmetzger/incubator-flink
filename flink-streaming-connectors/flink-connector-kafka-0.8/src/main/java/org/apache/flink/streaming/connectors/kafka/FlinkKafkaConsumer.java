@@ -24,7 +24,6 @@ import kafka.javaapi.TopicMetadata;
 import kafka.javaapi.TopicMetadataRequest;
 import kafka.javaapi.consumer.SimpleConsumer;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
@@ -287,21 +286,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		}
 
 		if (LOG.isInfoEnabled()) {
-			Map<String, Integer> countPerTopic = new HashMap<>();
-			for (KafkaTopicPartitionLeader partition : partitionInfos) {
-				Integer count = countPerTopic.get(partition.getTopicPartition().getTopic());
-				if (count == null) {
-					count = 1;
-				} else {
-					count++;
-				}
-				countPerTopic.put(partition.getTopicPartition().getTopic(), count);
-			}
-			StringBuilder sb = new StringBuilder();
-			for (Map.Entry<String, Integer> e : countPerTopic.entrySet()) {
-				sb.append(e.getKey()).append(" (").append(e.getValue()).append("), ");
-			}
-			LOG.info("Consumer is going to read the following topics (with number of partitions): ", sb.toString());
+			logPartitionInfo(KafkaTopicPartition.convertToPartitionInfo(partitionInfos));
 		}
 	}
 
@@ -328,6 +313,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		if (subscribedPartitions.isEmpty()) {
 			LOG.info("Kafka consumer {} has no partitions (empty source)", thisConsumerIndex);
 			this.fetcher = null; // fetcher remains null
+			this.running = true;
 			return;
 		}
 		
@@ -379,6 +365,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			// no restore request. Let the offset handler take care of the initial offset seeking
 			offsetHandler.seekFetcherToInitialOffsets(subscribedPartitions, fetcher);
 		}
+		this.running = true;
 	}
 
 	@Override

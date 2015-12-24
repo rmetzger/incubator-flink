@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -81,27 +82,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	 *           The properties that are used to configure both the fetcher and the offset handler.
 	 */
 	public FlinkKafkaConsumerBase(KeyedDeserializationSchema<T> deserializer, Properties props) {
-
 		this.deserializer = checkNotNull(deserializer, "valueDeserializer");
-
-
-		/*if (LOG.isInfoEnabled()) {
-			Map<String, Integer> countPerTopic = new HashMap<>();
-			for (KafkaTopicPartitionLeader partition : partitionInfos) {
-				Integer count = countPerTopic.get(partition.getTopicPartition().getTopic());
-				if (count == null) {
-					count = 1;
-				} else {
-					count++;
-				}
-				countPerTopic.put(partition.getTopicPartition().getTopic(), count);
-			}
-			StringBuilder sb = new StringBuilder();
-			for (Map.Entry<String, Integer> e : countPerTopic.entrySet()) {
-				sb.append(e.getKey()).append(" (").append(e.getValue()).append("), ");
-			}
-			LOG.info("Consumer is going to read the following topics (with number of partitions): ", sb.toString());
-		} */
 	}
 
 
@@ -144,6 +125,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 	@Override
 	public void restoreState(HashMap<KafkaTopicPartition, Long> restoredOffsets) {
+		LOG.info("Setting restore state in Kafka");
 		restoreToOffset = restoredOffsets;
 	}
 
@@ -218,5 +200,24 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		}
 		return partitionsToSub;
 	}
+
+	public static void logPartitionInfo(List<KafkaTopicPartition> partitionInfos) {
+		Map<String, Integer> countPerTopic = new HashMap<>();
+		for (KafkaTopicPartition partition : partitionInfos) {
+			Integer count = countPerTopic.get(partition.getTopic());
+			if (count == null) {
+				count = 1;
+			} else {
+				count++;
+			}
+			countPerTopic.put(partition.getTopic(), count);
+		}
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<String, Integer> e : countPerTopic.entrySet()) {
+			sb.append(e.getKey()).append(" (").append(e.getValue()).append("), ");
+		}
+		LOG.info("Consumer is going to read the following topics (with number of partitions): ", sb.toString());
+	}
+
 
 }

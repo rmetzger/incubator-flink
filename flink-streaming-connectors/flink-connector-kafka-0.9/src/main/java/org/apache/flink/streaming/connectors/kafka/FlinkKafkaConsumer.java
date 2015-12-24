@@ -149,6 +149,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			this.partitionInfos = new ArrayList<>();
 			for (String topic : topics) {
 				// get partitions for each topic
+				// TODO: Maybe add a retry here: It seems that Kafka sometimes returns "null" even if the topic exists
 				try {
 					partitionInfos.addAll(convertToFlinkKafkaTopicPartition(consumer.partitionsFor(topic)));
 				} catch(NullPointerException npe) {
@@ -163,6 +164,10 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		// we now have a list of partitions which is the same for all parallel consumer instances.
 
 		LOG.info("Got {} partitions from these topics: {}", partitionInfos.size(), topics);
+
+		if (LOG.isInfoEnabled()) {
+			logPartitionInfo(partitionInfos);
+		}
 	}
 
 	/**
