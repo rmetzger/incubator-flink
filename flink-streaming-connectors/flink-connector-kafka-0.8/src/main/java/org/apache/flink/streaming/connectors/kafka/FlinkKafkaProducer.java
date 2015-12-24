@@ -35,7 +35,6 @@ import java.util.Properties;
  */
 public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN>  {
 
-
 	private static final long serialVersionUID = 1L;
 
 	// ------------------- Keyless serialization schema constructors ----------------------

@@ -288,6 +288,9 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		if(this.consumerThread != null) {
 			this.consumerThread.shutdown();
 		}
+		if(consumer == null) {
+
+		}
 	}
 
 	@Override
