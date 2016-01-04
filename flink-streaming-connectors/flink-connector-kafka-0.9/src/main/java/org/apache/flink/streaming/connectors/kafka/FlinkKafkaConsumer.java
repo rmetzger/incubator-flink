@@ -100,6 +100,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	private transient Throwable consumerThreadException;
 
 	private transient List<KafkaTopicPartition> subscribedPartitionsAsFlink;
+	private transient Thread waitThread;
 
 
 	// ------------------------------------------------------------------------
@@ -145,18 +146,32 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		checkNotNull(topics, "topics");
 		this.properties = checkNotNull(props, "props");
 		setDeserializer(this.properties);
-		try(KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(this.properties)) {
+		KafkaConsumer<byte[], byte[]> consumer = null;
+		try {
+			consumer = new KafkaConsumer<>(this.properties);
 			this.partitionInfos = new ArrayList<>();
-			for (String topic : topics) {
+			for (final String topic: topics) {
 				// get partitions for each topic
-				// TODO: Maybe add a retry here: It seems that Kafka sometimes returns "null" even if the topic exists
-				try {
-					partitionInfos.addAll(convertToFlinkKafkaTopicPartition(consumer.partitionsFor(topic)));
-				} catch(NullPointerException npe) {
-					// workaround for KAFKA-2880: Fetcher.getTopicMetadata NullPointerException when broker cannot be reached
-					// we ignore the NPE.
+				List<PartitionInfo> partitionsForTopic = null;
+				LOG.info("Trying to get partitions for topic {}", topic);
+				for(int tri = 0; tri < 3; tri++) {
+					try {
+						partitionsForTopic = consumer.partitionsFor(topic);
+						break; // it worked
+					} catch (NullPointerException npe) {
+						// workaround for KAFKA-2880: Fetcher.getTopicMetadata NullPointerException when broker cannot be reached
+						// we ignore the NPE.
+						try {
+							Thread.sleep(200);
+						} catch (InterruptedException e) {
+						}
+						consumer = new KafkaConsumer<>(properties);
+					}
 				}
+				partitionInfos.addAll(convertToFlinkKafkaTopicPartition(partitionsForTopic));
 			}
+		} finally {
+			consumer.close();
 		}
 		if(partitionInfos.isEmpty()) {
 			throw new RuntimeException("Unable to retrieve any partitions for the requested topics " + topics);
@@ -169,6 +184,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			logPartitionInfo(partitionInfos);
 		}
 	}
+
 
 	/**
 	 * Converts a list of Kafka PartitionInfo's to Flink's KafkaTopicPartition (which are serializable)
@@ -263,6 +279,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			}
 
 			final Object waitLock = new Object();
+			this.waitThread = Thread.currentThread();
 			while (running) {
 				// wait until we are canceled
 				try {
@@ -287,9 +304,9 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		running = false;
 		if(this.consumerThread != null) {
 			this.consumerThread.shutdown();
-		}
-		if(consumer == null) {
-
+		} else {
+			// the consumer thread is not running, so we have to interrupt our own thread
+			waitThread.interrupt();
 		}
 	}
 
