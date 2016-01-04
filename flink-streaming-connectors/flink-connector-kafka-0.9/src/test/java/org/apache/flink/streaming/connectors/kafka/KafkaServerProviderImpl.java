@@ -248,24 +248,31 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 		ZkUtils zkUtils = getZkUtils();
 		try {
 			AdminUtils.createTopic(zkUtils, topic, numberOfPartitions, replicationFactor, topicConfig);
-
-			// validate that the topic has been created
-			final long deadline = System.currentTimeMillis() + 30000;
-			do {
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					// restore interrupted state
-				}
-				if(AdminUtils.topicExists(zkUtils, topic)) {
-					return;
-				}
-			}
-			while (System.currentTimeMillis() < deadline);
-			fail("Test topic could not be created");
 		} finally {
 			zkUtils.close();
 		}
+
+		// validate that the topic has been created
+		final long deadline = System.currentTimeMillis() + 30000;
+		do {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// restore interrupted state
+			}
+			// we could use AdminUtils.topicExists(zkUtils, topic) here, but it's results are
+			// not always correct.
+
+			// create a new ZK utils connection
+			ZkUtils checkZKConn = getZkUtils();
+			if(AdminUtils.topicExists(checkZKConn, topic)) {
+				checkZKConn.close();
+				return;
+			}
+			checkZKConn.close();
+		}
+		while (System.currentTimeMillis() < deadline);
+		fail("Test topic could not be created");
 	}
 
 	@Override

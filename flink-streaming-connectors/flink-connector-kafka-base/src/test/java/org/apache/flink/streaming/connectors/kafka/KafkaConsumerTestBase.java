@@ -592,6 +592,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 					env.execute();
 				}
 				catch (Throwable t) {
+					LOG.error("Job Runner failed with exception", t);
 					error.set(t);
 				}
 			}
@@ -601,15 +602,20 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		runnerThread.start();
 
 		// wait a bit before canceling
-		Thread.sleep(2000);
+		Thread.sleep(8000);
 
+		Throwable failueCause = error.get();
+		if(failueCause != null) {
+			failueCause.printStackTrace();
+			Assert.fail("Test failed prematurely with: " + failueCause.getMessage());
+		}
 		// cancel
 		JobManagerCommunicationUtils.cancelCurrentJob(flink.getLeaderGateway(timeout));
 
 		// wait for the program to be done and validate that we failed with the right exception
 		runnerThread.join();
 
-		Throwable failueCause = error.get();
+		failueCause = error.get();
 		assertNotNull("program did not fail properly due to canceling", failueCause);
 		assertTrue(failueCause.getMessage().contains("Job was cancelled"));
 

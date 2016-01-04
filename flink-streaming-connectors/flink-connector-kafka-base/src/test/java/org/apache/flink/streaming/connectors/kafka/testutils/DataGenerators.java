@@ -173,7 +173,7 @@ public class DataGenerators {
 			try {
 				producer = server.getProducer(topic,
 						new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()),
-						FlinkKafkaProducerBase.getPropertiesFromBrokerList(server.getBrokerConnectionString()), new FixedPartitioner());
+						FlinkKafkaProducerBase.getPropertiesFromBrokerList(server.getBrokerConnectionString()), new FixedPartitioner<String>());
 				producer.setRuntimeContext(new MockRuntimeContext(1,0));
 				producer.open(new Configuration());
 				

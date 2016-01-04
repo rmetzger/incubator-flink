@@ -153,8 +153,8 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			for (final String topic: topics) {
 				// get partitions for each topic
 				List<PartitionInfo> partitionsForTopic = null;
-				LOG.info("Trying to get partitions for topic {}", topic);
 				for(int tri = 0; tri < 3; tri++) {
+					LOG.info("Trying to get partitions for topic {}", topic);
 					try {
 						partitionsForTopic = consumer.partitionsFor(topic);
 						break; // it worked
@@ -165,6 +165,8 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 							Thread.sleep(200);
 						} catch (InterruptedException e) {
 						}
+						// create a new consumer
+						consumer.close();
 						consumer = new KafkaConsumer<>(properties);
 					}
 				}
@@ -296,6 +298,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 				catch (InterruptedException e) {
 					// do nothing, check our "running" status
 				}
+				LOG.info("+++ DEBUG : Falling through wait lock");
 			}
 		}
 		// close the context after the work was done. this can actually only
@@ -305,6 +308,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 	@Override
 	public void cancel() {
+		LOG.info("+++ DEBUG : received cancel()");
 		// set ourselves as not running
 		running = false;
 		if(this.consumerThread != null) {
@@ -312,6 +316,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		} else {
 			// the consumer thread is not running, so we have to interrupt our own thread
 			if(waitThread != null) {
+				LOG.info("+++ DEBUG : interrupting: " + waitThread.getName());
 				waitThread.interrupt();
 			}
 		}

@@ -313,7 +313,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		if (subscribedPartitions.isEmpty()) {
 			LOG.info("Kafka consumer {} has no partitions (empty source)", thisConsumerIndex);
 			this.fetcher = null; // fetcher remains null
-			this.running = true;
 			return;
 		}
 		
@@ -365,7 +364,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			// no restore request. Let the offset handler take care of the initial offset seeking
 			offsetHandler.seekFetcherToInitialOffsets(subscribedPartitions, fetcher);
 		}
-		this.running = true;
 	}
 
 	@Override
@@ -624,7 +622,8 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 					}
 					break retryLoop; // leave the loop through the brokers
 				} catch (Exception e) {
-					LOG.warn("Error communicating with broker " + seedBroker + " to find partitions for " + topics.toString(), e);
+					LOG.warn("Error communicating with broker " + seedBroker + " to find partitions for " + topics.toString() + ". Message: " + e.getMessage());
+					LOG.debug("Detailed trace", e);
 				} finally {
 					if (consumer != null) {
 						consumer.close();
