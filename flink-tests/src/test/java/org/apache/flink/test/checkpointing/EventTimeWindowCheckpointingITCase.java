@@ -36,6 +36,7 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.test.util.ForkableFlinkMiniCluster;
+import org.apache.flink.test.util.SuccessException;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.TestLogger;
 import org.junit.AfterClass;
@@ -734,9 +735,5 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
 		public IntType() {}
 
 		public IntType(int value) { this.value = value; }
-	}
-
-	static final class SuccessException extends Exception {
-		private static final long serialVersionUID = -9218191172606739598L;
 	}
 }

@@ -168,10 +168,15 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 						consumer = new KafkaConsumer<>(properties);
 					}
 				}
-				partitionInfos.addAll(convertToFlinkKafkaTopicPartition(partitionsForTopic));
+				// for non existing topics, the list might be null.
+				if(partitionsForTopic != null) {
+					partitionInfos.addAll(convertToFlinkKafkaTopicPartition(partitionsForTopic));
+				}
 			}
 		} finally {
-			consumer.close();
+			if(consumer != null) {
+				consumer.close();
+			}
 		}
 		if(partitionInfos.isEmpty()) {
 			throw new RuntimeException("Unable to retrieve any partitions for the requested topics " + topics);
@@ -306,7 +311,9 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			this.consumerThread.shutdown();
 		} else {
 			// the consumer thread is not running, so we have to interrupt our own thread
-			waitThread.interrupt();
+			if(waitThread != null) {
+				waitThread.interrupt();
+			}
 		}
 	}
 
