@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.connectors.kafka;
 
 import org.I0Itec.zkclient.ZkClient;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.internals.ZookeeperOffsetHandler;
 import org.junit.Test;
@@ -74,28 +75,29 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 
 	@Test
 	public void testInvalidOffset() throws Exception {
-			final String topic = "invalidOffsetTopic";
-			final int parallelism = 1;
+		final String topic = "invalidOffsetTopic";
+		final int parallelism = 1;
 
-			// create topic
-			createTestTopic(topic, parallelism, 1);
+		// create topic
+		createTestTopic(topic, parallelism, 1);
 
-			final StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 
-			// write 20 messages into topic:
-			writeSequence(env, topic, 20, parallelism);
+		// write 20 messages into topic:
+		writeSequence(env, topic, 20, parallelism);
 
-			// set invalid offset:
-			ZkClient zkClient = ((KafkaServerProviderImpl)kafkaServer).createZookeeperClient();
-			ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topic, 0, 1234);
+		// set invalid offset:
+		CuratorFramework curatorClient = ((KafkaServerProviderImpl)kafkaServer).createCuratorClient();
+		ZookeeperOffsetHandler.setOffsetInZooKeeper(curatorClient, standardCC.groupId(), topic, 0, 1234);
+		curatorClient.close();
 
-			// read from topic
-			final int valuesCount = 20;
-			final int startFrom = 0;
-			readSequence(env, standardCC.props().props(), parallelism, topic, valuesCount, startFrom);
+		// read from topic
+		final int valuesCount = 20;
+		final int startFrom = 0;
+		readSequence(env, standardCC.props().props(), parallelism, topic, valuesCount, startFrom);
 
-			deleteTestTopic(topic);
-		}
+		deleteTestTopic(topic);
+	}
 
 	// --- source to partition mappings and exactly once ---
 	
@@ -169,11 +171,11 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 
 		readSequence(env2, standardProps, parallelism, topicName, 100, 0);
 
-		ZkClient zkClient = ((KafkaServerProviderImpl)kafkaServer).createZookeeperClient();
+		CuratorFramework curatorClient = ((KafkaServerProviderImpl)kafkaServer).createCuratorClient();
 
-		long o1 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 0);
-		long o2 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 1);
-		long o3 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 2);
+		long o1 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(curatorClient, standardCC.groupId(), topicName, 0);
+		long o2 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(curatorClient, standardCC.groupId(), topicName, 1);
+		long o3 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(curatorClient, standardCC.groupId(), topicName, 2);
 
 		LOG.info("Got final offsets from zookeeper o1={}, o2={}, o3={}", o1, o2, o3);
 
@@ -184,11 +186,11 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 		LOG.info("Manipulating offsets");
 
 		// set the offset to 50 for the three partitions
-		ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topicName, 0, 49);
-		ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topicName, 1, 49);
-		ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, standardCC.groupId(), topicName, 2, 49);
+		ZookeeperOffsetHandler.setOffsetInZooKeeper(curatorClient, standardCC.groupId(), topicName, 0, 49);
+		ZookeeperOffsetHandler.setOffsetInZooKeeper(curatorClient, standardCC.groupId(), topicName, 1, 49);
+		ZookeeperOffsetHandler.setOffsetInZooKeeper(curatorClient, standardCC.groupId(), topicName, 2, 49);
 
-		zkClient.close();
+		curatorClient.close();
 
 		// create new env
 		readSequence(env3, standardProps, parallelism, topicName, 50, 50);
@@ -231,11 +233,11 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 		readSequence(env2, readProps, parallelism, topicName, 100, 0);
 
 		// get the offset
-		ZkClient zkClient = ((KafkaServerProviderImpl)kafkaServer).createZookeeperClient();
+		CuratorFramework curatorFramework = ((KafkaServerProviderImpl)kafkaServer).createCuratorClient();
 
-		long o1 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 0);
-		long o2 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 1);
-		long o3 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, standardCC.groupId(), topicName, 2);
+		long o1 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(curatorFramework, standardCC.groupId(), topicName, 0);
+		long o2 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(curatorFramework, standardCC.groupId(), topicName, 1);
+		long o3 = ZookeeperOffsetHandler.getOffsetFromZooKeeper(curatorFramework, standardCC.groupId(), topicName, 2);
 
 		LOG.info("Got final offsets from zookeeper o1={}, o2={}, o3={}", o1, o2, o3);
 

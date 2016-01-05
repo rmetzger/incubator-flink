@@ -27,6 +27,10 @@ import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.io.FileUtils;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.TestingServer;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionLeader;
 import org.apache.flink.streaming.connectors.kafka.internals.ZooKeeperStringSerializer;
@@ -109,7 +113,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 
 	@Override
 	public int getLeaderToShutDown(String topic) throws Exception {
-		ZkClient zkClient = createZookeeperClient();
+		ZkClient zkClient = createZkClient();
 		PartitionMetadata firstPart = null;
 		do {
 			if (firstPart != null) {
@@ -237,8 +241,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 		Properties topicConfig = new Properties();
 		LOG.info("Creating topic {}", topic);
 
-		ZkClient creator = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(),
-				standardCC.zkConnectionTimeoutMs(), new ZooKeeperStringSerializer());
+		ZkClient creator = createZkClient();
 
 		AdminUtils.createTopic(creator, topic, numberOfPartitions, replicationFactor, topicConfig);
 		creator.close();
@@ -265,20 +268,24 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 	public void deleteTestTopic(String topic) {
 		LOG.info("Deleting topic {}", topic);
 
-		ZkClient zk = new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(),
-				standardCC.zkConnectionTimeoutMs(), new ZooKeeperStringSerializer());
-
+		ZkClient zk = createZkClient();
 		AdminUtils.deleteTopic(zk, topic);
-
 		zk.close();
+	}
+
+	private ZkClient createZkClient() {
+		return new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(),
+				standardCC.zkConnectionTimeoutMs(), new ZooKeeperStringSerializer());
 	}
 
 	/**
 	 * Only for the 0.8 server we need access to the zk client.
 	 */
-	public ZkClient createZookeeperClient() {
-		return new ZkClient(standardCC.zkConnect(), standardCC.zkSessionTimeoutMs(),
-				standardCC.zkConnectionTimeoutMs(), new ZooKeeperStringSerializer());
+	public CuratorFramework createCuratorClient() {
+		RetryPolicy retryPolicy = new ExponentialBackoffRetry(100, 10);
+		CuratorFramework curatorClient = CuratorFrameworkFactory.newClient(standardProps.getProperty("zookeeper.connect"), retryPolicy);
+		curatorClient.start();
+		return curatorClient;
 	}
 
 	/**

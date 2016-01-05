@@ -21,6 +21,7 @@ package org.apache.flink.streaming.connectors.kafka.internals;
 import kafka.admin.AdminUtils;
 
 import org.I0Itec.zkclient.ZkClient;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.flink.streaming.connectors.kafka.KafkaServerProviderImpl;
 import org.apache.flink.streaming.connectors.kafka.KafkaTestBase;
 
@@ -42,14 +43,14 @@ public class ZookeeperOffsetHandlerTest extends KafkaTestBase {
 			
 			final long offset = (long) (Math.random() * Long.MAX_VALUE);
 
-			ZkClient zkClient = ((KafkaServerProviderImpl)kafkaServer ).createZookeeperClient();
-			AdminUtils.createTopic(zkClient, topicName, 3, 2, new Properties());
-				
-			ZookeeperOffsetHandler.setOffsetInZooKeeper(zkClient, groupId, topicName, 0, offset);
-	
-			long fetchedOffset = ZookeeperOffsetHandler.getOffsetFromZooKeeper(zkClient, groupId, topicName, 0);
+			CuratorFramework curatorFramework = ((KafkaServerProviderImpl)kafkaServer ).createCuratorClient();
+			kafkaServer.createTestTopic(topicName, 3, 2);
 
-			zkClient.close();
+			ZookeeperOffsetHandler.setOffsetInZooKeeper(curatorFramework, groupId, topicName, 0, offset);
+	
+			long fetchedOffset = ZookeeperOffsetHandler.getOffsetFromZooKeeper(curatorFramework, groupId, topicName, 0);
+
+			curatorFramework.close();
 			
 			assertEquals(offset, fetchedOffset);
 		}

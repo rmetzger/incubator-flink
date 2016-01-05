@@ -35,6 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * Handler for committing Kafka offsets to Zookeeper and to retrieve them again.
+ */
 public class ZookeeperOffsetHandler implements OffsetHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ZookeeperOffsetHandler.class);

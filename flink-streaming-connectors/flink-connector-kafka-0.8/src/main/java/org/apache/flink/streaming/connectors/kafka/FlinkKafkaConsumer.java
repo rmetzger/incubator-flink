@@ -528,6 +528,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 						//  ------------  commit current offsets ----------------
 
 						// create copy of current offsets
+						@SuppressWarnings("unchecked")
 						HashMap<KafkaTopicPartition, Long> currentOffsets = (HashMap<KafkaTopicPartition, Long>) consumer.offsetsState.clone();
 						consumer.commitOffsets(currentOffsets);
 					} catch (InterruptedException e) {
@@ -535,8 +536,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 							// throw unexpected interruption
 							throw e;
 						}
-						// looks like the thread is being closed. Leave loop
-						break;
 					}
 				}
 			} catch (Throwable t) {
