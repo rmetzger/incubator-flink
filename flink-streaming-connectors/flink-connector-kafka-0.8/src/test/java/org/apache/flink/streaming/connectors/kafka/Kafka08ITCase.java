@@ -135,6 +135,10 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 		runConsumeMultipleTopics();
 	}
 
+	@Test
+	public void testAllDeletes() throws Exception {
+		runAllDeletesTest();
+	}
 
 	/**
 	 * Tests that offsets are properly committed to ZooKeeper and initial offsets are read from ZooKeeper.

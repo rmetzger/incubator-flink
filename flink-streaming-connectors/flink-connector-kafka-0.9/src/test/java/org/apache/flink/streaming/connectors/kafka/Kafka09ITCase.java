@@ -100,4 +100,9 @@ public class Kafka09ITCase extends KafkaConsumerTestBase {
 	public void testMultipleTopics() throws Exception {
 		runConsumeMultipleTopics();
 	}
+
+	@Test
+	public void testAllDeletes() throws Exception {
+		runAllDeletesTest();
+	}
 }
