@@ -17,7 +17,6 @@
 
 package org.apache.flink.streaming.connectors.kafka.examples;
 
-import org.apache.flink.api.java.LocalEnvironment;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
@@ -26,7 +25,6 @@ import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
-import org.apache.hadoop.hdfs.DFSClient;
 
 
 /**
