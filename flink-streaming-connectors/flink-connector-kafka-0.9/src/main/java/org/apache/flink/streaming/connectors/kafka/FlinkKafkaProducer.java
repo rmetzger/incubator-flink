@@ -27,7 +27,7 @@ import java.util.Properties;
 
 
 /**
- * Flink Sink to produce data into a Kafka topic.
+ * Flink Sink to produce data into a Kafka topic. This producer is compatible with Kafka 0.8.
  *
  * Please note that this producer does not have any reliability guarantees.
  *
@@ -38,8 +38,9 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN> {
 	private static final long serialVersionUID = 1L;
 
 	// ------------------- Keyless serialization schema constructors ----------------------
+
 	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
+	 * Creates a FlinkKafkaProducer for a given topic. The sink produces a DataStream to
 	 * the topic.
 	 *
 	 * @param brokerList
@@ -54,7 +55,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN> {
 	}
 
 	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
+	 * Creates a FlinkKafkaProducer for a given topic. the sink produces a DataStream to
 	 * the topic.
 	 *
 	 * @param topicId
@@ -69,12 +70,13 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN> {
 	}
 
 	/**
-	 * The main constructor for creating a FlinkKafkaProducer.
+	 * Creates a FlinkKafkaProducer for a given topic. the sink produces a DataStream to
+	 * the topic.
 	 *
 	 * @param topicId The topic to write data to
 	 * @param serializationSchema A (keyless) serializable serialization schema for turning user objects into a kafka-consumable byte[]
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
-	 * @param customPartitioner A serializable partitioner for assining messages to Kafka partitions.
+	 * @param customPartitioner A serializable partitioner for assigning messages to Kafka partitions (when passing null, we'll use Kafka's partitioner)
 	 */
 	public FlinkKafkaProducer(String topicId, SerializationSchema<IN> serializationSchema, Properties producerConfig, KafkaPartitioner<IN> customPartitioner) {
 		this(topicId, new KeyedSerializationSchemaWrapper<>(serializationSchema), producerConfig, customPartitioner);
@@ -84,7 +86,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN> {
 	// ------------------- Key/Value serialization schema constructors ----------------------
 
 	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
+	 * Creates a FlinkKafkaProducer for a given topic. The sink produces a DataStream to
 	 * the topic.
 	 *
 	 * @param brokerList
@@ -99,7 +101,7 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN> {
 	}
 
 	/**
-	 * Creates a FlinkKafkaProducer for a given topic. The sink produces its input to
+	 * Creates a FlinkKafkaProducer for a given topic. The sink produces a DataStream to
 	 * the topic.
 	 *
 	 * @param topicId
@@ -114,7 +116,8 @@ public class FlinkKafkaProducer<IN> extends FlinkKafkaProducerBase<IN> {
 	}
 
 	/**
-	 * The main constructor for creating a FlinkKafkaProducer.
+	 * Creates a FlinkKafkaProducer for a given topic. The sink produces a DataStream to
+	 * the topic.
 	 *
 	 * @param topicId The topic to write data to
 	 * @param serializationSchema A serializable serialization schema for turning user objects into a kafka-consumable byte[] supporting key/value messages

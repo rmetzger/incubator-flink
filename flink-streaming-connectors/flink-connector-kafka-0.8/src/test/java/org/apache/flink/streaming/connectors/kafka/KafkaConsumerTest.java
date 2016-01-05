@@ -143,9 +143,7 @@ public class KafkaConsumerTest {
 			props.setProperty("bootstrap.servers", "localhost:11111, localhost:22222");
 			props.setProperty("group.id", "non-existent-group");
 
-			new FlinkKafkaConsumer<>(Collections.singletonList("no op topic"), new SimpleStringSchema(), props,
-					FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER,
-					FlinkKafkaConsumer.FetcherType.LEGACY_LOW_LEVEL);
+			new FlinkKafkaConsumer<>(Collections.singletonList("no op topic"), new SimpleStringSchema(), props);
 		}
 		catch (Exception e) {
 			e.printStackTrace();

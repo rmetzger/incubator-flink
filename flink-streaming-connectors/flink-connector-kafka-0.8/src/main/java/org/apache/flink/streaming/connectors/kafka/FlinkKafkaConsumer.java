@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,29 +57,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * The Flink Kafka Consumer is a streaming data source that pulls a parallel data stream from
- * Apache Kafka. The consumer can run in multiple parallel instances, each of which will pull
+ * Apache Kafka 0.8.x. The consumer can run in multiple parallel instances, each of which will pull
  * data from one or more Kafka partitions. 
  * 
  * <p>The Flink Kafka Consumer participates in checkpointing and guarantees that no data is lost
  * during a failure, and that the computation processes elements "exactly once". 
  * (Note: These guarantees naturally assume that Kafka itself does not loose any data.)</p>
  * 
- * <p>To support a variety of Kafka brokers, protocol versions, and offset committing approaches,
- * the Flink Kafka Consumer can be parametrized with a <i>fetcher</i> and an <i>offset handler</i>.</p>
- *
- * <h1>Fetcher</h1>
- * 
- * <p>The fetcher is responsible to pull data from Kafka. Because Kafka has undergone a change in
- * protocols and APIs, there are currently two fetchers available:</p>
- * 
- * <ul>
- *     <li>{@link FetcherType#NEW_HIGH_LEVEL}: A fetcher based on the new Kafka consumer API.
- *         This fetcher is generally more robust, but works only with later versions of
- *         Kafka (&gt; 0.8.2).</li>
- *         
- *     <li>{@link FetcherType#LEGACY_LOW_LEVEL}: A fetcher based on the old low-level consumer API.
- *         This fetcher is works also with older versions of Kafka (0.8.1). The fetcher interprets
- *         the old Kafka consumer properties, like:
+ * <p>Flink's Kafka Consumer is designed to be compatible with Kafka's High-Level Consumer API (0.8.x).
+ * Most of Kafka's configuration variables can be used with this consumer as well:
  *         <ul>
  *             <li>socket.timeout.ms</li>
  *             <li>socket.receive.buffer.bytes</li>
@@ -89,77 +76,28 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *     </li>
  * </ul>
  * 
- * <h1>Offset handler</h1>
+ * <h1>Offset handling</h1>
  * 
- * <p>Offsets whose records have been read and are checkpointed will be committed back to Kafka / ZooKeeper
+ * <p>Offsets whose records have been read and are checkpointed will be committed back to ZooKeeper
  * by the offset handler. In addition, the offset handler finds the point where the source initially
  * starts reading from the stream, when the streaming job is started.</p>
- * 
- * <p>Currently, the source offers two different offset handlers exist:</p>
- * <ul>
- *     <li>{@link OffsetStore#KAFKA}: Use this offset handler when the Kafka brokers are managing the offsets,
- *         and hence offsets need to be committed the Kafka brokers, rather than to ZooKeeper.
- *         Note that this offset handler works only on new versions of Kafka (0.8.2.x +) and
- *         with the {@link FetcherType#NEW_HIGH_LEVEL} fetcher.</li>
- *         
- *     <li>{@link OffsetStore#FLINK_ZOOKEEPER}: Use this offset handler when the offsets are managed
- *         by ZooKeeper, as in older versions of Kafka (0.8.1.x)</li>
- * </ul>
- * 
+ *
  * <p>Please note that Flink snapshots the offsets internally as part of its distributed checkpoints. The offsets
  * committed to Kafka / ZooKeeper are only to bring the outside view of progress in sync with Flink's view
  * of the progress. That way, monitoring and other jobs can get a view of how far the Flink Kafka consumer
  * has consumed a topic.</p>
+ *
+ * <p>If checkpointing is disabled, the consumer will periodically commit the current offset
+ * to Zookeeper.</p>
+ *
+ * <p>When using a Kafka topic to send data between Flink jobs, we recommend using the
+ * {@see TypeInformationSerializationSchema} and {@see TypeInformationKeyValueSerializationSchema}.</p>
  * 
  * <p><b>NOTE:</b> The implementation currently accesses partition metadata when the consumer
  * is constructed. That means that the client that submits the program needs to be able to
  * reach the Kafka brokers or ZooKeeper.</p>
  */
 public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
-
-	/**
-	 * The offset store defines how acknowledged offsets are committed back to Kafka. Different
-	 * options include letting Flink periodically commit to ZooKeeper, or letting Kafka manage the
-	 * offsets (new Kafka versions only).
-	 */
-	public enum OffsetStore {
-
-		/**
-		 * Let Flink manage the offsets. Flink will periodically commit them to Zookeeper (usually after
-		 * successful checkpoints), in the same structure as Kafka 0.8.2.x
-		 * 
-		 * <p>Use this mode when using the source with Kafka 0.8.1.x brokers.</p>
-		 */
-		FLINK_ZOOKEEPER,
-
-		/**
-		 * Use the mechanisms in Kafka to commit offsets. Depending on the Kafka configuration, different
-		 * mechanism will be used (broker coordinator, zookeeper)
-		 */ 
-		KAFKA
-	}
-
-	/**
-	 * The fetcher type defines which code paths to use to pull data from teh Kafka broker.
-	 */
-	public enum FetcherType {
-
-		/**
-		 * The legacy fetcher uses Kafka's old low-level consumer API.
-		 * 
-		 * <p>Use this fetcher for Kafka 0.8.1 brokers.</p>
-		 */
-		LEGACY_LOW_LEVEL,
-
-		/**
-		 * This fetcher uses a backport of the new consumer API to pull data from the Kafka broker.
-		 * It is the fetcher that will be maintained in the future, and it already 
-		 * handles certain failure cases with less overhead than the legacy fetcher.
-		 * 
-		 * <p>This fetcher works only Kafka 0.8.2 and 0.8.3 (and future versions).</p>
-		 */
-		NEW_HIGH_LEVEL
-	}
 	
 	// ------------------------------------------------------------------------
 	
@@ -179,14 +117,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	public static final int DEFAULT_GET_PARTITIONS_RETRIES = 3;
 
 	
-	
 	// ------  Configuration of the Consumer -------
-	
-	/** The offset store where this consumer commits safe offsets */
-	private final OffsetStore offsetStore;
-
-	/** The type of fetcher to be used to pull data from Kafka */
-	private final FetcherType fetcherType;
 
 	/** List of partitions (including topics and leaders) to consume  */
 	private final List<KafkaTopicPartitionLeader> partitionInfos;
@@ -196,7 +127,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 
 	// ------  Runtime State  -------
-
 	
 	/** The fetcher used to pull data from the Kafka brokers */
 	private transient Fetcher fetcher;
@@ -213,70 +143,74 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 	// ------------------------------------------------------------------------
 
-
 	/**
-	 * Creates a new Flink Kafka Consumer, using the given type of fetcher and offset handler.
-	 *
-	 * <p>To determine which kink of fetcher and offset handler to use, please refer to the docs
-	 * at the beginning of this class.</p>
+	 * Creates a new Kafka streaming source consumer for Kafka 0.8.x
 	 *
 	 * @param topic
-	 *           The Kafka topic to read from.
-	 * @param deserializer
-	 *           The deserializer to turn raw byte messages (without key) into Java/Scala objects.
+	 *           The name of the topic that should be consumed.
+	 * @param valueDeserializer
+	 *           The de-/serializer used to convert between Kafka's byte messages and Flink's objects.
 	 * @param props
-	 *           The properties that are used to configure both the fetcher and the offset handler.
-	 * @param offsetStore
-	 *           The type of offset store to use (Kafka / ZooKeeper)
-	 * @param fetcherType
-	 *           The type of fetcher to use (new high-level API, old low-level API).
+	 *           The properties used to configure the Kafka consumer client, and the ZooKeeper client.
 	 */
-	public FlinkKafkaConsumer(List<String> topic, DeserializationSchema<T> deserializer, Properties props,
-							OffsetStore offsetStore, FetcherType fetcherType) {
-		this(topic, new KeyedDeserializationSchemaWrapper<>(deserializer),
-				props, offsetStore, fetcherType);
+	public FlinkKafkaConsumer(String topic, DeserializationSchema<T> valueDeserializer, Properties props) {
+		this(Collections.singletonList(topic), valueDeserializer, props);
 	}
 
 	/**
-	 * Creates a new Flink Kafka Consumer, using the given type of fetcher and offset handler.
-	 * 
-	 * <p>To determine which kink of fetcher and offset handler to use, please refer to the docs
-	 * at the beginning of this class.</p>
+	 * Creates a new Kafka streaming source consumer for Kafka 0.8.x
+	 *
+	 * This constructor allows passing a {@see KeyedDeserializationSchema} for reading key/value
+	 * pairs, offsets, and topic names from Kafka.
+	 *
+	 * @param topic
+	 *           The name of the topic that should be consumed.
+	 * @param deserializer
+	 *           The keyed de-/serializer used to convert between Kafka's byte messages and Flink's objects.
+	 * @param props
+	 *           The properties used to configure the Kafka consumer client, and the ZooKeeper client.
+	 */
+	public FlinkKafkaConsumer(String topic, KeyedDeserializationSchema<T> deserializer, Properties props) {
+		this(Collections.singletonList(topic), deserializer, props);
+	}
+
+	/**
+	 * Creates a new Kafka streaming source consumer for Kafka 0.8.x
+	 *
+	 * This constructor allows passing multiple topics to the consumer.
+	 *
+	 * @param topics
+	 *           The Kafka topics to read from.
+	 * @param deserializer
+	 *           The de-/serializer used to convert between Kafka's byte messages and Flink's objects.
+	 * @param props
+	 *           The properties that are used to configure both the fetcher and the offset handler.
+	 */
+	public FlinkKafkaConsumer(List<String> topics, DeserializationSchema<T> deserializer, Properties props) {
+		this(topics, new KeyedDeserializationSchemaWrapper<>(deserializer), props);
+	}
+
+	/**
+	 * Creates a new Kafka streaming source consumer for Kafka 0.8.x
+	 *
+	 * This constructor allows passing multiple topics and a key/value deserialization schema.
 	 * 
 	 * @param topics
 	 *           The Kafka topics to read from.
 	 * @param deserializer
-	 *           The deserializer to turn raw byte messages into Java/Scala objects.
+	 *           The keyed de-/serializer used to convert between Kafka's byte messages and Flink's objects.
 	 * @param props
 	 *           The properties that are used to configure both the fetcher and the offset handler.
-	 * @param offsetStore
-	 *           The type of offset store to use (Kafka / ZooKeeper)
-	 * @param fetcherType
-	 *           The type of fetcher to use (new high-level API, old low-level API).
 	 */
-	public FlinkKafkaConsumer(List<String> topics, KeyedDeserializationSchema<T> deserializer, Properties props,
-								OffsetStore offsetStore, FetcherType fetcherType) {
+	public FlinkKafkaConsumer(List<String> topics, KeyedDeserializationSchema<T> deserializer, Properties props) {
 		super(deserializer, props);
-		this.offsetStore = checkNotNull(offsetStore);
-		this.fetcherType = checkNotNull(fetcherType);
 
-		if (fetcherType == FetcherType.NEW_HIGH_LEVEL) {
-			throw new UnsupportedOperationException("The fetcher for Kafka 0.8.3 / 0.9.0 is not yet " +
-					"supported in Flink");
-		}
-		if (offsetStore == OffsetStore.KAFKA && fetcherType == FetcherType.LEGACY_LOW_LEVEL) {
-			throw new IllegalArgumentException(
-					"The Kafka offset handler cannot be used together with the old low-level fetcher.");
-		}
-		
 		checkNotNull(topics, "topics");
 		this.props = checkNotNull(props, "props");
 
 		// validate the zookeeper properties
-		if (offsetStore == OffsetStore.FLINK_ZOOKEEPER) {
-			validateZooKeeperConfig(props);
-		}
-		
+		validateZooKeeperConfig(props);
+
 		// Connect to a broker to get the partitions for all topics
 		this.partitionInfos = getPartitionsForTopic(topics, props);
 
@@ -317,27 +251,11 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		}
 		
 		// create fetcher
-		switch (fetcherType){
-			case NEW_HIGH_LEVEL:
-				throw new UnsupportedOperationException("Currently unsupported");
-			case LEGACY_LOW_LEVEL:
-				fetcher = new LegacyFetcher(this.subscribedPartitions, props, getRuntimeContext().getTaskName());
-				break;
-			default:
-				throw new RuntimeException("Requested unknown fetcher " + fetcher);
-		}
+		fetcher = new LegacyFetcher(this.subscribedPartitions, props, getRuntimeContext().getTaskName());
 
 		// offset handling
-		switch (offsetStore){
-			case FLINK_ZOOKEEPER:
-				offsetHandler = new ZookeeperOffsetHandler(props);
-				break;
-			case KAFKA:
-				throw new Exception("Kafka offset handler cannot work with legacy fetcher");
-			default:
-				throw new RuntimeException("Requested unknown offset store " + offsetStore);
-		}
-		
+		offsetHandler = new ZookeeperOffsetHandler(props);
+
 		committedOffsets = new HashMap<>();
 
 		// seek to last known pos, from restore request
@@ -495,7 +413,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		}
 
 		if (LOG.isDebugEnabled() && offsetsToCommit.size() > 0) {
-			LOG.debug("Committing offsets {} to offset store: {}", KafkaTopicPartition.toString(offsetsToCommit), this.offsetStore);
+			LOG.debug("Committing offsets {} to Zookeeper", KafkaTopicPartition.toString(offsetsToCommit));
 		}
 
 		this.offsetHandler.commit(offsetsToCommit);

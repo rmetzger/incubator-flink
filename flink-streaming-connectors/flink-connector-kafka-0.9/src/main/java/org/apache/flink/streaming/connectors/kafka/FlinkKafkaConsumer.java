@@ -17,10 +17,12 @@
 
 package org.apache.flink.streaming.connectors.kafka;
 
+import org.apache.flink.api.common.accumulators.IntCounter;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
+import org.apache.flink.streaming.connectors.kafka.metrics.DefaultKafkaMetricAccumulator;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
@@ -30,6 +32,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.Metric;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
@@ -48,21 +52,21 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * The Flink Kafka Consumer is a streaming data source that pulls a parallel data stream from
- * Apache Kafka. The consumer can run in multiple parallel instances, each of which will pull
+ * Apache Kafka 0.9.x. The consumer can run in multiple parallel instances, each of which will pull
  * data from one or more Kafka partitions. 
  * 
  * <p>The Flink Kafka Consumer participates in checkpointing and guarantees that no data is lost
  * during a failure, and that the computation processes elements "exactly once". 
  * (Note: These guarantees naturally assume that Kafka itself does not loose any data.)</p>
- * 
- * <p>To support a variety of Kafka brokers, protocol versions, and offset committing approaches,
- * the Flink Kafka Consumer can be parametrized with a <i>fetcher</i> and an <i>offset handler</i>.</p>
  *
  * <p>Please note that Flink snapshots the offsets internally as part of its distributed checkpoints. The offsets
  * committed to Kafka / ZooKeeper are only to bring the outside view of progress in sync with Flink's view
  * of the progress. That way, monitoring and other jobs can get a view of how far the Flink Kafka consumer
  * has consumed a topic.</p>
- * 
+ *
+ * <p>Please refer to Kafka's documentation for the available configuration properties:
+ * http://kafka.apache.org/documentation.html#newconsumerconfigs</p>
+ *
  * <p><b>NOTE:</b> The implementation currently accesses partition metadata when the consumer
  * is constructed. That means that the client that submits the program needs to be able to
  * reach the Kafka brokers or ZooKeeper.</p>
@@ -75,69 +79,97 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaConsumer.class);
 
-	/**
-	 * Configuration key to change the polling timeout
-	 */
+	/**  Configuration key to change the polling timeout **/
 	public static final String KEY_POLL_TIMEOUT = "flink.poll-timeout";
 
+	/** Boolean configuration key to disable metrics tracking **/
+	public static final String KEY_DISABLE_METRICS = "flink.disable-metrics";
+
+	/**
+	 * From Kafka's Javadoc: The time, in milliseconds, spent waiting in poll if data is not
+	 * available. If 0, returns immediately with any records that are available now.
+	 */
 	public static final long DEFAULT_POLL_TIMEOUT = 100L;
 
-
-
-	/** Data for pending but uncommitted checkpoints */
+	/** User-supplied properties for Kafka **/
 	private final Properties properties;
+	/** Ordered list of all partitions available in all subscribed partitions **/
 	private final List<KafkaTopicPartition> partitionInfos;
 
 	// ------  Runtime State  -------
 
-
 	/** The partitions actually handled by this consumer at runtime */
 	private transient List<TopicPartition> subscribedPartitions;
+	/** For performance reasons, we are keeping two representations of the subscribed partitions **/
+	private transient List<KafkaTopicPartition> subscribedPartitionsAsFlink;
+	/** The Kafka Consumer instance**/
 	private transient KafkaConsumer<byte[], byte[]> consumer;
-	// private transient HashMap<KafkaTopicPartition, Long> offsetsState;
+	/** The thread running Kafka's consumer **/
 	private transient ConsumerThread<T> consumerThread;
 	/** Exception set from the ConsumerThread */
 	private transient Throwable consumerThreadException;
-
-	private transient List<KafkaTopicPartition> subscribedPartitionsAsFlink;
+	/** If the consumer doesn't have a Kafka partition assigned at runtime, it'll block on this waitThread **/
 	private transient Thread waitThread;
 
 
 	// ------------------------------------------------------------------------
 
+	/**
+	 * Creates a new Kafka streaming source consumer for Kafka 0.9.x
+	 *
+	 * @param topic
+	 *           The name of the topic that should be consumed.
+	 * @param valueDeserializer
+	 *           The de-/serializer used to convert between Kafka's byte messages and Flink's objects.
+	 * @param props
+	 *           The properties used to configure the Kafka consumer client, and the ZooKeeper client.
+	 */
+	public FlinkKafkaConsumer(String topic, DeserializationSchema<T> valueDeserializer, Properties props) {
+		this(Collections.singletonList(topic), valueDeserializer, props);
+	}
 
-	public FlinkKafkaConsumer(String topic, DeserializationSchema<T> deserializer, Properties props) {
+	/**
+	 * Creates a new Kafka streaming source consumer for Kafka 0.9.x
+	 *
+	 * This constructor allows passing a {@see KeyedDeserializationSchema} for reading key/value
+	 * pairs, offsets, and topic names from Kafka.
+	 *
+	 * @param topic
+	 *           The name of the topic that should be consumed.
+	 * @param deserializer
+	 *           The keyed de-/serializer used to convert between Kafka's byte messages and Flink's objects.
+	 * @param props
+	 *           The properties used to configure the Kafka consumer client, and the ZooKeeper client.
+	 */
+	public FlinkKafkaConsumer(String topic, KeyedDeserializationSchema<T> deserializer, Properties props) {
 		this(Collections.singletonList(topic), deserializer, props);
 	}
 
 	/**
-	 * Creates a new Flink Kafka Consumer, using the given type of fetcher and offset handler.
+	 * Creates a new Kafka streaming source consumer for Kafka 0.9.x
 	 *
-	 * <p>To determine which kink of fetcher and offset handler to use, please refer to the docs
-	 * at the beginnign of this class.</p>
+	 * This constructor allows passing multiple topics to the consumer.
 	 *
 	 * @param topics
-	 *           The Kafka topic to read from.
+	 *           The Kafka topics to read from.
 	 * @param deserializer
-	 *           The deserializer to turn raw byte messages (without key) into Java/Scala objects.
+	 *           The de-/serializer used to convert between Kafka's byte messages and Flink's objects.
 	 * @param props
 	 *           The properties that are used to configure both the fetcher and the offset handler.
 	 */
 	public FlinkKafkaConsumer(List<String> topics, DeserializationSchema<T> deserializer, Properties props) {
-		this(topics, new KeyedDeserializationSchemaWrapper<>(deserializer),
-				props);
+		this(topics, new KeyedDeserializationSchemaWrapper<>(deserializer), props);
 	}
 
 	/**
-	 * Creates a new Flink Kafka Consumer, using the given type of fetcher and offset handler.
-	 * 
-	 * <p>To determine which kink of fetcher and offset handler to use, please refer to the docs
-	 * at the beginnign of this class.</p>
-	 * 
+	 * Creates a new Kafka streaming source consumer for Kafka 0.9.x
+	 *
+	 * This constructor allows passing multiple topics and a key/value deserialization schema.
+	 *
 	 * @param topics
 	 *           The Kafka topics to read from.
 	 * @param deserializer
-	 *           The deserializer to turn raw byte messages into Java/Scala objects.
+	 *           The keyed de-/serializer used to convert between Kafka's byte messages and Flink's objects.
 	 * @param props
 	 *           The properties that are used to configure both the fetcher and the offset handler.
 	 */
@@ -239,6 +271,23 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 			this.consumer = new KafkaConsumer<>(properties);
 		}
 
+		// register Kafka metrics to Flink accumulators
+		if(!Boolean.getBoolean(properties.getProperty(KEY_DISABLE_METRICS, "false"))) {
+			Map<MetricName, ? extends Metric> metrics = this.consumer.metrics();
+
+			for(Map.Entry<MetricName, ? extends Metric> metric: metrics.entrySet()) {
+				String name = "consumer-" + metric.getKey().name();
+				DefaultKafkaMetricAccumulator kafkaAccumulator = DefaultKafkaMetricAccumulator.createFor(metric.getValue());
+				// best effort: we only add the accumulator if available.
+				if(kafkaAccumulator != null) {
+					getRuntimeContext().addAccumulator(name, kafkaAccumulator);
+				}
+			}
+			IntCounter ic = new IntCounter();
+			ic.add(1);
+			getRuntimeContext().addAccumulator("simple", ic);
+		}
+
 		// pick which partitions we work on
 		subscribedPartitions = convertToKafkaTopicPartition(subscribedPartitionsAsFlink);
 
@@ -256,6 +305,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		}
 		this.running = true;
 	}
+
 
 
 	@Override
@@ -371,7 +421,7 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 	/**
 	 * We use a separate thread for executing the KafkaConsumer.poll(timeout) call because Kafka is not
-	 * handling interrups properly. On an interrupt (which happens automatically by Flink if the task
+	 * handling interrupts properly. On an interrupt (which happens automatically by Flink if the task
 	 * doesn't react to cancel() calls), the poll() method might never return.
 	 * On cancel, we'll wakeup the .poll() call and wait for it to return
 	 */

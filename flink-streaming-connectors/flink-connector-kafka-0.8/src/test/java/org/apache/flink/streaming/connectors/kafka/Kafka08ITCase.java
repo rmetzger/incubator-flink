@@ -17,13 +17,11 @@
 
 package org.apache.flink.streaming.connectors.kafka;
 
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.internals.ZookeeperOffsetHandler;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.assertTrue;

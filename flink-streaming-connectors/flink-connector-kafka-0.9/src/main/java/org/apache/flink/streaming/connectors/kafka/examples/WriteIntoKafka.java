@@ -17,49 +17,55 @@
 
 package org.apache.flink.streaming.connectors.kafka.examples;
 
-import org.apache.flink.api.java.LocalEnvironment;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
-import org.apache.hadoop.hdfs.DFSClient;
 
 
 /**
- * Read Strings from Kafka and print them to standard out.
- * Note: On a cluster, DataStream.print() will print to the TaskManager's .out file!
+ * Generate a String every 500 ms and write it into a Kafka topic
  *
  * Please pass the following arguments to run the example:
- * 	--topic test --bootstrap.servers localhost:9092 --group.id myconsumer
+ * 	--topic test --bootstrap.servers localhost:9092
  *
  */
-public class ReadFromKafka {
+public class WriteIntoKafka {
 
 	public static void main(String[] args) throws Exception {
-		Configuration conf = new Configuration();
-	//	conf.setString(ConfigConstants.WEB_);
-		conf.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true);
-		StreamExecutionEnvironment env = //StreamExecutionEnvironment.getExecutionEnvironment();
-				LocalStreamEnvironment.createLocalEnvironment(2, conf);
+		StreamExecutionEnvironment env =
+				StreamExecutionEnvironment.getExecutionEnvironment();
 		env.getConfig().disableSysoutLogging();
 		env.setNumberOfExecutionRetries(4);
-		env.enableCheckpointing(5000);
 		env.setParallelism(2);
 
 		ParameterTool parameterTool = ParameterTool.fromArgs(args);
 
-		DataStream<String> messageStream = env
-				.addSource(new FlinkKafkaConsumer<>(
-						parameterTool.getRequired("topic"),
-						new SimpleStringSchema(),
-						parameterTool.getProperties()));
+		// very simple data generator
+		DataStream<String> messageStream = env.addSource(new SourceFunction<String>() {
+			public boolean running = true;
 
-		messageStream.print();
+			@Override
+			public void run(SourceContext<String> ctx) throws Exception {
+				long i = 0;
+				while(this.running) {
+					ctx.collect("Element - " + i++);
+					Thread.sleep(500);
+				}
+			}
 
-		env.execute("Read from Kafka example");
+			@Override
+			public void cancel() {
+				running = false;
+			}
+		});
+
+		// write data into Kafka
+		messageStream.addSink(new FlinkKafkaProducer<>(parameterTool.getRequired("topic"), new SimpleStringSchema(), parameterTool.getProperties()));
+
+		env.execute("Write into Kafka example");
 	}
 }

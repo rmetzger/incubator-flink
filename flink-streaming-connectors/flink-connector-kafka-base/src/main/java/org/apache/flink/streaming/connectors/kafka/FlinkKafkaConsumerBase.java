@@ -65,6 +65,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	/** The offsets to restore to, if the consumer restores state from a checkpoint */
 	protected transient HashMap<KafkaTopicPartition, Long> restoreToOffset;
 
+	/** Flag indicating whether the consumer is still running **/
 	protected volatile boolean running = true;
 
 	// ------------------------------------------------------------------------
@@ -198,6 +199,10 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		return partitionsToSub;
 	}
 
+	/**
+	 * Method to log partition information.
+	 * @param partitionInfos List of subscribed partitions
+	 */
 	public static void logPartitionInfo(List<KafkaTopicPartition> partitionInfos) {
 		Map<String, Integer> countPerTopic = new HashMap<>();
 		for (KafkaTopicPartition partition : partitionInfos) {

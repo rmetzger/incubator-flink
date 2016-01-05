@@ -18,6 +18,7 @@
 
 package org.apache.flink.test.util;
 
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.client.program.ProgramInvocationException;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -25,9 +26,9 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import static org.junit.Assert.fail;
 
 public class TestUtils {
-	public static void tryExecute(StreamExecutionEnvironment see, String name) throws Exception {
+	public static JobExecutionResult tryExecute(StreamExecutionEnvironment see, String name) throws Exception {
 		try {
-			see.execute(name);
+			return see.execute(name);
 		}
 		catch (ProgramInvocationException | JobExecutionException root) {
 			Throwable cause = root.getCause();
@@ -44,6 +45,7 @@ public class TestUtils {
 				}
 			}
 		}
+		return null;
 	}
 
 

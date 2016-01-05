@@ -1605,7 +1605,7 @@ Collection-based:
 Custom:
 
 - `addSource` - Attache a new source function. For example, to read from Apache Kafka you can use
-    `addSource(new FlinkKafkaConsumer082<>(...))`. See [connectors](#connectors) for more details.
+    `addSource(new FlinkKafkaConsumer<>(...))`. See [connectors](#connectors) for more details.
 
 </div>
 
@@ -1657,7 +1657,7 @@ Collection-based:
 Custom:
 
 - `addSource` - Attache a new source function. For example, to read from Apache Kafka you can use
-    `addSource(new FlinkKafkaConsumer082<>(...))`. See [connectors](#connectors) for more details.
+    `addSource(new FlinkKafkaConsumer<>(...))`. See [connectors](#connectors) for more details.
 
 </div>
 </div>
@@ -3263,7 +3263,6 @@ exactly-once processing semantics. To achieve that, Flink does not purely rely o
 offset tracking, but tracks and checkpoints these offsets internally as well.
 
 Please pick a package (maven artifact id) and class name for your use-case and environment.
-For most users, the `FlinkKafkaConsumer082` (part of `flink-connector-kafka`) is appropriate.
 
 
 <table class="table table-bordered">
@@ -3280,16 +3279,23 @@ For most users, the `FlinkKafkaConsumer082` (part of `flink-connector-kafka`) is
     <tr>
         <td>flink-connector-kafka</td>
         <td>0.9.1, 0.10</td>
-        <td>FlinkKafkaConsumer081</td>
-        <td>0.8.1</td>
+        <td>FlinkKafkaConsumer082</td>
+        <td>0.8.x</td>
         <td>Uses the <a href="https://cwiki.apache.org/confluence/display/KAFKA/0.8.0+SimpleConsumer+Example">SimpleConsumer</a> API of Kafka internally. Offsets are committed to ZK by Flink.</td>
     </tr>
-    <tr>
-        <td>flink-connector-kafka</td>
-        <td>0.9.1, 0.10</td>
-        <td>FlinkKafkaConsumer082</td>
-        <td>0.8.2</td>
+     <tr>
+        <td>flink-connector-kafka-0.8</td>
+        <td>1.0.0</td>
+        <td>FlinkKafkaConsumer</td>
+        <td>0.8.x</td>
         <td>Uses the <a href="https://cwiki.apache.org/confluence/display/KAFKA/0.8.0+SimpleConsumer+Example">SimpleConsumer</a> API of Kafka internally. Offsets are committed to ZK by Flink.</td>
+    </tr>
+     <tr>
+        <td>flink-connector-kafka-0.9</td>
+        <td>1.0.0</td>
+        <td>FlinkKafkaConsumer</td>
+        <td>0.9.x</td>
+        <td>Uses the new <a href="http://kafka.apache.org/documentation.html#newconsumerapi">Consumer API</a> Kafka.</td>
     </tr>
   </tbody>
 </table>
@@ -3299,8 +3305,8 @@ Then, import the connector in your maven project:
 {% highlight xml %}
 <dependency>
   <groupId>org.apache.flink</groupId>
-  <artifactId>flink-connector-kafka</artifactId>
-  <version>{{site.version }}</version>
+  <artifactId>flink-connector-kafka-0.8</artifactId>
+  <version>{{ site.version }}</version>
 </dependency>
 {% endhighlight %}
 
@@ -3314,14 +3320,16 @@ Note that the streaming connectors are currently not part of the binary distribu
 
 #### Kafka Consumer
 
-The standard `FlinkKafkaConsumer082` is a Kafka consumer providing access to one topic. It takes the following parameters to the constructor:
+Flink's Kafka consumer is called `FlinkKafkaConsumer`. It provides access to one or more Kafka topics.
 
-1. The topic name
-2. A DeserializationSchema
+The constructor accepts the following arguments:
+
+1. The topic name / list of topic names
+2. A DeserializationSchema / KeyedDeserializationSchema for deserializing the data from Kafka
 3. Properties for the Kafka consumer.
   The following properties are required:
   - "bootstrap.servers" (comma separated list of Kafka brokers)
-  - "zookeeper.connect" (comma separated list of Zookeeper servers)
+  - "zookeeper.connect" (comma separated list of Zookeeper servers) (**only required for Kafka 0.8**)
   - "group.id" the id of the consumer group
 
 Example:
@@ -3331,10 +3339,11 @@ Example:
 {% highlight java %}
 Properties properties = new Properties();
 properties.setProperty("bootstrap.servers", "localhost:9092");
+// only required for Kafka 0.8
 properties.setProperty("zookeeper.connect", "localhost:2181");
 properties.setProperty("group.id", "test");
 DataStream<String> stream = env
-	.addSource(new FlinkKafkaConsumer082<>("topic", new SimpleStringSchema(), properties))
+	.addSource(new FlinkKafkaConsumer<>("topic", new SimpleStringSchema(), properties))
 	.print();
 {% endhighlight %}
 </div>
@@ -3342,14 +3351,27 @@ DataStream<String> stream = env
 {% highlight scala %}
 val properties = new Properties();
 properties.setProperty("bootstrap.servers", "localhost:9092");
+// only required for Kafka 0.8
 properties.setProperty("zookeeper.connect", "localhost:2181");
 properties.setProperty("group.id", "test");
 stream = env
-    .addSource(new FlinkKafkaConsumer082[String]("topic", new SimpleStringSchema(), properties))
+    .addSource(new FlinkKafkaConsumer[String]("topic", new SimpleStringSchema(), properties))
     .print
 {% endhighlight %}
 </div>
 </div>
+
+
+##### The `DeserializationSchema`
+
+The `FlinkKafkaConsumer` needs to know how to turn the data in Kafka into Java objects. The 
+`DeserializationSchema` allows users to specify such a schema. The `T deserialize(byte[] message)`
+method gets called for each Kafka message, passing the value from Kafka.
+For accessing both the key and value of the Kafka message, the `KeyedDeserializationSchema` has
+the following deserialize method ` T deserialize(byte[] messageKey, byte[] message, String topic, long offset)`.
+
+For convenience, Flink provides a `TypeInformationSerializationSchema` (and `TypeInformationKeyValueSerializationSchema`) 
+which creates a schema based on a Flink `TypeInformation`.
 
 #### Kafka Consumers and Fault Tolerance
 
@@ -3386,7 +3408,7 @@ If checkpointing is not enabled, the Kafka consumer will periodically commit the
 #### Kafka Producer
 
 The `FlinkKafkaProducer` writes data to a Kafka topic. The producer can specify a custom partitioner that assigns
-recors to partitions.
+records to partitions.
 
 Example:
 

@@ -98,7 +98,7 @@ public class KafkaServerProviderImpl extends KafkaServerProvider {
 
 	@Override
 	public <T> FlinkKafkaConsumerBase<T> getConsumer(List<String> topics, KeyedDeserializationSchema<T> readSchema, Properties props) {
-		return new FlinkKafkaConsumer082<>(topics, readSchema, props);
+		return new FlinkKafkaConsumer<>(topics, readSchema, props);
 	}
 
 	@Override
