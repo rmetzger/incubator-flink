@@ -97,7 +97,7 @@ public class MockRuntimeContext extends StreamingRuntimeContext {
 
 	@Override
 	public <V, A extends Serializable> void addAccumulator(String name, Accumulator<V, A> accumulator) {
-		throw new UnsupportedOperationException();
+		// noop
 	}
 
 	@Override
