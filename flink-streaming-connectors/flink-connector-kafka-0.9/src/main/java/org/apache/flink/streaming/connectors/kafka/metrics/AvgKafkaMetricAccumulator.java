@@ -70,11 +70,9 @@ public class AvgKafkaMetricAccumulator extends DefaultKafkaMetricAccumulator {
 			otherAvg = otherMetric.lastSumCount;
 		}
 
-		LOG.info("before this {}", thisAvg);
 		thisAvg.count += otherAvg.count;
 		thisAvg.sum += otherAvg.sum;
 		this.mergedValue = thisAvg.sum / thisAvg.count;
-		LOG.info("merged {} with {}", thisAvg, otherAvg);
 	}
 
 	@Override

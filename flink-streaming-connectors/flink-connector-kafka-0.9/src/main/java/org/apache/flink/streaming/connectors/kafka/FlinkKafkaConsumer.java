@@ -348,7 +348,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 				catch (InterruptedException e) {
 					// do nothing, check our "running" status
 				}
-				LOG.info("+++ DEBUG : Falling through wait lock");
 			}
 		}
 		// close the context after the work was done. this can actually only
@@ -358,7 +357,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 
 	@Override
 	public void cancel() {
-		LOG.info("+++ DEBUG : received cancel()");
 		// set ourselves as not running
 		running = false;
 		if(this.consumerThread != null) {
@@ -366,7 +364,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		} else {
 			// the consumer thread is not running, so we have to interrupt our own thread
 			if(waitThread != null) {
-				LOG.info("+++ DEBUG : interrupting: " + waitThread.getName());
 				waitThread.interrupt();
 			}
 		}
@@ -474,6 +471,12 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 					this.flinkKafkaConsumer.stopWithError(t);
 				} else {
 					LOG.debug("Stopped ConsumerThread threw exception", t);
+				}
+			} finally {
+				try {
+					flinkKafkaConsumer.consumer.close();
+				} catch(Throwable t) {
+					LOG.warn("Error while closing consumer", t);
 				}
 			}
 		}
