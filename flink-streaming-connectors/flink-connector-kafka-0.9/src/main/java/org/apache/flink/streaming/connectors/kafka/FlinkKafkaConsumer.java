@@ -22,7 +22,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
-import org.apache.flink.streaming.connectors.kafka.metrics.DefaultKafkaMetricAccumulator;
+import org.apache.flink.streaming.connectors.kafka.internals.metrics.DefaultKafkaMetricAccumulator;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
@@ -189,18 +189,20 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 					LOG.info("Trying to get partitions for topic {}", topic);
 					try {
 						partitionsForTopic = consumer.partitionsFor(topic);
-						break; // it worked
+						if(partitionsForTopic != null && partitionsForTopic.size() > 0) {
+							break; // it worked
+						}
 					} catch (NullPointerException npe) {
 						// workaround for KAFKA-2880: Fetcher.getTopicMetadata NullPointerException when broker cannot be reached
 						// we ignore the NPE.
-						try {
-							Thread.sleep(200);
-						} catch (InterruptedException e) {
-						}
-						// create a new consumer
-						consumer.close();
-						consumer = new KafkaConsumer<>(properties);
 					}
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+					}
+					// create a new consumer
+					consumer.close();
+					consumer = new KafkaConsumer<>(properties);
 				}
 				// for non existing topics, the list might be null.
 				if(partitionsForTopic != null) {
@@ -262,7 +264,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		if(this.subscribedPartitionsAsFlink.isEmpty()) {
 			LOG.info("This consumer doesn't have any partitions assigned");
 			this.offsetsState = null;
-			this.running = true;
 			return;
 		} else {
 			StreamingRuntimeContext streamingRuntimeContext = (StreamingRuntimeContext) getRuntimeContext();
@@ -283,9 +284,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 					getRuntimeContext().addAccumulator(name, kafkaAccumulator);
 				}
 			}
-			IntCounter ic = new IntCounter();
-			ic.add(1);
-			getRuntimeContext().addAccumulator("simple", ic);
 		}
 
 		// pick which partitions we work on
@@ -303,7 +301,6 @@ public class FlinkKafkaConsumer<T> extends FlinkKafkaConsumerBase<T> {
 		} else {
 			this.offsetsState = new HashMap<>();
 		}
-		this.running = true;
 	}
 
 

@@ -754,7 +754,6 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 	 * Test Flink's Kafka integration also with very big records (30MB)
 	 * see http://stackoverflow.com/questions/21020347/kafka-sending-a-15mb-message
 	 *
-	 * @param testForMetrics If true, we'll ensure that kafka metrics are reported
 	 */
 	public void runBigRecordTestTopology() throws Exception {
 
@@ -914,7 +913,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.setParallelism(1);
-		env.setNumberOfExecutionRetries(3);
+		env.setNumberOfExecutionRetries(0);
 		env.getConfig().disableSysoutLogging();
 
 		DataStream<Tuple2<Long, PojoValue>> kvStream = env.addSource(new SourceFunction<Tuple2<Long, PojoValue>>() {
@@ -944,7 +943,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.setParallelism(1);
-		env.setNumberOfExecutionRetries(3);
+		env.setNumberOfExecutionRetries(0);
 		env.getConfig().disableSysoutLogging();
 
 
@@ -992,7 +991,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.setParallelism(1);
-		env.setNumberOfExecutionRetries(3);
+		env.setNumberOfExecutionRetries(0);
 		env.getConfig().disableSysoutLogging();
 
 		DataStream<Tuple2<byte[], PojoValue>> kvStream = env.addSource(new SourceFunction<Tuple2<byte[], PojoValue>>() {
@@ -1014,13 +1013,18 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		kvStream.addSink(kafkaServer.getProducer(topic, schema, FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings), null));
 
-		env.execute("Write deletes to Kafka");
+		JobExecutionResult result = env.execute("Write deletes to Kafka");
+
+		Map<String, Object> accuResults = result.getAllAccumulatorResults();
+		// there are 37 accumulator results in Kafka 0.9
+		// and 34 in Kafka 0.8
+		Assert.assertTrue("Not enough accumulators from Kafka Producer: " + accuResults.size(), accuResults.size() > 33);
 
 		// ----------- Read the data again -------------------
 
 		env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.setParallelism(1);
-		env.setNumberOfExecutionRetries(3);
+		env.setNumberOfExecutionRetries(0);
 		env.getConfig().disableSysoutLogging();
 
 		DataStream<Tuple2<byte[], PojoValue>> fromKafka = env.addSource(kafkaServer.getConsumer(topic, schema, standardProps));

@@ -164,7 +164,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 				}
 			}
 			if (checkpointOffsets == null || checkpointOffsets.size() == 0) {
-				LOG.info("Checkpoint state was empty.");
+				LOG.debug("Checkpoint state was empty.");
 				return;
 			}
 			commitOffsets(checkpointOffsets);

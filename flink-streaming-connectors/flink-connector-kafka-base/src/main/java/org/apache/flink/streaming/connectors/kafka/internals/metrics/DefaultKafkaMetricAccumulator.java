@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.connectors.kafka.metrics;
+package org.apache.flink.streaming.connectors.kafka.internals.metrics;
 
 import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.kafka.common.Metric;
@@ -93,6 +93,9 @@ public class DefaultKafkaMetricAccumulator implements Accumulator<Void, Double>,
 
 	@Override
 	public Double getLocalValue() {
+		if(isMerged && kafkaMetric == null) {
+			return mergedValue;
+		}
 		return kafkaMetric.value();
 	}
 

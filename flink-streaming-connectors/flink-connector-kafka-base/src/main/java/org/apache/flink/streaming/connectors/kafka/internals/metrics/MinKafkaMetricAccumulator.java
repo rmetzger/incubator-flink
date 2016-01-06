@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.streaming.connectors.kafka.metrics;
+package org.apache.flink.streaming.connectors.kafka.internals.metrics;
 
 import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.kafka.common.metrics.KafkaMetric;

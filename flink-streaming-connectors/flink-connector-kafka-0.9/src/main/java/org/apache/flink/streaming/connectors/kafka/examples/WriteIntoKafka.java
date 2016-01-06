@@ -18,7 +18,10 @@
 package org.apache.flink.streaming.connectors.kafka.examples;
 
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
@@ -35,8 +38,13 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 public class WriteIntoKafka {
 
 	public static void main(String[] args) throws Exception {
-		StreamExecutionEnvironment env =
-				StreamExecutionEnvironment.getExecutionEnvironment();
+		Configuration conf = new Configuration();
+		//	conf.setString(ConfigConstants.WEB_);
+		conf.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true);
+		StreamExecutionEnvironment env = //StreamExecutionEnvironment.getExecutionEnvironment();
+				LocalStreamEnvironment.createLocalEnvironment(2, conf);
+	//	StreamExecutionEnvironment env =
+	//			StreamExecutionEnvironment.getExecutionEnvironment();
 		env.getConfig().disableSysoutLogging();
 		env.setNumberOfExecutionRetries(4);
 		env.setParallelism(2);

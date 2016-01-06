@@ -23,6 +23,7 @@ import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.java.ClosureCleaner;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
+import org.apache.flink.streaming.connectors.kafka.internals.metrics.DefaultKafkaMetricAccumulator;
 import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
 import org.apache.flink.streaming.util.serialization.KeyedSerializationSchema;
 import org.apache.flink.util.NetUtils;
@@ -32,6 +33,8 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.Metric;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 
@@ -39,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 
@@ -54,6 +58,11 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaProducerBase.class);
 
 	private static final long serialVersionUID = 1L;
+
+	/**
+	 * Configuration key for disabling the metrics reporting
+	 */
+	public static final String KEY_DISABLE_METRICS = "flink.disable-metrics";
 
 	/**
 	 * Array with the partition ids of the given topicId
@@ -178,7 +187,21 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN>  {
 
 		LOG.info("Starting FlinkKafkaProducer ({}/{}) to produce into topic {}", 
 				ctx.getIndexOfThisSubtask(), ctx.getNumberOfParallelSubtasks(), topicId);
-		
+
+		// register Kafka metrics to Flink accumulators
+		if(!Boolean.getBoolean(producerConfig.getProperty(KEY_DISABLE_METRICS, "false"))) {
+			Map<MetricName, ? extends Metric> metrics = this.producer.metrics();
+
+			for(Map.Entry<MetricName, ? extends Metric> metric: metrics.entrySet()) {
+				String name = "producer-" + metric.getKey().name();
+				DefaultKafkaMetricAccumulator kafkaAccumulator = DefaultKafkaMetricAccumulator.createFor(metric.getValue());
+				// best effort: we only add the accumulator if available.
+				if(kafkaAccumulator != null) {
+					getRuntimeContext().addAccumulator(name, kafkaAccumulator);
+				}
+			}
+		}
+
 		if (logFailuresOnly) {
 			callback = new Callback() {
 				
