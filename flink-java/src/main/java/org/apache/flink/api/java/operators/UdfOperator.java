@@ -20,7 +20,7 @@ package org.apache.flink.api.java.operators;
 
 import java.util.Map;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.operators.SemanticProperties;
 import org.apache.flink.configuration.Configuration;
 
@@ -32,7 +32,7 @@ import org.apache.flink.api.java.DataSet;
  * or {@link org.apache.flink.api.common.functions.RichCoGroupFunction}.
  * The UDF operators stand in contrast to operators that execute built-in operations, like aggregations.
  */
-@PublicInterface
+@Public
 public interface UdfOperator<O extends UdfOperator<O>> {
 	
 	// --------------------------------------------------------------------------------------------

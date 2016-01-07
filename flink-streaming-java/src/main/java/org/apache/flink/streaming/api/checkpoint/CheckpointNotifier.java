@@ -17,14 +17,14 @@
  */
 package org.apache.flink.streaming.api.checkpoint;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 /**
  * This interface must be implemented by functions/operations that want to receive
  * a commit notification once a checkpoint has been completely acknowledged by all
  * participants.
  */
-@PublicInterface
+@Public
 public interface CheckpointNotifier {
 
 	/**

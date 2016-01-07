@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.windowing.time;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 
 import java.util.concurrent.TimeUnit;
@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * The definition of a time interval for windowing. The time characteristic referred
  * to is the default time characteristic set on the execution environment.
  */
-@PublicInterface
+@Public
 public final class Time extends AbstractTime {
 
 	/** Instantiation only via factory method */

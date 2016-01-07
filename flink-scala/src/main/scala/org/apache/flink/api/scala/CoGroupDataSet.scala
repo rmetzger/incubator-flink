@@ -18,8 +18,8 @@
 
 package org.apache.flink.api.scala
 
-import org.apache.flink.annotation.PublicInterface
 import org.apache.commons.lang3.tuple.{ImmutablePair, Pair}
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.InvalidProgramException
 import org.apache.flink.api.common.functions.{CoGroupFunction, Partitioner, RichCoGroupFunction}
 import org.apache.flink.api.common.operators.Order
@@ -60,7 +60,7 @@ import scala.reflect.ClassTag
  * @tparam L Type of the left input of the coGroup.
  * @tparam R Type of the right input of the coGroup.
  */
-@PublicInterface
+@Public
 class CoGroupDataSet[L, R](
     defaultCoGroup: CoGroupOperator[L, R, (Array[L], Array[R])],
     leftInput: DataSet[L],

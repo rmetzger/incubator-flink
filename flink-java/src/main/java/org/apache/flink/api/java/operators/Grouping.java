@@ -18,8 +18,8 @@
 
 package org.apache.flink.api.java.operators;
 
-import org.apache.flink.annotation.PublicInterface;
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Public;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.Partitioner;
 import org.apache.flink.api.java.DataSet;
@@ -37,7 +37,7 @@ import org.apache.flink.api.java.DataSet;
  * 
  * @see DataSet
  */
-@PublicInterface
+@Public
 public abstract class Grouping<T> {
 	
 	protected final DataSet<T> dataSet;
@@ -60,12 +60,12 @@ public abstract class Grouping<T> {
 		this.keys = keys;
 	}
 
-	@PublicExperimental
+	@Experimental
 	public DataSet<T> getDataSet() {
 		return this.dataSet;
 	}
 
-	@PublicExperimental
+	@Experimental
 	public Keys<T> getKeys() {
 		return this.keys;
 	}
@@ -76,7 +76,7 @@ public abstract class Grouping<T> {
 	 * 
 	 * @return The custom partitioner to be used for this grouping.
 	 */
-	@PublicExperimental
+	@Experimental
 	public Partitioner<?> getCustomPartitioner() {
 		return this.customPartitioner;
 	}

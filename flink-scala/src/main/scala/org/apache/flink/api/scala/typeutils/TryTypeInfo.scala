@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala.typeutils
 
-import org.apache.flink.annotation.PublicInterface
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
@@ -29,7 +29,7 @@ import scala.util.Try
 /**
  * TypeInformation for [[scala.util.Try]].
  */
-@PublicInterface
+@Public
 class TryTypeInfo[A, T <: Try[A]](val elemTypeInfo: TypeInformation[A])
   extends TypeInformation[T] {
 

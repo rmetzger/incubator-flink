@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.scala
 
-import org.apache.flink.annotation.PublicInterface
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.functions.{FilterFunction, FlatMapFunction, MapFunction, Partitioner}
 import org.apache.flink.api.common.io.OutputFormat
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -40,7 +40,7 @@ import org.apache.flink.util.Collector
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-@PublicInterface
+@Public
 class DataStream[T](javaStream: JavaStream[T]) {
 
   /**

@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.api.functions.source;
 
 
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Experimental;
 
 /**
  * A marker interface that must be implemented by {@link SourceFunction}s that emit elements with
@@ -38,5 +38,5 @@ import org.apache.flink.annotation.PublicExperimental;
  *
  * @param <T> Type of the elements emitted by this source.
  */
-@PublicExperimental
+@Experimental
 public interface EventTimeSourceFunction<T> extends SourceFunction<T> { }

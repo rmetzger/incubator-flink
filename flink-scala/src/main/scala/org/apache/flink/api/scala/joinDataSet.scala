@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala
 
-import org.apache.flink.annotation.PublicInterface
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.operators.Operator
 import org.apache.flink.api.common.operators.base.JoinOperatorBase
 import org.apache.flink.api.common.functions.{FlatJoinFunction, JoinFunction, Partitioner, RichFlatJoinFunction}
@@ -58,7 +58,7 @@ import scala.reflect.ClassTag
  * @tparam L Type of the left input of the join.
  * @tparam R Type of the right input of the join.
  */
-@PublicInterface
+@Public
 class JoinDataSet[L, R](
     defaultJoin: EquiJoin[L, R, (L, R)],
     leftInput: DataSet[L],
@@ -263,7 +263,7 @@ private[flink] abstract class UnfinishedJoinOperationBase[L, R, O <: JoinFunctio
  * @tparam L The type of the left input of the join.
  * @tparam R The type of the right input of the join.
  */
-@PublicInterface
+@Public
 class UnfinishedJoinOperation[L, R](
     leftSet: DataSet[L],
     rightSet: DataSet[R],
@@ -295,7 +295,7 @@ class UnfinishedJoinOperation[L, R](
  * @tparam L The type of the left input of the join.
  * @tparam R The type of the right input of the join.
  */
-@PublicInterface
+@Public
 class UnfinishedOuterJoinOperation[L, R](
     leftSet: DataSet[L],
     rightSet: DataSet[R],
@@ -330,7 +330,7 @@ class UnfinishedOuterJoinOperation[L, R](
 
 }
 
-@PublicInterface
+@Public
 trait JoinFunctionAssigner[L, R] {
 
   def withPartitioner[K : TypeInformation](part : Partitioner[K]) : JoinFunctionAssigner[L, R]

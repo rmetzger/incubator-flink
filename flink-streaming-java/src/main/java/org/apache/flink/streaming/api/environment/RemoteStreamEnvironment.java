@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -40,7 +40,7 @@ import org.apache.flink.streaming.api.graph.StreamGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@PublicInterface
+@Public
 public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamEnvironment.class);

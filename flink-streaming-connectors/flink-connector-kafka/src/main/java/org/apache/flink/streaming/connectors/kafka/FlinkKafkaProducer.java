@@ -19,7 +19,7 @@ package org.apache.flink.streaming.connectors.kafka;
 
 import com.google.common.base.Preconditions;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.java.ClosureCleaner;
 import org.apache.flink.configuration.Configuration;
@@ -53,7 +53,7 @@ import java.util.Properties;
  *
  * @param <IN> Type of the messages to write into Kafka.
  */
-@PublicInterface
+@Public
 public class FlinkKafkaProducer<IN> extends RichSinkFunction<IN>  {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkKafkaProducer.class);

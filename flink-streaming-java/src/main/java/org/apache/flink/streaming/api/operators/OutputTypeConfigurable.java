@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.operators;
 
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
@@ -28,7 +28,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
  * cases where the output type is specified by the returns method and, thus, after the stream
  * operator has been created.
  */
-@PublicExperimental
+@Experimental
 public interface OutputTypeConfigurable<OUT> {
 
 	/**

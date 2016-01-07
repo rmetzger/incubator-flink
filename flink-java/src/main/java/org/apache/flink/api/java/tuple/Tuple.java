@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.tuple;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.types.NullFieldException;
 
 
@@ -34,7 +34,7 @@ import org.apache.flink.types.NullFieldException;
  * Tuples are in principle serializable. However, they may contain non-serializable fields,
  * in which case serialization will fail.
  */
-@PublicInterface
+@Public
 public abstract class Tuple implements java.io.Serializable {
 	
 	private static final long serialVersionUID = 1L;

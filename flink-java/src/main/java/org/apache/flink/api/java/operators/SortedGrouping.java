@@ -20,7 +20,7 @@ package org.apache.flink.api.java.operators;
 
 import java.util.Arrays;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.GroupCombineFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType;
@@ -46,7 +46,7 @@ import com.google.common.base.Preconditions;
  * 
  * @param <T> The type of the elements of the sorted and grouped DataSet.
  */
-@PublicInterface
+@Public
 public class SortedGrouping<T> extends Grouping<T> {
 	
 	private int[] groupSortKeyPositions;

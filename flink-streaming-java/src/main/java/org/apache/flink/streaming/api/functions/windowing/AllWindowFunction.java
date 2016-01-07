@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.functions.windowing;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.util.Collector;
@@ -31,7 +31,7 @@ import java.io.Serializable;
  * @param <IN> The type of the input value.
  * @param <OUT> The type of the output value.
  */
-@PublicInterface
+@Public
 public interface AllWindowFunction<IN, OUT,  W extends Window> extends Function, Serializable {
 
 	/**

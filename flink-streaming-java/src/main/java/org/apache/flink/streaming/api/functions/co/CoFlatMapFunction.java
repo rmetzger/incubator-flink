@@ -20,7 +20,7 @@ package org.apache.flink.streaming.api.functions.co;
 
 import java.io.Serializable;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.util.Collector;
 
@@ -35,7 +35,7 @@ import org.apache.flink.util.Collector;
  * @param <OUT>
  *            Output type.
  */
-@PublicInterface
+@Public
 public interface CoFlatMapFunction<IN1, IN2, OUT> extends Function, Serializable {
 
 	void flatMap1(IN1 value, Collector<OUT> out) throws Exception;

@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala
 
-import org.apache.flink.annotation.PublicInterface
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.java.aggregation.Aggregations
 import org.apache.flink.api.scala.operators.ScalaAggregateOperator
 
@@ -29,7 +29,7 @@ import scala.reflect.ClassTag
  *
  * @tparam T The type of the DataSet, i.e., the type of the elements of the DataSet.
  */
-@PublicInterface
+@Public
 class AggregateDataSet[T: ClassTag](set: ScalaAggregateOperator[T])
   extends DataSet[T](set) {
 

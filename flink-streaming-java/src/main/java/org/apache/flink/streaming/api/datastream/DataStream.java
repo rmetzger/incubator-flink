@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.flink.annotation.PublicExperimental;
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -97,7 +97,7 @@ import com.google.common.base.Preconditions;
  * 
  * @param <T> The type of the elements in this Stream
  */
-@PublicInterface
+@Public
 public class DataStream<T> {
 
 	protected final StreamExecutionEnvironment environment;
@@ -617,7 +617,7 @@ public class DataStream<T> {
 	 * @see Tuple
 	 * @see DataStream
 	 */
-	@PublicExperimental
+	@Experimental
 	public <R extends Tuple> SingleOutputStreamOperator<R, ?> project(int... fieldIndexes) {
 		return new StreamProjection<T>(this, fieldIndexes).projectTupleX();
 	}
@@ -729,7 +729,7 @@ public class DataStream<T> {
 	 * @param assigner The {@code WindowAssigner} that assigns elements to windows.
 	 * @return The trigger windows data stream.
 	 */
-	@PublicExperimental
+	@Experimental
 	public <W extends Window> AllWindowedStream<T, W> windowAll(WindowAssigner<? super T, W> assigner) {
 		return new AllWindowedStream<>(this, assigner);
 	}
@@ -767,7 +767,7 @@ public class DataStream<T> {
 	 * 
 	 * @return The closed DataStream.
 	 */
-	@PublicExperimental
+	@Experimental
 	public DataStreamSink<T> print() {
 		PrintSinkFunction<T> printFunction = new PrintSinkFunction<T>();
 		return addSink(printFunction);
@@ -782,7 +782,7 @@ public class DataStream<T> {
 	 * 
 	 * @return The closed DataStream.
 	 */
-	@PublicExperimental
+	@Experimental
 	public DataStreamSink<T> printToErr() {
 		PrintSinkFunction<T> printFunction = new PrintSinkFunction<T>(true);
 		return addSink(printFunction);
@@ -800,7 +800,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream.
 	 */
-	@PublicExperimental
+	@Experimental
 	public DataStreamSink<T> writeAsText(String path) {
 		return write(new TextOutputFormat<T>(new Path(path)), 0L);
 	}
@@ -820,7 +820,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream
 	 */
-	@PublicExperimental
+	@Experimental
 	public DataStreamSink<T> writeAsText(String path, long millis) {
 		TextOutputFormat<T> tof = new TextOutputFormat<T>(new Path(path));
 		return write(tof, millis);
@@ -841,7 +841,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream.
 	 */
-	@PublicExperimental
+	@Experimental
 	public DataStreamSink<T> writeAsText(String path, WriteMode writeMode) {
 		TextOutputFormat<T> tof = new TextOutputFormat<T>(new Path(path));
 		tof.setWriteMode(writeMode);
@@ -865,7 +865,7 @@ public class DataStream<T> {
 	 * 
 	 * @return the closed DataStream.
 	 */
-	@PublicExperimental
+	@Experimental
 	public DataStreamSink<T> writeAsText(String path, WriteMode writeMode, long millis) {
 		TextOutputFormat<T> tof = new TextOutputFormat<T>(new Path(path));
 		tof.setWriteMode(writeMode);
@@ -885,7 +885,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
-	@PublicExperimental
+	@Experimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path) {
 		Preconditions.checkArgument(getType().isTupleType(),
 				"The writeAsCsv() method can only be used on data sets of tuples.");
@@ -910,7 +910,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
-	@PublicExperimental
+	@Experimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path, long millis) {
 		Preconditions.checkArgument(getType().isTupleType(),
 				"The writeAsCsv() method can only be used on data sets of tuples.");
@@ -935,7 +935,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
-	@PublicExperimental
+	@Experimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path, WriteMode writeMode) {
 		Preconditions.checkArgument(getType().isTupleType(),
 				"The writeAsCsv() method can only be used on data sets of tuples.");
@@ -966,7 +966,7 @@ public class DataStream<T> {
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
-	@PublicExperimental
+	@Experimental
 	public <X extends Tuple> DataStreamSink<T> writeAsCsv(String path, WriteMode writeMode,
 			long millis) {
 		Preconditions.checkArgument(getType().isTupleType(),
@@ -1004,7 +1004,7 @@ public class DataStream<T> {
 	 * @param millis the write frequency
 	 * @return The closed DataStream
 	 */
-	@PublicExperimental
+	@Experimental
 	public DataStreamSink<T> write(OutputFormat<T> format, long millis) {
 		return addSink(new FileSinkFunctionByMillis<T>(format, millis));
 	}
@@ -1023,7 +1023,7 @@ public class DataStream<T> {
 	 *            type of the return stream
 	 * @return the data stream constructed
 	 */
-	@PublicExperimental
+	@Experimental
 	public <R> SingleOutputStreamOperator<R, ?> transform(String operatorName, TypeInformation<R> outTypeInfo, OneInputStreamOperator<T, R> operator) {
 
 		// read the output type of the input Transform to coax out errors about MissingTypeInfo
@@ -1088,7 +1088,7 @@ public class DataStream<T> {
 	 *
 	 * @return The Transformation
 	 */
-	@PublicExperimental
+	@Experimental
 	public StreamTransformation<T> getTransformation() {
 		return transformation;
 	}

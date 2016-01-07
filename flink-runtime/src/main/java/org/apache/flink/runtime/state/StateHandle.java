@@ -18,7 +18,7 @@
 
 package org.apache.flink.runtime.state;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 import java.io.Serializable;
 
@@ -27,7 +27,7 @@ import java.io.Serializable;
  * A StateHandle implementation can for example include the state itself in cases where the state 
  * is lightweight or fetching it lazily from some external storage when the state is too large.
  */
-@PublicInterface
+@Public
 public interface StateHandle<T> extends Serializable {
 
 	/**

@@ -17,8 +17,7 @@
  */
 package org.apache.flink.streaming.api.windowing.assigners;
 
-import org.apache.flink.annotation.PublicExperimental;
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -46,7 +45,7 @@ import java.util.List;
  *   keyed.window(SlidingTimeWindows.of(Time.of(1, MINUTES), Time.of(10, SECONDS));
  * } </pre>
  */
-@PublicInterface
+@Public
 public class SlidingTimeWindows extends WindowAssigner<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;
 

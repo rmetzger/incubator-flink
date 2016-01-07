@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.checkpoint;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 import java.io.Serializable;
 
@@ -36,7 +36,7 @@ import java.io.Serializable;
  * 
  * @param <T> The type of the operator state.
  */
-@PublicInterface
+@Public
 public interface Checkpointed<T extends Serializable> {
 
 	/**

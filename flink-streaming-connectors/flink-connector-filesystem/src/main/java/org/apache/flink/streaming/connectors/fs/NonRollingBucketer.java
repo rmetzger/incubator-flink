@@ -17,14 +17,14 @@
  */
 package org.apache.flink.streaming.connectors.fs;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.hadoop.fs.Path;
 
 /**
  * A {@link org.apache.flink.streaming.connectors.fs.Bucketer} that does not perform any
  * rolling of files. All files are written to the base path.
  */
-@PublicInterface
+@Public
 public class NonRollingBucketer implements Bucketer {
 	private static final long serialVersionUID = 1L;
 

@@ -18,12 +18,12 @@
 
 package org.apache.flink.api.java;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.Plan;
 import org.apache.flink.api.common.operators.CollectionExecutor;
 
-@PublicInterface
+@Public
 public class CollectionEnvironment extends ExecutionEnvironment {
 
 	@Override

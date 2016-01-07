@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.core.io.LocatableInputSplit;
 
@@ -34,7 +34,7 @@ import org.apache.hadoop.mapreduce.JobContext;
  * A wrapper that represents an input split from the Hadoop mapreduce API as
  * a Flink {@link InputSplit}.
  */
-@PublicInterface
+@Public
 public class HadoopInputSplit extends LocatableInputSplit {
 
 	private static final long serialVersionUID = 6119153593707857235L;

@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.scala
 
-import org.apache.flink.annotation.PublicInterface
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.functions.CoGroupFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.operators._
@@ -40,7 +40,7 @@ import scala.reflect.ClassTag
  * @tparam L The type of the left input of the coGroup.
  * @tparam R The type of the right input of the coGroup.
  */
-@PublicInterface
+@Public
 class UnfinishedCoGroupOperation[L: ClassTag, R: ClassTag](
                                                             leftInput: DataSet[L],
                                                             rightInput: DataSet[R])

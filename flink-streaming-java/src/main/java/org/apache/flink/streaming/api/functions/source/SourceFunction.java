@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.functions.source;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.streaming.api.watermark.Watermark;
 
@@ -82,7 +82,7 @@ import java.io.Serializable;
  *
  * @param <T> The type of the elements produced by this source.
  */
-@PublicInterface
+@Public
 public interface SourceFunction<T> extends Function, Serializable {
 
 	/**

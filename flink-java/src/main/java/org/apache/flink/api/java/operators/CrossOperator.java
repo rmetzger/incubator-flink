@@ -20,8 +20,8 @@ package org.apache.flink.api.java.operators;
 
 import java.util.Arrays;
 
-import org.apache.flink.annotation.PublicExperimental;
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.CrossFunction;
 import org.apache.flink.api.common.operators.BinaryOperatorInformation;
@@ -50,7 +50,7 @@ import com.google.common.base.Preconditions;
  *
  * @see DataSet
  */
-@PublicInterface
+@Public
 public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT, CrossOperator<I1, I2, OUT>> {
 
 	private final CrossFunction<I1, I2, OUT> function;
@@ -120,7 +120,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 	 * @see Tuple2
 	 * @see DataSet
 	 */
-	@PublicInterface
+	@Public
 	public static final class DefaultCross<I1, I2> extends CrossOperator<I1, I2, Tuple2<I1, I2>>  {
 
 		private final DataSet<I1> input1;
@@ -224,7 +224,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 	 * @see Tuple
 	 * @see DataSet
 	 */
-	@PublicInterface
+	@Public
 	public static final class ProjectCross<I1, I2, OUT extends Tuple> extends CrossOperator<I1, I2, OUT> {
 		
 		private CrossProjection<I1, I2> crossProjection;
@@ -313,7 +313,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 		 */
 		@SuppressWarnings({ "hiding", "unchecked" })
 		@Deprecated
-		@PublicExperimental
+		@Experimental
 		public <OUT extends Tuple> CrossOperator<I1, I2, OUT> types(Class<?>... types) {
 			TupleTypeInfo<OUT> typeInfo = (TupleTypeInfo<OUT>)this.getResultType();
 
@@ -347,7 +347,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 		}
 	}
 
-	@PublicInterface
+	@Public
 	public static final class ProjectCrossFunction<T1, T2, R extends Tuple> implements CrossFunction<T1, T2, R> {
 
 		private static final long serialVersionUID = 1L;
@@ -405,7 +405,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 		
 	}
 
-	@PublicInterface
+	@Public
 	public static final class CrossProjection<I1, I2> {
 		
 		private final DataSet<I1> ds1;

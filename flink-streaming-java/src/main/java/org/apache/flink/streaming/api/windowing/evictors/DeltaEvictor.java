@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.api.windowing.evictors;
 
 import com.google.common.collect.Iterables;
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.streaming.api.functions.windowing.delta.DeltaFunction;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -33,7 +33,7 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  *
  * @param <W> The type of {@link Window Windows} on which this {@code Evictor} can operate.
  */
-@PublicExperimental
+@Experimental
 public class DeltaEvictor<T, W extends Window> implements Evictor<T, W> {
 	private static final long serialVersionUID = 1L;
 

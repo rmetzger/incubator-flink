@@ -17,14 +17,14 @@
  */
 package org.apache.flink.streaming.api.windowing.windows;
 
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 
 import java.io.IOException;
 
-@PublicExperimental
+@Experimental
 public class GlobalWindow extends Window {
 
 	private static GlobalWindow INSTANCE = new GlobalWindow();

@@ -17,8 +17,8 @@
 
 package org.apache.flink.streaming.api.datastream;
 
-import org.apache.flink.annotation.PublicExperimental;
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.StreamSink;
 import org.apache.flink.streaming.api.transformations.SinkTransformation;
@@ -28,7 +28,7 @@ import org.apache.flink.streaming.api.transformations.SinkTransformation;
  *
  * @param <T> The type of the elements in the Stream
  */
-@PublicInterface
+@Public
 public class DataStreamSink<T> {
 
 	SinkTransformation<T> transformation;
@@ -41,7 +41,7 @@ public class DataStreamSink<T> {
 	/**
 	 * Returns the transformation that contains the actual sink operator of this sink.
 	 */
-	@PublicExperimental
+	@Experimental
 	public SinkTransformation<T> getTransformation() {
 		return transformation;
 	}

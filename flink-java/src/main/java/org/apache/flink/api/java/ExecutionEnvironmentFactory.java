@@ -18,12 +18,12 @@
 
 package org.apache.flink.api.java;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 /**
  * Factory class for execution environments.
  */
-@PublicInterface
+@Public
 public interface ExecutionEnvironmentFactory {
 	
 	/**

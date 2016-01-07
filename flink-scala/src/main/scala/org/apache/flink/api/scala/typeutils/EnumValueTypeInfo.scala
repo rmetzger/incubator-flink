@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala.typeutils
 
-import org.apache.flink.annotation.PublicInterface
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.{AtomicType, TypeInformation}
 import org.apache.flink.api.common.typeutils.{TypeComparator, TypeSerializer}
@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 /**
  * TypeInformation for [[Enumeration]] values.
  */
-@PublicInterface
+@Public
 class EnumValueTypeInfo[E <: Enumeration](val enum: E, val clazz: Class[E#Value])
   extends TypeInformation[E#Value] with AtomicType[E#Value] {
 

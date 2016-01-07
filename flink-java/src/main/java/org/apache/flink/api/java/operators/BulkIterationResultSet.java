@@ -18,12 +18,12 @@
 
 package org.apache.flink.api.java.operators;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 
-@PublicInterface
+@Public
 public class BulkIterationResultSet<T> extends DataSet<T> {
 
 	private final IterativeDataSet<T> iterationHead;

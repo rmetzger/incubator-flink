@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.connectors.fs;
 
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.hadoop.fs.FSDataOutputStream;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.nio.charset.UnsupportedCharsetException;
  *
  * @param <T> The type of the elements that are being written by the sink.
  */
-@PublicInterface
+@Public
 public class StringWriter<T> implements Writer<T> {
 	private static final long serialVersionUID = 1L;
 

@@ -18,8 +18,8 @@
 
 package org.apache.flink.api.java.operators;
 
-import org.apache.flink.annotation.PublicInterface;
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Public;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.aggregators.AggregatorRegistry;
@@ -38,7 +38,7 @@ import org.apache.flink.types.Value;
  *
  * @see DataSet#iterate(int)
  */
-@PublicInterface
+@Public
 public class IterativeDataSet<T> extends SingleInputOperator<T, T, IterativeDataSet<T>> {
 
 	private final AggregatorRegistry aggregators = new AggregatorRegistry();
@@ -106,7 +106,7 @@ public class IterativeDataSet<T> extends SingleInputOperator<T, T, IterativeData
 	 * 
 	 * @return The IterativeDataSet itself, to allow chaining function calls.
 	 */
-	@PublicExperimental
+	@Experimental
 	public IterativeDataSet<T> registerAggregator(String name, Aggregator<?> aggregator) {
 		this.aggregators.registerAggregator(name, aggregator);
 		return this;
@@ -126,7 +126,7 @@ public class IterativeDataSet<T> extends SingleInputOperator<T, T, IterativeData
 	 * 
 	 * @return The IterativeDataSet itself, to allow chaining function calls.
 	 */
-	@PublicExperimental
+	@Experimental
 	public <X extends Value> IterativeDataSet<T> registerAggregationConvergenceCriterion(
 			String name, Aggregator<X> aggregator, ConvergenceCriterion<X> convergenceCheck)
 	{
@@ -142,7 +142,7 @@ public class IterativeDataSet<T> extends SingleInputOperator<T, T, IterativeData
 	 * 
 	 * @return The registry for aggregators.
 	 */
-	@PublicExperimental
+	@Experimental
 	public AggregatorRegistry getAggregators() {
 		return aggregators;
 	}

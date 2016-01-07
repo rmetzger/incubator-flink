@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.typeutils;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 /**
  * This type represents a value of one two possible types, Left or Right (a
@@ -29,7 +29,7 @@ import org.apache.flink.annotation.PublicInterface;
  * @param <R>
  *            the type of Right
  */
-@PublicInterface
+@Public
 public abstract class Either<L, R> {
 
 	/**

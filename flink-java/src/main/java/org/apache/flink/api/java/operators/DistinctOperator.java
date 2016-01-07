@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.operators.Operator;
@@ -41,7 +41,7 @@ import org.apache.flink.api.java.DataSet;
  * 
  * @param <T> The type of the data set made distinct by the operator.
  */
-@PublicInterface
+@Public
 public class DistinctOperator<T> extends SingleInputOperator<T, T, DistinctOperator<T>> {
 	
 	private final Keys<T> keys;

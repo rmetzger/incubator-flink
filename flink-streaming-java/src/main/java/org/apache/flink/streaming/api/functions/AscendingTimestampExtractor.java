@@ -17,7 +17,7 @@
  */
 package org.apache.flink.streaming.api.functions;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 /**
  * Interface for user functions that extract timestamps from elements. The extracting timestamps
@@ -25,7 +25,7 @@ import org.apache.flink.annotation.PublicInterface;
  *
  * @param <T> The type of the elements that this function can extract timestamps from
  */
-@PublicInterface
+@Public
 public abstract class AscendingTimestampExtractor<T> implements TimestampExtractor<T> {
 
 	long currentTimestamp = 0;

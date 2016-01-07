@@ -25,7 +25,7 @@
 
 package org.apache.flink.api.java.tuple;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.util.StringUtils;
 
 /**
@@ -48,7 +48,7 @@ import org.apache.flink.util.StringUtils;
  * @param <T7> The type of field 7
  * @param <T8> The type of field 8
  */
-@PublicInterface
+@Public
 public class Tuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple {
 
 	private static final long serialVersionUID = 1L;

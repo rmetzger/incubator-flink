@@ -17,7 +17,7 @@
  */
 package org.apache.flink.streaming.connectors.elasticsearch;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.elasticsearch.action.index.IndexRequest;
@@ -53,7 +53,7 @@ import java.io.Serializable;
  *
  * @param <T> The type of the element handled by this {@code IndexRequestBuilder}
  */
-@PublicInterface
+@Public
 public interface IndexRequestBuilder<T> extends Function, Serializable {
 
 	/**

@@ -17,12 +17,12 @@
  */
 package org.apache.flink.api.scala.typeutils
 
-import org.apache.flink.annotation.PublicInterface
+import org.apache.flink.annotation.Public
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
 
-@PublicInterface
+@Public
 class UnitTypeInfo extends TypeInformation[Unit] {
   override def isBasicType(): Boolean = false
   override def isTupleType(): Boolean = false

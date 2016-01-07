@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 /**
  * The checkpointing mode defines what consistency guarantees the system gives in the presence of
@@ -31,7 +31,7 @@ import org.apache.flink.annotation.PublicInterface;
  * in a simpler fashion that typically encounteres some duplicates upon recovery
  * ({@link #AT_LEAST_ONCE})</p> 
  */
-@PublicInterface
+@Public
 public enum CheckpointingMode {
 
 	/**

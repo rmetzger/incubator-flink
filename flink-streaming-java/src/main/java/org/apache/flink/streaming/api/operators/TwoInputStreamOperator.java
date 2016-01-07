@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.operators;
 
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
@@ -31,7 +31,7 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  * @param <IN2> The input type of the operator
  * @param <OUT> The output type of the operator
  */
-@PublicExperimental
+@Experimental
 public interface TwoInputStreamOperator<IN1, IN2, OUT> extends StreamOperator<OUT> {
 
 	/**

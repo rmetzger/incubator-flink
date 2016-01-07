@@ -20,8 +20,8 @@ package org.apache.flink.api.java.operators;
 
 import java.util.Arrays;
 
-import org.apache.flink.annotation.PublicInterface;
-import org.apache.flink.annotation.PublicExperimental;
+import org.apache.flink.annotation.Public;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.operators.Operator;
@@ -45,7 +45,7 @@ import com.google.common.base.Preconditions;
  * @param <IN> The type of the data set projected by the operator.
  * @param <OUT> The type of data set that is the result of the projection.
  */
-@PublicInterface
+@Public
 public class ProjectOperator<IN, OUT extends Tuple> 
 	extends SingleInputOperator<IN, OUT, ProjectOperator<IN, OUT>> {
 	
@@ -75,7 +75,7 @@ public class ProjectOperator<IN, OUT extends Tuple>
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated
-	@PublicExperimental
+	@Experimental
 	public <R extends Tuple> ProjectOperator<IN, R> types(Class<?>... types) {
 		TupleTypeInfo<R> typeInfo = (TupleTypeInfo<R>)this.getResultType();
 

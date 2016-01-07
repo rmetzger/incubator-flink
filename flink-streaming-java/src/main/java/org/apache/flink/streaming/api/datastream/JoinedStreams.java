@@ -17,8 +17,8 @@
 
 package org.apache.flink.streaming.api.datastream;
 
-import org.apache.flink.annotation.PublicExperimental;
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.CoGroupFunction;
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
@@ -61,7 +61,7 @@ import static java.util.Objects.requireNonNull;
  *     .apply(new MyJoinFunction());
  * } </pre>
  */
-@PublicInterface
+@Public
 public class JoinedStreams<T1, T2> {
 
 	/** The first input stream */
@@ -96,7 +96,7 @@ public class JoinedStreams<T1, T2> {
 	 *
 	 * @param <KEY> The type of the key.
 	 */
-	@PublicInterface
+	@Public
 	public class Where<KEY> {
 
 		private final KeySelector<T1, KEY> keySelector1;
@@ -153,7 +153,7 @@ public class JoinedStreams<T1, T2> {
 	 * @param <KEY> Type of the key. This must be the same for both inputs
 	 * @param <W> Type of {@link Window} on which the join operation works.
 	 */
-	@PublicInterface
+	@Public
 	public static class WithWindow<T1, T2, KEY, W extends Window> {
 		
 		private final DataStream<T1> input1;
@@ -194,7 +194,7 @@ public class JoinedStreams<T1, T2> {
 		/**
 		 * Sets the {@code Trigger} that should be used to trigger window emission.
 		 */
-		@PublicExperimental
+		@Experimental
 		public WithWindow<T1, T2, KEY, W> trigger(Trigger<? super TaggedUnion<T1, T2>, ? super W> newTrigger) {
 			return new WithWindow<>(input1, input2, keySelector1, keySelector2, keyType,
 					windowAssigner, newTrigger, evictor);
@@ -207,7 +207,7 @@ public class JoinedStreams<T1, T2> {
 		 * Note: When using an evictor window performance will degrade significantly, since
 		 * pre-aggregation of window results cannot be used.
 		 */
-		@PublicExperimental
+		@Experimental
 		public WithWindow<T1, T2, KEY, W> evictor(Evictor<? super TaggedUnion<T1, T2>, ? super W> newEvictor) {
 			return new WithWindow<>(input1, input2, keySelector1, keySelector2, keyType,
 					windowAssigner, trigger, newEvictor);

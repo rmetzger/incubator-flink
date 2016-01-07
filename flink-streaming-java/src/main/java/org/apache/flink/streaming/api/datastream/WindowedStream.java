@@ -18,8 +18,8 @@
 
 package org.apache.flink.streaming.api.datastream;
 
-import org.apache.flink.annotation.PublicExperimental;
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.FoldFunction;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.functions.ReduceFunction;
@@ -76,7 +76,7 @@ import org.apache.flink.streaming.runtime.operators.windowing.buffers.PreAggrega
  * @param <K> The type of the key by which elements are grouped.
  * @param <W> The type of {@code Window} that the {@code WindowAssigner} assigns the elements to.
  */
-@PublicInterface
+@Public
 public class WindowedStream<T, K, W extends Window> {
 
 	/** The keyed data stream that is windowed by this stream */
@@ -102,7 +102,7 @@ public class WindowedStream<T, K, W extends Window> {
 	/**
 	 * Sets the {@code Trigger} that should be used to trigger window emission.
 	 */
-	@PublicExperimental
+	@Experimental
 	public WindowedStream<T, K, W> trigger(Trigger<? super T, ? super W> trigger) {
 		this.trigger = trigger;
 		return this;
@@ -115,7 +115,7 @@ public class WindowedStream<T, K, W extends Window> {
 	 * Note: When using an evictor window performance will degrade significantly, since
 	 * pre-aggregation of window results cannot be used.
 	 */
-	@PublicExperimental
+	@Experimental
 	public WindowedStream<T, K, W> evictor(Evictor<? super T, ? super W> evictor) {
 		this.evictor = evictor;
 		return this;

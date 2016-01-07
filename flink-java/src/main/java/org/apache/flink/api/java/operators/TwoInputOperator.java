@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 
@@ -29,7 +29,7 @@ import org.apache.flink.api.java.DataSet;
  * @param <IN2> The data type of the second input data set.
  * @param <OUT> The data type of the returned data set.
  */
-@PublicInterface
+@Public
 public abstract class TwoInputOperator<IN1, IN2, OUT, O extends TwoInputOperator<IN1, IN2, OUT, O>> extends Operator<OUT, O> {
 	
 	private final DataSet<IN1> input1;

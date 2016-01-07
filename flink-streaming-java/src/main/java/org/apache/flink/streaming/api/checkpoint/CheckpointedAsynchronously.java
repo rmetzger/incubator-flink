@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.checkpoint;
 
-import org.apache.flink.annotation.PublicInterface;
+import org.apache.flink.annotation.Public;
 
 import java.io.Serializable;
 
@@ -36,5 +36,5 @@ import java.io.Serializable;
  * {@link #snapshotState(long, long)} method is typically a copy or shadow copy
  * of the actual state.</p>
  */
-@PublicInterface
+@Public
 public interface CheckpointedAsynchronously<T extends Serializable> extends Checkpointed<T> {}
