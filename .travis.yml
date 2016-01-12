@@ -16,16 +16,12 @@ language: java
 # The file assumes a certain build order for the maven / nigthly build deployments.
 matrix:
   include:
+  # HDP 2.2.8
+  - jdk: "oraclejdk8"
+      env: PROFILE="-Dhadoop.version=2.6.0.2.2.8.0-3150 -Pvendor-repos -Pinclude-tez -Pinclude-yarn-tests"
+  # HDP 2.3.2
     - jdk: "oraclejdk8"
-      env: PROFILE="-Dhadoop.version=2.7.1 -Dscala-2.11 -Pinclude-tez -Pinclude-yarn-tests"
-    - jdk: "oraclejdk8"
-      env: PROFILE="-Dhadoop.version=2.5.0 -Pinclude-yarn-tests"
-    - jdk: "openjdk7"
-      env: PROFILE="-Dhadoop.version=2.4.0 -Dscala-2.11 -Pinclude-yarn-tests"
-    - jdk: "oraclejdk7" # this uploads the Hadoop 2 build to Maven and S3
-      env: PROFILE="-Dhadoop.version=2.3.0"
-    - jdk: "openjdk7" # this uploads the Hadoop 1 build to Maven and S3
-      env: PROFILE="-Dhadoop.profile=1"
+      env: PROFILE="-Dhadoop.version=2.7.1.2.3.2.0-2950 -Pvendor-repos -Pinclude-tez -Pinclude-yarn-tests"
 
 
 git:
