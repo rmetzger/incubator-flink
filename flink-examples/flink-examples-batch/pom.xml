@@ -26,7 +26,7 @@ under the License.
 		<artifactId>flink-examples</artifactId>
 		<version>1.0-SNAPSHOT</version>
 		<relativePath>..</relativePath>
-	</parent>EnumerateGraphTriangles
+	</parent>
 
 	<artifactId>flink-examples-batch</artifactId>
 	<name>flink-examples-batch</name>
