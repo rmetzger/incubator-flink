@@ -62,7 +62,7 @@ public class JobConfigHandler extends AbstractExecutionGraphRequestHandler {
 					
 					for (Map.Entry<String, String> ucVal : ucVals.entrySet()) {
 						//noinspection RedundantStringToString
-						gen.writeStringField(ucVal.getKey(), ucVal.getValue().toString());
+						gen.writeStringField(ucVal.getKey(), ucVal.getValue());
 					}
 
 					gen.writeEndObject();

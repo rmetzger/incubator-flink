@@ -202,9 +202,20 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	protected final Map<String, String> data;
 	protected final HashMap<String, String> defaultData;
 
+	@SuppressWarnings("ConstantConditions")
 	private ParameterTool(Map<String, String> data) {
-		this.data = new HashMap<String, String>(data);
-		this.defaultData = new HashMap<String, String>();
+		// check types in map
+		for(Map.Entry<String, String> entry: data.entrySet()) {
+			// we manually check if the types are really strings.
+			if(!(entry.getKey() instanceof String)) {
+				throw new RuntimeException("A key in the map is not a String");
+			}
+			if(!(entry.getValue() instanceof String)) {
+				throw new RuntimeException("A value in the map is not a String. Key: "+entry.getKey() + " Type: "+entry.getKey().getClass().getCanonicalName());
+			}
+		}
+		this.data = new HashMap<>(data);
+		this.defaultData = new HashMap<>();
 	}
 
 	// ------------------ Get data from the util ----------------
