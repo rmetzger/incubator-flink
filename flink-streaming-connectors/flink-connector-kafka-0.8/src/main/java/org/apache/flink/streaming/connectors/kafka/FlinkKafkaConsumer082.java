@@ -22,7 +22,6 @@ import java.util.Properties;
 
 /**
  * THIS CLASS IS DEPRECATED. Use FlinkKafkaConsumer08 instead.
- * @param <T>
  */
 @Deprecated
 public class FlinkKafkaConsumer082<T> extends FlinkKafkaConsumer08<T> {
