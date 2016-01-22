@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
@@ -157,6 +158,7 @@ public class AggregateOperator<IN> extends SingleInputOperator<IN, IN, Aggregate
 
 	@SuppressWarnings("unchecked")
 	@Override
+	@Internal
 	protected org.apache.flink.api.common.operators.base.GroupReduceOperatorBase<IN, IN, GroupReduceFunction<IN, IN>> translateToDataFlow(Operator<IN> input) {
 		
 		// sanity check
@@ -248,7 +250,8 @@ public class AggregateOperator<IN> extends SingleInputOperator<IN, IN, Aggregate
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+
+	@Internal
 	@Combinable
 	public static final class AggregatingUdf<T extends Tuple> extends RichGroupReduceFunction<T, T> {
 		private static final long serialVersionUID = 1L;

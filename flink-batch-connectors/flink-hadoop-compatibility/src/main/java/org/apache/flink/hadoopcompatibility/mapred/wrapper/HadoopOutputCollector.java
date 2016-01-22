@@ -18,7 +18,6 @@
 
 package org.apache.flink.hadoopcompatibility.mapred.wrapper;
 
-import org.apache.flink.annotation.Public;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 import org.apache.hadoop.mapred.OutputCollector;
@@ -31,7 +30,6 @@ import java.io.IOException;
  * 
  */
 @SuppressWarnings("rawtypes")
-@Public
 public final class HadoopOutputCollector<KEY,VALUE>
 		implements OutputCollector<KEY,VALUE> {
 

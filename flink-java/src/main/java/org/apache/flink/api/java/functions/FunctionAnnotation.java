@@ -26,6 +26,8 @@ import java.lang.annotation.Retention;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.InvalidProgramException;
 
@@ -308,6 +310,7 @@ public class FunctionAnnotation {
 	 */
 	@Target(ElementType.TYPE)
 	@Retention(RetentionPolicy.RUNTIME)
+	@Experimental
 	public @interface ReadFields {
 		String[] value();
 	}
@@ -338,6 +341,7 @@ public class FunctionAnnotation {
 	 */
 	@Target(ElementType.TYPE)
 	@Retention(RetentionPolicy.RUNTIME)
+	@Experimental
 	public @interface ReadFieldsFirst {
 		String[] value();
 	}
@@ -368,6 +372,7 @@ public class FunctionAnnotation {
 	 */
 	@Target(ElementType.TYPE)
 	@Retention(RetentionPolicy.RUNTIME)
+	@Experimental
 	public @interface ReadFieldsSecond {
 		String[] value();
 	}
@@ -384,6 +389,7 @@ public class FunctionAnnotation {
 	 */
 	@Target(ElementType.TYPE)
 	@Retention(RetentionPolicy.RUNTIME)
+	@Experimental
 	public @interface SkipCodeAnalysis {
 	}
 
@@ -402,6 +408,7 @@ public class FunctionAnnotation {
 	 * @param udfClass The user defined function, represented by its class.
 	 * @return	The DualInputSemanticProperties containing the forwarded fields.
 	 */
+	@Internal
 	public static Set<Annotation> readSingleForwardAnnotations(Class<?> udfClass) {
 		ForwardedFields forwardedFields = udfClass.getAnnotation(ForwardedFields.class);
 		NonForwardedFields nonForwardedFields = udfClass.getAnnotation(NonForwardedFields.class);
@@ -431,7 +438,7 @@ public class FunctionAnnotation {
 	 * @param udfClass The user defined function, represented by its class.
 	 * @return	The DualInputSemanticProperties containing the forwarded fields.
 	 */
-
+	@Internal
 	public static Set<Annotation> readDualForwardAnnotations(Class<?> udfClass) {
 
 		// get readSet annotation from stub
