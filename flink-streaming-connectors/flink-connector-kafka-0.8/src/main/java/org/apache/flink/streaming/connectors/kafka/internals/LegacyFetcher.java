@@ -21,8 +21,10 @@ import kafka.api.FetchRequestBuilder;
 import kafka.api.OffsetRequest;
 import kafka.api.PartitionOffsetRequestInfo;
 import kafka.common.ErrorMapping;
+import kafka.common.OffsetAndMetadata;
 import kafka.common.TopicAndPartition;
 import kafka.javaapi.FetchResponse;
+import kafka.javaapi.OffsetCommitRequest;
 import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
@@ -84,6 +86,8 @@ public class LegacyFetcher implements Fetcher {
 	
 	/** Flag to shot the fetcher down */
 	private volatile boolean running = true;
+
+	private ArrayList<SimpleConsumerThread<?>> consumers;
 
 	public LegacyFetcher(List<KafkaTopicPartitionLeader> partitions, Properties props, String taskName) {
 		this.config = checkNotNull(props, "The config properties cannot be null");
@@ -191,7 +195,7 @@ public class LegacyFetcher implements Fetcher {
 		}
 
 		// create SimpleConsumers for each broker
-		ArrayList<SimpleConsumerThread<?>> consumers = new ArrayList<>(fetchBrokers.size());
+		consumers = new ArrayList<>(fetchBrokers.size());
 		
 		for (Map.Entry<Node, List<FetchPartition>> brokerInfo : fetchBrokers.entrySet()) {
 			final Node broker = brokerInfo.getKey();
@@ -273,6 +277,35 @@ public class LegacyFetcher implements Fetcher {
 		}
 	}
 
+	@Override
+	public void commit(Map<KafkaTopicPartition, Long> offsetsToCommit) {
+		Map<KafkaTopicPartition, Long> offsetsToCommitCopy = new HashMap<>(offsetsToCommit);
+		Map<SimpleConsumerThread<?>, Map<KafkaTopicPartition, Long>> offsetsPerConsumer = new HashMap<>();
+
+		for(Map.Entry<KafkaTopicPartition, Long> offsetToCommit: offsetsToCommitCopy.entrySet()) {
+			// find the right consumer thread:
+			for(SimpleConsumerThread consumer: consumers) {
+				for(FetchPartition partition: consumer.partitions) {
+					if(partition.partition == offsetToCommit.getKey().getPartition()) {
+						// we found the consumer thread which is responsible for the partition:
+						Map<KafkaTopicPartition, Long> offsetsForConsumer = offsetsPerConsumer.get(consumer);
+						if(offsetsForConsumer == null) {
+							offsetsForConsumer = new HashMap<>();
+						}
+						offsetsForConsumer.put(offsetToCommit.getKey(), offsetToCommit.getValue());
+						offsetsPerConsumer.put(consumer, offsetsForConsumer);
+					}
+				}
+			}
+		}
+
+		for(Map.Entry<SimpleConsumerThread<?>, Map<KafkaTopicPartition, Long>> offsetsForConsumer: offsetsPerConsumer.entrySet()) {
+			SimpleConsumerThread<?> consumer = offsetsForConsumer.getKey();
+			consumer.commit(offsetsForConsumer.getValue());
+		}
+
+	}
+
 	// ------------------------------------------------------------------------
 
 	/**
@@ -328,6 +361,8 @@ public class LegacyFetcher implements Fetcher {
 		
 		private volatile boolean running = true;
 
+		private final String groupId;
+
 
 		// exceptions are thrown locally
 		public SimpleConsumerThread(LegacyFetcher owner,
@@ -344,6 +379,7 @@ public class LegacyFetcher implements Fetcher {
 			this.sourceContext = checkNotNull(sourceContext);
 			this.deserializer = checkNotNull(deserializer);
 			this.offsetsState = checkNotNull(offsetsState);
+			this.groupId = config.getProperty("group.id", "flink-kafka-consumer-0.8");
 		}
 
 		@Override
@@ -569,6 +605,25 @@ public class LegacyFetcher implements Fetcher {
 				timeType = OffsetRequest.EarliestTime();
 			}
 			return timeType;
+		}
+
+		public void commit(Map<KafkaTopicPartition, Long> toCommitForConsumer) {
+			if(!running) {
+				throw new RuntimeException("I'm not running anymore");
+			}
+			/**
+			 * groupId: String,
+			 requestInfo: java.util.Map[TopicAndPartition, OffsetAndMetadata],
+			 correlationId: Int,
+			 clientId: String
+			 */
+			Map<TopicAndPartition, OffsetAndMetadata> info = new HashMap<>();
+			for(Map.Entry<KafkaTopicPartition, Long> e: toCommitForConsumer.entrySet()) {
+				info.put(new TopicAndPartition(e.getKey().getTopic(), e.getKey().getPartition()), new OffsetAndMetadata(e.getValue(),"", -1L));
+			}
+			OffsetCommitRequest request = new OffsetCommitRequest(this.groupId, info, 0, this.groupId + this.getName());
+			LOG.info("Committing " + request +" to "+this.consumer);
+			consumer.commitOffsets(request);
 		}
 	}
 

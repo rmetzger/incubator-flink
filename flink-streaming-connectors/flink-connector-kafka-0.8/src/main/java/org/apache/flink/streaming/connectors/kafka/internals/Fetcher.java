@@ -22,6 +22,7 @@ import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A fetcher pulls data from Kafka, from a fix set of partitions.
@@ -78,4 +79,6 @@ public interface Fetcher {
 	 * @param t Error cause
 	 */
 	void stopWithError(Throwable t);
+
+	void commit(Map<KafkaTopicPartition, Long> offsetsToCommit);
 }

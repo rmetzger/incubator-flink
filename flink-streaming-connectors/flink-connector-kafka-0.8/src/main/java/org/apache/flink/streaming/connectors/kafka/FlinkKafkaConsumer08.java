@@ -32,7 +32,6 @@ import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition
 import org.apache.flink.streaming.connectors.kafka.internals.LegacyFetcher;
 import org.apache.flink.streaming.connectors.kafka.internals.OffsetHandler;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionLeader;
-import org.apache.flink.streaming.connectors.kafka.internals.ZookeeperOffsetHandler;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
@@ -254,7 +253,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 		fetcher = new LegacyFetcher(this.subscribedPartitions, props, getRuntimeContext().getTaskName());
 
 		// offset handling
-		offsetHandler = new ZookeeperOffsetHandler(props);
+		offsetHandler = new KafkaOffsetHandler(fetcher); // new ZookeeperOffsetHandler(props);
 
 		committedOffsets = new HashMap<>();
 
@@ -587,6 +586,29 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 		}
 		catch (NumberFormatException e) {
 			throw new IllegalArgumentException("Property 'zookeeper.connection.timeout.ms' is not a valid integer");
+		}
+	}
+
+	private static class KafkaOffsetHandler implements OffsetHandler {
+		private final Fetcher fetcher;
+
+		public KafkaOffsetHandler(Fetcher fetcher) {
+			this.fetcher = fetcher;
+		}
+
+		@Override
+		public void commit(Map<KafkaTopicPartition, Long> offsetsToCommit) throws Exception {
+			fetcher.commit(offsetsToCommit);
+		}
+
+		@Override
+		public void seekFetcherToInitialOffsets(List<KafkaTopicPartitionLeader> partitions, Fetcher fetcher) throws Exception {
+
+		}
+
+		@Override
+		public void close() throws IOException {
+
 		}
 	}
 }
