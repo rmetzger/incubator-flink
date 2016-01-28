@@ -278,7 +278,7 @@ public class LegacyFetcher implements Fetcher {
 	}
 
 	@Override
-	public void commit(Map<KafkaTopicPartition, Long> offsetsToCommit) {
+	public void commit(Map<KafkaTopicPartition, Long> offsetsToCommit, short protocolVersion) {
 		Map<KafkaTopicPartition, Long> offsetsToCommitCopy = new HashMap<>(offsetsToCommit);
 		Map<SimpleConsumerThread<?>, Map<KafkaTopicPartition, Long>> offsetsPerConsumer = new HashMap<>();
 
@@ -301,7 +301,7 @@ public class LegacyFetcher implements Fetcher {
 
 		for(Map.Entry<SimpleConsumerThread<?>, Map<KafkaTopicPartition, Long>> offsetsForConsumer: offsetsPerConsumer.entrySet()) {
 			SimpleConsumerThread<?> consumer = offsetsForConsumer.getKey();
-			consumer.commit(offsetsForConsumer.getValue());
+			consumer.commit(offsetsForConsumer.getValue(), protocolVersion);
 		}
 
 	}
@@ -424,7 +424,7 @@ public class LegacyFetcher implements Fetcher {
 					frb.clientId(clientId);
 					frb.maxWait(maxWait);
 					frb.minBytes(minBytes);
-					
+
 					for (FetchPartition fp : partitions) {
 						frb.addFetch(fp.topic, fp.partition, fp.nextOffsetToRead, fetchSize);
 					}
@@ -607,7 +607,7 @@ public class LegacyFetcher implements Fetcher {
 			return timeType;
 		}
 
-		public void commit(Map<KafkaTopicPartition, Long> toCommitForConsumer) {
+		public void commit(Map<KafkaTopicPartition, Long> toCommitForConsumer, short protocolVersion) {
 			if(!running) {
 				throw new RuntimeException("I'm not running anymore");
 			}
@@ -621,7 +621,7 @@ public class LegacyFetcher implements Fetcher {
 			for(Map.Entry<KafkaTopicPartition, Long> e: toCommitForConsumer.entrySet()) {
 				info.put(new TopicAndPartition(e.getKey().getTopic(), e.getKey().getPartition()), new OffsetAndMetadata(e.getValue(),"", -1L));
 			}
-			OffsetCommitRequest request = new OffsetCommitRequest(this.groupId, info, 0, this.groupId + this.getName());
+			OffsetCommitRequest request = new OffsetCommitRequest(this.groupId, info, 0, this.groupId + this.getName(), protocolVersion);
 			LOG.info("Committing " + request +" to "+this.consumer);
 			consumer.commitOffsets(request);
 		}

@@ -80,5 +80,9 @@ public interface Fetcher {
 	 */
 	void stopWithError(Throwable t);
 
-	void commit(Map<KafkaTopicPartition, Long> offsetsToCommit);
+	/**
+	 * Commit the specified offsets to the underlying brokers
+	 *
+	 */
+	void commit(Map<KafkaTopicPartition, Long> offsetsToCommit, short protocolVersion);
 }
