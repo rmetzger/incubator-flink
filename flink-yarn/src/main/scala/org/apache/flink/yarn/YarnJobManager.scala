@@ -349,16 +349,6 @@ class YarnJobManager(
       runningContainersList ++= containersFromPreviousAttempts
       runningContainers = runningContainersList.length
 
-      // Make missing container requests to ResourceManager
-      runningContainers until numTaskManagers foreach {
-        i =>
-          val containerRequest = getContainerRequest(memoryPerTaskManager)
-          log.info(s"Requesting initial TaskManager container $i.")
-          numPendingRequests += 1
-          // these are initial requests. The reallocation setting doesn't affect this.
-          rmClientAsync.addContainerRequest(containerRequest)
-      }
-
       val flinkJar = Records.newRecord(classOf[LocalResource])
       val flinkConf = Records.newRecord(classOf[LocalResource])
 
@@ -392,6 +382,7 @@ class YarnJobManager(
 
       failedContainers = 0
 
+      // create clc (required for starting allocated containers)
       containerLaunchContext = Some(
         createContainerLaunchContext(
           memoryLimit,
@@ -401,6 +392,16 @@ class YarnJobManager(
           conf,
           taskManagerLocalResources)
       )
+
+      // Make missing container requests to ResourceManager
+      runningContainers until numTaskManagers foreach {
+        i =>
+          val containerRequest = getContainerRequest(memoryPerTaskManager)
+          log.info(s"Requesting initial TaskManager container $i.")
+          numPendingRequests += 1
+          // these are initial requests. The reallocation setting doesn't affect this.
+          rmClientAsync.addContainerRequest(containerRequest)
+      }
 
     } recover {
       case t: Throwable =>
