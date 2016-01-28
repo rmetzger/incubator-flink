@@ -21,6 +21,7 @@ package org.apache.flink.api.java.operators;
 import java.util.Arrays;
 
 import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.CrossFunction;
@@ -78,7 +79,8 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 	protected CrossFunction<I1, I2, OUT> getFunction() {
 		return function;
 	}
-	
+
+	@Internal
 	public CrossHint getCrossHint() {
 		return hint;
 	}
@@ -347,7 +349,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 		}
 	}
 
-	@Public
+	@Internal
 	public static final class ProjectCrossFunction<T1, T2, R extends Tuple> implements CrossFunction<T1, T2, R> {
 
 		private static final long serialVersionUID = 1L;
@@ -405,7 +407,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 		
 	}
 
-	@Public
+	@Internal
 	public static final class CrossProjection<I1, I2> {
 		
 		private final DataSet<I1> ds1;
@@ -1090,6 +1092,7 @@ public class CrossOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2, OUT,
 	//  default join functions
 	// --------------------------------------------------------------------------------------------
 
+	@Internal
 	public static final class DefaultCrossFunction<T1, T2> implements CrossFunction<T1, T2, Tuple2<T1, T2>> {
 
 		private static final long serialVersionUID = 1L;

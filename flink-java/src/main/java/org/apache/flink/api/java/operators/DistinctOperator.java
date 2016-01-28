@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.operators.Operator;
@@ -129,6 +130,7 @@ public class DistinctOperator<T> extends SingleInputOperator<T, T, DistinctOpera
 	}
 	
 	@RichGroupReduceFunction.Combinable
+	@Internal
 	public static final class DistinctFunction<T> extends RichGroupReduceFunction<T, T> {
 
 		private static final long serialVersionUID = 1L;

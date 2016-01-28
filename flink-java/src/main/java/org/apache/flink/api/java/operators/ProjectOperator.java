@@ -20,6 +20,7 @@ package org.apache.flink.api.java.operators;
 
 import java.util.Arrays;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.InvalidProgramException;
@@ -90,7 +91,8 @@ public class ProjectOperator<IN, OUT extends Tuple>
 		}
 		return (ProjectOperator<IN, R>) this;
 	}
-	
+
+	@Internal
 	public static class Projection<T> {
 		
 		private final DataSet<T> ds;

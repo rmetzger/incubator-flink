@@ -32,6 +32,8 @@ import java.util.Random;
  * @see <a href="http://erikerlandson.github.io/blog/2014/09/11/faster-random-samples-with-gap-sampling/">Gap Sampling</a>
  */
 public class BernoulliSampler<T> extends RandomSampler<T> {
+
+	machema hier weiter
 	
 	private final double fraction;
 	private final Random random;

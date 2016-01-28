@@ -137,8 +137,7 @@ public class IterativeDataSet<T> extends SingleInputOperator<T, T, IterativeData
 	/**
 	 * Gets the registry for aggregators. On the registry, one can add {@link Aggregator}s and an aggregator-based 
 	 * {@link ConvergenceCriterion}. This method offers an alternative way to registering the aggregators via
-	 * {@link #registerAggregator(String, Aggregator)} and {@link #registerAggregationConvergenceCriterion(String, Aggregator, ConvergenceCriterion)
-)}.
+	 * {@link #registerAggregator(String, Aggregator)} and {@link #registerAggregationConvergenceCriterion(String, Aggregator, ConvergenceCriterion))}.
 	 * 
 	 * @return The registry for aggregators.
 	 */

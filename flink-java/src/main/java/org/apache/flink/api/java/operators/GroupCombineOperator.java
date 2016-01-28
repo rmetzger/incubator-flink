@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.GroupCombineFunction;
 import org.apache.flink.api.common.operators.Operator;
@@ -87,6 +88,7 @@ public class GroupCombineOperator<IN, OUT> extends SingleInputUdfOperator<IN, OU
 	}
 
 	@Override
+	@Internal
 	public SingleInputSemanticProperties getSemanticProperties() {
 
 		SingleInputSemanticProperties props = super.getSemanticProperties();

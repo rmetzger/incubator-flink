@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
@@ -67,15 +68,17 @@ public class DeltaIterationResultSet<ST, WT> extends DataSet<ST> {
 	public DataSet<WT> getNextWorkset() {
 		return nextWorkset;
 	}
-	
-	public int [] getKeyPositions() {
+
+	@Internal
+	public int[] getKeyPositions() {
 		return keys.computeLogicalKeyPositions();
 	}
-	
+
+	@Internal
 	public int getMaxIterations() {
 		return maxIterations;
 	}
-	
+
 	public TypeInformation<WT> getWorksetType() {
 		return typeWS;
 	}

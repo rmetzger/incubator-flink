@@ -46,7 +46,6 @@ public abstract class Grouping<T> {
 	
 	protected Partitioner<?> customPartitioner;
 
-	
 	public Grouping(DataSet<T> set, Keys<T> keys) {
 		if (set == null || keys == null) {
 			throw new NullPointerException();

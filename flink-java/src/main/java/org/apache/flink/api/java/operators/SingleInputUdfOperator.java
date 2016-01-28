@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.functions.InvalidTypesException;
@@ -304,6 +305,7 @@ public abstract class SingleInputUdfOperator<IN, OUT, O extends SingleInputUdfOp
 	// --------------------------------------------------------------------------------------------
 
 	@Override
+	@Internal
 	public Map<String, DataSet<?>> getBroadcastSets() {
 		return this.broadcastVariables == null ?
 				Collections.<String, DataSet<?>>emptyMap() :
@@ -316,6 +318,7 @@ public abstract class SingleInputUdfOperator<IN, OUT, O extends SingleInputUdfOp
 	}
 
 	@Override
+	@Internal
 	public SingleInputSemanticProperties getSemanticProperties() {
 		if (this.udfSemantics == null || analyzedUdfSemantics) {
 			SingleInputSemanticProperties props = extractSemanticAnnotations(getFunction().getClass());
@@ -337,6 +340,7 @@ public abstract class SingleInputUdfOperator<IN, OUT, O extends SingleInputUdfOp
 	 * @param properties The semantic properties for the UDF.
 	 * @see UdfOperator#getSemanticProperties()
 	 */
+	@Internal
 	public void setSemanticProperties(SingleInputSemanticProperties properties) {
 		this.udfSemantics = properties;
 		this.analyzedUdfSemantics = false;

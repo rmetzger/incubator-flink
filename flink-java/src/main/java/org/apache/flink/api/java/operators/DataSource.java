@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.io.InputFormat;
@@ -77,6 +78,7 @@ public class DataSource<OUT> extends Operator<OUT, DataSource<OUT>> {
 	 * 
 	 * @return The input format that is executed by this data source.
 	 */
+	@Internal
 	public InputFormat<OUT, ?> getInputFormat() {
 		return this.inputFormat;
 	}

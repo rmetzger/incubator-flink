@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.operators;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.InvalidProgramException;
@@ -72,15 +73,18 @@ public class DataSink<T> {
 		this.type = type;
 	}
 
-	
+
+	@Internal
 	public OutputFormat<T> getFormat() {
 		return format;
 	}
-	
+
+	@Internal
 	public TypeInformation<T> getType() {
 		return type;
 	}
-	
+
+	@Internal
 	public DataSet<T> getDataSet() {
 		return data;
 	}

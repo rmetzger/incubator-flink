@@ -383,6 +383,7 @@ public abstract class TwoInputUdfOperator<IN1, IN2, OUT, O extends TwoInputUdfOp
 	// --------------------------------------------------------------------------------------------
 
 	@Override
+	@Internal
 	public Map<String, DataSet<?>> getBroadcastSets() {
 		return this.broadcastVariables == null ?
 				Collections.<String, DataSet<?>>emptyMap() :
@@ -395,6 +396,7 @@ public abstract class TwoInputUdfOperator<IN1, IN2, OUT, O extends TwoInputUdfOp
 	}
 
 	@Override
+	@Internal
 	public DualInputSemanticProperties getSemanticProperties() {
 		if (this.udfSemantics == null || analyzedUdfSemantics) {
 			DualInputSemanticProperties props = extractSemanticAnnotationsFromUdf(getFunction().getClass());
@@ -416,6 +418,7 @@ public abstract class TwoInputUdfOperator<IN1, IN2, OUT, O extends TwoInputUdfOp
 	 * @param properties The semantic properties for the UDF.
 	 * @see UdfOperator#getSemanticProperties()
 	 */
+	@Internal
 	public void setSemanticProperties(DualInputSemanticProperties properties) {
 		this.udfSemantics = properties;
 		this.analyzedUdfSemantics = false;

@@ -43,7 +43,7 @@ public class CoGroupRawOperator<I1, I2, OUT> extends TwoInputUdfOperator<I1, I2,
 	private final Keys<I1> keys1;
 	private final Keys<I2> keys2;
 
-	private final String defaultName;bdgfgfohöjidgf
+	private final String defaultName;
 
 	public CoGroupRawOperator(DataSet<I1> input1, DataSet<I2> input2,
 			Keys<I1> keys1, Keys<I2> keys2,
