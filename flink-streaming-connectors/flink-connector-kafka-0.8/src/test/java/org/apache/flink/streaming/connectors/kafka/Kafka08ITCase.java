@@ -157,7 +157,28 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 	 * This test is only applicable if the Flink Kafka Consumer uses the ZooKeeperOffsetHandler.
 	 */
 	@Test(timeout = 60000)
-	public void testOffsetInZookeeper() throws Exception {
+	public void testOffsetInZookeeperWithZKHandler() throws Exception {
+		Properties props = new Properties();
+		props.putAll(standardProps);
+		props.setProperty("flink.offset-handler", "zookeeper");
+		internalTestOffsetInZookeeper(props);
+	}
+
+	/**
+	 * Tests that offsets are properly committed to ZooKeeper and initial offsets are read from ZooKeeper.
+	 *
+	 * This test is using the Kafka offset handler, which is committing to ZK through the broker
+	 */
+	@Test(timeout = 60000)
+	public void testOffsetInZookeeperWithKafkaHandler() throws Exception {
+		Properties props = new Properties();
+		props.putAll(standardProps);
+		props.setProperty("flink.offset-handler", "kafka");
+		props.setProperty("offsets.storage", "zookeeper");
+		internalTestOffsetInZookeeper(props);
+	}
+
+	private void internalTestOffsetInZookeeper(Properties props) throws Exception {
 		final String topicName = "testOffsetInZK";
 		final int parallelism = 3;
 
@@ -184,7 +205,7 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 		// write a sequence from 0 to 99 to each of the 3 partitions.
 		writeSequence(env1, topicName, 100, parallelism);
 
-		readSequence(env2, standardProps, parallelism, topicName, 100, 0);
+		readSequence(env2, props, parallelism, topicName, 100, 0);
 
 		CuratorFramework curatorClient = ((KafkaTestEnvironmentImpl)kafkaServer).createCuratorClient();
 
@@ -208,7 +229,7 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 		curatorClient.close();
 
 		// create new env
-		readSequence(env3, standardProps, parallelism, topicName, 50, 50);
+		readSequence(env3, props, parallelism, topicName, 50, 50);
 
 		deleteTestTopic(topicName);
 	}
@@ -263,4 +284,6 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 
 		deleteTestTopic(topicName);
 	}
+
+	add tests for kafka offset handler
 }

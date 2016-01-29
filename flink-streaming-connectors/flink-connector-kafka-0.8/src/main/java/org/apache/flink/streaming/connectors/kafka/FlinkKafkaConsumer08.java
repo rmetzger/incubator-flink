@@ -580,6 +580,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	protected static void validateZooKeeperConfig(Properties props) {
 
 		// TODO: do this only if zk is used
+		here
 
 		if (props.getProperty("zookeeper.connect") == null) {
 			throw new IllegalArgumentException("Required property 'zookeeper.connect' has not been set in the properties");
