@@ -223,6 +223,7 @@ public abstract class StreamExecutionEnvironment {
 	 *
 	 * @return StreamExecutionEnvironment with chaining disabled.
 	 */
+	@Experimental
 	public StreamExecutionEnvironment disableOperatorChaining() {
 		this.isChainingEnabled = false;
 		return this;
@@ -233,6 +234,7 @@ public abstract class StreamExecutionEnvironment {
 	 *
 	 * @return {@code true} if chaining is enabled, false otherwise.
 	 */
+	@Experimental
 	public boolean isChainingEnabled() {
 		return isChainingEnabled;
 	}
@@ -403,6 +405,7 @@ public abstract class StreamExecutionEnvironment {
 	 * 
 	 * @see #getStateBackend()
 	 */
+	@Experimental
 	public StreamExecutionEnvironment setStateBackend(StateBackend<?> backend) {
 		this.defaultStateBackend = requireNonNull(backend);
 		return this;
@@ -414,6 +417,7 @@ public abstract class StreamExecutionEnvironment {
 	 * 
 	 * @see #setStateBackend(StateBackend)
 	 */
+	@Experimental
 	public StateBackend<?> getStateBackend() {
 		return defaultStateBackend;
 	}
@@ -427,6 +431,7 @@ public abstract class StreamExecutionEnvironment {
 	 * @param numberOfExecutionRetries
 	 * 		The number of times the system will try to re-execute failed tasks.
 	 */
+	@Experimental
 	public void setNumberOfExecutionRetries(int numberOfExecutionRetries) {
 		config.setNumberOfExecutionRetries(numberOfExecutionRetries);
 	}
@@ -438,6 +443,7 @@ public abstract class StreamExecutionEnvironment {
 	 *
 	 * @return The number of times the system will try to re-execute failed tasks.
 	 */
+	@Experimental
 	public int getNumberOfExecutionRetries() {
 		return config.getNumberOfExecutionRetries();
 	}
@@ -449,6 +455,7 @@ public abstract class StreamExecutionEnvironment {
 	 * @param parallelism
 	 * 		The parallelism to use as the default local parallelism.
 	 */
+	@Experimental
 	public static void setDefaultLocalParallelism(int parallelism) {
 		defaultLocalParallelism = parallelism;
 	}
@@ -554,6 +561,7 @@ public abstract class StreamExecutionEnvironment {
 	 * 
 	 * @param characteristic The time characteristic.
 	 */
+	@Experimental
 	public void setStreamTimeCharacteristic(TimeCharacteristic characteristic) {
 		this.timeCharacteristic = requireNonNull(characteristic);
 		if (characteristic == TimeCharacteristic.ProcessingTime) {
@@ -572,6 +580,7 @@ public abstract class StreamExecutionEnvironment {
 	 *
 	 * @return The time characteristic.
 	 */
+	@Experimental
 	public TimeCharacteristic getStreamTimeCharacteristic() {
 		return timeCharacteristic;
 	}
@@ -1222,6 +1231,7 @@ public abstract class StreamExecutionEnvironment {
 	 *
 	 * @return The streamgraph representing the transformations
 	 */
+	@Internal
 	public StreamGraph getStreamGraph() {
 		if (transformations.size() <= 0) {
 			throw new IllegalStateException("No operators defined in streaming topology. Cannot execute.");
@@ -1245,6 +1255,7 @@ public abstract class StreamExecutionEnvironment {
 	 * Returns a "closure-cleaned" version of the given function. Cleans only if closure cleaning
 	 * is not disabled in the {@link org.apache.flink.api.common.ExecutionConfig}
 	 */
+	@Internal
 	public <F> F clean(F f) {
 		if (getConfig().isClosureCleanerEnabled()) {
 			ClosureCleaner.clean(f, true);

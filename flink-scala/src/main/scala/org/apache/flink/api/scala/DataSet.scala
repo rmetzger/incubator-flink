@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala
 
-import org.apache.flink.annotation.{Experimental, Public}
+import org.apache.flink.annotation.{Internal, Experimental, Public}
 import org.apache.flink.api.common.InvalidProgramException
 import org.apache.flink.api.common.accumulators.SerializedListAccumulator
 import org.apache.flink.api.common.aggregators.Aggregator
@@ -189,6 +189,7 @@ class DataSet[T: ClassTag](set: JavaDataSet[T]) {
    * @param name The name under which the aggregator is registered.
    * @param aggregator The aggregator class.
    */
+  @Experimental
   def registerAggregator(name: String, aggregator: Aggregator[_]): DataSet[T] = {
     javaSet match {
       case di: DeltaIterationResultSet[_, _] =>

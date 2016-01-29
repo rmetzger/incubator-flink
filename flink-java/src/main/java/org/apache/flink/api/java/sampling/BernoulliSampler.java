@@ -33,8 +33,6 @@ import java.util.Random;
  */
 public class BernoulliSampler<T> extends RandomSampler<T> {
 
-	machema hier weiter
-	
 	private final double fraction;
 	private final Random random;
 	

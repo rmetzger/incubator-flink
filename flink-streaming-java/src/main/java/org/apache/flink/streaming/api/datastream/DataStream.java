@@ -121,6 +121,7 @@ public class DataStream<T> {
 	 *
 	 * @return ID of the DataStream
 	 */
+	@Internal
 	public Integer getId() {
 		return transformation.getId();
 	}
@@ -412,6 +413,7 @@ public class DataStream<T> {
 	 *
 	 * @return The DataStream with shuffle partitioning set.
 	 */
+	@Experimental
 	public DataStream<T> shuffle() {
 		return setConnectionType(new ShufflePartitioner<T>());
 	}
@@ -427,6 +429,7 @@ public class DataStream<T> {
 	 *
 	 * @return The DataStream with forward partitioning set.
 	 */
+	@Experimental
 	public DataStream<T> forward() {
 		return setConnectionType(new ForwardPartitioner<T>());
 	}
@@ -454,6 +457,7 @@ public class DataStream<T> {
 	 *
 	 * @return The DataStream with shuffle partitioning set.
 	 */
+	@Experimental
 	public DataStream<T> global() {
 		return setConnectionType(new GlobalPartitioner<T>());
 	}
@@ -647,7 +651,6 @@ public class DataStream<T> {
 	 *
 	 * @param size The size of the window.
 	 */
-	@Experimental
 	public AllWindowedStream<T, TimeWindow> timeWindowAll(AbstractTime size) {
 		return windowAll(TumblingTimeWindows.of(size));
 	}
@@ -668,7 +671,6 @@ public class DataStream<T> {
 	 *
 	 * @param size The size of the window.
 	 */
-	@Experimental
 	public AllWindowedStream<T, TimeWindow> timeWindowAll(AbstractTime size, AbstractTime slide) {
 		return windowAll(SlidingTimeWindows.of(size, slide));
 	}
@@ -742,6 +744,7 @@ public class DataStream<T> {
 	 *
 	 * @param extractor The TimestampExtractor that is called for each element of the DataStream.
 	 */
+	@Experimental
 	public SingleOutputStreamOperator<T, ?> assignTimestamps(TimestampExtractor<T> extractor) {
 		// match parallelism to input, otherwise dop=1 sources could lead to some strange
 		// behaviour: the watermark will creep along very slowly because the elements

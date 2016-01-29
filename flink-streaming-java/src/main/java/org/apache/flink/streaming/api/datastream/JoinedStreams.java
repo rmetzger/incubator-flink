@@ -92,7 +92,7 @@ public class JoinedStreams<T1, T2> {
 	// ------------------------------------------------------------------------
 
 	/**
-	 * CoGrouped streams that have the key for one side defined.
+	 * Joined streams that have the key for one side defined.
 	 *
 	 * @param <KEY> The type of the key.
 	 */
@@ -123,8 +123,9 @@ public class JoinedStreams<T1, T2> {
 		// --------------------------------------------------------------------
 
 		/**
-		 * A co-group operation that has {@link KeySelector KeySelectors} defined for both inputs.
+		 * A join operation that has {@link KeySelector KeySelectors} defined for both inputs.
 		 */
+		@Public
 		public class EqualTo {
 
 			private final KeySelector<T2, KEY> keySelector2;
@@ -134,8 +135,9 @@ public class JoinedStreams<T1, T2> {
 			}
 
 			/**
-			 * Specifies the window on which the co-group operation works.
+			 * Specifies the window on which the join operation works.
 			 */
+			@Experimental
 			public <W extends Window> WithWindow<T1, T2, KEY, W> window(WindowAssigner<? super TaggedUnion<T1, T2>, W> assigner) {
 				return new WithWindow<>(input1, input2, keySelector1, keySelector2, keyType, assigner, null, null);
 			}
@@ -169,6 +171,7 @@ public class JoinedStreams<T1, T2> {
 
 		private final Evictor<? super TaggedUnion<T1, T2>, ? super W> evictor;
 
+		@Experimental
 		protected WithWindow(DataStream<T1> input1,
 				DataStream<T2> input2,
 				KeySelector<T1, KEY> keySelector1,

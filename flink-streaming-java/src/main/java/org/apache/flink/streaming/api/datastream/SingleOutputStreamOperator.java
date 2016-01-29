@@ -77,6 +77,7 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	 * @param uid The unique user-specified ID of this transformation.
 	 * @return The operator with the specified ID.
 	 */
+	@Experimental
 	public SingleOutputStreamOperator<T, O> uid(String uid) {
 		transformation.setUid(uid);
 		return this;
@@ -118,11 +119,13 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	}
 
 	@SuppressWarnings("unchecked")
+	@Experimental
 	public SingleOutputStreamOperator<T, O> shuffle() {
 		return (SingleOutputStreamOperator<T, O>) super.shuffle();
 	}
 
 	@SuppressWarnings("unchecked")
+	@Experimental
 	public SingleOutputStreamOperator<T, O> forward() {
 		return (SingleOutputStreamOperator<T, O>) super.forward();
 	}
@@ -133,6 +136,7 @@ public class SingleOutputStreamOperator<T, O extends SingleOutputStreamOperator<
 	}
 
 	@SuppressWarnings("unchecked")
+	@Experimental
 	public SingleOutputStreamOperator<T, O> global() {
 		return (SingleOutputStreamOperator<T, O>) super.global();
 	}

@@ -81,6 +81,7 @@ public class AllWindowedStream<T, W extends Window> {
 	private Evictor<? super T, ? super W> evictor;
 
 
+	@Experimental
 	public AllWindowedStream(DataStream<T> input,
 			WindowAssigner<? super T, W> windowAssigner) {
 		this.input = input;

@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala
 
-import org.apache.flink.annotation.Public
+import org.apache.flink.annotation.{Internal, Public}
 import org.apache.flink.api.common.InvalidProgramException
 import org.apache.flink.api.common.functions.{GroupCombineFunction, GroupReduceFunction, Partitioner, ReduceFunction}
 import org.apache.flink.api.common.operators.Order
@@ -206,6 +206,7 @@ class GroupedDataSet[T: ClassTag](
    * Gets the custom partitioner to be used for this grouping, or null, if
    * none was defined.
    */
+  @Internal
   def getCustomPartitioner[K]() : Partitioner[K] = {
     partitioner.asInstanceOf[Partitioner[K]]
   }

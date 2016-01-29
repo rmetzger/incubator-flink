@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api.datastream;
 
 import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.functions.FoldFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
@@ -107,6 +108,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * Gets the key selector that can get the key by which the stream if partitioned from the elements.
 	 * @return The key selector for the key.
 	 */
+	@Internal
 	public KeySelector<T, KEY> getKeySelector() {
 		return this.keySelector;
 	}
@@ -115,6 +117,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * Gets the type of the key by which the stream is partitioned. 
 	 * @return The type of the key by which the stream is partitioned.
 	 */
+	@Internal
 	public TypeInformation<KEY> getKeyType() {
 		return keyType;
 	}
@@ -166,7 +169,6 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 *
 	 * @param size The size of the window.
 	 */
-	@Experimental
 	public WindowedStream<T, KEY, TimeWindow> timeWindow(AbstractTime size) {
 		return window(TumblingTimeWindows.of(size));
 	}
@@ -182,7 +184,6 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 *
 	 * @param size The size of the window.
 	 */
-	@Experimental
 	public WindowedStream<T, KEY, TimeWindow> timeWindow(AbstractTime size, AbstractTime slide) {
 		return window(SlidingTimeWindows.of(size, slide));
 	}

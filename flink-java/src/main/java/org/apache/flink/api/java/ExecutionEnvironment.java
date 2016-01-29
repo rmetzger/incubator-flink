@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InvalidProgramException;
@@ -184,6 +186,7 @@ public abstract class ExecutionEnvironment {
 	 *
 	 * @param numberOfExecutionRetries The number of times the system will try to re-execute failed tasks.
 	 */
+	@Experimental
 	public void setNumberOfExecutionRetries(int numberOfExecutionRetries) {
 		config.setNumberOfExecutionRetries(numberOfExecutionRetries);
 	}
@@ -195,6 +198,7 @@ public abstract class ExecutionEnvironment {
 	 *
 	 * @return The number of times the system will try to re-execute failed tasks.
 	 */
+	@Experimental
 	public int getNumberOfExecutionRetries() {
 		return config.getNumberOfExecutionRetries();
 	}
@@ -219,6 +223,7 @@ public abstract class ExecutionEnvironment {
 	 * @return The JobID of this environment.
 	 * @see #getIdString()
 	 */
+	@Experimental
 	public JobID getId() {
 		return this.jobID;
 	}
@@ -229,6 +234,7 @@ public abstract class ExecutionEnvironment {
 	 * @return The JobID as a string.
 	 * @see #getId()
 	 */
+	@Experimental
 	public String getIdString() {
 		return this.jobID.toString();
 	}
@@ -239,6 +245,7 @@ public abstract class ExecutionEnvironment {
 	 *
 	 * @param timeout The timeout, in seconds.
 	 */
+	@Experimental
 	public void setSessionTimeout(long timeout) {
 		throw new IllegalStateException("Support for sessions is currently disabled. " +
 				"It will be enabled in future Flink versions.");
@@ -256,6 +263,7 @@ public abstract class ExecutionEnvironment {
 	 *
 	 * @return The session timeout, in seconds.
 	 */
+	@Experimental
 	public long getSessionTimeout() {
 		return sessionTimeout;
 	}
@@ -263,6 +271,7 @@ public abstract class ExecutionEnvironment {
 	/**
 	 * Starts a new session, discarding the previous data flow and all of its intermediate results.
 	 */
+	@Experimental
 	public abstract void startNewSession() throws Exception;
 
 	// --------------------------------------------------------------------------------------------
@@ -547,6 +556,7 @@ public abstract class ExecutionEnvironment {
 	 * Creates a {@link DataSet} from the given {@link org.apache.hadoop.mapred.FileInputFormat}. The
 	 * given inputName is set on the given job.
 	 */
+	@Experimental
 	public <K,V> DataSource<Tuple2<K, V>> readHadoopFile(org.apache.hadoop.mapred.FileInputFormat<K,V> mapredInputFormat, Class<K> key, Class<V> value, String inputPath, JobConf job) {
 		DataSource<Tuple2<K, V>> result = createHadoopInput(mapredInputFormat, key, value, job);
 
@@ -559,6 +569,7 @@ public abstract class ExecutionEnvironment {
 	 * Creates a {@link DataSet} from {@link org.apache.hadoop.mapred.SequenceFileInputFormat}
 	 * A {@link org.apache.hadoop.mapred.JobConf} with the given inputPath is created.
  	 */
+	@Experimental
 	public <K,V> DataSource<Tuple2<K, V>> readSequenceFile(Class<K> key, Class<V> value, String inputPath) throws IOException {
 		return readHadoopFile(new org.apache.hadoop.mapred.SequenceFileInputFormat<K, V>(), key, value, inputPath);
 	}
@@ -567,6 +578,7 @@ public abstract class ExecutionEnvironment {
 	 * Creates a {@link DataSet} from the given {@link org.apache.hadoop.mapred.FileInputFormat}. A
 	 * {@link org.apache.hadoop.mapred.JobConf} with the given inputPath is created.
 	 */
+	@Experimental
 	public <K,V> DataSource<Tuple2<K, V>> readHadoopFile(org.apache.hadoop.mapred.FileInputFormat<K,V> mapredInputFormat, Class<K> key, Class<V> value, String inputPath) {
 		return readHadoopFile(mapredInputFormat, key, value, inputPath, new JobConf());
 	}
@@ -574,6 +586,7 @@ public abstract class ExecutionEnvironment {
 	/**
 	 * Creates a {@link DataSet} from the given {@link org.apache.hadoop.mapred.InputFormat}.
 	 */
+	@Experimental
 	public <K,V> DataSource<Tuple2<K, V>> createHadoopInput(org.apache.hadoop.mapred.InputFormat<K,V> mapredInputFormat, Class<K> key, Class<V> value, JobConf job) {
 		HadoopInputFormat<K, V> hadoopInputFormat = new HadoopInputFormat<>(mapredInputFormat, key, value, job);
 
@@ -584,6 +597,7 @@ public abstract class ExecutionEnvironment {
 	 * Creates a {@link DataSet} from the given {@link org.apache.hadoop.mapreduce.lib.input.FileInputFormat}. The
 	 * given inputName is set on the given job.
 	 */
+	@Experimental
 	public <K,V> DataSource<Tuple2<K, V>> readHadoopFile(org.apache.hadoop.mapreduce.lib.input.FileInputFormat<K,V> mapreduceInputFormat, Class<K> key, Class<V> value, String inputPath, Job job) throws IOException {
 		DataSource<Tuple2<K, V>> result = createHadoopInput(mapreduceInputFormat, key, value, job);
 
@@ -597,6 +611,7 @@ public abstract class ExecutionEnvironment {
 	 * Creates a {@link DataSet} from the given {@link org.apache.hadoop.mapreduce.lib.input.FileInputFormat}. A
 	 * {@link org.apache.hadoop.mapreduce.Job} with the given inputPath is created.
 	 */
+	@Experimental
 	public <K,V> DataSource<Tuple2<K, V>> readHadoopFile(org.apache.hadoop.mapreduce.lib.input.FileInputFormat<K,V> mapreduceInputFormat, Class<K> key, Class<V> value, String inputPath) throws IOException {
 		return readHadoopFile(mapreduceInputFormat, key, value, inputPath, Job.getInstance());
 	}
@@ -604,6 +619,7 @@ public abstract class ExecutionEnvironment {
 	/**
 	 * Creates a {@link DataSet} from the given {@link org.apache.hadoop.mapreduce.InputFormat}.
 	 */
+	@Experimental
 	public <K,V> DataSource<Tuple2<K, V>> createHadoopInput(org.apache.hadoop.mapreduce.InputFormat<K,V> mapreduceInputFormat, Class<K> key, Class<V> value, Job job) {
 		org.apache.flink.api.java.hadoop.mapreduce.HadoopInputFormat<K, V> hadoopInputFormat = new org.apache.flink.api.java.hadoop.mapreduce.HadoopInputFormat<>(mapreduceInputFormat, key, value, job);
 
@@ -890,6 +906,7 @@ public abstract class ExecutionEnvironment {
 	 * 
 	 * @return The program's plan.
 	 */
+	@Internal
 	public Plan createProgramPlan() {
 		return createProgramPlan(null);
 	}
@@ -905,6 +922,7 @@ public abstract class ExecutionEnvironment {
 	 * @param jobName The name attached to the plan (displayed in logs and monitoring).
 	 * @return The program's plan.
 	 */
+	@Internal
 	public Plan createProgramPlan(String jobName) {
 		return createProgramPlan(jobName, true);
 	}
@@ -920,6 +938,7 @@ public abstract class ExecutionEnvironment {
 	 * @param clearSinks Whether or not to start a new stage of execution.
 	 * @return The program's plan.
 	 */
+	@Internal
 	public Plan createProgramPlan(String jobName, boolean clearSinks) {
 		if (this.sinks.isEmpty()) {
 			if (wasExecuted) {
@@ -1021,6 +1040,7 @@ public abstract class ExecutionEnvironment {
 	 * 
 	 * @param sink The sink to add for execution.
 	 */
+	@Internal
 	void registerDataSink(DataSink<?> sink) {
 		this.sinks.add(sink);
 	}
@@ -1057,6 +1077,7 @@ public abstract class ExecutionEnvironment {
 	 * memory. parallelism will always be 1. This is useful during implementation and for debugging.
 	 * @return A Collection Environment
 	 */
+	@Experimental
 	public static CollectionEnvironment createCollectionsEnvironment(){
 		CollectionEnvironment ce = new CollectionEnvironment();
 		ce.setParallelism(1);
@@ -1202,6 +1223,7 @@ public abstract class ExecutionEnvironment {
 	 * @return True, if it is possible to explicitly instantiate a LocalEnvironment or a
 	 *         RemoteEnvironment, false otherwise.
 	 */
+	@Internal
 	public static boolean areExplicitEnvironmentsAllowed() {
 		return contextEnvironmentFactory == null;
 	}

@@ -21,6 +21,8 @@ package org.apache.flink.api.scala.operators;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.flink.annotation.Internal;
+import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.RichGroupReduceFunction;
@@ -50,6 +52,7 @@ import scala.Product;
  *
  * @param <IN> The type of the data set aggregated by the operator.
  */
+@Public
 public class ScalaAggregateOperator<IN> extends SingleInputOperator<IN, IN, ScalaAggregateOperator<IN>> {
 
 	private final List<AggregationFunction<?>> aggregationFunctions = new ArrayList<AggregationFunction<?>>(4);
@@ -231,6 +234,7 @@ public class ScalaAggregateOperator<IN> extends SingleInputOperator<IN, IN, Scal
 	// --------------------------------------------------------------------------------------------
 
 	@Combinable
+	@Internal
 	public static final class AggregatingUdf<T extends Product> extends RichGroupReduceFunction<T, T> {
 		private static final long serialVersionUID = 1L;
 

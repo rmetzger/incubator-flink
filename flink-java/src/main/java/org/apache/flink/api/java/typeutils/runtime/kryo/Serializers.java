@@ -27,6 +27,8 @@ import de.javakaffee.kryoserializers.jodatime.JodaIntervalSerializer;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificRecordBase;
+import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.joda.time.DateTime;
@@ -52,6 +54,7 @@ import java.util.Set;
  * to provide custom serialization for their classes.
  * Also, there is a Java Annotation for adding a default serializer (@DefaultSerializer) to classes.
  */
+@Experimental
 public class Serializers {
 	/**
 	 * NOTE: This method is not a public Flink API.
@@ -62,6 +65,7 @@ public class Serializers {
 	 */
 	private static Set<Class<?>> alreadySeen = new HashSet<Class<?>>();
 
+	@Internal
 	public static void recursivelyRegisterType(Class<?> type, ExecutionConfig config) {
 		alreadySeen.add(type);
 		if(type.isPrimitive()) {

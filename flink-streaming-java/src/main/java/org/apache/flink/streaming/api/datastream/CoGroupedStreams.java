@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api.datastream;
 
 import org.apache.flink.annotation.Experimental;
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.CoGroupFunction;
@@ -103,6 +104,7 @@ public class CoGroupedStreams<T1, T2> {
 	 * 
 	 * @param <KEY> The type of the key.
 	 */
+	@Public
 	public class Where<KEY> {
 
 		private final KeySelector<T1, KEY> keySelector1;
@@ -131,6 +133,7 @@ public class CoGroupedStreams<T1, T2> {
 		/**
 		 * A co-group operation that has {@link KeySelector KeySelectors} defined for both inputs.
 		 */
+		@Public
 		public class EqualTo {
 
 			private final KeySelector<T2, KEY> keySelector2;
@@ -142,6 +145,7 @@ public class CoGroupedStreams<T1, T2> {
 			/**
 			 * Specifies the window on which the co-group operation works.
 			 */
+			@Experimental
 			public <W extends Window> WithWindow<T1, T2, KEY, W> window(WindowAssigner<? super TaggedUnion<T1, T2>, W> assigner) {
 				return new WithWindow<>(input1, input2, keySelector1, keySelector2, keyType, assigner, null, null);
 			}
@@ -159,6 +163,7 @@ public class CoGroupedStreams<T1, T2> {
 	 * @param <KEY> Type of the key. This must be the same for both inputs
 	 * @param <W> Type of {@link Window} on which the co-group operation works.
 	 */
+	@Public
 	public static class WithWindow<T1, T2, KEY, W extends Window> {
 		private final DataStream<T1> input1;
 		private final DataStream<T2> input2;
@@ -278,6 +283,7 @@ public class CoGroupedStreams<T1, T2> {
 	/**
 	 * Internal class for implementing tagged union co-group.
 	 */
+	@Internal
 	public static class TaggedUnion<T1, T2> {
 		private final T1 one;
 		private final T2 two;

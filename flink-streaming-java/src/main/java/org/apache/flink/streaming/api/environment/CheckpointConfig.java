@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.environment;
 
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.streaming.api.CheckpointingMode;
 
@@ -205,6 +206,7 @@ public class CheckpointConfig implements java.io.Serializable {
 	 * @deprecated This will be removed once iterations properly participate in checkpointing.
 	 */
 	@Deprecated
+	@Experimental
 	public boolean isForceCheckpointing() {
 		return forceCheckpointing;
 	}
@@ -217,6 +219,7 @@ public class CheckpointConfig implements java.io.Serializable {
 	 * @deprecated This will be removed once iterations properly participate in checkpointing.
 	 */
 	@Deprecated
+	@Experimental
 	public void setForceCheckpointing(boolean forceCheckpointing) {
 		this.forceCheckpointing = forceCheckpointing;
 	}

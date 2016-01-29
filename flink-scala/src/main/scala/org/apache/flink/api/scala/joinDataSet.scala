@@ -17,9 +17,7 @@
  */
 package org.apache.flink.api.scala
 
-import org.apache.flink.annotation.Public
-import org.apache.flink.api.common.operators.Operator
-import org.apache.flink.api.common.operators.base.JoinOperatorBase
+import org.apache.flink.annotation.{Internal, Public}
 import org.apache.flink.api.common.functions.{FlatJoinFunction, JoinFunction, Partitioner, RichFlatJoinFunction}
 import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -209,6 +207,7 @@ class JoinDataSet[L, R](
   /**
    * Gets the custom partitioner used by this join, or null, if none is set.
    */
+  @Internal
   def getPartitioner[K]() : Partitioner[K] = {
     customPartitioner.asInstanceOf[Partitioner[K]]
   }
@@ -271,6 +270,7 @@ class UnfinishedJoinOperation[L, R](
   extends UnfinishedJoinOperationBase[L, R, JoinDataSet[L, R]](
     leftSet, rightSet, joinHint, JoinType.INNER) {
 
+  @Internal
   override def createJoinFunctionAssigner(leftKey: Keys[L], rightKey: Keys[R]) = {
     createDefaultJoin(leftKey, rightKey)
   }
@@ -304,6 +304,7 @@ class UnfinishedOuterJoinOperation[L, R](
   extends UnfinishedJoinOperationBase[L, R, JoinFunctionAssigner[L, R]](
     leftSet, rightSet, joinHint, joinType) {
 
+  @Internal
   override def createJoinFunctionAssigner(leftKey: Keys[L], rightKey: Keys[R]):
       JoinFunctionAssigner[L, R] = {
     new DefaultJoinFunctionAssigner(createDefaultJoin(leftKey, rightKey))

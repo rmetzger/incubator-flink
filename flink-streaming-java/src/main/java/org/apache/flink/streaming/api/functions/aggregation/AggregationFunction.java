@@ -20,6 +20,11 @@ package org.apache.flink.streaming.api.functions.aggregation;
 import org.apache.flink.api.common.functions.RichReduceFunction;
 
 public abstract class AggregationFunction<T> extends RichReduceFunction<T> {
+
+
+	hier weiter ok?
+
+
 	private static final long serialVersionUID = 1L;
 
 	public enum AggregationType {
