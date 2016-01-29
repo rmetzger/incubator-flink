@@ -79,10 +79,4 @@ public interface Fetcher {
 	 * @param t Error cause
 	 */
 	void stopWithError(Throwable t);
-
-	/**
-	 * Commit the specified offsets to the underlying brokers
-	 *
-	 */
-	void commit(Map<KafkaTopicPartition, Long> offsetsToCommit, short protocolVersion);
 }

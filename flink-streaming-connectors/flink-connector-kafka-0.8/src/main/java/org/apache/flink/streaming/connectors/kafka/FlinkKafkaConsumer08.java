@@ -33,6 +33,7 @@ import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition
 import org.apache.flink.streaming.connectors.kafka.internals.LegacyFetcher;
 import org.apache.flink.streaming.connectors.kafka.internals.OffsetHandler;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionLeader;
+import org.apache.flink.streaming.connectors.kafka.internals.ZookeeperOffsetHandler;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
@@ -112,6 +113,9 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 
 	/** Configuration key for the number of retries for getting the partition info */
 	public static final String GET_PARTITIONS_RETRIES_KEY = "flink.get-partitions.retry";
+
+	/** Configuration key for the offset backend */
+	public static final String GET_OFFSET_HANDLER_KEY = "flink.offset-handler";
 
 	/** Default number of retries for getting the partition info. One retry means going through the full list of brokers */
 	public static final int DEFAULT_GET_PARTITIONS_RETRIES = 3;
@@ -253,9 +257,17 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 		// create fetcher
 		fetcher = new LegacyFetcher(this.subscribedPartitions, props, getRuntimeContext().getTaskName());
 
-		//TODO make pluggable
 		// offset handling
-		offsetHandler = new KafkaOffsetHandler(props, fetcher); // new ZookeeperOffsetHandler(props);
+		switch(props.getProperty(GET_OFFSET_HANDLER_KEY, "kafka")) {
+			case "kafka":
+				offsetHandler = new KafkaOffsetHandler(props);
+				break;
+			case "zookeeper":
+				offsetHandler = new ZookeeperOffsetHandler(props);
+				break;
+			default:
+				offsetHandler = new KafkaOffsetHandler(props);
+		}
 
 		committedOffsets = new HashMap<>();
 
