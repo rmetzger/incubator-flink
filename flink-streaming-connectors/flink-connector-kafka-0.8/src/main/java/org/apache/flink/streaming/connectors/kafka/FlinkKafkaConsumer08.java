@@ -578,12 +578,12 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	 * @param props Properties to check
 	 */
 	protected static void validateZooKeeperConfig(Properties props) {
-
-		// TODO: do this only if zk is used
-		here
-
-		if (props.getProperty("zookeeper.connect") == null) {
-			throw new IllegalArgumentException("Required property 'zookeeper.connect' has not been set in the properties");
+		// when committing offsets through ZK, require the "zookeeper.connect".
+		String offsetStorage = props.getProperty("offsets.storage", "zookeeper");
+		if(offsetStorage.equals("zookeeper")) {
+			if (props.getProperty("zookeeper.connect") == null) {
+				throw new IllegalArgumentException("Required property 'zookeeper.connect' has not been set in the properties");
+			}
 		}
 		if (props.getProperty(ConsumerConfig.GROUP_ID_CONFIG) == null) {
 			throw new IllegalArgumentException("Required property '" + ConsumerConfig.GROUP_ID_CONFIG

@@ -20,15 +20,28 @@ package org.apache.flink.streaming.connectors.kafka;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.flink.api.java.functions.FlatMapIterator;
 import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.ParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.streaming.connectors.kafka.internals.Fetcher;
+import org.apache.flink.streaming.connectors.kafka.internals.KafkaOffsetHandler;
+import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
+import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionLeader;
 import org.apache.flink.streaming.connectors.kafka.internals.ZookeeperOffsetHandler;
+import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
+import org.apache.kafka.common.Node;
+import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.assertTrue;
@@ -235,7 +248,7 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 	}
 
 	@Test(timeout = 60000)
-	public void testOffsetAutocommitTest() throws Exception {
+	public void testOffsetAutocommit() throws Exception {
 		final String topicName = "testOffsetAutocommit";
 		final int parallelism = 3;
 
@@ -285,5 +298,59 @@ public class Kafka08ITCase extends KafkaConsumerTestBase {
 		deleteTestTopic(topicName);
 	}
 
-	add tests for kafka offset handler
+	@Test
+	public void testKafkaOffsetHandler_OffsetInKafka() throws Exception {
+		Properties p = new Properties();
+
+		p.setProperty("offsets.storage", "kafka");
+		p.setProperty("bootstrap.servers", kafkaServer.getBrokerConnectionString());
+		testKafkaOffsetHandler(p);
+	}
+
+	@Test
+	public void testKafkaOffsetHandler_OffsetInZK() throws Exception {
+		Properties p = new Properties();
+
+		p.setProperty("offsets.storage", "zookeeper");
+		testKafkaOffsetHandler(p);
+	}
+
+	private void testKafkaOffsetHandler(Properties config) throws Exception {
+		KafkaOffsetHandler koh = new KafkaOffsetHandler(config);
+		Map<KafkaTopicPartition,Long> offsets = new HashMap<>();
+		List<KafkaTopicPartitionLeader> partitions = new ArrayList<>();
+		String topic = "topic";
+		for(int i = 0; i < 20; i++) {
+			KafkaTopicPartition p = new KafkaTopicPartition(topic, i);
+			offsets.put(p, (long) (20*i));
+			partitions.add(new KafkaTopicPartitionLeader(p, new Node(0, "host", 8080)));
+		}
+		koh.commit(offsets);
+
+		final Tuple1<Integer> seekCount = new Tuple1<>(0);
+		Fetcher validatingFetcher = new Fetcher() {
+			@Override
+			public void close() throws IOException {
+				// noop
+			}
+
+			@Override
+			public <T> void run(SourceFunction.SourceContext<T> sourceContext, KeyedDeserializationSchema<T> valueDeserializer, HashMap<KafkaTopicPartition, Long> lastOffsets) throws Exception {
+				// noop
+			}
+
+			@Override
+			public void seek(KafkaTopicPartition topicPartition, long offsetToRead) {
+				Assert.assertEquals(topicPartition.getPartition()*20, offsetToRead);
+				seekCount.f0++;
+			}
+
+			@Override
+			public void stopWithError(Throwable t) {
+				// noop
+			}
+		};
+		koh.seekFetcherToInitialOffsets(partitions, validatingFetcher);
+		Assert.assertEquals(20L, (long)seekCount.f0);
+	}
 }

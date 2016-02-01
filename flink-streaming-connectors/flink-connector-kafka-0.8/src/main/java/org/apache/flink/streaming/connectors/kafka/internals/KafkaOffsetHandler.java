@@ -78,7 +78,7 @@ public class KafkaOffsetHandler implements OffsetHandler {
 		this.ignoreErrors = Boolean.parseBoolean(properties.getProperty("flink.kafka-offset-handler.ignore-errors", "false"));
 		this.commitRetryCount = Integer.parseInt(properties.getProperty("offsets.commit.max.retries", "5"));
 		this.discoveryRetryCount = Integer.parseInt(properties.getProperty("flink.kafka-offset-handler.discovery-retry-count", "2"));
-		this.fetchRetryCount = Integer.parseInt(properties.getProperty("flink.kafka-offset-handler.fetch-retry-count", "2"));
+		this.fetchRetryCount = Integer.parseInt(properties.getProperty("flink.kafka-offset-handler.fetch-retry-count", "20"));
 	}
 
 	/**
@@ -217,19 +217,23 @@ public class KafkaOffsetHandler implements OffsetHandler {
 							seekOffsets.put(tkp, offset + 1);
 						}
 					} else {
-						if (ome.error() == ErrorMapping.NotCoordinatorForConsumerCode()) {
+						if (ome.error() == OffsetMetadataAndError.NotOffsetManagerForGroup().error()) {
 							LOG.warn("Unable to fetch offset because offset manager has moved.");
 							offsetManagerChannel.disconnect();
 							offsetManagerChannel = null;
 							discoverOffsetManager();
-						} else if(ome.error() == ErrorMapping.OffsetsLoadInProgressCode()) {
+						} else if(ome.error() == OffsetMetadataAndError.OffsetsLoading().error()) {
 							LOG.warn("Unable to fetch offset because offsets load in progress.");
 							Thread.sleep(offsetChannelBackoffMs);
-						} else if(ome.error() == ErrorMapping.UnknownTopicOrPartitionCode()) {
+						} else if(ome.error() == OffsetMetadataAndError.NoOffset().error()) {
 							LOG.info("No offset known for: {}", kafkaOffset.getKey());
 						} else {
 							LOG.warn("Unknown error while fetching offsets", ErrorMapping.exceptionFor(ome.error()));
+							offsetManagerChannel.disconnect();
+							offsetManagerChannel = null;
+							discoverOffsetManager();
 						}
+						Thread.sleep(offsetChannelBackoffMs);
 						continue retry; // retry
 					}
 				}
