@@ -73,4 +73,24 @@ public class JobManagerCommunicationUtils {
 			throw new Exception("Sending the 'cancel' message failed.", e);
 		}
 	}
+
+	public static List<JobStatusMessage> getRunningJobs(ActorGateway jobManager) throws Exception {
+
+		// find the jobID
+		Future<Object> listResponse = jobManager.ask(
+				JobManagerMessages.getRequestRunningJobsStatus(),
+				askTimeout);
+
+		List<JobStatusMessage> jobs;
+		try {
+			Object result = Await.result(listResponse, askTimeout);
+			jobs = ((JobManagerMessages.RunningJobsStatus) result).getStatusMessages();
+		}
+		catch (Exception e) {
+			throw new Exception("Could not cancel job - failed to retrieve running jobs from the JobManager.", e);
+		}
+
+		return jobs;
+	}
+
 }
