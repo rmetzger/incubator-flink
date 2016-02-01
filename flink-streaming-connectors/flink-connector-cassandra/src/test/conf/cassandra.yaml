@@ -1,0 +1,24 @@
+cluster_name: 'Test Cluster'
+commitlog_sync: 'periodic'
+commitlog_sync_period_in_ms: 10000
+partitioner: 'org.apache.cassandra.dht.RandomPartitioner'
+endpoint_snitch: 'org.apache.cassandra.locator.SimpleSnitch'
+commitlog_directory: 'C:\tmp\cassandra\commitlog'
+data_file_directories:
+    - 'C:\tmp\cassandra\data'
+saved_caches_directory: 'C:\tmp\cassandra\cache'
+hints_directory: 'C:\tmp\cassandra\hints'
+listen_address: '127.0.0.1'
+seed_provider:
+    - class_name: 'org.apache.cassandra.locator.SimpleSeedProvider'
+      parameters:
+          - seeds: '127.0.0.1'
+native_transport_port: 9042
+start_native_transport: true
+
+read_request_timeout_in_ms: 60000
+range_request_timeout_in_ms: 60000
+write_request_timeout_in_ms: 40000
+cas_contention_timeout_in_ms: 3000
+truncate_request_timeout_in_ms: 60000
+request_timeout_in_ms: 60000
