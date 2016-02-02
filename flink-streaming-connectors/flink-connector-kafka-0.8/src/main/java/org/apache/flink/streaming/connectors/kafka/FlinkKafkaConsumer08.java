@@ -347,6 +347,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	public void cancel() {
 		// set ourselves as not running
 		running = false;
+		LOG.info("Source is going to shut down");
 		
 		// close the fetcher to interrupt any work
 		Fetcher fetcher = this.fetcher;

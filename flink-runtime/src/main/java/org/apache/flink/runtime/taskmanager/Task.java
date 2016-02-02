@@ -1066,7 +1066,7 @@ public class Task implements Runnable {
 					invokable.cancel();
 				}
 				catch (Throwable t) {
-					logger.error("Error while canceling the task", t);
+					logger.error("Error while canceling the task '{}'", taskName, t);
 				}
 
 				// interrupt the running thread initially 
