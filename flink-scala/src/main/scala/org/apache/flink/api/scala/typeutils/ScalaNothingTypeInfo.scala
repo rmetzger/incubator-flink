@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala.typeutils
 
-import org.apache.flink.annotation.Public
+import org.apache.flink.annotation.{Experimental, Public}
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
@@ -25,13 +25,20 @@ import org.apache.flink.api.common.typeutils.TypeSerializer
 @Public
 class ScalaNothingTypeInfo extends TypeInformation[Nothing] {
 
+  @Experimental
   override def isBasicType: Boolean = false
+  @Experimental
   override def isTupleType: Boolean = false
+  @Experimental
   override def getArity: Int = 0
+  @Experimental
   override def getTotalFields: Int = 0
+  @Experimental
   override def getTypeClass: Class[Nothing] = classOf[Nothing]
+  @Experimental
   override def isKeyType: Boolean = false
 
+  @Experimental
   override def createSerializer(config: ExecutionConfig): TypeSerializer[Nothing] =
     (new NothingSerializer).asInstanceOf[TypeSerializer[Nothing]]
 

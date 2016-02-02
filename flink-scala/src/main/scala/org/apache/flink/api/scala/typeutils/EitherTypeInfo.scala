@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala.typeutils
 
-import org.apache.flink.annotation.Public
+import org.apache.flink.annotation.{Experimental, Public}
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
@@ -34,14 +34,22 @@ class EitherTypeInfo[A, B, T <: Either[A, B]](
     val rightTypeInfo: TypeInformation[B])
   extends TypeInformation[T] {
 
+  @Experimental
   override def isBasicType: Boolean = false
+  @Experimental
   override def isTupleType: Boolean = false
+  @Experimental
   override def isKeyType: Boolean = false
+  @Experimental
   override def getTotalFields: Int = 1
+  @Experimental
   override def getArity: Int = 1
+  @Experimental
   override def getTypeClass = clazz
+  @Experimental
   override def getGenericParameters = List[TypeInformation[_]](leftTypeInfo, rightTypeInfo).asJava
 
+  @Experimental
   def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[T] = {
     val leftSerializer = if (leftTypeInfo != null) {
       leftTypeInfo.createSerializer(executionConfig)

@@ -24,6 +24,7 @@ import java.util.Collections;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.InvalidTypesException;
@@ -52,10 +53,12 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	protected final String[] fieldNames;
 
 	@SuppressWarnings("unchecked")
+	@Experimental
 	public TupleTypeInfo(TypeInformation<?>... types) {
 		this((Class<T>) Tuple.getTupleClass(types.length), types);
 	}
 
+	@Experimental
 	public TupleTypeInfo(Class<T> tupleType, TypeInformation<?>... types) {
 		super(tupleType, types);
 
@@ -71,11 +74,13 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	}
 
 	@Override
+	@Experimental
 	public String[] getFieldNames() {
 		return fieldNames;
 	}
 
 	@Override
+	@Experimental
 	public int getFieldIndex(String fieldName) {
 		int fieldIndex = Integer.parseInt(fieldName.substring(1));
 		if (fieldIndex >= getArity()) {
@@ -86,6 +91,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 
 	@SuppressWarnings("unchecked")
 	@Override
+	@Experimental
 	public TupleSerializer<T> createSerializer(ExecutionConfig executionConfig) {
 		if (getTypeClass() == Tuple0.class) {
 			return (TupleSerializer<T>) Tuple0Serializer.INSTANCE;
@@ -193,6 +199,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 
 	// --------------------------------------------------------------------------------------------
 
+	@Experimental
 	public static <X extends Tuple> TupleTypeInfo<X> getBasicTupleTypeInfo(Class<?>... basicTypes) {
 		if (basicTypes == null || basicTypes.length == 0) {
 			throw new IllegalArgumentException();
@@ -218,6 +225,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	}
 
 	@SuppressWarnings("unchecked")
+	@Experimental
 	public static <X extends Tuple> TupleTypeInfo<X> getBasicAndBasicValueTupleTypeInfo(Class<?>... basicTypes) {
 		if (basicTypes == null || basicTypes.length == 0) {
 			throw new IllegalArgumentException();

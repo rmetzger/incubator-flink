@@ -19,6 +19,7 @@
 package org.apache.flink.api.java.typeutils;
 
 import com.google.common.base.Preconditions;
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -40,6 +41,7 @@ public class EnumTypeInfo<T extends Enum<T>> extends TypeInformation<T> implemen
 	
 	private final Class<T> typeClass;
 
+	@Experimental
 	public EnumTypeInfo(Class<T> typeClass) {
 		Preconditions.checkNotNull(typeClass, "Enum type class must not be null.");
 
@@ -51,41 +53,49 @@ public class EnumTypeInfo<T extends Enum<T>> extends TypeInformation<T> implemen
 	}
 
 	@Override
+	@Experimental
 	public TypeComparator<T> createComparator(boolean sortOrderAscending, ExecutionConfig executionConfig) {
 		return new EnumComparator<T>(sortOrderAscending);
 	}
 
 	@Override
+	@Experimental
 	public boolean isBasicType() {
 		return false;
 	}
 
 	@Override
+	@Experimental
 	public boolean isTupleType() {
 		return false;
 	}
 
 	@Override
+	@Experimental
 	public int getArity() {
 		return 1;
 	}
 	
 	@Override
+	@Experimental
 	public int getTotalFields() {
 		return 1;
 	}
 
 	@Override
+	@Experimental
 	public Class<T> getTypeClass() {
 		return this.typeClass;
 	}
 
 	@Override
+	@Experimental
 	public boolean isKeyType() {
 		return true;
 	}
 
 	@Override
+	@Experimental
 	public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
 		return new EnumSerializer<T>(typeClass);
 	}
