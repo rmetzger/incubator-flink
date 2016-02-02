@@ -55,6 +55,10 @@ under the License.
 					<groupId>com.google.guava</groupId>
 					<artifactId>guava</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
         <dependency>
@@ -84,6 +88,10 @@ under the License.
 				<exclusion>
 					<groupId>org.slf4j</groupId>
 					<artifactId>log4j-over-slf4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
