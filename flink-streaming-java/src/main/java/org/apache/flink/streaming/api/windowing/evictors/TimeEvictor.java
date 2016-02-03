@@ -19,7 +19,6 @@ package org.apache.flink.streaming.api.windowing.evictors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Iterables;
-import org.apache.flink.annotation.Experimental;
 import org.apache.flink.streaming.api.windowing.time.AbstractTime;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -30,7 +29,6 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  *
  * @param <W> The type of {@link Window Windows} on which this {@code Evictor} can operate.
  */
-@Experimental
 public class TimeEvictor<W extends Window> implements Evictor<Object, W> {
 	private static final long serialVersionUID = 1L;
 

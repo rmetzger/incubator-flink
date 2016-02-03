@@ -17,7 +17,6 @@
  */
 package org.apache.flink.streaming.api.windowing.windows;
 
-import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
@@ -28,7 +27,6 @@ import java.io.IOException;
  * A {@link Window} that represents a time interval from {@code start} (inclusive) to
  * {@code start + size} (exclusive).
  */
-@Experimental
 public class TimeWindow extends Window {
 
 	private final long start;

@@ -18,8 +18,6 @@
 
 package org.apache.flink.api.common.state;
 
-import org.apache.flink.annotation.Public;
-
 import java.io.IOException;
 
 /**
@@ -34,7 +32,6 @@ import java.io.IOException;
  * 
  * @param <T> Type of the value in the operator state
  */
-@Public
 public interface OperatorState<T> {
 
 	/**

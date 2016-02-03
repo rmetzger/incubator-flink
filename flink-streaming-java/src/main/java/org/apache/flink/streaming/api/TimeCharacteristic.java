@@ -18,13 +18,11 @@
 
 package org.apache.flink.streaming.api;
 
-import org.apache.flink.annotation.Experimental;
 
 /**
  * The time characteristic defines how the system determines time for time-dependent
  * order and operations that depend on time (such as time windows).
  */
-@Experimental
 public enum TimeCharacteristic {
 
 	/**

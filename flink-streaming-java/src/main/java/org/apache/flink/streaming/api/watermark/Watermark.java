@@ -17,7 +17,6 @@
  */
 package org.apache.flink.streaming.api.watermark;
 
-import org.apache.flink.annotation.Experimental;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 
 /**
@@ -40,7 +39,6 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
  * an operator receives this it will know that no more input will be arriving in the future.
  *
  */
-@Experimental
 public class Watermark extends StreamElement {
 
 	/** The timestamp of the watermark */

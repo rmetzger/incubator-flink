@@ -17,7 +17,6 @@
  */
 package org.apache.flink.streaming.api.windowing.evictors;
 
-import org.apache.flink.annotation.Experimental;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import java.io.Serializable;
@@ -37,7 +36,6 @@ import java.io.Serializable;
  * @param <T> The type of elements that this {@code Evictor} can evict.
  * @param <W> The type of {@link Window Windows} on which this {@code Evictor} can operate.
  */
-@Experimental
 public interface Evictor<T, W extends Window> extends Serializable {
 
 	/**

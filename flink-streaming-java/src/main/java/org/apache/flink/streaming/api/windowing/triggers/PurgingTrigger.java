@@ -18,7 +18,6 @@
 package org.apache.flink.streaming.api.windowing.triggers;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.flink.annotation.Experimental;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 
 /**
@@ -31,7 +30,6 @@ import org.apache.flink.streaming.api.windowing.windows.Window;
  * @param <T> The type of elements on which this trigger can operate.
  * @param <W> The type of {@link Window Windows} on which this trigger can operate.
  */
-@Experimental
 public class PurgingTrigger<T, W extends Window> implements Trigger<T, W> {
 	private static final long serialVersionUID = 1L;
 

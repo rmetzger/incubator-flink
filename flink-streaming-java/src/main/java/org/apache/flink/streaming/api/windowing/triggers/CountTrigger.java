@@ -17,7 +17,6 @@
  */
 package org.apache.flink.streaming.api.windowing.triggers;
 
-import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.state.OperatorState;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 
@@ -28,7 +27,6 @@ import java.io.IOException;
  *
  * @param <W> The type of {@link Window Windows} on which this trigger can operate.
  */
-@Experimental
 public class CountTrigger<W extends Window> implements Trigger<Object, W> {
 	private static final long serialVersionUID = 1L;
 

@@ -238,6 +238,7 @@ public interface RuntimeContext {
 	 * @throws UnsupportedOperationException Thrown, if no key/value state is available for the
 	 *                                       function (function is not part os a KeyedStream).
 	 */
+	@Experimental
 	<S> OperatorState<S> getKeyValueState(String name, Class<S> stateType, S defaultState);
 
 	/**
@@ -287,5 +288,6 @@ public interface RuntimeContext {
 	 * @throws UnsupportedOperationException Thrown, if no key/value state is available for the
 	 *                                       function (function is not part os a KeyedStream).
 	 */
+	@Experimental
 	<S> OperatorState<S> getKeyValueState(String name, TypeInformation<S> stateType, S defaultState);
 }
