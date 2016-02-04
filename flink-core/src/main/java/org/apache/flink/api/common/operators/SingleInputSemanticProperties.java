@@ -21,7 +21,6 @@ package org.apache.flink.api.common.operators;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.operators.util.FieldSet;
 
 /**

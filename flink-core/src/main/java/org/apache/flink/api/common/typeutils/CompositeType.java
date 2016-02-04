@@ -24,7 +24,6 @@ import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import org.apache.flink.annotation.Experimental;
-import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
