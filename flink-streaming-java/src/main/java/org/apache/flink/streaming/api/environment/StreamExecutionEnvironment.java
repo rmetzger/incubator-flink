@@ -565,12 +565,21 @@ public abstract class StreamExecutionEnvironment {
 	@PublicEvolving
 	public void setStreamTimeCharacteristic(TimeCharacteristic characteristic) {
 		this.timeCharacteristic = requireNonNull(characteristic);
-		if (characteristic == TimeCharacteristic.ProcessingTime) {
-			getConfig().disableTimestamps();
-			getConfig().setAutoWatermarkInterval(0);
-		} else {
-			getConfig().enableTimestamps();
-			getConfig().setAutoWatermarkInterval(200);
+		switch(characteristic) {
+			case ProcessingTime:
+				config.disableTimestamps();
+				config.setAutoWatermarkInterval(0);
+				break;
+			case EventTime:
+			case IngestionTime:
+				config.enableTimestamps();
+				if(config.getAutoWatermarkInterval() == ExecutionConfig.DEFAULT_AUTO_WATERMARK_INTERVAL) {
+					// if the user didn't set an interval, set a reasonable default value.
+					config.setAutoWatermarkInterval(200);
+				}
+				break;
+			default:
+				throw new IllegalStateException("Unknown time characteristic: " + characteristic);
 		}
 	}
 

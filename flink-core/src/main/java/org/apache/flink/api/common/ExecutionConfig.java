@@ -67,6 +67,8 @@ public class ExecutionConfig implements Serializable {
 	 */
 	public static final int PARALLELISM_AUTO_MAX = Integer.MAX_VALUE;
 
+	public static final long DEFAULT_AUTO_WATERMARK_INTERVAL = 0;
+
 	// --------------------------------------------------------------------------------------------
 
 	/** Defines how data exchange happens - batch or pipelined */
@@ -93,7 +95,7 @@ public class ExecutionConfig implements Serializable {
 
 	private GlobalJobParameters globalJobParameters;
 
-	private long autoWatermarkInterval = 0;
+	private long autoWatermarkInterval = DEFAULT_AUTO_WATERMARK_INTERVAL;
 
 	private boolean timestampsEnabled = false;
 	
