@@ -38,4 +38,10 @@ public class KafkaUtils {
 					"Entered value='" + config.getProperty(key) + "'. Default value='" + defaultValue + "'");
 		}
 	}
+
+	public static void checkArgument(boolean arg) {
+		if(!arg) {
+			throw new IllegalArgumentException();
+		}
+	}
 }
