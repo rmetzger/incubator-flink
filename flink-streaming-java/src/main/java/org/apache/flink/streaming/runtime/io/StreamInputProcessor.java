@@ -142,10 +142,10 @@ public class StreamInputProcessor<IN> {
 				}
 
 				if (result.isFullRecord()) {
-					StreamElement recordOrWatermark = deserializationDelegate.getInstance();
+					StreamElement recordOrMark = deserializationDelegate.getInstance();
 
-					if (recordOrWatermark.isWatermark()) {
-						long watermarkMillis = recordOrWatermark.asWatermark().getTimestamp();
+					if (recordOrMark.isWatermark()) {
+						long watermarkMillis = recordOrMark.asWatermark().getTimestamp();
 						if (watermarkMillis > watermarks[currentChannel]) {
 							watermarks[currentChannel] = watermarkMillis;
 							long newMinWatermark = Long.MAX_VALUE;
@@ -160,9 +160,14 @@ public class StreamInputProcessor<IN> {
 							}
 						}
 						continue;
+					} else if(recordOrMark.isLatencyMarker()) {
+						// handle latency marker
+						synchronized (lock) {
+							streamOperator.processLatencyMarker(recordOrMark.asLatencyMarker());
+						}
 					} else {
 						// now we can do the actual processing
-						StreamRecord<IN> record = recordOrWatermark.asRecord();
+						StreamRecord<IN> record = recordOrMark.asRecord();
 						synchronized (lock) {
 							streamOperator.setKeyContextElement1(record);
 							streamOperator.processElement(record);

@@ -48,7 +48,7 @@ public class RecordWriterOutput<OUT> implements Output<StreamRecord<OUT>> {
 	public RecordWriterOutput(
 			StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>> recordWriter,
 			TypeSerializer<OUT> outSerializer,
-			boolean enableWatermarkMultiplexing) {
+			boolean enableMultiplexing) {
 
 		checkNotNull(recordWriter);
 		
@@ -58,7 +58,7 @@ public class RecordWriterOutput<OUT> implements Output<StreamRecord<OUT>> {
 				(StreamRecordWriter<?>) recordWriter;
 
 		TypeSerializer<StreamElement> outRecordSerializer;
-		if (enableWatermarkMultiplexing) {
+		if (enableMultiplexing) {
 			outRecordSerializer = new MultiplexingStreamRecordSerializer<OUT>(outSerializer);
 		} else {
 			outRecordSerializer = (TypeSerializer<StreamElement>)
