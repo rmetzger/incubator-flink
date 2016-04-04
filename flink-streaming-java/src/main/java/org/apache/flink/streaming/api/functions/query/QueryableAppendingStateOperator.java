@@ -42,4 +42,5 @@ public class QueryableAppendingStateOperator<IN> extends AbstractQueryableStateO
 	public void processElement(StreamRecord<IN> element) throws Exception {
 		state.add(element.getValue());
 	}
+
 }

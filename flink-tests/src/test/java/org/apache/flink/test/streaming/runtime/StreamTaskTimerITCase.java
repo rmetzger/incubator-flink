@@ -30,6 +30,7 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.TimerException;
 import org.apache.flink.streaming.util.StreamingMultipleProgramsTestBase;
@@ -228,6 +229,11 @@ public class StreamTaskTimerITCase extends StreamingMultipleProgramsTestBase {
 			}
 			semaphore.release();
 		}
+
+		@Override
+		public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+			// ignore
+		}
 	}
 
 	public static class TwoInputTimerOperator extends AbstractStreamOperator<String> implements TwoInputStreamOperator<String, String, String>, Triggerable {
@@ -304,6 +310,16 @@ public class StreamTaskTimerITCase extends StreamingMultipleProgramsTestBase {
 		@Override
 		public void processWatermark2(Watermark mark) throws Exception {
 			//ignore
+		}
+
+		@Override
+		public void processLatencyMarker1(LatencyMarker latencyMarker) throws Exception {
+			// ignore
+		}
+
+		@Override
+		public void processLatencyMarker2(LatencyMarker latencyMarker) throws Exception {
+			// ignore
 		}
 	}
 

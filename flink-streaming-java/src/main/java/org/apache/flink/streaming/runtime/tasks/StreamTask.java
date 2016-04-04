@@ -252,7 +252,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 						getEnvironment().getAccumulatorRegistry().getReadWriteReporter());
 
 			if (headOperator != null) {
-				headOperator.setup(this, configuration, operatorChain.getChainEntryPoint());
+				headOperator.setup(this, configuration, operatorChain.getChainEntryPoint(), operatorChain.getStreamOutputs().length == 0);
 			}
 
 			getEnvironment().getMetricGroup().gauge("lastCheckpointSize", new Gauge<Long>() {
@@ -265,7 +265,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 			// task specific initialization
 			init();
 			
-			// save the work of reloadig state, etc, if the task is already canceled
+			// save the work of reloading state, etc, if the task is already canceled
 			if (canceled) {
 				throw new CancelTaskException();
 			}
@@ -514,9 +514,21 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 		}
 	}
 
-	boolean isSerializingTimestamps() {
+	/**
+	 * Check if the task's records have a timestamp attached
+	 * @return true if event or ingestion time is used
+	 */
+	protected boolean isSerializingTimestamps() {
 		TimeCharacteristic tc = configuration.getTimeCharacteristic();
 		return tc == TimeCharacteristic.EventTime | tc == TimeCharacteristic.IngestionTime;
+	}
+
+	/**
+	 * Check if the tasks is sending a mixed stream (of watermarks, latency marks and records)
+	 * @return true if stream contains more than just records
+	 */
+	protected boolean isSerializingMixedStream() {
+		return isSerializingTimestamps() || getExecutionConfig().isLatencyTrackingEnabled();
 	}
 	
 	// ------------------------------------------------------------------------

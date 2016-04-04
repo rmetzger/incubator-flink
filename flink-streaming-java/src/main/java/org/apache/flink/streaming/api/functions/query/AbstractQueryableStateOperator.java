@@ -24,6 +24,7 @@ import org.apache.flink.api.common.state.StateDescriptor;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.util.Preconditions;
 
 /**
@@ -80,5 +81,10 @@ abstract class AbstractQueryableStateOperator<S extends State, IN>
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
 		// Nothing to do
+	}
+
+	@Override
+	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 }

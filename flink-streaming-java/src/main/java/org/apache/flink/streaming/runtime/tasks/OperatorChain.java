@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -44,8 +45,10 @@ import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.runtime.io.StreamRecordWriter;
 import org.apache.flink.streaming.runtime.partitioner.StreamPartitioner;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
+import org.apache.flink.util.XORShiftRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +77,7 @@ public class OperatorChain<OUT> {
 		
 		final ClassLoader userCodeClassloader = containingTask.getUserCodeClassLoader();
 		final StreamConfig configuration = containingTask.getConfiguration();
-		final boolean enableTimestamps = containingTask.isSerializingTimestamps();
+		final boolean enableMultiplexing = containingTask.isSerializingMixedStream();
 
 		// we read the chained configs, and the order of record writer registrations by output name
 		Map<Integer, StreamConfig> chainedConfigs = configuration.getTransitiveChainedTaskConfigs(userCodeClassloader);
@@ -94,7 +97,7 @@ public class OperatorChain<OUT> {
 				
 				RecordWriterOutput<?> streamOutput = createStreamOutput(
 						outEdge, chainedConfigs.get(outEdge.getSourceId()), i,
-						containingTask.getEnvironment(), enableTimestamps, reporter, containingTask.getName());
+						containingTask.getEnvironment(), enableMultiplexing, reporter, containingTask.getName());
 	
 				this.streamOutputs[i] = streamOutput;
 				streamOutputMap.put(outEdge, streamOutput);
@@ -273,7 +276,7 @@ public class OperatorChain<OUT> {
 
 		// now create the operator and give it the output collector to write its output to
 		OneInputStreamOperator<IN, OUT> chainedOperator = operatorConfig.getStreamOperator(userCodeClassloader);
-		chainedOperator.setup(containingTask, operatorConfig, output);
+		chainedOperator.setup(containingTask, operatorConfig, output, streamOutputs.size() == 0);
 
 		allOperators.add(chainedOperator);
 
@@ -288,7 +291,7 @@ public class OperatorChain<OUT> {
 	
 	private static <T> RecordWriterOutput<T> createStreamOutput(
 			StreamEdge edge, StreamConfig upStreamConfig, int outputIndex,
-			Environment taskEnvironment, boolean withTimestamps,
+			Environment taskEnvironment, boolean enableMultiplexing,
 			AccumulatorRegistry.Reporter reporter, String taskName)
 	{
 		TypeSerializer<T> outSerializer = upStreamConfig.getTypeSerializerOut(taskEnvironment.getUserClassLoader());
@@ -305,7 +308,7 @@ public class OperatorChain<OUT> {
 		output.setReporter(reporter);
 		output.setMetricGroup(taskEnvironment.getMetricGroup().getIOMetricGroup());
 		
-		return new RecordWriterOutput<T>(output, outSerializer, withTimestamps);
+		return new RecordWriterOutput<>(output, outSerializer, enableMultiplexing);
 	}
 	
 	// ------------------------------------------------------------------------
@@ -338,6 +341,16 @@ public class OperatorChain<OUT> {
 		public void emitWatermark(Watermark mark) {
 			try {
 				operator.processWatermark(mark);
+			}
+			catch (Exception e) {
+				throw new ExceptionInChainedOperatorException(e);
+			}
+		}
+
+		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			try {
+				operator.processLatencyMarker(latencyMarker);
 			}
 			catch (Exception e) {
 				throw new ExceptionInChainedOperatorException(e);
@@ -381,6 +394,8 @@ public class OperatorChain<OUT> {
 	private static class BroadcastingOutputCollector<T> implements Output<StreamRecord<T>> {
 		
 		protected final Output<StreamRecord<T>>[] outputs;
+
+		private final Random RNG = new XORShiftRandom();
 		
 		public BroadcastingOutputCollector(Output<StreamRecord<T>>[] outputs) {
 			this.outputs = outputs;
@@ -391,6 +406,12 @@ public class OperatorChain<OUT> {
 			for (Output<StreamRecord<T>> output : outputs) {
 				output.emitWatermark(mark);
 			}
+		}
+
+		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			// randomly select an output
+			outputs[RNG.nextInt(outputs.length)].emitLatencyMarker(latencyMarker);
 		}
 
 		@Override

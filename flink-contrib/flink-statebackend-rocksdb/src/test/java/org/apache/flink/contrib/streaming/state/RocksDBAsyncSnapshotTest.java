@@ -41,6 +41,7 @@ import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.AsynchronousException;
 import org.apache.flink.streaming.runtime.tasks.OneInputStreamTask;
@@ -399,6 +400,11 @@ public class RocksDBAsyncSnapshotTest {
 		@Override
 		public void processWatermark(Watermark mark) throws Exception {
 			// not interested
+		}
+
+		@Override
+		public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+			// ignore
 		}
 	}
 
