@@ -88,7 +88,7 @@ public class StreamInputProcessor<IN> {
 								EventListener<CheckpointBarrier> checkpointListener,
 								CheckpointingMode checkpointMode,
 								IOManager ioManager,
-								boolean enableWatermarkMultiplexing) throws IOException {
+								boolean enableMultiplexing) throws IOException {
 
 		InputGate inputGate = InputGateUtil.createInputGate(inputGates);
 
@@ -99,20 +99,20 @@ public class StreamInputProcessor<IN> {
 			this.barrierHandler = new BarrierTracker(inputGate);
 		}
 		else {
-			throw new IllegalArgumentException("Unrecognized Checkpointing Mode: " + checkpointMode);
+			throw new IllegalArgumentException("Unrecognized checkpointing Mode: " + checkpointMode);
 		}
 		
 		if (checkpointListener != null) {
 			this.barrierHandler.registerCheckpointEventHandler(checkpointListener);
 		}
 		
-		if (enableWatermarkMultiplexing) {
-			MultiplexingStreamRecordSerializer<IN> ser = new MultiplexingStreamRecordSerializer<IN>(inputSerializer);
-			this.deserializationDelegate = new NonReusingDeserializationDelegate<StreamElement>(ser);
+		if (enableMultiplexing) {
+			MultiplexingStreamRecordSerializer<IN> ser = new MultiplexingStreamRecordSerializer<>(inputSerializer);
+			this.deserializationDelegate = new NonReusingDeserializationDelegate<>(ser);
 		} else {
 			StreamRecordSerializer<IN> ser = new StreamRecordSerializer<IN>(inputSerializer);
 			this.deserializationDelegate = (NonReusingDeserializationDelegate<StreamElement>)
-					(NonReusingDeserializationDelegate<?>) new NonReusingDeserializationDelegate<StreamRecord<IN>>(ser);
+					(NonReusingDeserializationDelegate<?>) new NonReusingDeserializationDelegate<>(ser);
 		}
 		
 		// Initialize one deserializer per input channel
@@ -149,14 +149,14 @@ public class StreamInputProcessor<IN> {
 				}
 
 				if (result.isFullRecord()) {
-					StreamElement recordOrWatermark = deserializationDelegate.getInstance();
+					StreamElement recordOrMark = deserializationDelegate.getInstance();
 
-					if (recordOrWatermark.isWatermark()) {
-						long watermarkMillis = recordOrWatermark.asWatermark().getTimestamp();
+					if (recordOrMark.isWatermark()) {
+						long watermarkMillis = recordOrMark.asWatermark().getTimestamp();
 						if (watermarkMillis > watermarks[currentChannel]) {
 							watermarks[currentChannel] = watermarkMillis;
 							long newMinWatermark = Long.MAX_VALUE;
-							for (long watermark : watermarks) {
+							for (long watermark: watermarks) {
 								newMinWatermark = Math.min(watermark, newMinWatermark);
 							}
 							if (newMinWatermark > lastEmittedWatermark) {
@@ -167,9 +167,15 @@ public class StreamInputProcessor<IN> {
 							}
 						}
 						continue;
+					} else if(recordOrMark.isLatencyMarker()) {
+						// handle latency marker
+						synchronized (lock) {
+							streamOperator.processLatencyMarker(recordOrMark.asLatencyMarker());
+						}
+						continue;
 					} else {
 						// now we can do the actual processing
-						StreamRecord<IN> record = recordOrWatermark.asRecord();
+						StreamRecord<IN> record = recordOrMark.asRecord();
 						synchronized (lock) {
 							numRecordsIn.inc();
 							streamOperator.setKeyContextElement1(record);

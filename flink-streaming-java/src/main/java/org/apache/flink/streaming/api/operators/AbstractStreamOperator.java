@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.operators;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.state.State;
@@ -27,6 +28,7 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.core.fs.FSDataInputStream;
 import org.apache.flink.core.fs.FSDataOutputStream;
 import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.runtime.state.KeyGroupRangeAssignment;
@@ -36,11 +38,15 @@ import org.apache.flink.runtime.state.VoidNamespaceSerializer;
 import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -94,20 +100,33 @@ public abstract class AbstractStreamOperator<OUT>
 	/** Backend for keyed state. This might be empty if we're not on a keyed stream. */
 	private transient KeyedStateBackend<?> keyedStateBackend;
 
-	protected transient MetricGroup metrics;
+	// --------------- Metrics ---------------------------
+
+	/** Metric group for the operator */
+	protected MetricGroup metrics;
+
+	/** Flag indicating if this operator is a sink */
+	protected transient boolean isSink = false;
+
+	protected LatencyGauge latencyGauge;
+
 
 	// ------------------------------------------------------------------------
 	//  Life Cycle
 	// ------------------------------------------------------------------------
 
 	@Override
-	public void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output) {
+	public void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output, boolean isSink) {
 		this.container = containingTask;
 		this.config = config;
 		String operatorName = containingTask.getEnvironment().getTaskInfo().getTaskName().split("->")[config.getChainIndex()].trim();
 		
 		this.metrics = container.getEnvironment().getMetricGroup().addOperator(operatorName);
 		this.output = new CountingOutput(output, this.metrics.counter("numRecordsOut"));
+		this.isSink = isSink;
+		if(isSink) {
+			latencyGauge = new LatencyGauge(this.metrics);
+		}
 		this.runtimeContext = new StreamingRuntimeContext(this, container.getEnvironment(), container.getAccumulatorMap());
 
 		stateKeySelector1 = config.getStatePartitioner(0, getUserCodeClassloader());
@@ -322,6 +341,121 @@ public abstract class AbstractStreamOperator<OUT>
 		return chainingStrategy;
 	}
 
+
+	// ------------------------------------------------------------------------
+	//  Metrics
+	// ------------------------------------------------------------------------
+
+	public void reportOrForwardLatencyMarker(LatencyMarker maker) {
+		if(isSink) {
+			this.latencyGauge.reportLatency(maker);
+		} else {
+			this.output.emitLatencyMarker(maker);
+		}
+	}
+
+	// ----------------------- Helper classes -----------------------
+
+
+	/**
+	 * The gauge uses a HashMap internally to avoid classloading issues when accessing
+	 * the values using JMX.
+	 */
+	private static class LatencyGauge implements Gauge<Map<String, HashMap<String, Double>>> {
+		private final Map<LatencySourceDescriptor, DescriptiveStatistics> latencyStats = new HashMap<>();
+
+		LatencyGauge(MetricGroup metrics) {
+			metrics.gauge("latency", this);
+		}
+
+		public void reportLatency(LatencyMarker marker) {
+			LatencySourceDescriptor sourceDescriptor = LatencySourceDescriptor.of(marker);
+			DescriptiveStatistics sourceStats = latencyStats.get(sourceDescriptor);
+			if(sourceStats == null) {
+				// 512 element window (4 kb)
+				sourceStats = new DescriptiveStatistics(512); // TODO make configurable
+				latencyStats.put(sourceDescriptor, sourceStats);
+			}
+			long now = System.currentTimeMillis();
+			sourceStats.addValue(now - marker.getMarkedTime());
+		}
+
+		@Override
+		public Map<String, HashMap<String, Double>> getValue() {
+			while(true) {
+				try {
+					Map<String, HashMap<String, Double>> ret = new HashMap<>();
+					for (Map.Entry<LatencySourceDescriptor, DescriptiveStatistics> source : latencyStats.entrySet()) {
+						HashMap<String, Double> sourceStatistics = new HashMap<>(6);
+						sourceStatistics.put("max", source.getValue().getMax());
+						sourceStatistics.put("mean", source.getValue().getMean());
+						sourceStatistics.put("min", source.getValue().getMin());
+						sourceStatistics.put("p50", source.getValue().getPercentile(50));
+						sourceStatistics.put("p95", source.getValue().getPercentile(95));
+						sourceStatistics.put("p99", source.getValue().getPercentile(99));
+						ret.put(source.getKey().toString(), sourceStatistics);
+					}
+					return ret;
+					// Concurrent access onto the "latencyStats" map could cause
+					// ConcurrentModificationExceptions. To avoid unnecessary blocking
+					// of the reportLatency() method, we retry this operation until
+					// it succeeds.
+				} catch(ConcurrentModificationException ignore) {
+					LOG.debug("Unable to report latency statistics", ignore);
+				}
+			}
+		}
+	}
+
+	private static class LatencySourceDescriptor {
+
+		private final int vertexID;
+
+		private final int subtaskIndex;
+
+		public static LatencySourceDescriptor of(LatencyMarker marker) {
+			return new LatencySourceDescriptor(marker.getVertexID(), marker.getSubtaskIndex());
+		}
+
+		private LatencySourceDescriptor(int vertexID, int subtaskIndex) {
+			this.vertexID = vertexID;
+			this.subtaskIndex = subtaskIndex;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+
+			LatencySourceDescriptor that = (LatencySourceDescriptor) o;
+
+			if (vertexID != that.vertexID) {
+				return false;
+			}
+			return subtaskIndex == that.subtaskIndex;
+		}
+
+		@Override
+		public int hashCode() {
+			int result = vertexID;
+			result = 31 * result + subtaskIndex;
+			return result;
+		}
+
+		@Override
+		public String toString() {
+			return "LatencySourceDescriptor{" +
+					"vertexID=" + vertexID +
+					", subtaskIndex=" + subtaskIndex +
+					'}';
+		}
+	}
+
+
 	public class CountingOutput implements Output<StreamRecord<OUT>> {
 		private final Output<StreamRecord<OUT>> output;
 		private final Counter numRecordsOut;
@@ -337,6 +471,11 @@ public abstract class AbstractStreamOperator<OUT>
 		}
 
 		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			output.emitLatencyMarker(latencyMarker);
+		}
+
+		@Override
 		public void collect(StreamRecord<OUT> record) {
 			numRecordsOut.inc();
 			output.collect(record);
@@ -347,4 +486,5 @@ public abstract class AbstractStreamOperator<OUT>
 			output.close();
 		}
 	}
+
 }
