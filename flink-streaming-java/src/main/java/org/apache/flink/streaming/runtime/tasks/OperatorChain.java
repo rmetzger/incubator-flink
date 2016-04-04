@@ -74,7 +74,7 @@ public class OperatorChain<OUT> {
 		
 		final ClassLoader userCodeClassloader = containingTask.getUserCodeClassLoader();
 		final StreamConfig configuration = containingTask.getConfiguration();
-		final boolean enableTimestamps = containingTask.isSerializingTimestamps();
+		final boolean enableMultiplexing = containingTask.isSerializingMixedStream();
 
 		// we read the chained configs, and the order of record writer registrations by output name
 		Map<Integer, StreamConfig> chainedConfigs = configuration.getTransitiveChainedTaskConfigs(userCodeClassloader);
@@ -94,7 +94,7 @@ public class OperatorChain<OUT> {
 				
 				RecordWriterOutput<?> streamOutput = createStreamOutput(
 						outEdge, chainedConfigs.get(outEdge.getSourceId()), i,
-						containingTask.getEnvironment(), enableTimestamps, reporter, containingTask.getName());
+						containingTask.getEnvironment(), enableMultiplexing, reporter, containingTask.getName());
 	
 				this.streamOutputs[i] = streamOutput;
 				streamOutputMap.put(outEdge, streamOutput);
@@ -288,7 +288,7 @@ public class OperatorChain<OUT> {
 	
 	private static <T> RecordWriterOutput<T> createStreamOutput(
 			StreamEdge edge, StreamConfig upStreamConfig, int outputIndex,
-			Environment taskEnvironment, boolean withTimestamps,
+			Environment taskEnvironment, boolean enableMultiplexing,
 			AccumulatorRegistry.Reporter reporter, String taskName)
 	{
 		TypeSerializer<T> outSerializer = upStreamConfig.getTypeSerializerOut(taskEnvironment.getUserClassLoader());
@@ -305,7 +305,7 @@ public class OperatorChain<OUT> {
 		output.setReporter(reporter);
 		output.setMetricGroup(taskEnvironment.getMetricGroup().getIOMetricGroup());
 		
-		return new RecordWriterOutput<T>(output, outSerializer, withTimestamps);
+		return new RecordWriterOutput<T>(output, outSerializer, enableMultiplexing);
 	}
 	
 	// ------------------------------------------------------------------------

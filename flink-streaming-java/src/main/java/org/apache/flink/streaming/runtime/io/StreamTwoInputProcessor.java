@@ -98,7 +98,7 @@ public class StreamTwoInputProcessor<IN1, IN2> {
 			EventListener<CheckpointBarrier> checkpointListener,
 			CheckpointingMode checkpointMode,
 			IOManager ioManager,
-			boolean enableWatermarkMultiplexing) throws IOException {
+			boolean enableMultiplexing) throws IOException {
 		
 		final InputGate inputGate = InputGateUtil.createInputGate(inputGates1, inputGates2);
 
@@ -116,7 +116,7 @@ public class StreamTwoInputProcessor<IN1, IN2> {
 			this.barrierHandler.registerCheckpointEventHandler(checkpointListener);
 		}
 		
-		if (enableWatermarkMultiplexing) {
+		if (enableMultiplexing) {
 			MultiplexingStreamRecordSerializer<IN1> ser = new MultiplexingStreamRecordSerializer<IN1>(inputSerializer1);
 			this.deserializationDelegate1 = new NonReusingDeserializationDelegate<StreamElement>(ser);
 		}
@@ -126,7 +126,7 @@ public class StreamTwoInputProcessor<IN1, IN2> {
 					(DeserializationDelegate<?>) new NonReusingDeserializationDelegate<StreamRecord<IN1>>(ser);
 		}
 		
-		if (enableWatermarkMultiplexing) {
+		if (enableMultiplexing) {
 			MultiplexingStreamRecordSerializer<IN2> ser = new MultiplexingStreamRecordSerializer<IN2>(inputSerializer2);
 			this.deserializationDelegate2 = new NonReusingDeserializationDelegate<StreamElement>(ser);
 		}
@@ -189,7 +189,7 @@ public class StreamTwoInputProcessor<IN1, IN2> {
 							handleWatermark(streamOperator, (Watermark) recordOrWatermark, currentChannel, lock);
 							continue;
 						}
-						else {
+						else { // TODO for marker here
 							synchronized (lock) {
 								streamOperator.setKeyContextElement1(recordOrWatermark.<IN1>asRecord());
 								streamOperator.processElement1(recordOrWatermark.<IN1>asRecord());

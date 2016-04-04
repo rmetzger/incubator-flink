@@ -107,6 +107,11 @@ public class ExecutionConfig implements Serializable {
 	private long autoWatermarkInterval = 0;
 
 	/**
+	 * Interval in milliseconds for sending latency tracking marks from the sources to the sinks.
+	 */
+	private long latencyTrackingInterval = 2000L;
+
+	/**
 	 * @deprecated Should no longer be used because it is subsumed by RestartStrategyConfiguration
 	 */
 	@Deprecated
@@ -134,6 +139,8 @@ public class ExecutionConfig implements Serializable {
 	private LinkedHashSet<Class<?>> registeredKryoTypes = new LinkedHashSet<>();
 
 	private LinkedHashSet<Class<?>> registeredPojoTypes = new LinkedHashSet<>();
+
+
 
 	// --------------------------------------------------------------------------------------------
 
@@ -189,6 +196,43 @@ public class ExecutionConfig implements Serializable {
 	public long getAutoWatermarkInterval()  {
 		return this.autoWatermarkInterval;
 	}
+
+	/**
+	 * Interval for sending latency tracking marks from the sources to the sinks.
+	 * Flink will send latency tracking marks from the sources at the specified interval.
+	 *
+	 * Recommended value: 2000 (2 seconds).
+	 *
+	 * @param interval Interval in milliseconds
+	 */
+	@PublicEvolving
+	public ExecutionConfig setLatencyTrackingInterval(long interval) {
+		if(interval < 0) {
+			throw new IllegalArgumentException("The latency interval has to be at least zero");
+		}
+		this.latencyTrackingInterval = interval;
+		return this;
+	}
+
+	/**
+	 * Returns the latency tracking interval.
+	 * @return The latency tracking interval in milliseconds
+	 */
+	@PublicEvolving
+	public long getLatencyTrackingInterval() {
+		return latencyTrackingInterval;
+	}
+
+	/**
+	 * Retzurns if latency tracking is enabled
+	 * @return True, if the tracking is enabled, false otherwise.
+	 */
+	@PublicEvolving
+	public boolean isLatencyTrackingEnabled() {
+		return latencyTrackingInterval >= 0;
+	}
+
+
 
 	/**
 	 * Gets the parallelism with which operation are executed by default. Operations can

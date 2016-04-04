@@ -473,9 +473,21 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 		}
 	}
 
+	/**
+	 * Check if the task's records have a timestamp attached
+	 * @return true if event or ingestion time is used
+	 */
 	protected boolean isSerializingTimestamps() {
 		TimeCharacteristic tc = configuration.getTimeCharacteristic();
 		return tc == TimeCharacteristic.EventTime | tc == TimeCharacteristic.IngestionTime;
+	}
+
+	/**
+	 * Check if the tasks is sending a mixed stream (of watermarks, latency marks and records)
+	 * @return true if stream contains more than just records
+	 */
+	protected boolean isSerializingMixedStream() {
+		return isSerializingTimestamps() || getExecutionConfig().isLatencyTrackingEnabled();
 	}
 	
 	// ------------------------------------------------------------------------
