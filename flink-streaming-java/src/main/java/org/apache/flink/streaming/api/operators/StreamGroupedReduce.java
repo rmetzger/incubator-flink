@@ -23,6 +23,7 @@ import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 @Internal
@@ -68,6 +69,15 @@ public class StreamGroupedReduce<IN> extends AbstractUdfStreamOperator<IN, Reduc
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
 		output.emitWatermark(mark);
+	}
+
+	@Override
+	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		if(isSink) {
+			LOG.info("Lat {}", latencyMarker);
+		} else {
+			output.emitLatencyMarker(latencyMarker);
+		}
 	}
 
 

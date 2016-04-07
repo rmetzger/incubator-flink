@@ -31,6 +31,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 @Internal
@@ -94,6 +95,15 @@ public class StreamGroupedFold<IN, OUT, KEY>
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
 		output.emitWatermark(mark);
+	}
+
+	@Override
+	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		if(isSink) {
+			LOG.info("Lat {}", latencyMarker);
+		} else {
+			output.emitLatencyMarker(latencyMarker);
+		}
 	}
 
 	@Override

@@ -156,7 +156,7 @@ public class StreamInputProcessor<IN> {
 						if (watermarkMillis > watermarks[currentChannel]) {
 							watermarks[currentChannel] = watermarkMillis;
 							long newMinWatermark = Long.MAX_VALUE;
-							for (long watermark : watermarks) {
+							for (long watermark: watermarks) {
 								newMinWatermark = Math.min(watermark, newMinWatermark);
 							}
 							if (newMinWatermark > lastEmittedWatermark) {
@@ -172,6 +172,7 @@ public class StreamInputProcessor<IN> {
 						synchronized (lock) {
 							streamOperator.processLatencyMarker(recordOrMark.asLatencyMarker());
 						}
+						continue;
 					} else {
 						// now we can do the actual processing
 						StreamRecord<IN> record = recordOrMark.asRecord();

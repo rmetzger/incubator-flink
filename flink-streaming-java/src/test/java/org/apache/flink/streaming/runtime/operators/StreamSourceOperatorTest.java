@@ -31,6 +31,7 @@ import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StoppableStreamSource;
 import org.apache.flink.streaming.api.operators.StreamSource;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTask;
@@ -237,42 +238,7 @@ public class StreamSourceOperatorTest {
 		when(mockTask.getExecutionConfig()).thenReturn(executionConfig);
 		when(mockTask.getAccumulatorMap()).thenReturn(Collections.<String, Accumulator<?, ?>>emptyMap());
 
-		doAnswer(new Answer<ScheduledFuture>() {
-			@Override
-			public ScheduledFuture answer(InvocationOnMock invocation) throws Throwable {
-				final long execTime = (Long) invocation.getArguments()[0];
-				final Triggerable target = (Triggerable) invocation.getArguments()[1];
-
-				if (timeProvider == null) {
-					throw new RuntimeException("The time provider is null");
-				}
-
-				timeProvider.registerTimer(execTime, new Runnable() {
-
-					@Override
-					public void run() {
-						try {
-							target.trigger(execTime);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-				});
-				return null;
-			}
-		}).when(mockTask).registerTimer(anyLong(), any(Triggerable.class));
-
-		doAnswer(new Answer<Long>() {
-			@Override
-			public Long answer(InvocationOnMock invocation) throws Throwable {
-				if (timeProvider == null) {
-					throw new RuntimeException("The time provider is null");
-				}
-				return timeProvider.getCurrentProcessingTime();
-			}
-		}).when(mockTask).getCurrentProcessingTime();
-
-		operator.setup(mockTask, cfg, (Output<StreamRecord<T>>) mock(Output.class));
+		operator.setup(mockTask, cfg, (Output< StreamRecord<T>>) mock(Output.class));
 	}
 
 	// ------------------------------------------------------------------------
@@ -324,6 +290,11 @@ public class StreamSourceOperatorTest {
 		@Override
 		public void emitWatermark(Watermark mark) {
 			list.add(mark);
+		}
+
+		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			list.add(latencyMarker);
 		}
 
 		@Override

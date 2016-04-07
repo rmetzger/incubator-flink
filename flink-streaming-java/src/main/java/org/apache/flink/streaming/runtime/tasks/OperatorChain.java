@@ -44,6 +44,7 @@ import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.runtime.io.StreamRecordWriter;
 import org.apache.flink.streaming.runtime.partitioner.StreamPartitioner;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 import org.slf4j.Logger;
@@ -273,7 +274,7 @@ public class OperatorChain<OUT> {
 
 		// now create the operator and give it the output collector to write its output to
 		OneInputStreamOperator<IN, OUT> chainedOperator = operatorConfig.getStreamOperator(userCodeClassloader);
-		chainedOperator.setup(containingTask, operatorConfig, output);
+		chainedOperator.setup(containingTask, operatorConfig, output, streamOutputs.size() == 0);
 
 		allOperators.add(chainedOperator);
 
@@ -345,6 +346,16 @@ public class OperatorChain<OUT> {
 		}
 
 		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			try {
+				operator.processLatencyMarker(latencyMarker);
+			}
+			catch (Exception e) {
+				throw new ExceptionInChainedOperatorException(e);
+			}
+		}
+
+		@Override
 		public void close() {
 			try {
 				operator.close();
@@ -390,6 +401,14 @@ public class OperatorChain<OUT> {
 		public void emitWatermark(Watermark mark) {
 			for (Output<StreamRecord<T>> output : outputs) {
 				output.emitWatermark(mark);
+			}
+		}
+
+		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			// TODO consider random emission
+			for (Output<StreamRecord<T>> output : outputs) {
+				output.emitLatencyMarker(latencyMarker);
 			}
 		}
 

@@ -29,6 +29,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.graph.StreamEdge;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 
@@ -97,6 +98,14 @@ public class DirectedOutput<OUT> implements Output<StreamRecord<OUT>> {
 	public void emitWatermark(Watermark mark) {
 		for (Output<StreamRecord<OUT>> out : allOutputs) {
 			out.emitWatermark(mark);
+		}
+	}
+
+	@Override
+	public void emitLatencyMarker(LatencyMarker latencyMarker) {
+		// TODO consider emitting markers randomly
+		for (Output<StreamRecord<OUT>> out : allOutputs) {
+			out.emitLatencyMarker(latencyMarker);
 		}
 	}
 

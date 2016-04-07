@@ -22,6 +22,7 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 import java.util.concurrent.ScheduledFuture;
@@ -73,6 +74,11 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 				throw new Exception(String.valueOf(timeCharacteristic));
 		}
 
+		LatencyMarksEmitter latencyEmitter = null;
+		if(getExecutionConfig().isLatencyTrackingEnabled()) {
+			// todo: maybe emit getOperatorConfig().getVertexID() with the latency mark as well
+			latencyEmitter = new LatencyMarksEmitter<>(lockingObject, collector, getExecutionConfig().getLatencyTrackingInterval());
+		}
 		// copy to a field to give the 'cancel()' method access
 		this.ctx = ctx;
 		
@@ -88,6 +94,9 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 		} finally {
 			// make sure that the context is closed in any case
 			ctx.close();
+			if(latencyEmitter != null) {
+				latencyEmitter.close();
+			}
 		}
 	}
 
@@ -366,5 +375,31 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 
 		@Override
 		public void close() {}
+	}
+
+	private static class LatencyMarksEmitter<OUT> {
+		private final ScheduledExecutorService scheduleExecutor;
+		private final ScheduledFuture<?> latencyMarkTimer;
+
+
+		public LatencyMarksEmitter(final Object lockingObject, final Output<StreamRecord<OUT>> output, long latencyTrackingInterval) {
+			this.scheduleExecutor = Executors.newScheduledThreadPool(1);
+
+			this.latencyMarkTimer = scheduleExecutor.scheduleAtFixedRate(new Runnable() {
+				@Override
+				public void run() {
+					final long currentTime = System.currentTimeMillis();
+					synchronized (lockingObject) {
+						output.emitLatencyMarker(new LatencyMarker(currentTime));
+						LOG.info("Emitting marker {}", currentTime);
+					}
+				}
+			}, 0, latencyTrackingInterval, TimeUnit.MILLISECONDS);
+		}
+
+		public void close() {
+			latencyMarkTimer.cancel(true);
+			scheduleExecutor.shutdownNow();
+		}
 	}
 }

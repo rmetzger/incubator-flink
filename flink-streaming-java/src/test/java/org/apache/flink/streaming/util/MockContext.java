@@ -95,7 +95,7 @@ public class MockContext<IN, OUT> {
 		final Object lock = new Object();
 		final StreamTask<?, ?> mockTask = createMockTaskWithTimer(timerService, lock);
 
-		operator.setup(mockTask, config, mockContext.output);
+		operator.setup(mockTask, config, mockContext.output, false);
 		try {
 			operator.open();
 
