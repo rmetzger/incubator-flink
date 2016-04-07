@@ -34,6 +34,7 @@ import org.apache.flink.runtime.state.AbstractStateBackend;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTask;
 import org.mockito.invocation.InvocationOnMock;
@@ -154,7 +155,7 @@ public class OneInputStreamOperatorTestHarness<IN, OUT> {
 	 * Calls {@link org.apache.flink.streaming.api.operators.StreamOperator#open()}
 	 */
 	public void open() throws Exception {
-		operator.setup(mockTask, config, new MockOutput());
+		operator.setup(mockTask, config, new MockOutput(), false);
 
 		operator.open();
 	}
@@ -190,6 +191,11 @@ public class OneInputStreamOperatorTestHarness<IN, OUT> {
 		@Override
 		public void emitWatermark(Watermark mark) {
 			outputList.add(mark);
+		}
+
+		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			outputList.add(latencyMarker);
 		}
 
 		@Override

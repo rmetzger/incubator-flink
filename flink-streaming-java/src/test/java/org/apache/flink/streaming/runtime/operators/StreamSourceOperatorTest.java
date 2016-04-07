@@ -31,6 +31,7 @@ import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StoppableStreamSource;
 import org.apache.flink.streaming.api.operators.StreamSource;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTask;
@@ -186,7 +187,7 @@ public class StreamSourceOperatorTest {
 		when(mockTask.getExecutionConfig()).thenReturn(executionConfig);
 		when(mockTask.getAccumulatorMap()).thenReturn(Collections.<String, Accumulator<?, ?>>emptyMap());
 
-		operator.setup(mockTask, cfg, (Output< StreamRecord<T>>) mock(Output.class));
+		operator.setup(mockTask, cfg, (Output< StreamRecord<T>>) mock(Output.class), false);
 	}
 	
 	// ------------------------------------------------------------------------
@@ -238,6 +239,11 @@ public class StreamSourceOperatorTest {
 		@Override
 		public void emitWatermark(Watermark mark) {
 			list.add(mark);
+		}
+
+		@Override
+		public void emitLatencyMarker(LatencyMarker latencyMarker) {
+			list.add(latencyMarker);
 		}
 
 		@Override

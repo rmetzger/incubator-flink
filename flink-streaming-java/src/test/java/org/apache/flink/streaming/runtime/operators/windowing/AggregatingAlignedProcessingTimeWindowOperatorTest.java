@@ -203,7 +203,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 
 			op = new AggregatingProcessingTimeWindowOperator<>(mockFunction, mockKeySelector,
 					StringSerializer.INSTANCE, StringSerializer.INSTANCE, 5000, 1000);
-			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut);
+			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut, false);
 			op.open();
 			assertTrue(op.getNextSlideTime() % 1000 == 0);
 			assertTrue(op.getNextEvaluationTime() % 1000 == 0);
@@ -211,7 +211,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 
 			op = new AggregatingProcessingTimeWindowOperator<>(mockFunction, mockKeySelector,
 					StringSerializer.INSTANCE, StringSerializer.INSTANCE, 1000, 1000);
-			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut);
+			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut, false);
 			op.open();
 			assertTrue(op.getNextSlideTime() % 1000 == 0);
 			assertTrue(op.getNextEvaluationTime() % 1000 == 0);
@@ -219,7 +219,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 
 			op = new AggregatingProcessingTimeWindowOperator<>(mockFunction, mockKeySelector,
 					StringSerializer.INSTANCE, StringSerializer.INSTANCE, 1500, 1000);
-			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut);
+			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut, false);
 			op.open();
 			assertTrue(op.getNextSlideTime() % 500 == 0);
 			assertTrue(op.getNextEvaluationTime() % 1000 == 0);
@@ -227,7 +227,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 
 			op = new AggregatingProcessingTimeWindowOperator<>(mockFunction, mockKeySelector,
 					StringSerializer.INSTANCE, StringSerializer.INSTANCE, 1200, 1100);
-			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut);
+			op.setup(mockTask, new StreamConfig(new Configuration()), mockOut, false);
 			op.open();
 			assertTrue(op.getNextSlideTime() % 100 == 0);
 			assertTrue(op.getNextEvaluationTime() % 1100 == 0);
@@ -255,7 +255,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 			final Object lock = new Object();
 			final StreamTask<?, ?> mockTask = createMockTaskWithTimer(timerService, lock);
 			
-			op.setup(mockTask, new StreamConfig(new Configuration()), out);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out, false);
 			op.open();
 
 			final int numElements = 1000;
@@ -313,7 +313,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							IntSerializer.INSTANCE, tupleSerializer,
 							windowSize, windowSize);
 			
-			op.setup(mockTask, new StreamConfig(new Configuration()), out);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out, false);
 			op.open();
 
 			final int numWindows = 10;
@@ -380,7 +380,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							IntSerializer.INSTANCE, tupleSerializer,
 							150, 50);
 
-			op.setup(mockTask, new StreamConfig(new Configuration()), out);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out, false);
 			op.open();
 
 			final int numElements = 1000;
@@ -449,7 +449,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							sumFunction, fieldOneSelector,
 							IntSerializer.INSTANCE, tupleSerializer, 150, 50);
 
-			op.setup(mockTask, new StreamConfig(new Configuration()), out);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out, false);
 			op.open();
 
 			synchronized (lock) {
@@ -511,7 +511,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							IntSerializer.INSTANCE, tupleSerializer,
 							hundredYears, hundredYears);
 
-			op.setup(mockTask, new StreamConfig(new Configuration()), out);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out, false);
 			op.open();
 
 			for (int i = 0; i < 100; i++) {
@@ -559,7 +559,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							IntSerializer.INSTANCE, tupleSerializer,
 							windowSize, windowSize);
 
-			op.setup(mockTask, new StreamConfig(new Configuration()), out);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out, false);
 			op.open();
 
 			// inject some elements
@@ -607,7 +607,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 					IntSerializer.INSTANCE, tupleSerializer,
 					windowSize, windowSize);
 
-			op.setup(mockTask, new StreamConfig(new Configuration()), out2);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out2, false);
 			op.restoreState(state, 1);
 			op.open();
 
@@ -667,7 +667,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							IntSerializer.INSTANCE, tupleSerializer,
 							windowSize, windowSlide);
 
-			op.setup(mockTask, new StreamConfig(new Configuration()), out);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out, false);
 			op.open();
 
 			// inject some elements
@@ -715,7 +715,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 					IntSerializer.INSTANCE, tupleSerializer,
 					windowSize, windowSlide);
 
-			op.setup(mockTask, new StreamConfig(new Configuration()), out2);
+			op.setup(mockTask, new StreamConfig(new Configuration()), out2, false);
 			op.restoreState(state, 1);
 			op.open();
 
@@ -781,7 +781,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							new StatefulFunction(), fieldOneSelector,
 							IntSerializer.INSTANCE, tupleSerializer, twoSeconds, twoSeconds);
 
-			op.setup(mockTask, createTaskConfig(fieldOneSelector, IntSerializer.INSTANCE), out);
+			op.setup(mockTask, createTaskConfig(fieldOneSelector, IntSerializer.INSTANCE), out, false);
 			op.open();
 
 			// because the window interval is so large, everything should be in one window
@@ -836,7 +836,7 @@ public class AggregatingAlignedProcessingTimeWindowOperatorTest {
 							new StatefulFunction(), fieldOneSelector,
 							IntSerializer.INSTANCE, tupleSerializer, windowSize, windowSlide);
 
-			op.setup(mockTask, createTaskConfig(fieldOneSelector, IntSerializer.INSTANCE), out);
+			op.setup(mockTask, createTaskConfig(fieldOneSelector, IntSerializer.INSTANCE), out, false);
 			op.open();
 
 			// because the window interval is so large, everything should be in one window

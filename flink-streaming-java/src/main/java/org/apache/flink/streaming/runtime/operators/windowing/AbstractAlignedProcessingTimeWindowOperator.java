@@ -34,6 +34,7 @@ import org.apache.flink.runtime.state.AbstractStateBackend;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTaskState;
 
@@ -210,6 +211,15 @@ public abstract class AbstractAlignedProcessingTimeWindowOperator<KEY, IN, OUT, 
 	@Override
 	public void processWatermark(Watermark mark) {
 		// this operator does not react to watermarks
+	}
+
+	@Override
+	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		if(isSink) {
+			LOG.info("Lat {}", latencyMarker);
+		} else {
+			output.emitLatencyMarker(latencyMarker);
+		}
 	}
 
 	@Override

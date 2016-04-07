@@ -30,6 +30,7 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.util.StreamingMultipleProgramsTestBase;
 
@@ -226,6 +227,11 @@ public class StreamTaskTimerITCase extends StreamingMultipleProgramsTestBase {
 				Assert.fail("Concurrent invocation of operator functions.");
 			}
 			semaphore.release();
+		}
+
+		@Override
+		public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+			// ignore
 		}
 	}
 

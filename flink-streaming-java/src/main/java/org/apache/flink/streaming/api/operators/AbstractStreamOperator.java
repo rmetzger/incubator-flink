@@ -78,6 +78,8 @@ public abstract class AbstractStreamOperator<OUT>
 
 	protected transient Output<StreamRecord<OUT>> output;
 
+	protected transient boolean isSink = false;
+
 	/** The runtime context for UDFs */
 	private transient StreamingRuntimeContext runtimeContext;
 
@@ -91,15 +93,17 @@ public abstract class AbstractStreamOperator<OUT>
 	/** The state backend that stores the state and checkpoints for this task */
 	private AbstractStateBackend stateBackend = null;
 
+
 	// ------------------------------------------------------------------------
 	//  Life Cycle
 	// ------------------------------------------------------------------------
 
 	@Override
-	public void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output) {
+	public void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output, boolean isSink) {
 		this.container = containingTask;
 		this.config = config;
 		this.output = output;
+		this.isSink = isSink;
 		this.runtimeContext = new StreamingRuntimeContext(this, container.getEnvironment(), container.getAccumulatorMap());
 
 		stateKeySelector1 = config.getStatePartitioner(0, getUserCodeClassloader());

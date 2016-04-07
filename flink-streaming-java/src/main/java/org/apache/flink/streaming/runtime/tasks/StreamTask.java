@@ -188,7 +188,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 						getEnvironment().getAccumulatorRegistry().getReadWriteReporter());
 
 			if (headOperator != null) {
-				headOperator.setup(this, configuration, operatorChain.getChainEntryPoint());
+				headOperator.setup(this, configuration, operatorChain.getChainEntryPoint(), operatorChain.getStreamOutputs().length == 0);
 			}
 
 			timerService = Executors.newSingleThreadScheduledExecutor(
@@ -197,7 +197,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 			// task specific initialization
 			init();
 			
-			// save the work of reloadig state, etc, if the task is already canceled
+			// save the work of reloading state, etc, if the task is already canceled
 			if (canceled) {
 				throw new CancelTaskException();
 			}

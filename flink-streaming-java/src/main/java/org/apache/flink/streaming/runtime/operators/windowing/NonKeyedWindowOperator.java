@@ -45,6 +45,7 @@ import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
 import org.apache.flink.streaming.runtime.operators.windowing.buffers.WindowBuffer;
 import org.apache.flink.streaming.runtime.operators.windowing.buffers.WindowBufferFactory;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTaskState;
 import org.apache.flink.util.InstantiationUtil;
@@ -305,6 +306,15 @@ public class NonKeyedWindowOperator<IN, ACC, OUT, W extends Window>
 		output.emitWatermark(mark);
 
 		this.currentWatermark = mark.getTimestamp();
+	}
+
+	@Override
+	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		if(isSink) {
+			LOG.info("Latency Marker {}", latencyMarker);
+		} else {
+			output.emitLatencyMarker(latencyMarker);
+		}
 	}
 
 	@Override

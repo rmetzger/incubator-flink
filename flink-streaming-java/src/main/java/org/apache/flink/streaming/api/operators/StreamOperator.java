@@ -51,7 +51,7 @@ public interface StreamOperator<OUT> extends Serializable {
 	/**
 	 * Initializes the operator. Sets access to the context and the output.
 	 */
-	void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output);
+	void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output, boolean isSink);
 
 	/**
 	 * This method is called immediately before any elements are processed, it should contain the
@@ -110,7 +110,7 @@ public interface StreamOperator<OUT> extends Serializable {
 	 * This method restores the operator state (if the operator is stateful) and the key/value state
 	 * (if it had been used and was initialized when the snapshot occurred).
 	 *
-	 * <p>This method is called after {@link #setup(StreamTask, StreamConfig, Output)}
+	 * <p>This method is called after {@link #setup(StreamTask, StreamConfig, Output, boolean)}
 	 * and before {@link #open()}.
 	 *
 	 * @param state The state of operator that was snapshotted as part of checkpoint
