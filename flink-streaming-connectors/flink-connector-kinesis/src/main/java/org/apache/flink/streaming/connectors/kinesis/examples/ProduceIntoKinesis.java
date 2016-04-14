@@ -22,6 +22,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kinesis.FlinkKinesisProducer;
+import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 
 /**
  * This is an example on how to produce data into Kinesis
@@ -32,11 +33,21 @@ public class ProduceIntoKinesis {
 		ParameterTool pt = ParameterTool.fromArgs(args);
 
 		StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironment();
+		see.setParallelism(1);
 
 		DataStream<String> simpleStringStream = see.addSource(new EventsGenerator(pt));
-		simpleStringStream.print();
+		// simpleStringStream.print();
 
-		simpleStringStream.addSink(new FlinkKinesisProducer());
+
+		FlinkKinesisProducer<String> kinesis = new FlinkKinesisProducer<>(pt.getRequired("region"),
+				pt.getRequired("accessKey"),
+				pt.getRequired("secretKey"),
+				new SimpleStringSchema());
+
+		kinesis.setFailOnError(true);
+		kinesis.setDefaultStream("flink-test");
+		kinesis.setDefaultPartition("0");
+		simpleStringStream.addSink(kinesis);
 
 		see.execute();
 	}
@@ -50,6 +61,8 @@ public class ProduceIntoKinesis {
 		public void run(SourceContext<String> ctx) throws Exception {
 			long seq = 0;
 			while(running) {
+
+			//	Thread.sleep(1);
 				ctx.collect((seq++) + "-" + RandomStringUtils.randomAlphabetic(12));
 			}
 		}
