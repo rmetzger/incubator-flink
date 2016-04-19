@@ -70,6 +70,7 @@ public class KinesisProxy {
 		this.regionId = configProps.getProperty(KinesisConfigConstants.CONFIG_AWS_REGION, KinesisConfigConstants.DEFAULT_AWS_REGION);
 		AmazonKinesisClient client = new AmazonKinesisClient(AWSUtil.getCredentialsProvider(configProps).getCredentials());
 		client.setRegion(Region.getRegion(Regions.fromName(this.regionId)));
+		client.setEndpoint("kinesis.eu-central-1.amazonaws.com");
 
 		this.kinesisClient = client;
 	}
@@ -194,7 +195,7 @@ public class KinesisProxy {
 					LOG.debug("Stream " + streamName + " : Sleep  was interrupted ", ie);
 				}
 			} catch (ResourceNotFoundException re) {
-				throw new RuntimeException("No stream name");
+				throw new RuntimeException("No stream name", re);
 			}
 			remainingRetryTimes--;
 		}
