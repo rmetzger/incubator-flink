@@ -29,8 +29,8 @@ angular.module('flinkApp', ['ui.router', 'angularMoment'])
 # --------------------------------------
 
 .value 'flinkConfig', {
-  jobServer: ''
-# jobServer: 'http://localhost:8081/'
+#  jobServer: ''
+  jobServer: 'http://localhost:8081/'
   "refresh-interval": 10000
 }
 
@@ -154,13 +154,6 @@ angular.module('flinkApp', ['ui.router', 'angularMoment'])
       details:
         templateUrl: "partials/jobs/job.exceptions.html"
         controller: 'JobExceptionsController'
-
-  .state "single-job.properties",
-    url: "/properties"
-    views:
-      details:
-        templateUrl: "partials/jobs/job.properties.html"
-        controller: 'JobPropertiesController'
 
   .state "single-job.config",
     url: "/config"
