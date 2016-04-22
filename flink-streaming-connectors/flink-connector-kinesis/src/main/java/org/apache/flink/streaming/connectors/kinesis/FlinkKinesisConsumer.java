@@ -169,7 +169,7 @@ public class FlinkKinesisConsumer<T> extends RichParallelSourceFunction<T>
 
 		this.deserializer = checkNotNull(deserializer, "deserializer can not be null");
 
-		this.shards = new KinesisProxy(configProps).getShardList(streams);
+ 		this.shards = new KinesisProxy(configProps).getShardList(streams);
 		if (shards.size() == 0) {
 			throw new RuntimeException("Unable to retrieve any shards for the requested streams " + streams.toString() + ".");
 		}
