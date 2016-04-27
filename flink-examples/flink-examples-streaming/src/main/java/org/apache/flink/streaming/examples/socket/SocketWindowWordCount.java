@@ -26,6 +26,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.minicluster.FlinkMiniCluster;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 
@@ -64,7 +65,19 @@ public class SocketWindowWordCount {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(10, conf);
 
 		// get input data by connecting to the socket
-		DataStream<String> text = env.socketTextStream("localhost", port, '\n');
+		DataStream<String> text = env.addSource(new SourceFunction<String>() {
+			@Override
+			public void run(SourceContext<String> ctx) throws Exception {
+				synchronized (ctx) {
+					ctx.wait();
+				}
+			}
+
+			@Override
+			public void cancel() {
+
+			}
+		});
 
 		// parse the data, group it, window it, and aggregate the counts 
 		DataStream<WordWithCount> windowCounts = text
