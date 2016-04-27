@@ -64,7 +64,19 @@ public class SocketWindowWordCount {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(10, conf);
 
 		// get input data by connecting to the socket
-		DataStream<String> text = env.socketTextStream("localhost", port, "\n");
+		DataStream<String> text = env.addSource(new SourceFunction<String>() {
+			@Override
+			public void run(SourceContext<String> ctx) throws Exception {
+				synchronized (ctx) {
+					ctx.wait();
+				}
+			}
+
+			@Override
+			public void cancel() {
+
+			}
+		});
 
 		// parse the data, group it, window it, and aggregate the counts 
 		DataStream<WordWithCount> windowCounts = text
