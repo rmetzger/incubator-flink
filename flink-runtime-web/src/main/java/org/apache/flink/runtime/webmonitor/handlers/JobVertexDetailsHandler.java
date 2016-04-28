@@ -70,6 +70,8 @@ public class JobVertexDetailsHandler extends AbstractJobVertexRequestHandler {
 			}
 			long endTime = status.isTerminal() ? vertex.getStateTimestamp(status) : -1;
 			long duration = startTime > 0 ? ((endTime > 0 ? endTime : now) - startTime) : -1;
+
+			long lowWatermark = vertex.getLowWatermark();
 			
 			Map<AccumulatorRegistry.Metric, Accumulator<?, ?>> metrics = vertex.getCurrentExecutionAttempt().getFlinkAccumulators();
 			LongCounter readBytes;
@@ -98,6 +100,7 @@ public class JobVertexDetailsHandler extends AbstractJobVertexRequestHandler {
 			gen.writeNumberField("start-time", startTime);
 			gen.writeNumberField("end-time", endTime);
 			gen.writeNumberField("duration", duration);
+			gen.writeNumberField("lowWatermark", lowWatermark);
 
 			gen.writeObjectFieldStart("metrics");
 			gen.writeNumberField("read-bytes", readBytes != null ? readBytes.getLocalValuePrimitive() : -1L);

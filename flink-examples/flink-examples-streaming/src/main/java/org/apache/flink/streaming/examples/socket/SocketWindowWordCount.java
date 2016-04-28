@@ -102,7 +102,7 @@ public class SocketWindowWordCount {
 				});
 
 		// print the results with a single thread, rather than in parallel
-		windowCounts.print().setParallelism(1);
+		windowCounts.print().setParallelism(10);
 
 		env.execute("Socket Window WordCount");
 	}

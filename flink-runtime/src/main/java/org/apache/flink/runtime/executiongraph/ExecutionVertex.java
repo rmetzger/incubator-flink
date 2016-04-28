@@ -58,6 +58,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -711,5 +712,12 @@ public class ExecutionVertex implements Serializable {
 	@Override
 	public String toString() {
 		return getSimpleName();
+	}
+
+
+	// FAKE METHOD:
+	long currentWM = 0L;
+	public long getLowWatermark() {
+		return currentWM += new Random().nextInt(800);
 	}
 }
