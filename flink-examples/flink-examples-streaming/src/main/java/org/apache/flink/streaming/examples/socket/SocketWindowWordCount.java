@@ -20,10 +20,8 @@ package org.apache.flink.streaming.examples.socket;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.minicluster.FlinkMiniCluster;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
@@ -46,19 +44,13 @@ public class SocketWindowWordCount {
 	
 	public static void main(String[] args) throws Exception {
 
-		// the port to connect to
-		final int port;
-		try {
-			final ParameterTool params = ParameterTool.fromArgs(args);
-			port = params.getInt("port");
-		} catch (Exception e) {
-			System.err.println("No port specified. Please run 'WindowWordCount --port <port>', " +
-					"where port is the address of the text server");
-			System.err.println("To start a simple text server, run 'netcat -l <port>' and type the input text " +
-					"into the command line");
-			return;
-		} 
-		
+		//
+		//	DO NOT MERGE THIS FILE LIKE THIS.
+		// IT HAS BEEN CHANGED A BIT TO GET A WEB INTERFACE WITH A LONG RUNNING FLINK JOB
+		// To see the web interface, please call with class with the "flink-dist" package
+		// classpath.
+		//
+
 		// get the execution environment
 		Configuration conf = new Configuration();
 		conf.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true);
