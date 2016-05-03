@@ -21,6 +21,10 @@
 
 set -e
 
+# This script is also changing the akka version depending to scala.
+AKKA_VERSION_211="2.4.4"
+AKKA_VERSION_210="2.3.7"
+
 VALID_VERSIONS=( 2.10 2.11 )
 
 usage() {
@@ -87,7 +91,12 @@ find "$BASEDIR/flink-dist" -name 'bin.xml' -not -path '*target*' -print \
 find "$BASEDIR/flink-runtime" -name 'pom.xml' -not -path '*target*' -print \
      -exec bash -c "sed_i 's/\(<include>org\.apache\.flink:flink-shaded-curator.*\)'$FROM_SUFFIX'<\/include>/\1'$TO_SUFFIX'<\/include>/g' {}" \;
 
+
 if [ "$TO_VERSION" == "2.11" ]; then
+  # Set Akka version for scala 2.11
+  bash -c "sed_i 's/<akka.version>"AKKA_VERSION_210"<\/akka.version>/<akka.version>"AKKA_VERSION_211"<\/akka.version>/g' $BASEDIR/pom.xml" \;
+
+
   # set the profile activation to !scala-2.11 in parent pom, so that it activates by default
   bash -c "sed_i 's/<name>scala-2.11<\/name>/<name>!scala-2.11<\/name>/g' $BASEDIR/pom.xml" \;
   # set the profile activation in all sub modules to scala-2.11 (so that they are disabled by default)
@@ -99,6 +108,9 @@ if [ "$TO_VERSION" == "2.11" ]; then
 fi
 
 if [ "$TO_VERSION" == "2.10" ]; then
+  # Set Akka version for scala 2.10
+  bash -c "sed_i 's/<akka.version>"AKKA_VERSION_211"<\/akka.version>/<akka.version>"AKKA_VERSION_210"<\/akka.version>/g' $BASEDIR/pom.xml" \;
+
   # do the opposite as above
   bash -c "sed_i 's/<name>!scala-2.11<\/name>/<name>scala-2.11<\/name>/g' $BASEDIR/pom.xml" \;
   # also for the other files
@@ -108,4 +120,6 @@ if [ "$TO_VERSION" == "2.10" ]; then
   # unset shading artifact name
   bash -c "sed_i 's/\(shading-artifact.name>flink-shaded[a-z0-9\-]*\)'$FROM_SUFFIX'<\/shading-artifact.name>/\1'$TO_SUFFIX'<\/shading-artifact.name>/g' $BASEDIR/pom.xml" \;
 fi
+
+
 
