@@ -108,6 +108,13 @@ under the License.
 		<dependency>
 			<groupId>com.typesafe.akka</groupId>
 			<artifactId>akka-remote_${scala.binary.version}</artifactId>
+			<exclusions>
+				<!-- exclude protobuf. Its not used by akka remove and pollutes the flink-dist jar. -->
+				<exclusion>
+					<groupId>com.google.protobuf</groupId>
+					<artifactId>protobuf-java</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>

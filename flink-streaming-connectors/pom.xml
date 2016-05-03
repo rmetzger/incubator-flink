@@ -73,6 +73,7 @@ under the License.
 		<profile>
 			<id>include-kinesis</id>
 			<modules>
+			<!--	<module>flink-shaded-kinesis</module> -->
 				<module>flink-connector-kinesis</module>
 			</modules>
 		</profile>
