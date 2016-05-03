@@ -27,7 +27,7 @@ under the License.
 		<relativePath>..</relativePath>
 	</parent>
 
-	<artifactId>flink-scala-shell_2.10</artifactId>
+	<artifactId>flink-scala-shell_2.11</artifactId>
 	<name>flink-scala-shell</name>
 
 	<packaging>jar</packaging>
@@ -43,19 +43,19 @@ under the License.
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-runtime_2.10</artifactId>
+			<artifactId>flink-runtime_2.11</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-clients_2.10</artifactId>
+			<artifactId>flink-clients_2.11</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-scala_2.10</artifactId>
+			<artifactId>flink-scala_2.11</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
@@ -77,18 +77,18 @@ under the License.
 		</dependency>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-streaming-java_2.10</artifactId>
+			<artifactId>flink-streaming-java_2.11</artifactId>
 			<version>1.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-streaming-scala_2.10</artifactId>
+			<artifactId>flink-streaming-scala_2.11</artifactId>
 			<version>1.1-SNAPSHOT</version>
 		</dependency>
 		<!-- tests -->
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-test-utils_2.10</artifactId>
+			<artifactId>flink-test-utils_2.11</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
@@ -222,7 +222,7 @@ under the License.
 			<activation>
 				<property>
 					<!-- this is the default scala profile -->
-					<name>!scala-2.11</name>
+					<name>scala-2.11</name>
 				</property>
 			</activation>
 			<dependencies>
