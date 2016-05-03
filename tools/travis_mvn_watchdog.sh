@@ -181,6 +181,10 @@ check_shaded_artifacts() {
 # WATCHDOG
 # =============================================================================
 
+echo "SET Scala version to $SCALA_VERSION"
+
+$HERE/change-scala-version.sh $SCALA_VERSION
+
 # Start watching $MVN_OUT
 watchdog &
 
