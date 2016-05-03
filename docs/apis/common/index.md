@@ -152,7 +152,7 @@ Starting from the 0.10 line, we cross-build all Flink modules for both 2.10 and 
 to run your program on Flink with Scala 2.11, you need to add a `_2.11` suffix to the `artifactId`
 values of the Flink modules in your dependencies section.
 
-If you are looking for building Flink with Scala 2.11, please check
+If you are looking for building Flink with Scala 2.10, please check
 [build guide]({{ site.baseurl }}/setup/building.html#scala-versions).
 
 #### Hadoop Dependency Versions
