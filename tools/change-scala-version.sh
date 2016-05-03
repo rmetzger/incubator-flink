@@ -94,7 +94,7 @@ find "$BASEDIR/flink-runtime" -name 'pom.xml' -not -path '*target*' -print \
 
 if [ "$TO_VERSION" == "2.11" ]; then
   # Set Akka version for scala 2.11
-  bash -c "sed_i 's/<akka.version>"AKKA_VERSION_210"<\/akka.version>/<akka.version>"AKKA_VERSION_211"<\/akka.version>/g' $BASEDIR/pom.xml" \;
+  bash -c "sed_i 's/<akka.version>$AKKA_VERSION_210<\/akka.version>/<akka.version>$AKKA_VERSION_211<\/akka.version>/g' $BASEDIR/pom.xml" \;
 
 
   # set the profile activation to !scala-2.11 in parent pom, so that it activates by default
@@ -109,7 +109,7 @@ fi
 
 if [ "$TO_VERSION" == "2.10" ]; then
   # Set Akka version for scala 2.10
-  bash -c "sed_i 's/<akka.version>"AKKA_VERSION_211"<\/akka.version>/<akka.version>"AKKA_VERSION_210"<\/akka.version>/g' $BASEDIR/pom.xml" \;
+  bash -c "sed_i 's/<akka.version>$AKKA_VERSION_211<\/akka.version>/<akka.version>$AKKA_VERSION_210<\/akka.version>/g' $BASEDIR/pom.xml" \;
 
   # do the opposite as above
   bash -c "sed_i 's/<name>!scala-2.11<\/name>/<name>scala-2.11<\/name>/g' $BASEDIR/pom.xml" \;
