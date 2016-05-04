@@ -65,18 +65,9 @@ under the License.
 
 
 		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-actor_${scala.binary.version}</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-remote_${scala.binary.version}</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.typesafe.akka</groupId>
-			<artifactId>akka-camel_${scala.binary.version}</artifactId>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-shaded-akka</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>
