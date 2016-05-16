@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-angular.module('flinkApp', ['ui.router', 'angularMoment'])
+angular.module('flinkApp', ['ui.router', 'angularMoment', 'nvd3', 'dndLists'])
 
 # --------------------------------------
 
@@ -39,6 +39,8 @@ angular.module('flinkApp', ['ui.router', 'angularMoment'])
 .run (JobsService, MainService, flinkConfig, $interval) ->
   MainService.loadConfig().then (config) ->
     angular.extend flinkConfig, config
+#    console.log flinkConfig
+#    flinkConfig["refresh-interval"] = 20000
 
     JobsService.listJobs()
 
@@ -106,6 +108,13 @@ angular.module('flinkApp', ['ui.router', 'angularMoment'])
       'node-details':
         templateUrl: "partials/jobs/job.plan.node-list.subtasks.html"
         controller: 'JobPlanSubtasksController'
+
+  .state "single-job.plan.metrics",
+    url: "/metrics"
+    views:
+      'node-details':
+        templateUrl: "partials/jobs/job.plan.node-list.metrics.html"
+        controller: 'JobPlanMetricsController'
 
   .state "single-job.plan.taskmanagers",
     url: "/taskmanagers"

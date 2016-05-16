@@ -639,6 +639,42 @@ svg.graph .node-label {
   font-size: 14px;
   line-height: 1.4;
 }
+#content .navbar-secondary-additional.navbar-secondary-additional-2 {
+  margin: -10px -10px 10px -10px;
+  padding: 0;
+  border-bottom: 1px solid #e4e4e4;
+}
+#content .navbar-secondary-additional.navbar-secondary-additional-2 .navbar-info {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+#content .navbar-secondary-additional.navbar-secondary-additional-2 .add-metrics {
+  margin-right: 15px;
+  float: right;
+}
+#content .navbar-secondary-additional.navbar-secondary-additional-2 .add-metrics .btn {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.metric-row {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+.metric-row .metric-col {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.panel.panel-metric {
+  margin-bottom: 5px;
+}
+.panel.panel-metric .panel-heading {
+  padding: 10px 10px;
+  background-color: transparent;
+}
+.p-info {
+  padding-left: 5px;
+  padding-right: 5px;
+}
 @media (min-width: 1024px) and (max-width: 1279px) {
   #sidebar {
     left: 0;

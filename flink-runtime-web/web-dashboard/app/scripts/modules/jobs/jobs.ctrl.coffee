@@ -131,104 +131,109 @@ angular.module('flinkApp')
 .controller 'JobPlanSubtasksController', ($scope, JobsService) ->
   console.log 'JobPlanSubtasksController'
 
-  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.st)
+  getSubtasks = ->
     JobsService.getSubtasks($scope.nodeid).then (data) ->
       $scope.subtasks = data
 
+  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.st)
+    getSubtasks()
+
   $scope.$on 'reload', (event) ->
     console.log 'JobPlanSubtasksController'
-    if $scope.nodeid
-      JobsService.getSubtasks($scope.nodeid).then (data) ->
-        $scope.subtasks = data
+    getSubtasks() if $scope.nodeid
 
 # --------------------------------------
 
 .controller 'JobPlanTaskManagersController', ($scope, JobsService) ->
   console.log 'JobPlanTaskManagersController'
 
-  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.st)
+  getTaskManagers = ->
     JobsService.getTaskManagers($scope.nodeid).then (data) ->
       $scope.taskmanagers = data
 
+  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.st)
+    getTaskManagers()
+
   $scope.$on 'reload', (event) ->
     console.log 'JobPlanTaskManagersController'
-    if $scope.nodeid
-      JobsService.getTaskManagers($scope.nodeid).then (data) ->
-        $scope.taskmanagers = data
+    getTaskManagers() if $scope.nodeid
 
 # --------------------------------------
 
 .controller 'JobPlanAccumulatorsController', ($scope, JobsService) ->
   console.log 'JobPlanAccumulatorsController'
 
-  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.accumulators)
+  getAccumulators = ->
     JobsService.getAccumulators($scope.nodeid).then (data) ->
       $scope.accumulators = data.main
       $scope.subtaskAccumulators = data.subtasks
 
+  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.accumulators)
+    getAccumulators()
+
   $scope.$on 'reload', (event) ->
     console.log 'JobPlanAccumulatorsController'
-    if $scope.nodeid
-      JobsService.getAccumulators($scope.nodeid).then (data) ->
-        $scope.accumulators = data.main
-        $scope.subtaskAccumulators = data.subtasks
+    getAccumulators() if $scope.nodeid
 
 # --------------------------------------
 
 .controller 'JobPlanCheckpointsController', ($scope, JobsService) ->
   console.log 'JobPlanCheckpointsController'
 
-  # Get the per job stats
-  JobsService.getJobCheckpointStats($scope.jobid).then (data) ->
-    $scope.jobCheckpointStats = data
+  getJobCheckpointStats = ->
+    JobsService.getJobCheckpointStats($scope.jobid).then (data) ->
+      $scope.jobCheckpointStats = data
 
-  # Get the per operator stats
-  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.operatorCheckpointStats)
+  getOperatorCheckpointStats = ->
     JobsService.getOperatorCheckpointStats($scope.nodeid).then (data) ->
       $scope.operatorCheckpointStats = data.operatorStats
       $scope.subtasksCheckpointStats = data.subtasksStats
 
+  # Get the per job stats
+  getJobCheckpointStats()
+
+  # Get the per operator stats
+  if $scope.nodeid and (!$scope.vertex or !$scope.vertex.operatorCheckpointStats)
+    getOperatorCheckpointStats()
+
   $scope.$on 'reload', (event) ->
     console.log 'JobPlanCheckpointsController'
 
-    JobsService.getJobCheckpointStats($scope.jobid).then (data) ->
-      $scope.jobCheckpointStats = data
-
-    if $scope.nodeid
-      JobsService.getOperatorCheckpointStats($scope.nodeid).then (data) ->
-        $scope.operatorCheckpointStats = data.operatorStats
-        $scope.subtasksCheckpointStats = data.subtasksStats
+    getJobCheckpointStats()
+    getOperatorCheckpointStats() if $scope.nodeid
 
 # --------------------------------------
 
 .controller 'JobPlanBackPressureController', ($scope, JobsService) ->
   console.log 'JobPlanBackPressureController'
-  $scope.now = Date.now()
 
-  if $scope.nodeid
-    JobsService.getOperatorBackPressure($scope.nodeid).then (data) ->
-      $scope.backPressureOperatorStats[$scope.nodeid] = data
-
-  $scope.$on 'reload', (event) ->
-    console.log 'JobPlanBackPressureController (relaod)'
+  getOperatorBackPressure = ->
     $scope.now = Date.now()
 
     if $scope.nodeid
       JobsService.getOperatorBackPressure($scope.nodeid).then (data) ->
-        $scope.backPressureOperatorStats[$scope.nodeid] = data
+      $scope.backPressureOperatorStats[$scope.nodeid] = data
+
+  getOperatorBackPressure()
+
+  $scope.$on 'reload', (event) ->
+    console.log 'JobPlanBackPressureController (reload)'
+    getOperatorBackPressure()
 
 # --------------------------------------
 
 .controller 'JobTimelineVertexController', ($scope, $state, $stateParams, JobsService) ->
   console.log 'JobTimelineVertexController'
 
-  JobsService.getVertex($stateParams.vertexId).then (data) ->
-    $scope.vertex = data
+  getVertex = ->
+    JobsService.getVertex($stateParams.vertexId).then (data) ->
+      $scope.vertex = data
+
+  getVertex()
 
   $scope.$on 'reload', (event) ->
     console.log 'JobTimelineVertexController'
-    JobsService.getVertex($stateParams.vertexId).then (data) ->
-      $scope.vertex = data
+    getVertex()
 
 # --------------------------------------
 
@@ -251,3 +256,62 @@ angular.module('flinkApp')
     else
       $scope.nodeid = null
       $scope.node = null
+
+# --------------------------------------
+
+.controller 'JobPlanMetricsController', ($scope, JobsService, MetricsService) ->
+  console.log 'JobPlanMetricsController'
+
+  sine = ->
+    sin = []
+    now = +new Date
+    i = 0
+    while i < 100
+      sin.push
+        x: now + i * 1000 * 60 * 60 * 24
+        y: Math.sin(i / 10)
+      i++
+    sin
+
+  loadMetrics = ->
+    MetricsService.getAvailableMetrics($scope.jobid, $scope.nodeid).then (data) ->
+      $scope.availableMetrics = data
+#      console.log data
+#      ids = []
+#      angular.forEach data, (v, k) ->
+#        ids.push(v.id)
+
+      setup = MetricsService.getMetricsSetup($scope.jobid, $scope.nodeid)
+      $scope.metrics = setup.list
+
+      MetricsService.getMetrics($scope.jobid, $scope.nodeid, setup.list).then (data) ->
+        $scope.$broadcast "metrics:data:update", data
+
+  $scope.options = chart:
+    type: 'sparklinePlus'
+    height: 150
+    x: (d, i) ->
+      i
+    xTickFormat: (d) ->
+      d3.time.format('%x') new Date($scope.data[d].x)
+    duration: 250
+
+  $scope.data = sine();
+
+  $scope.addMetric = (metric) ->
+    console.log metric
+    MetricsService.addMetric($scope.jobid, $scope.nodeid, metric.id)
+    loadMetrics()
+
+  $scope.removeMetric = (metricId) ->
+    console.log metricId
+    MetricsService.removeMetric($scope.jobid, $scope.nodeid, metricId)
+    loadMetrics()
+
+  $scope.$on 'reload', (event) ->
+    console.log 'JobPlanMetricsController'
+    loadMetrics() if $scope.nodeid
+
+  loadMetrics() if $scope.nodeid
+
+# --------------------------------------

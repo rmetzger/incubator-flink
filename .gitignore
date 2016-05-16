@@ -16,6 +16,8 @@ tmp
 *.jar
 *.log
 .DS_Store
+_site
+docs/api
 build-target
 flink-batch-connectors/flink-avro/src/test/java/org/apache/flink/api/io/avro/generated/
 flink-runtime-web/web-dashboard/assets/fonts/
@@ -28,3 +30,5 @@ out/
 /docs/Gemfile.lock
 /docs/.bundle
 /docs/.rubydeps
+*.ipr
+*.iws
