@@ -31,14 +31,12 @@ limitations under the License.
     </ul>
   </div>
 </nav>
-<p ng-if="nodeid &amp;&amp; metrics.length == 0" class="p-info"><em>No metrics selected</em></p>
-<div ng-if="nodeid" class="row metric-row">
-  <div ng-repeat="metric in metrics" class="col-xs-4 metric-col">
-    <metrics-graph mtype="{{metric}}" options="options" data="data" remove-metric="removeMetric(metric)"></metrics-graph>
-  </div>
-  <!--.col-xs-4.metric-col(ng-if="availableMetrics.length")-->
-  <!--  .panel.panel-default.panel-metric-->
-  <!--    .panel-body-->
-  <!--      form(name='metricChoiceForm')-->
-  <!--        select(ng-options="metric.name for metric in availableMetrics" ng-model="chosenMetric" ng-change="addMetric(chosenMetric); chosenMetric = null")-->
+<div ng-if="nodeid &amp;&amp; metrics.length == 0" class="row metric-row">
+  <p class="p-info"><em>No metrics selected</em></p>
 </div>
+<ul ng-if="nodeid &amp;&amp; metrics.length &gt; 0" dnd-list="metrics" dnd-drop="dropped(event, index, item, external, type, external)" class="metric-row">
+  <li ng-repeat="metric in metrics" dnd-draggable="metric" dnd-dragstart="dragStart()" dnd-dragend="dragEnd()" dnd-canceled="dragEnd()" class="metric-col">
+    <metrics-graph mtype="{{metric}}" options="options" data="data" remove-metric="removeMetric(metric)"></metrics-graph>
+  </li>
+</ul>
+<div class="clearfix"></div>

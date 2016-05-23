@@ -262,6 +262,8 @@ angular.module('flinkApp')
 .controller 'JobPlanMetricsController', ($scope, JobsService, MetricsService) ->
   console.log 'JobPlanMetricsController'
 
+  $scope.dragging = false
+
   sine = ->
     sin = []
     now = +new Date
@@ -285,9 +287,9 @@ angular.module('flinkApp')
 #        ids.push(v.id)
 
       setup = MetricsService.getMetricsSetup($scope.jobid, $scope.nodeid)
-      $scope.metrics = setup.list
+      $scope.metrics = setup.names
 
-      MetricsService.getMetrics($scope.jobid, $scope.nodeid, setup.list).then (data) ->
+      MetricsService.getMetrics($scope.jobid, $scope.nodeid, setup.names).then (data) ->
         $scope.$broadcast "metrics:data:update", data
 
   $scope.options = chart:
@@ -301,19 +303,34 @@ angular.module('flinkApp')
 
   $scope.data = sine();
 
+  $scope.dropped = (event, index, item, external, type) ->
+#    console.log event
+#    console.log index
+#    console.log item
+#    console.log external
+#    console.log type
+
+    MetricsService.orderMetrics($scope.jobid, $scope.nodeid, item, index)
+    loadMetrics()
+    false
+
+  $scope.dragStart = ->
+    $scope.dragging = true
+
+  $scope.dragEnd = ->
+    $scope.dragging = false
+
   $scope.addMetric = (metric) ->
-    console.log metric
     MetricsService.addMetric($scope.jobid, $scope.nodeid, metric.id)
     loadMetrics()
 
   $scope.removeMetric = (metricId) ->
-    console.log metricId
     MetricsService.removeMetric($scope.jobid, $scope.nodeid, metricId)
     loadMetrics()
 
   $scope.$on 'reload', (event) ->
     console.log 'JobPlanMetricsController'
-    loadMetrics() if $scope.nodeid
+    loadMetrics() if $scope.nodeid and !$scope.dragging
 
   loadMetrics() if $scope.nodeid
 

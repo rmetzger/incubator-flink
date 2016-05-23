@@ -52,8 +52,30 @@ angular.module('flinkApp')
 
       @saveToLS()
 
+  @orderMetrics = (jobid, nodeid, item, index) ->
+    @setupLSFor(jobid, nodeid)
+
+    angular.forEach @metrics[jobid][nodeid], (v, k) =>
+      if v == item
+        @metrics[jobid][nodeid].splice(k, 1)
+        if k < index
+          index = index - 1
+
+    @metrics[jobid][nodeid].splice(index, 0, item)
+
+    @saveToLS()
+
   @getMetricsSetup = (jobid, nodeid) =>
-    list: @metrics[jobid][nodeid]
+    fl = []
+    angular.forEach @metrics[jobid][nodeid], (v, k) =>
+      fl.push {
+        name: v
+      }
+
+    {
+      names: @metrics[jobid][nodeid]
+      list: fl
+    }
 
   @getAvailableMetrics = (jobid, nodeid) =>
     @setupLSFor(jobid, nodeid)

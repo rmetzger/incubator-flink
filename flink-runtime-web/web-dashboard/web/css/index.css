@@ -656,20 +656,46 @@ svg.graph .node-label {
   margin-top: 5px;
   margin-bottom: 5px;
 }
+#content .navbar-secondary-additional.navbar-secondary-additional-2 .add-metrics a {
+  cursor: pointer;
+}
 .metric-row {
-  margin-left: 0px;
-  margin-right: 0px;
+  margin: 0px;
+  min-height: 110px;
+  padding: 0;
+  list-style-type: none;
 }
 .metric-row .metric-col {
-  padding-left: 5px;
-  padding-right: 5px;
+  background-color: transparent;
+  width: 33.33%;
+  float: left;
 }
-.panel.panel-metric {
-  margin-bottom: 5px;
+.metric-row .metric-col .panel {
+  margin-left: 5px;
+  margin-right: 5px;
+  min-height: 100px;
+  margin-bottom: 10px;
 }
-.panel.panel-metric .panel-heading {
+.metric-row .metric-col .panel .panel-body {
+  background-color: transparent;
+}
+.metric-row .metric-col .panel .panel-heading {
   padding: 10px 10px;
   background-color: transparent;
+}
+.metric-row .metric-col.dndDraggingSource {
+  display: none;
+}
+.metric-row .dndPlaceholder {
+  position: relative;
+  background-color: #f0f0f0;
+  min-height: 100px;
+  display: block;
+  width: 33.33%;
+  float: left;
+  margin-bottom: 10px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
 }
 .p-info {
   padding-left: 5px;

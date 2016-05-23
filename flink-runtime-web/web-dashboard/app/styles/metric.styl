@@ -15,21 +15,46 @@
         .btn
           margin-top: 5px
           margin-bottom: 5px
+        a
+          cursor: pointer
+
+$metric-row-height = 100px
 
 .metric-row
-  margin-left: 0px
-  margin-right: 0px
+  margin: 0px
+  min-height: 1 * ($metric-row-height + 10px)
+  padding: 0
+  list-style-type: none
 
   .metric-col
-    padding-left: 5px
-    padding-right: 5px
-
-.panel.panel-metric
-  margin-bottom: 5px
-
-  .panel-heading
-    padding: 10px 10px
     background-color: transparent
+    width: 33.33%
+    float: left
+
+    .panel
+      margin-left: 5px
+      margin-right: 5px
+      min-height: $metric-row-height
+      margin-bottom: 10px
+      .panel-body
+        background-color: transparent
+
+      .panel-heading
+        padding: 10px 10px
+        background-color: transparent
+
+    &.dndDraggingSource
+      display: none
+
+  .dndPlaceholder
+    position: relative
+    background-color: #f0f0f0
+    min-height: $metric-row-height
+    display: block
+    width: 33.33%
+    float: left
+    margin-bottom: 10px
+    border-radius: 5px
 
 .p-info
   padding-left: 5px
