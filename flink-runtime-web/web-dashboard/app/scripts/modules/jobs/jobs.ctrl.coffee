@@ -274,6 +274,9 @@ angular.module('flinkApp')
     sin
 
   loadMetrics = ->
+    JobsService.getVertex($scope.nodeid).then (data) ->
+      $scope.vertex = data
+
     MetricsService.getAvailableMetrics($scope.jobid, $scope.nodeid).then (data) ->
       $scope.availableMetrics = data
 #      console.log data

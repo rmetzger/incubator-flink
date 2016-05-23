@@ -19,6 +19,7 @@ p.p-info(ng-if="!nodeid")
   em Select node to see the metrics
 
 nav.navbar.navbar-default.navbar-secondary-additional.navbar-secondary-additional-2(ng-if="nodeid")
+  .navbar-info {{ vertex.name }}
   .navbar-info {{ nodeid }}
   .dropup.add-metrics(ng-if="availableMetrics.length")
     button.btn.btn-default.navbar-btn.dropdown-toggle(type='button', data-toggle='dropdown')

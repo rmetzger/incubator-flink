@@ -19,6 +19,7 @@ limitations under the License.
 -->
 <p ng-if="!nodeid" class="p-info"><em>Select node to see the metrics</em></p>
 <nav ng-if="nodeid" class="navbar navbar-default navbar-secondary-additional navbar-secondary-additional-2">
+  <div class="navbar-info">{{ vertex.name }}</div>
   <div class="navbar-info">{{ nodeid }}</div>
   <div ng-if="availableMetrics.length" class="dropup add-metrics">
     <button type="button" data-toggle="dropdown" class="btn btn-default navbar-btn dropdown-toggle">
