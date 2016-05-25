@@ -661,7 +661,7 @@ svg.graph .node-label {
 }
 .metric-row {
   margin: 0px;
-  min-height: 110px;
+  min-height: 275px;
   padding: 0;
   list-style-type: none;
 }
@@ -673,7 +673,7 @@ svg.graph .node-label {
 .metric-row .metric-col .panel {
   margin-left: 5px;
   margin-right: 5px;
-  min-height: 100px;
+  min-height: 265px;
   margin-bottom: 10px;
 }
 .metric-row .metric-col .panel .panel-body {
@@ -689,7 +689,7 @@ svg.graph .node-label {
 .metric-row .dndPlaceholder {
   position: relative;
   background-color: #f0f0f0;
-  min-height: 100px;
+  min-height: 265px;
   display: block;
   width: 33.33%;
   float: left;

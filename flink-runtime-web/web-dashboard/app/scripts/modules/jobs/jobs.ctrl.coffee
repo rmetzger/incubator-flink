@@ -264,51 +264,19 @@ angular.module('flinkApp')
 
   $scope.dragging = false
 
-  sine = ->
-    sin = []
-    now = +new Date
-    i = 0
-    while i < 100
-      sin.push
-        x: now + i * 1000 * 60 * 60 * 24
-        y: Math.sin(i / 10)
-      i++
-    sin
-
   loadMetrics = ->
     JobsService.getVertex($scope.nodeid).then (data) ->
       $scope.vertex = data
 
     MetricsService.getAvailableMetrics($scope.jobid, $scope.nodeid).then (data) ->
       $scope.availableMetrics = data
-#      console.log data
-#      ids = []
-#      angular.forEach data, (v, k) ->
-#        ids.push(v.id)
-
       setup = MetricsService.getMetricsSetup($scope.jobid, $scope.nodeid)
       $scope.metrics = setup.names
 
       MetricsService.getMetrics($scope.jobid, $scope.nodeid, setup.names).then (data) ->
         $scope.$broadcast "metrics:data:update", data
 
-  $scope.options = chart:
-    type: 'sparklinePlus'
-    height: 150
-    x: (d, i) ->
-      i
-    xTickFormat: (d) ->
-      d3.time.format('%x') new Date($scope.data[d].x)
-    duration: 250
-
-  $scope.data = sine();
-
   $scope.dropped = (event, index, item, external, type) ->
-#    console.log event
-#    console.log index
-#    console.log item
-#    console.log external
-#    console.log type
 
     MetricsService.orderMetrics($scope.jobid, $scope.nodeid, item, index)
     loadMetrics()
@@ -329,7 +297,6 @@ angular.module('flinkApp')
     loadMetrics()
 
   $scope.$on 'reload', (event) ->
-    console.log 'JobPlanMetricsController'
     loadMetrics() if $scope.nodeid and !$scope.dragging
 
   loadMetrics() if $scope.nodeid
