@@ -42,7 +42,7 @@ angular.module('flinkApp')
 
 # --------------------------------------
 
-.controller 'SingleJobController', ($scope, $state, $stateParams, JobsService, $rootScope, flinkConfig, $interval) ->
+.controller 'SingleJobController', ($scope, $state, $stateParams, JobsService, MetricsService, $rootScope, flinkConfig, $interval) ->
   console.log 'SingleJobController'
 
   $scope.jobid = $stateParams.jobid
@@ -57,6 +57,7 @@ angular.module('flinkApp')
     $scope.job = data
     $scope.plan = data.plan
     $scope.vertices = data.vertices
+    MetricsService.setupMetrics($stateParams.jobid, data.vertices)
 
   refresher = $interval ->
     JobsService.loadJob($stateParams.jobid).then (data) ->
@@ -106,6 +107,7 @@ angular.module('flinkApp')
       $scope.operatorCheckpointStats = null
 
       $scope.$broadcast 'reload'
+      $scope.$broadcast 'node:change', $scope.nodeid
 
     else
       $scope.nodeid = null
@@ -266,17 +268,20 @@ angular.module('flinkApp')
   $scope.window = MetricsService.getWindow()
   $scope.availableMetrics = null
 
+  $scope.$on '$destroy', ->
+    MetricsService.unRegisterObserver()
+
   loadMetrics = ->
     JobsService.getVertex($scope.nodeid).then (data) ->
       $scope.vertex = data
 
     MetricsService.getAvailableMetrics($scope.jobid, $scope.nodeid).then (data) ->
       $scope.availableMetrics = data
-      setup = MetricsService.getMetricsSetup($scope.jobid, $scope.nodeid)
-      $scope.metrics = setup.names
+      $scope.metrics = MetricsService.getMetricsSetup($scope.jobid, $scope.nodeid).names
 
-      MetricsService.getMetrics($scope.jobid, $scope.nodeid, setup.names).then (data) ->
+      MetricsService.registerObserver($scope.jobid, $scope.nodeid, (data) ->
         $scope.$broadcast "metrics:data:update", data.timestamp, data.values
+      )
 
   $scope.dropped = (event, index, item, external, type) ->
 
@@ -301,9 +306,8 @@ angular.module('flinkApp')
   $scope.getValues = (metric) ->
     MetricsService.getValues($scope.jobid, $scope.nodeid, metric)
 
-  $scope.$on 'reload', (event) ->
-#    loadMetrics() if $scope.nodeid and !$scope.availableMetrics
-    loadMetrics() if $scope.nodeid and !$scope.dragging
+  $scope.$on 'node:change', (event, nodeid) ->
+    loadMetrics() if !$scope.dragging
 
   loadMetrics() if $scope.nodeid
 

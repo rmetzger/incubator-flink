@@ -18,11 +18,51 @@
 
 angular.module('flinkApp')
 
-.service 'MetricsService', ($http, $q, flinkConfig) ->
+.service 'MetricsService', ($http, $q, flinkConfig, $interval) ->
   console.log 'MetricsService'
 
   @metrics = {}
   @values = {}
+  @watched = {}
+  @observer = {
+    jobid: null
+    nodeid: null
+    callback: null
+  }
+
+  @refresh = $interval =>
+    angular.forEach @watched, (v, jobid) =>
+      angular.forEach v, (nodeid, nk) =>
+        @getAllAvailableMetrics(jobid, nodeid).then (data) =>
+          names = []
+          angular.forEach data, (metric, mk) =>
+            names.push metric.id
+
+          @getMetrics(jobid, nodeid, names).then (values) =>
+            if jobid == @observer.jobid && nodeid == @observer.nodeid
+              @observer.callback(values) if @observer.callback
+
+
+  , flinkConfig["refresh-interval"]
+
+  @registerObserver = (jobid, nodeid, callback) ->
+    @observer.jobid = jobid
+    @observer.nodeid = nodeid
+    @observer.callback = callback
+
+  @unRegisterObserver = ->
+    @observer = {
+      jobid: null
+      nodeid: null
+      callback: null
+    }
+
+  @setupMetrics = (jobid, vertices) ->
+    @setupLS()
+
+    @watched[jobid] = []
+    angular.forEach vertices, (v, k) =>
+      @watched[jobid].push(v.id) if v.id
 
   @getWindow = ->
     100
@@ -121,6 +161,15 @@ angular.module('flinkApp')
           results.push(v)
 
       deferred.resolve(results)
+
+    deferred.promise
+
+  @getAllAvailableMetrics = (jobid, nodeid) =>
+    deferred = $q.defer()
+
+    $http.get flinkConfig.jobServer + "jobs/" + jobid + "/vertices/" + nodeid + "/metrics"
+    .success (data) =>
+      deferred.resolve(data.available)
 
     deferred.promise
 
