@@ -19,17 +19,48 @@
 angular.module('flinkApp')
 
 .service 'MetricsService', ($http, $q, flinkConfig) ->
-  #  @metrics = [ "elements-in", "elements-out", "bytes-in", "bytes-out" ]
+  console.log 'MetricsService'
+
   @metrics = {}
+  @values = {}
+
+  @getWindow = ->
+    100
 
   @setupLS = ->
     if !localStorage.flinkMetrics?
-      @saveToLS()
+      @saveSetup()
 
     @metrics = JSON.parse(localStorage.flinkMetrics)
 
-  @saveToLS = ->
+  @saveSetup = ->
     localStorage.flinkMetrics = JSON.stringify(@metrics)
+
+  @saveValue = (jobid, nodeid, value) ->
+    unless @values[jobid]?
+      @values[jobid] = {}
+
+    unless @values[jobid][nodeid]?
+      @values[jobid][nodeid] = []
+
+    @values[jobid][nodeid].push(value)
+
+    if @values[jobid][nodeid].length > @getWindow()
+      @values[jobid][nodeid].shift()
+
+  @getValues = (jobid, nodeid, metricid) ->
+    return [] unless @values[jobid]?
+    return [] unless @values[jobid][nodeid]?
+
+    results = []
+    angular.forEach @values[jobid][nodeid], (v, k) =>
+      if v.values[metricid]?
+        results.push {
+          x: v.timestamp
+          y: v.values[metricid]
+        }
+
+    results
 
   @setupLSFor = (jobid, nodeid) ->
     if !@metrics[jobid]?
@@ -43,14 +74,14 @@ angular.module('flinkApp')
 
     @metrics[jobid][nodeid].push(metricid)
 
-    @saveToLS()
+    @saveSetup()
 
   @removeMetric = (jobid, nodeid, metricid) =>
     if @metrics[jobid][nodeid]?
       i = @metrics[jobid][nodeid].indexOf(metricid)
       @metrics[jobid][nodeid].splice(i, 1) if i != -1
 
-      @saveToLS()
+      @saveSetup()
 
   @orderMetrics = (jobid, nodeid, item, index) ->
     @setupLSFor(jobid, nodeid)
@@ -63,7 +94,7 @@ angular.module('flinkApp')
 
     @metrics[jobid][nodeid].splice(index, 0, item)
 
-    @saveToLS()
+    @saveSetup()
 
   @getMetricsSetup = (jobid, nodeid) =>
     fl = []
@@ -99,12 +130,17 @@ angular.module('flinkApp')
     ids = metricIds.join(",")
 
     $http.get flinkConfig.jobServer + "jobs/" + jobid + "/vertices/" + nodeid + "/metrics?get=" + ids
-    .success (data) ->
+    .success (data) =>
       result = {}
       angular.forEach data, (v, k) ->
-        result[v.id] = v.value
+        result[v.id] = parseInt(v.value)
 
-        deferred.resolve(result)
+      newValue = {
+        timestamp: Date.now()
+        values: result
+      }
+      @saveValue(jobid, nodeid, newValue)
+      deferred.resolve(newValue)
 
     deferred.promise
 

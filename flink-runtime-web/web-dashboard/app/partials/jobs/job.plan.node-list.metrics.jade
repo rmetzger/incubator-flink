@@ -21,6 +21,7 @@ p.p-info(ng-if="!nodeid")
 nav.navbar.navbar-default.navbar-secondary-additional.navbar-secondary-additional-2(ng-if="nodeid")
   .navbar-info {{ vertex.name }}
   .navbar-info {{ nodeid }}
+
   .dropup.add-metrics(ng-if="availableMetrics.length")
     button.btn.btn-default.navbar-btn.dropdown-toggle(type='button', data-toggle='dropdown')
       | Add metric
@@ -36,7 +37,7 @@ nav.navbar.navbar-default.navbar-secondary-additional.navbar-secondary-additiona
 
 ul.metric-row(ng-if="nodeid && metrics.length > 0" dnd-list="metrics" dnd-drop="dropped(event, index, item, external, type, external)")
   li.metric-col(ng-repeat="metric in metrics" dnd-draggable="metric" dnd-dragstart="dragStart()" dnd-dragend="dragEnd()" dnd-canceled="dragEnd()")
-    metrics-graph(mtype="{{metric}}" options="options" data="data" remove-metric="removeMetric(metric)")
+    metrics-graph(mtype="{{metric}}" window="window" get-values="getValues(metric)" remove-metric="removeMetric(metric)")
 
 .clearfix
 

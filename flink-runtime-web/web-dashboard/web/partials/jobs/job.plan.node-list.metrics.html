@@ -36,7 +36,7 @@ limitations under the License.
 </div>
 <ul ng-if="nodeid &amp;&amp; metrics.length &gt; 0" dnd-list="metrics" dnd-drop="dropped(event, index, item, external, type, external)" class="metric-row">
   <li ng-repeat="metric in metrics" dnd-draggable="metric" dnd-dragstart="dragStart()" dnd-dragend="dragEnd()" dnd-canceled="dragEnd()" class="metric-col">
-    <metrics-graph mtype="{{metric}}" options="options" data="data" remove-metric="removeMetric(metric)"></metrics-graph>
+    <metrics-graph mtype="{{metric}}" window="window" get-values="getValues(metric)" remove-metric="removeMetric(metric)"></metrics-graph>
   </li>
 </ul>
 <div class="clearfix"></div>

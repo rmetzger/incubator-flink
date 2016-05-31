@@ -263,6 +263,8 @@ angular.module('flinkApp')
   console.log 'JobPlanMetricsController'
 
   $scope.dragging = false
+  $scope.window = MetricsService.getWindow()
+  $scope.availableMetrics = null
 
   loadMetrics = ->
     JobsService.getVertex($scope.nodeid).then (data) ->
@@ -274,7 +276,7 @@ angular.module('flinkApp')
       $scope.metrics = setup.names
 
       MetricsService.getMetrics($scope.jobid, $scope.nodeid, setup.names).then (data) ->
-        $scope.$broadcast "metrics:data:update", data
+        $scope.$broadcast "metrics:data:update", data.timestamp, data.values
 
   $scope.dropped = (event, index, item, external, type) ->
 
@@ -296,7 +298,11 @@ angular.module('flinkApp')
     MetricsService.removeMetric($scope.jobid, $scope.nodeid, metricId)
     loadMetrics()
 
+  $scope.getValues = (metric) ->
+    MetricsService.getValues($scope.jobid, $scope.nodeid, metric)
+
   $scope.$on 'reload', (event) ->
+#    loadMetrics() if $scope.nodeid and !$scope.availableMetrics
     loadMetrics() if $scope.nodeid and !$scope.dragging
 
   loadMetrics() if $scope.nodeid

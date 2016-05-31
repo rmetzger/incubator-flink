@@ -32,18 +32,26 @@ angular.module('flinkApp')
   replace: true
   scope:
     mtype: "@"
+    window: "="
     removeMetric: "&"
+    getValues: "&"
 
   link: (scope, element, attrs) ->
     scope.value = null
     scope.data = [{
-      values: []
+      values: scope.getValues()
     }]
 
     scope.options = {
       chart:
         type: 'lineChart'
         showLegend: false
+        margin: {
+          top: 15
+          left: 50
+          bottom: 30
+          right: 30
+        }
         height: 200
         x: (d, i) ->
           d.x
@@ -60,10 +68,13 @@ angular.module('flinkApp')
     scope.remove = ->
       scope.$destroy()
 
-    scope.$on 'metrics:data:update', (event, data) ->
+    scope.$on 'metrics:data:update', (event, timestamp, data) ->
       scope.value = parseInt(data[scope.mtype])
 
       scope.data[0].values.push {
-        x: Date.now()
+        x: timestamp
         y: scope.value
       }
+
+      if scope.data[0].values.length > scope.window
+        scope.data[0].values.shift()
