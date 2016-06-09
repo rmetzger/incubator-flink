@@ -233,9 +233,9 @@ public class RMQConnectionConfig implements Serializable {
 		ConnectionFactory factory = new ConnectionFactory();
 		if (this.uri != null && !this.uri.isEmpty()){
 			try {
-				factory.setUri(getUri());
-			}catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e){
-				LOG.error("Failed to parse uri {}", e.getMessage());
+				factory.setUri(this.uri);
+			} catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
+				LOG.error("Failed to parse uri", e);
 				throw e;
 			}
 		} else {
