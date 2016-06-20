@@ -24,7 +24,6 @@ import org.apache.flink.streaming.connectors.kinesis.FlinkKinesisConsumer;
 import org.apache.flink.streaming.connectors.kinesis.FlinkKinesisProducer;
 import org.apache.flink.streaming.connectors.kinesis.KinesisPartitioner;
 import org.apache.flink.streaming.connectors.kinesis.config.KinesisConfigConstants;
-import org.apache.flink.streaming.connectors.kinesis.examples.ProduceIntoKinesis;
 import org.apache.flink.streaming.connectors.kinesis.serialization.KinesisSerializationSchema;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
@@ -50,7 +49,7 @@ public class ManualConsumerProducerTest {
 		StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironment();
 		see.setParallelism(4);
 
-		DataStream<String> simpleStringStream = see.addSource(new ProduceIntoKinesis.EventsGenerator());
+		DataStream<String> simpleStringStream = see.addSource(new ManualProducerTest.EventsGenerator());
 
 		Properties kinesisProducerConfig = new Properties();
 		kinesisProducerConfig.setProperty(KinesisConfigConstants.CONFIG_AWS_REGION, pt.getRequired("region"));

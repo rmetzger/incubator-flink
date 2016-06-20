@@ -16,13 +16,14 @@
  */
 package org.apache.flink.streaming.connectors.kinesis.manualtests;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kinesis.FlinkKinesisProducer;
 import org.apache.flink.streaming.connectors.kinesis.KinesisPartitioner;
 import org.apache.flink.streaming.connectors.kinesis.config.KinesisConfigConstants;
-import org.apache.flink.streaming.connectors.kinesis.examples.ProduceIntoKinesis;
 import org.apache.flink.streaming.connectors.kinesis.serialization.KinesisSerializationSchema;
 
 import java.nio.ByteBuffer;
@@ -48,7 +49,7 @@ public class ManualProducerTest {
 		StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironment();
 		see.setParallelism(4);
 
-		DataStream<String> simpleStringStream = see.addSource(new ProduceIntoKinesis.EventsGenerator());
+		DataStream<String> simpleStringStream = see.addSource(new EventsGenerator());
 
 		Properties kinesisProducerConfig = new Properties();
 		kinesisProducerConfig.setProperty(KinesisConfigConstants.CONFIG_AWS_REGION, pt.getRequired("region"));
@@ -87,5 +88,23 @@ public class ManualProducerTest {
 		simpleStringStream.addSink(kinesis);
 
 		see.execute();
+	}
+
+	public static class EventsGenerator implements SourceFunction<String> {
+		private boolean running = true;
+
+		@Override
+		public void run(SourceContext<String> ctx) throws Exception {
+			long seq = 0;
+			while(running) {
+				Thread.sleep(10);
+				ctx.collect((seq++) + "-" + RandomStringUtils.randomAlphabetic(12));
+			}
+		}
+
+		@Override
+		public void cancel() {
+			running = false;
+		}
 	}
 }

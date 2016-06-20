@@ -85,6 +85,8 @@ under the License.
 			<groupId>com.amazonaws</groupId>
 			<artifactId>amazon-kinesis-producer</artifactId>
 			<version>${aws.kinesis-kpl.version}</version>
+			<!-- Due to legal restrictions, its crucial to keep this dependency under test scope for now -->
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -104,6 +106,10 @@ under the License.
 					<groupId>com.amazonaws</groupId>
 					<artifactId>aws-java-sdk-cloudwatch</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>com.google.protobuf</groupId>
+					<artifactId>protobuf-java</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 
@@ -111,51 +117,13 @@ under the License.
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>shade-flink</id>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<promoteTransitiveDependencies>true</promoteTransitiveDependencies>
-							<artifactSet combine.children="append">
-								<includes>
-									<include>com.amazonaws:*</include>
-									<include>com.google.protobuf:*</include>
-								</includes>
-							</artifactSet>
-							<relocations combine.children="override">
-								<!-- DO NOT RELOCATE GUAVA IN THIS PACKAGE -->
-								<relocation>
-									<pattern>org.objectweb.asm</pattern>
-									<shadedPattern>org.apache.flink.shaded.org.objectweb.asm</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>com.google.protobuf</pattern>
-									<shadedPattern>org.apache.flink.kinesis.shaded.com.google.protobuf</shadedPattern>
-								</relocation>
-							</relocations>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+			<!--
+			We can not build a test-jar for this package due to legal restrictions:
+			The Apache Software Foundation doesn't allow dependencies to usage restricted
+			software.
+			This module depends on the KPL and KCL, which both are licensed under the Amazon
+			Software License, restricted to usage with Amazon Cloud Services.
+			-->
 		</plugins>
 	</build>
 </project>
