@@ -27,6 +27,8 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
 import org.apache.flink.util.SerializedValue;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.TopicPartition;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -48,24 +50,24 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 public abstract class AbstractFetcher<T, KPH> {
 	
-	private static final int NO_TIMESTAMPS_WATERMARKS = 0;
-	private static final int PERIODIC_WATERMARKS = 1;
-	private static final int PUNCTUATED_WATERMARKS = 2;
+	protected static final int NO_TIMESTAMPS_WATERMARKS = 0;
+	protected static final int PERIODIC_WATERMARKS = 1;
+	protected static final int PUNCTUATED_WATERMARKS = 2;
 	
 	// ------------------------------------------------------------------------
 	
 	/** The source context to emit records and watermarks to */
-	private final SourceContext<T> sourceContext;
+	protected final SourceContext<T> sourceContext;
 
 	/** The lock that guarantees that record emission and state updates are atomic,
 	 * from the view of taking a checkpoint */
-	private final Object checkpointLock;
+	protected final Object checkpointLock;
 
 	/** All partitions (and their state) that this fetcher is subscribed to */
 	private final KafkaTopicPartitionState<KPH>[] allPartitions;
 
 	/** The mode describing whether the fetcher also generates timestamps and watermarks */
-	private final int timestampWatermarkMode;
+	protected final int timestampWatermarkMode;
 
 	/** Flag whether to register metrics for the fetcher */
 	protected final boolean useMetrics;
@@ -210,12 +212,11 @@ public abstract class AbstractFetcher<T, KPH> {
 	 * 
 	 * <p>Implementation Note: This method is kept brief to be JIT inlining friendly.
 	 * That makes the fast path efficient, the extended paths are called as separate methods.
-	 * 
-	 * @param record The record to emit
+	 *  @param record The record to emit
 	 * @param partitionState The state of the Kafka partition from which the record was fetched
-	 * @param offset The offset from which the record was fetched
+	 * @param kafkaRecord The original Kafka record
 	 */
-	protected final void emitRecord(T record, KafkaTopicPartitionState<KPH> partitionState, long offset) {
+	protected void emitRecord(T record, KafkaTopicPartitionState<KPH> partitionState, ConsumerRecord<byte[], byte[]> kafkaRecord) throws Exception {
 		if (timestampWatermarkMode == NO_TIMESTAMPS_WATERMARKS) {
 			// fast path logic, in case there are no watermarks
 
@@ -223,14 +224,14 @@ public abstract class AbstractFetcher<T, KPH> {
 			// atomicity of record emission and offset state update
 			synchronized (checkpointLock) {
 				sourceContext.collect(record);
-				partitionState.setOffset(offset);
+				partitionState.setOffset(kafkaRecord.offset());
 			}
 		}
 		else if (timestampWatermarkMode == PERIODIC_WATERMARKS) {
-			emitRecordWithTimestampAndPeriodicWatermark(record, partitionState, offset);
+			emitRecordWithTimestampAndPeriodicWatermark(record, partitionState, kafkaRecord.offset());
 		}
 		else {
-			emitRecordWithTimestampAndPunctuatedWatermark(record, partitionState, offset);
+			emitRecordWithTimestampAndPunctuatedWatermark(record, partitionState, kafkaRecord.offset());
 		}
 	}
 
