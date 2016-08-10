@@ -156,7 +156,7 @@ angular.module('flinkApp')
     $http.get flinkConfig.jobServer + "jobs/" + jobid + "/vertices/" + nodeid + "/metrics"
     .success (data) =>
       results = []
-      angular.forEach data.available, (v, k) =>
+      angular.forEach data, (v, k) =>
         if @metrics[jobid][nodeid].indexOf(v.id) == -1
           results.push(v)
 
@@ -169,7 +169,7 @@ angular.module('flinkApp')
 
     $http.get flinkConfig.jobServer + "jobs/" + jobid + "/vertices/" + nodeid + "/metrics"
     .success (data) =>
-      deferred.resolve(data.available)
+      deferred.resolve(data)
 
     deferred.promise
 
