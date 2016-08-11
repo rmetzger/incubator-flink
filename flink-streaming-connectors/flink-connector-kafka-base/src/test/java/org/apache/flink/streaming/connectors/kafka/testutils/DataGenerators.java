@@ -74,11 +74,11 @@ public class DataGenerators {
 					}
 				});
 
-		stream.addSink(testServer.getProducer(topic,
+		testServer.produceIntoKafka(stream, topic,
 				new KeyedSerializationSchemaWrapper<>(new TypeInformationSerializationSchema<>(resultType, env.getConfig())),
 				FlinkKafkaProducerBase.getPropertiesFromBrokerList(testServer.getBrokerConnectionString()),
 				new Tuple2Partitioner(numPartitions)
-		));
+		);
 
 		env.execute("Data generator (Int, Int) stream to topic " + topic);
 	}
@@ -135,17 +135,16 @@ public class DataGenerators {
 					}
 				});
 
-		stream
-				.rebalance()
-				.addSink(testServer.getProducer(topic,
-						new KeyedSerializationSchemaWrapper<>(new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, env.getConfig())),
-						FlinkKafkaProducerBase.getPropertiesFromBrokerList(testServer.getBrokerConnectionString()),
-						new KafkaPartitioner<Integer>() {
-							@Override
-							public int partition(Integer next, byte[] serializedKey, byte[] serializedValue, int numPartitions) {
-								return next % numPartitions;
-							}
-						}));
+		stream = stream.rebalance();
+		testServer.produceIntoKafka(stream, topic,
+				new KeyedSerializationSchemaWrapper<>(new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, env.getConfig())),
+				FlinkKafkaProducerBase.getPropertiesFromBrokerList(testServer.getBrokerConnectionString()),
+				new KafkaPartitioner<Integer>() {
+					@Override
+					public int partition(Integer next, byte[] serializedKey, byte[] serializedValue, int numPartitions) {
+						return next % numPartitions;
+					}
+				});
 
 		env.execute("Scrambles int sequence generator");
 	}
@@ -171,44 +170,45 @@ public class DataGenerators {
 		@Override
 		public void run() {
 			// we manually feed data into the Kafka sink
-			FlinkKafkaProducerBase<String> producer = null;
-			try {
-				Properties producerProperties = FlinkKafkaProducerBase.getPropertiesFromBrokerList(server.getBrokerConnectionString());
-				producerProperties.setProperty("retries", "3");
-				producer = server.getProducer(topic,
-						new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()),
-						producerProperties, new FixedPartitioner<String>());
-				producer.setRuntimeContext(new MockRuntimeContext(1,0));
-				producer.open(new Configuration());
-				
-				final StringBuilder bld = new StringBuilder();
-				final Random rnd = new Random();
-				
-				while (running) {
-					bld.setLength(0);
-					
-					int len = rnd.nextInt(100) + 1;
-					for (int i = 0; i < len; i++) {
-						bld.append((char) (rnd.nextInt(20) + 'a') );
-					}
-					
-					String next = bld.toString();
-					producer.invoke(next);
-				}
-			}
-			catch (Throwable t) {
-				this.error = t;
-			}
-			finally {
-				if (producer != null) {
-					try {
-						producer.close();
-					}
-					catch (Throwable t) {
-						// ignore
-					}
-				}
-			}
+			// TODO FIXME
+
+//			FlinkKafkaProducerBase<String> producer = null;
+//			try {
+//				Properties producerProperties = FlinkKafkaProducerBase.getPropertiesFromBrokerList(server.getBrokerConnectionString());
+//				producerProperties.setProperty("retries", "3");
+//				producer = server.produceIntoKafka(topic,
+//						new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()),
+//						producerProperties, new FixedPartitioner<String>());
+//				producer.setRuntimeContext(new MockRuntimeContext(1,0));
+//				producer.open(new Configuration());
+//
+//				final StringBuilder bld = new StringBuilder();
+//				final Random rnd = new Random();
+//
+//				while (running) {
+//					bld.setLength(0);
+//					int len = rnd.nextInt(100) + 1;
+//					for (int i = 0; i < len; i++) {
+//						bld.append((char) (rnd.nextInt(20) + 'a') );
+//					}
+//
+//					String next = bld.toString();
+//					producer.invoke(next);
+//				}
+//			}
+//			catch (Throwable t) {
+//				this.error = t;
+//			}
+//			finally {
+//				if (producer != null) {
+//					try {
+//						producer.close();
+//					}
+//					catch (Throwable t) {
+//						// ignore
+//					}
+//				}
+//			}
 		}
 		
 		public void shutdown() {

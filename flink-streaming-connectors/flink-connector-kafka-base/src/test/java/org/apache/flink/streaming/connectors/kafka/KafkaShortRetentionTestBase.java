@@ -151,7 +151,7 @@ public class KafkaShortRetentionTestBase implements Serializable {
 				running = false;
 			}
 		});
-		stream.addSink(kafkaServer.getProducer(topic, new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()), standardProps, null));
+		kafkaServer.produceIntoKafka(stream, topic, new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()), standardProps, null);
 
 		// ----------- add consumer dataflow ----------
 

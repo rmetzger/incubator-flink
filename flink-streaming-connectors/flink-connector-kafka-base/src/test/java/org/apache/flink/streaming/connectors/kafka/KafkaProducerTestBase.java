@@ -104,11 +104,10 @@ public abstract class KafkaProducerTestBase extends KafkaTestBase {
 			.setParallelism(1);
 			
 			// sink partitions into 
-			stream.addSink(kafkaServer.getProducer(topic,
+			kafkaServer.produceIntoKafka(stream, topic,
 					new KeyedSerializationSchemaWrapper<>(serSchema),
 					FlinkKafkaProducerBase.getPropertiesFromBrokerList(brokerConnectionStrings),
-					new CustomPartitioner(parallelism)))
-			.setParallelism(parallelism);
+					new CustomPartitioner(parallelism)).setParallelism(parallelism);
 
 			// ------ consuming topology ---------
 			

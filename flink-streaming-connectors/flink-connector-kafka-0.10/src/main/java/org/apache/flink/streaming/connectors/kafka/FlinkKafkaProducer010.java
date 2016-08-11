@@ -17,8 +17,10 @@
 
 package org.apache.flink.streaming.connectors.kafka;
 
+import org.apache.flink.api.java.operators.DataSink;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.operators.StreamSink;
@@ -55,7 +57,7 @@ public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 	 * @param serializationSchema User defined serialization schema supporting key/value messages
 	 * @param producerConfig Properties with the producer configuration.
 	 */
-	public static <T> SingleOutputStreamOperator writeToKafka(DataStream<T> inStream,
+	public static <T> FlinkKafkaProducer010Configuration writeToKafka(DataStream<T> inStream,
 										String topicId,
 										KeyedSerializationSchema<T> serializationSchema,
 										Properties producerConfig) {
@@ -72,7 +74,7 @@ public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 	 * @param serializationSchema User defined (keyless) serialization schema.
 	 * @param producerConfig Properties with the producer configuration.
 	 */
-	public static <T> SingleOutputStreamOperator writeToKafka(DataStream<T> inStream,
+	public static <T> FlinkKafkaProducer010Configuration writeToKafka(DataStream<T> inStream,
 										String topicId,
 										SerializationSchema<T> serializationSchema,
 										Properties producerConfig) {
@@ -88,7 +90,7 @@ public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 	 *  @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
 	 *  @param customPartitioner A serializable partitioner for assigning messages to Kafka partitions.
 	 */
-	public static <T> FlinkKafkaProducer010Configuration writeToKafka(DataStream<T> inStream,
+	public static <T> FlinkKafkaProducer010Configuration<T> writeToKafka(DataStream<T> inStream,
 																	  String topicId,
 																	  KeyedSerializationSchema<T> serializationSchema,
 																	  Properties producerConfig,
@@ -96,19 +98,19 @@ public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 		GenericTypeInfo<Object> objectTypeInfo = new GenericTypeInfo<>(Object.class);
 		FlinkKafkaProducer010<T> kafkaProducer = new FlinkKafkaProducer010<>(topicId, serializationSchema, producerConfig, customPartitioner);
 		SingleOutputStreamOperator<Object> transformation = inStream.transform("FlinKafkaProducer 0.10.x", objectTypeInfo, kafkaProducer);
-		return new FlinkKafkaProducer010Configuration(transformation, kafkaProducer);
+		return new FlinkKafkaProducer010Configuration<>(transformation, kafkaProducer);
 	}
 
 	/**
 	 * Configuration object returned by the writeToKafka() call.
 	 */
-	public static class FlinkKafkaProducer010Configuration extends SingleOutputStreamOperator {
+	public static class FlinkKafkaProducer010Configuration<T> extends DataStreamSink<T> {
 
 		private final FlinkKafkaProducer09 wrapped09producer;
 		private final FlinkKafkaProducer010 producer;
 
-		private FlinkKafkaProducer010Configuration(SingleOutputStreamOperator wrappedOutputOp, FlinkKafkaProducer010 producer) {
-			super(wrappedOutputOp.getExecutionEnvironment(), wrappedOutputOp.getTransformation());
+		private FlinkKafkaProducer010Configuration(DataStream stream, FlinkKafkaProducer010<T> producer) {
+			super(stream, producer);
 			this.producer = producer;
 			this.wrapped09producer = (FlinkKafkaProducer09) producer.userFunction;
 		}
