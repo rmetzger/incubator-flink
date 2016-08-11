@@ -185,7 +185,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			stream.print();
 			see.execute("No broker test");
 		} catch(RuntimeException re) {
-			if(kafkaServer.getVersion().equals("0.9")) {
+			if(kafkaServer.getVersion().equals("0.9") || kafkaServer.getVersion().equals("0.10")) {
 				Assert.assertTrue("Wrong RuntimeException thrown: " + StringUtils.stringifyException(re),
 						re.getClass().equals(TimeoutException.class) &&
 								re.getMessage().contains("Timeout expired while fetching topic metadata"));
@@ -488,7 +488,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		// launch a producer thread
 		DataGenerators.InfiniteStringsGenerator generator =
-				new DataGenerators.InfiniteStringsGenerator(kafkaServer, topic);
+				new DataGenerators.InfiniteStringsGenerator(kafkaServer, topic, flinkPort);
 		generator.start();
 
 		// launch a consumer asynchronously
@@ -508,7 +508,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 					env.addSource(source).addSink(new DiscardingSink<String>());
 
-					env.execute();
+					env.execute("ConsumerJob");
 				}
 				catch (Throwable t) {
 					jobError.set(t);
@@ -529,7 +529,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		}
 
 		// cancel
-		JobManagerCommunicationUtils.cancelCurrentJob(flink.getLeaderGateway(timeout));
+		JobManagerCommunicationUtils.cancelCurrentJob(flink.getLeaderGateway(timeout), "ConsumerJob");
 
 		// wait for the program to be done and validate that we failed with the right exception
 		runnerThread.join();
@@ -539,6 +539,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		assertTrue(failueCause.getMessage().contains("Job was cancelled"));
 
 		if (generator.isAlive()) {
+			JobManagerCommunicationUtils.cancelCurrentJob(flink.getLeaderGateway(timeout), "String generator");
 			generator.shutdown();
 			generator.join();
 		}

@@ -161,6 +161,7 @@ under the License.
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 	<dependencyManagement>

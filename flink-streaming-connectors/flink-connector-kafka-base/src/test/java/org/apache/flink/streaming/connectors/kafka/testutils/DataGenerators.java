@@ -25,8 +25,10 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeInfoParser;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducerBase;
 import org.apache.flink.streaming.connectors.kafka.KafkaTestEnvironment;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FixedPartitioner;
@@ -35,6 +37,7 @@ import org.apache.flink.streaming.util.serialization.KeyedSerializationSchemaWra
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
 
+import java.io.Serializable;
 import java.util.Properties;
 import java.util.Random;
 
@@ -151,69 +154,68 @@ public class DataGenerators {
 	
 	// ------------------------------------------------------------------------
 	
-	public static class InfiniteStringsGenerator extends Thread {
+	public static class InfiniteStringsGenerator extends Thread implements Serializable{
 
-		private final KafkaTestEnvironment server;
+		private transient KafkaTestEnvironment server;
 		
 		private final String topic;
-		
+
+		private final int flinkPort;
+
 		private volatile Throwable error;
 		
 		private volatile boolean running = true;
 
 		
-		public InfiniteStringsGenerator(KafkaTestEnvironment server, String topic) {
+		public InfiniteStringsGenerator(KafkaTestEnvironment server, String topic, int flinkPort) {
 			this.server = server;
 			this.topic = topic;
+			this.flinkPort = flinkPort;
 		}
 
 		@Override
 		public void run() {
 			// we manually feed data into the Kafka sink
-			// TODO FIXME
+			try {
+				final StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
+				DataStream<String> stream = env.addSource(new SourceFunction<String>() {
+					@Override
+					public void run(SourceContext<String> ctx) throws Exception {
+						final StringBuilder bld = new StringBuilder();
+						final Random rnd = new Random();
+						while (running) {
+							bld.setLength(0);
+							int len = rnd.nextInt(100) + 1;
+							for (int i = 0; i < len; i++) {
+								bld.append((char) (rnd.nextInt(20) + 'a'));
+							}
 
-//			FlinkKafkaProducerBase<String> producer = null;
-//			try {
-//				Properties producerProperties = FlinkKafkaProducerBase.getPropertiesFromBrokerList(server.getBrokerConnectionString());
-//				producerProperties.setProperty("retries", "3");
-//				producer = server.produceIntoKafka(topic,
-//						new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()),
-//						producerProperties, new FixedPartitioner<String>());
-//				producer.setRuntimeContext(new MockRuntimeContext(1,0));
-//				producer.open(new Configuration());
-//
-//				final StringBuilder bld = new StringBuilder();
-//				final Random rnd = new Random();
-//
-//				while (running) {
-//					bld.setLength(0);
-//					int len = rnd.nextInt(100) + 1;
-//					for (int i = 0; i < len; i++) {
-//						bld.append((char) (rnd.nextInt(20) + 'a') );
-//					}
-//
-//					String next = bld.toString();
-//					producer.invoke(next);
-//				}
-//			}
-//			catch (Throwable t) {
-//				this.error = t;
-//			}
-//			finally {
-//				if (producer != null) {
-//					try {
-//						producer.close();
-//					}
-//					catch (Throwable t) {
-//						// ignore
-//					}
-//				}
-//			}
+							String next = bld.toString();
+							ctx.collect(next);
+						}
+					}
+
+					@Override
+					public void cancel() {
+						running = false;
+					}
+				});
+
+				Properties producerProperties = FlinkKafkaProducerBase.getPropertiesFromBrokerList(server.getBrokerConnectionString());
+				producerProperties.setProperty("retries", "3");
+				server.produceIntoKafka(stream, topic,
+						new KeyedSerializationSchemaWrapper<>(new SimpleStringSchema()),
+						producerProperties, new FixedPartitioner<String>());
+				env.execute("String generator");
+			}
+			catch (Throwable t) {
+				this.error = t;
+			}
 		}
 		
 		public void shutdown() {
 			this.running = false;
-			this.interrupt();
+			// this.interrupt();
 		}
 		
 		public Throwable getError() {

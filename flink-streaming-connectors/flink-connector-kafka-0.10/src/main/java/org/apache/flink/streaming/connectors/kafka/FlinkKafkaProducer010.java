@@ -44,7 +44,7 @@ public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 	/**
 	 * Flag controlling whether we are writing the Flink record's timestamp into Kafka.
 	 */
-	private boolean writeTimestampToKafka = true;
+	private boolean writeTimestampToKafka = false;
 
 	// ---------------------- "Constructors" for the producer ------------------ //
 
@@ -140,6 +140,7 @@ public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 
 		/**
 		 * If set to true, Flink will write the (event time) timestamp attached to each record into Kafka.
+		 * Timestamps must be positive for Kafka to accept them.
 		 *
 		 * @param writeTimestampToKafka Flag indicating if Flink's internal timestamps are written to Kafka.
 		 */
