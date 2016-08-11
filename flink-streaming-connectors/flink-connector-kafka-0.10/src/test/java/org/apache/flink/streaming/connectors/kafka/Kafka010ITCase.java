@@ -33,10 +33,6 @@ public class Kafka010ITCase extends KafkaConsumerTestBase {
 	//  Suite of Tests
 	// ------------------------------------------------------------------------
 
-	@Override
-	public String getExpectedKafkaVersion() {
-		return "0.10";
-	}
 
 	@Test(timeout = 60000)
 	public void testFailOnNoBroker() throws Exception {
@@ -124,7 +120,7 @@ public class Kafka010ITCase extends KafkaConsumerTestBase {
 
 	@Test(timeout = 60000)
 	public void testMetricsAndEndOfStream() throws Exception {
-		runMetricsAndEndOfStreamTest();
+		runEndOfStreamTest();
 	}
 
 	@Test
