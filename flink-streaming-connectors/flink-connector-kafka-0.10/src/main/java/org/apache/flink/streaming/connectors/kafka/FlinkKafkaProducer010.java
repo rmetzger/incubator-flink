@@ -17,14 +17,11 @@
 
 package org.apache.flink.streaming.connectors.kafka;
 
-import org.apache.flink.api.java.operators.DataSink;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.operators.StreamSink;
-import org.apache.flink.streaming.api.transformations.StreamTransformation;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FixedPartitioner;
 import org.apache.flink.streaming.connectors.kafka.partitioner.KafkaPartitioner;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -38,6 +35,9 @@ import java.util.Properties;
 
 /**
  * Flink Sink to produce data into a Kafka topic. This producer is compatible with Kafka 0.10.x
+ *
+ * Implementation note: This Producer wraps a Flink Kafka 0.9 Producer, overriding only
+ * the "processElement" / "invoke" method.
  */
 public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 
