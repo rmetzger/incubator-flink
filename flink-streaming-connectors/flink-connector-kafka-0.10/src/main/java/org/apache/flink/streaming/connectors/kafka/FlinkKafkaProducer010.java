@@ -91,10 +91,10 @@ public class FlinkKafkaProducer010<T> extends StreamSink<T> {
 	 *  @param customPartitioner A serializable partitioner for assigning messages to Kafka partitions.
 	 */
 	public static <T> FlinkKafkaProducer010Configuration<T> writeToKafka(DataStream<T> inStream,
-																	  String topicId,
-																	  KeyedSerializationSchema<T> serializationSchema,
-																	  Properties producerConfig,
-																	  KafkaPartitioner<T> customPartitioner) {
+																String topicId,
+																KeyedSerializationSchema<T> serializationSchema,
+																Properties producerConfig,
+																KafkaPartitioner<T> customPartitioner) {
 		GenericTypeInfo<Object> objectTypeInfo = new GenericTypeInfo<>(Object.class);
 		FlinkKafkaProducer010<T> kafkaProducer = new FlinkKafkaProducer010<>(topicId, serializationSchema, producerConfig, customPartitioner);
 		SingleOutputStreamOperator<Object> transformation = inStream.transform("FlinKafkaProducer 0.10.x", objectTypeInfo, kafkaProducer);

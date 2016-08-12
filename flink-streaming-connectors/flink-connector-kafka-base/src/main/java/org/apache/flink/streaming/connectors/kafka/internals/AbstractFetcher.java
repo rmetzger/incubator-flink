@@ -27,7 +27,6 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
 import org.apache.flink.util.SerializedValue;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -212,9 +211,10 @@ public abstract class AbstractFetcher<T, KPH> {
 	 * That makes the fast path efficient, the extended paths are called as separate methods.
 	 * @param record The record to emit
 	 * @param partitionState The state of the Kafka partition from which the record was fetched
+	 * @param offset The offset of the record
 	 * @param kafkaRecord The original Kafka record
 	 */
-	protected void emitRecord(T record, KafkaTopicPartitionState<KPH> partitionState, ConsumerRecord<byte[], byte[]> kafkaRecord) throws Exception {
+	protected <R> void emitRecord(T record, KafkaTopicPartitionState<KPH> partitionState, long offset, R kafkaRecord) throws Exception {
 		if (timestampWatermarkMode == NO_TIMESTAMPS_WATERMARKS) {
 			// fast path logic, in case there are no watermarks
 
@@ -222,14 +222,14 @@ public abstract class AbstractFetcher<T, KPH> {
 			// atomicity of record emission and offset state update
 			synchronized (checkpointLock) {
 				sourceContext.collect(record);
-				partitionState.setOffset(kafkaRecord.offset());
+				partitionState.setOffset(offset);
 			}
 		}
 		else if (timestampWatermarkMode == PERIODIC_WATERMARKS) {
-			emitRecordWithTimestampAndPeriodicWatermark(record, partitionState, kafkaRecord.offset(), Long.MIN_VALUE);
+			emitRecordWithTimestampAndPeriodicWatermark(record, partitionState, offset, Long.MIN_VALUE);
 		}
 		else {
-			emitRecordWithTimestampAndPunctuatedWatermark(record, partitionState, kafkaRecord.offset(), Long.MIN_VALUE);
+			emitRecordWithTimestampAndPunctuatedWatermark(record, partitionState, offset, Long.MIN_VALUE);
 		}
 	}
 

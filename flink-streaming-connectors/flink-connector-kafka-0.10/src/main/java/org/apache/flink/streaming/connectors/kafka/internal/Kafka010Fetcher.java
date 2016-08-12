@@ -64,22 +64,23 @@ public class Kafka010Fetcher<T> extends Kafka09Fetcher<T> {
 	 * Emit record Kafka-timestamp aware.
 	 */
 	@Override
-	protected void emitRecord(T record, KafkaTopicPartitionState<TopicPartition> partitionState, ConsumerRecord<byte[], byte[]> kafkaRecord) throws Exception {
+	protected <R> void emitRecord(T record, KafkaTopicPartitionState<TopicPartition> partitionState, long offset, R kafkaRecord) throws Exception {
+		long timestamp = ((ConsumerRecord) kafkaRecord).timestamp();
 		if (timestampWatermarkMode == NO_TIMESTAMPS_WATERMARKS) {
 			// fast path logic, in case there are no watermarks
 
 			// emit the record, using the checkpoint lock to guarantee
 			// atomicity of record emission and offset state update
 			synchronized (checkpointLock) {
-				sourceContext.collectWithTimestamp(record, kafkaRecord.timestamp());
-				partitionState.setOffset(kafkaRecord.offset());
+				sourceContext.collectWithTimestamp(record, timestamp);
+				partitionState.setOffset(offset);
 			}
 		}
 		else if (timestampWatermarkMode == PERIODIC_WATERMARKS) {
-			emitRecordWithTimestampAndPeriodicWatermark(record, partitionState, kafkaRecord.offset(), kafkaRecord.timestamp());
+			emitRecordWithTimestampAndPeriodicWatermark(record, partitionState, offset, timestamp);
 		}
 		else {
-			emitRecordWithTimestampAndPunctuatedWatermark(record, partitionState, kafkaRecord.offset(), kafkaRecord.timestamp());
+			emitRecordWithTimestampAndPunctuatedWatermark(record, partitionState, offset, timestamp);
 		}
 	}
 
