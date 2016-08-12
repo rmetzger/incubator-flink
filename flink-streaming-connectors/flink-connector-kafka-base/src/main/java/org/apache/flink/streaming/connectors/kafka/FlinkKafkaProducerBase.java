@@ -139,7 +139,7 @@ public abstract class FlinkKafkaProducerBase<IN> extends RichSinkFunction<IN> im
 		requireNonNull(defaultTopicId, "TopicID not set");
 		requireNonNull(serializationSchema, "serializationSchema not set");
 		requireNonNull(producerConfig, "producerConfig not set");
-		ClosureCleaner.ensureSerializable(customPartitioner);
+		ClosureCleaner.clean(customPartitioner, true);
 		ClosureCleaner.ensureSerializable(serializationSchema);
 
 		this.defaultTopicId = defaultTopicId;

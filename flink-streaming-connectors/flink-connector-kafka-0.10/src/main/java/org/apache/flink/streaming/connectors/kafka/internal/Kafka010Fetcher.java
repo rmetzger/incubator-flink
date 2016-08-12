@@ -82,4 +82,9 @@ public class Kafka010Fetcher<T> extends Kafka09Fetcher<T> {
 			emitRecordWithTimestampAndPunctuatedWatermark(record, partitionState, kafkaRecord.offset(), kafkaRecord.timestamp());
 		}
 	}
+
+	@Override
+	protected String getFetcherName() {
+		return "Kafka 0.10 Fetcher";
+	}
 }

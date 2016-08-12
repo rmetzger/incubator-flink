@@ -121,7 +121,7 @@ public class Kafka09Fetcher<T> extends AbstractFetcher<T, TopicPartition> implem
 
 		// rather than running the main fetch loop directly here, we spawn a dedicated thread
 		// this makes sure that no interrupt() call upon canceling reaches the Kafka consumer code
-		Thread runner = new Thread(this, "Kafka 0.9 Fetcher for " + runtimeContext.getTaskNameWithSubtasks());
+		Thread runner = new Thread(this, getFetcherName() + " for " + runtimeContext.getTaskNameWithSubtasks());
 		runner.setDaemon(true);
 		runner.start();
 
@@ -267,6 +267,10 @@ public class Kafka09Fetcher<T> extends AbstractFetcher<T, TopicPartition> implem
 	 */
 	protected void assignPartitionsToConsumer(KafkaConsumer<byte[], byte[]> consumer, List<TopicPartition> topicPartitions) {
 		consumer.assign(topicPartitions);
+	}
+
+	protected String getFetcherName() {
+		return "Kafka 0.9 Fetcher";
 	}
 
 	// ------------------------------------------------------------------------
