@@ -22,7 +22,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 
 
@@ -68,7 +68,7 @@ public class WriteIntoKafka {
 		});
 
 		// write data into Kafka
-		messageStream.addSink(new FlinkKafkaProducer010<>(parameterTool.getRequired("topic"), new SimpleStringSchema(), parameterTool.getProperties()));
+		messageStream.addSink(new FlinkKafkaProducer08<>(parameterTool.getRequired("topic"), new SimpleStringSchema(), parameterTool.getProperties()));
 
 		env.execute("Write into Kafka example");
 	}
