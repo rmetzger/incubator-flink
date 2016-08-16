@@ -64,7 +64,7 @@ public class StreamSourceOperatorTest {
 		// regular stream source operator
 		StreamSource<String, FiniteSource<String>> operator = 
 				new StreamSource<>(new FiniteSource<String>());
-		
+
 		final List<StreamElement> output = new ArrayList<>();
 		
 		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, null);
@@ -237,6 +237,41 @@ public class StreamSourceOperatorTest {
 		when(mockTask.getEnvironment()).thenReturn(env);
 		when(mockTask.getExecutionConfig()).thenReturn(executionConfig);
 		when(mockTask.getAccumulatorMap()).thenReturn(Collections.<String, Accumulator<?, ?>>emptyMap());
+
+		doAnswer(new Answer<ScheduledFuture>() {
+			@Override
+			public ScheduledFuture answer(InvocationOnMock invocation) throws Throwable {
+				final long execTime = (Long) invocation.getArguments()[0];
+				final Triggerable target = (Triggerable) invocation.getArguments()[1];
+
+				if (timeProvider == null) {
+					throw new RuntimeException("The time provider is null");
+				}
+
+				timeProvider.registerTimer(execTime, new Runnable() {
+
+					@Override
+					public void run() {
+						try {
+							target.trigger(execTime);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				});
+				return null;
+			}
+		}).when(mockTask).registerTimer(anyLong(), any(Triggerable.class));
+
+		doAnswer(new Answer<Long>() {
+			@Override
+			public Long answer(InvocationOnMock invocation) throws Throwable {
+				if (timeProvider == null) {
+					throw new RuntimeException("The time provider is null");
+				}
+				return timeProvider.getCurrentProcessingTime();
+			}
+		}).when(mockTask).getCurrentProcessingTime();
 
 		operator.setup(mockTask, cfg, (Output< StreamRecord<T>>) mock(Output.class), false);
 	}

@@ -96,15 +96,14 @@ public class DirectedOutput<OUT> implements Output<StreamRecord<OUT>> {
 
 	@Override
 	public void emitWatermark(Watermark mark) {
-		for (Output<StreamRecord<OUT>> out : allOutputs) {
+		for (Output<StreamRecord<OUT>> out: allOutputs) {
 			out.emitWatermark(mark);
 		}
 	}
 
 	@Override
 	public void emitLatencyMarker(LatencyMarker latencyMarker) {
-		// TODO consider emitting markers randomly
-		for (Output<StreamRecord<OUT>> out : allOutputs) {
+		for (Output<StreamRecord<OUT>> out: allOutputs) {
 			out.emitLatencyMarker(latencyMarker);
 		}
 	}

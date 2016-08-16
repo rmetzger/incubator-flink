@@ -85,6 +85,6 @@ abstract class AbstractQueryableStateOperator<S extends State, IN>
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		// ignore latency marker
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 }
