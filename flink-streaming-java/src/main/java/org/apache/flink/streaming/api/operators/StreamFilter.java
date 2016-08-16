@@ -47,10 +47,6 @@ public class StreamFilter<IN> extends AbstractUdfStreamOperator<IN, FilterFuncti
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		if(isSink) {
-			LOG.info("Lat {}", latencyMarker);
-		} else {
-			output.emitLatencyMarker(latencyMarker);
-		}
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 }

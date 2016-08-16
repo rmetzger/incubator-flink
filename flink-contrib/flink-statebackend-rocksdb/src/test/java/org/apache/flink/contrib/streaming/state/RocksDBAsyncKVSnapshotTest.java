@@ -325,7 +325,7 @@ public class RocksDBAsyncKVSnapshotTest {
 
 		@Override
 		public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-			// ignore
+			reportOrForwardLatencyMarker(latencyMarker);
 		}
 	}
 	

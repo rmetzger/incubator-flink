@@ -31,11 +31,17 @@ public final class LatencyMarker extends StreamElement {
 	/** The time the latency mark is denoting */
 	private final long markedTime;
 
+	private final int vertexID;
+
+	private final int subtaskIndex;
+
 	/**
 	 * Creates a latency mark with the given timestamp
 	 */
-	public LatencyMarker(long markedTime) {
+	public LatencyMarker(long markedTime, int vertexID, int subtaskIndex) {
 		this.markedTime = markedTime;
+		this.vertexID = vertexID;
+		this.subtaskIndex = subtaskIndex;
 	}
 
 	/**
@@ -45,21 +51,52 @@ public final class LatencyMarker extends StreamElement {
 		return markedTime;
 	}
 
+	public int getVertexID() {
+		return vertexID;
+	}
+
+	public int getSubtaskIndex() {
+		return subtaskIndex;
+	}
+
 	// ------------------------------------------------------------------------
-	
+
+
 	@Override
 	public boolean equals(Object o) {
-		return this == o ||
-				o != null && o.getClass() == LatencyMarker.class && ((LatencyMarker) o).markedTime == this.markedTime;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()){
+			return false;
+		}
+
+		LatencyMarker that = (LatencyMarker) o;
+
+		if (markedTime != that.markedTime) {
+			return false;
+		}
+		if (vertexID != that.vertexID) {
+			return false;
+		}
+		return subtaskIndex == that.subtaskIndex;
+
 	}
 
 	@Override
 	public int hashCode() {
-		return (int) (markedTime ^ (markedTime >>> 32));
+		int result = (int) (markedTime ^ (markedTime >>> 32));
+		result = 31 * result + vertexID;
+		result = 31 * result + subtaskIndex;
+		return result;
 	}
 
 	@Override
 	public String toString() {
-		return "LatencyMark @ " + markedTime +" lat = " + (System.currentTimeMillis() - markedTime) + "ms";
+		return "LatencyMarker{" +
+				"markedTime=" + markedTime +
+				", vertexID=" + vertexID +
+				", subtaskIndex=" + subtaskIndex +
+				'}';
 	}
 }

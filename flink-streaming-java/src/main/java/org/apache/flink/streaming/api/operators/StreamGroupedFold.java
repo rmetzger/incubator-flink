@@ -99,11 +99,7 @@ public class StreamGroupedFold<IN, OUT, KEY>
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		if(isSink) {
-			LOG.info("Lat {}", latencyMarker);
-		} else {
-			output.emitLatencyMarker(latencyMarker);
-		}
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 
 	@Override

@@ -79,8 +79,8 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 
 		LatencyMarksEmitter latencyEmitter = null;
 		if(getExecutionConfig().isLatencyTrackingEnabled()) {
-			// todo: maybe emit getOperatorConfig().getVertexID() with the latency mark as well
-			latencyEmitter = new LatencyMarksEmitter<>(lockingObject, collector, getExecutionConfig().getLatencyTrackingInterval());
+			latencyEmitter = new LatencyMarksEmitter<>(lockingObject, collector, getExecutionConfig().getLatencyTrackingInterval(),
+					getOperatorConfig().getVertexID(), getRuntimeContext().getIndexOfThisSubtask());
 		}
 		// copy to a field to give the 'cancel()' method access
 		this.ctx = ctx;
@@ -385,7 +385,7 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 		private final ScheduledFuture<?> latencyMarkTimer;
 
 
-		public LatencyMarksEmitter(final Object lockingObject, final Output<StreamRecord<OUT>> output, long latencyTrackingInterval) {
+		public LatencyMarksEmitter(final Object lockingObject, final Output<StreamRecord<OUT>> output, long latencyTrackingInterval, final int vertexID, final int subtaskIndex) {
 			this.scheduleExecutor = Executors.newScheduledThreadPool(1);
 
 			this.latencyMarkTimer = scheduleExecutor.scheduleAtFixedRate(new Runnable() {
@@ -393,8 +393,7 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 				public void run() {
 					final long currentTime = System.currentTimeMillis();
 					synchronized (lockingObject) {
-						output.emitLatencyMarker(new LatencyMarker(currentTime));
-						LOG.info("Emitting marker {}", currentTime);
+						output.emitLatencyMarker(new LatencyMarker(currentTime, vertexID, subtaskIndex));
 					}
 				}
 			}, 0, latencyTrackingInterval, TimeUnit.MILLISECONDS);

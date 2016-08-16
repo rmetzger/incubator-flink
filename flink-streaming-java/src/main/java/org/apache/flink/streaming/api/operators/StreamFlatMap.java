@@ -56,10 +56,6 @@ public class StreamFlatMap<IN, OUT>
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		if(isSink) {
-			LOG.info("Lat {}", latencyMarker);
-		} else {
-			output.emitLatencyMarker(latencyMarker);
-		}
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 }

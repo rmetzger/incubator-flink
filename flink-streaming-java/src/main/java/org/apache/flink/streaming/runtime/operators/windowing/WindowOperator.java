@@ -464,11 +464,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		if(isSink) {
-			LOG.info("Latency Marker {}", latencyMarker);
-		} else {
-			output.emitLatencyMarker(latencyMarker);
-		}
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 
 	@Override

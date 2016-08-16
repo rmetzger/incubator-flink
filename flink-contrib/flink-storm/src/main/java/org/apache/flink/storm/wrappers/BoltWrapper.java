@@ -327,6 +327,7 @@ public class BoltWrapper<IN, OUT> extends AbstractStreamOperator<OUT> implements
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		reportOrForwardLatencyMarker(latencyMarker);
 		this.output.emitLatencyMarker(latencyMarker);
 	}
 

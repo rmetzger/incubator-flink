@@ -99,10 +99,6 @@ public abstract class AbstractCEPBasePatternOperator<IN, OUT>
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		if(isSink) {
-			LOG.info("lat {}", latencyMarker);
-		} else {
-			output.emitLatencyMarker(latencyMarker);
-		}
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 }

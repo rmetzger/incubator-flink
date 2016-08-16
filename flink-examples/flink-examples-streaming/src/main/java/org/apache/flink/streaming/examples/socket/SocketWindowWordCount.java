@@ -21,9 +21,12 @@ package org.apache.flink.streaming.examples.socket;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
+import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
 
 /**
@@ -44,8 +47,8 @@ public class SocketWindowWordCount {
 
 		// the port to connect to
 		final int port;
+		final ParameterTool params = ParameterTool.fromArgs(args);
 		try {
-			final ParameterTool params = ParameterTool.fromArgs(args);
 			port = params.getInt("port");
 		} catch (Exception e) {
 			System.err.println("No port specified. Please run 'SocketWindowWordCount --port <port>', " +
@@ -56,10 +59,15 @@ public class SocketWindowWordCount {
 		} 
 		
 		// get the execution environment
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		Configuration config = new Configuration();
+		config.setString("metrics.reporters", "my_jmx_reporter");
+		config.setString("metrics.reporter.my_jmx_reporter.class", "org.apache.flink.metrics.jmx.JMXReporter");
+		config.setString("metrics.reporter.my_jmx_reporter.port", "9020-9040");
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(4, config);
 
 		// get input data by connecting to the socket
 		DataStream<String> text = env.socketTextStream("localhost", port, "\n");
+		text = text.union(env.addSource(new FlinkKafkaConsumer08<>("test", new SimpleStringSchema(), params.getProperties())));
 
 		// parse the data, group it, window it, and aggregate the counts 
 		DataStream<WordWithCount> windowCounts = text

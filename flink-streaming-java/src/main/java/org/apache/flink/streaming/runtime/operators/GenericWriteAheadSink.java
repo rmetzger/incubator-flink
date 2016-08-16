@@ -194,7 +194,7 @@ public abstract class GenericWriteAheadSink<IN> extends AbstractStreamOperator<I
 
 	@Override
 	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		LOG.info("lat {}", latencyMarker);
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 
 	/**

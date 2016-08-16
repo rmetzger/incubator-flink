@@ -137,10 +137,14 @@ public final class MultiplexingStreamRecordSerializer<T> extends TypeSerializer<
 		else if (tag == TAG_REC_WITHOUT_TIMESTAMP) {
 			typeSerializer.copy(source, target);
 		}
-		else if (tag == TAG_WATERMARK || tag == TAG_LATENCY_MARKER) {
+		else if (tag == TAG_WATERMARK) {
 			target.writeLong(source.readLong());
 		}
-		else {
+		else if (tag == TAG_LATENCY_MARKER) {
+			target.writeLong(source.readLong());
+			target.writeInt(source.readInt());
+			target.writeInt(source.readInt());
+		} else {
 			throw new IOException("Corrupt stream, found tag: " + tag);
 		}
 	}
@@ -165,6 +169,8 @@ public final class MultiplexingStreamRecordSerializer<T> extends TypeSerializer<
 		else if (value.isLatencyMarker()) {
 			target.write(TAG_LATENCY_MARKER);
 			target.writeLong(value.asLatencyMarker().getMarkedTime());
+			target.writeInt(value.asLatencyMarker().getVertexID());
+			target.writeInt(value.asLatencyMarker().getSubtaskIndex());
 		}
 		else {
 			throw new RuntimeException();
@@ -185,7 +191,7 @@ public final class MultiplexingStreamRecordSerializer<T> extends TypeSerializer<
 			return new Watermark(source.readLong());
 		}
 		else if (tag == TAG_LATENCY_MARKER) {
-			return new LatencyMarker(source.readLong());
+			return new LatencyMarker(source.readLong(), source.readInt(), source.readInt());
 		}
 		else {
 			throw new IOException("Corrupt stream, found tag: " + tag);
@@ -212,7 +218,7 @@ public final class MultiplexingStreamRecordSerializer<T> extends TypeSerializer<
 			return new Watermark(source.readLong());
 		}
 		else if (tag == TAG_LATENCY_MARKER) {
-			return new LatencyMarker(source.readLong());
+			return new LatencyMarker(source.readLong(), source.readInt(), source.readInt());
 		}
 		else {
 			throw new IOException("Corrupt stream, found tag: " + tag);

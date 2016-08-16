@@ -50,7 +50,6 @@ public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFuncti
 		if(!isSink) {
 			throw new IllegalStateException("Stream sink is not marked as a sink");
 		}
-		long now = System.currentTimeMillis();
-		LOG.info("Latency {} ms, marked time {}", now - latencyMarker.getMarkedTime(), latencyMarker.getMarkedTime());
+		reportOrForwardLatencyMarker(latencyMarker);
 	}
 }
