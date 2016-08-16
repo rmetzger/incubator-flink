@@ -27,6 +27,7 @@ import org.apache.flink.runtime.util.ReusingMutableToRegularIteratorWrapper;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTaskState;
 import org.apache.flink.util.ExceptionUtils;
@@ -189,6 +190,11 @@ public abstract class GenericWriteAheadSink<IN> extends AbstractStreamOperator<I
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
 		//don't do anything, since we are a sink
+	}
+
+	@Override
+	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		LOG.info("lat {}", latencyMarker);
 	}
 
 	/**

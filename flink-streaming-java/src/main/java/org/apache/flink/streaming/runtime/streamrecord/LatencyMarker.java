@@ -60,6 +60,6 @@ public final class LatencyMarker extends StreamElement {
 
 	@Override
 	public String toString() {
-		return "LatencyMark @ " + markedTime;
+		return "LatencyMark @ " + markedTime +" lat = " + (System.currentTimeMillis() - markedTime) + "ms";
 	}
 }

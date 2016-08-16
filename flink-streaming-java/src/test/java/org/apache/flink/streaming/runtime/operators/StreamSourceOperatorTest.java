@@ -238,7 +238,7 @@ public class StreamSourceOperatorTest {
 		when(mockTask.getExecutionConfig()).thenReturn(executionConfig);
 		when(mockTask.getAccumulatorMap()).thenReturn(Collections.<String, Accumulator<?, ?>>emptyMap());
 
-		operator.setup(mockTask, cfg, (Output< StreamRecord<T>>) mock(Output.class));
+		operator.setup(mockTask, cfg, (Output< StreamRecord<T>>) mock(Output.class), false);
 	}
 
 	// ------------------------------------------------------------------------

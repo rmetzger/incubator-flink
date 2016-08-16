@@ -79,6 +79,7 @@ import org.apache.flink.streaming.connectors.kafka.testutils.PartitionValidating
 import org.apache.flink.streaming.connectors.kafka.testutils.ThrottledMapper;
 import org.apache.flink.streaming.connectors.kafka.testutils.Tuple2Partitioner;
 import org.apache.flink.streaming.connectors.kafka.testutils.ValidatingExactlyOnceSink;
+import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.util.serialization.DeserializationSchema;
 import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
@@ -1973,6 +1974,11 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 			assertEquals(minTS, mark.getTimestamp());
 			output.emitWatermark(mark);
+		}
+
+		@Override
+		public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+			// ignore
 		}
 
 		@Override
