@@ -270,6 +270,16 @@ public class StreamGraphGeneratorTest {
 		public void processWatermark2(Watermark mark) throws Exception {}
 
 		@Override
+		public void processLatencyMarker1(LatencyMarker latencyMarker) throws Exception {
+			// ignore
+		}
+
+		@Override
+		public void processLatencyMarker2(LatencyMarker latencyMarker) throws Exception {
+			// ignore
+		}
+
+		@Override
 		public void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<Integer>> output, boolean isSink) {}
 	}
 

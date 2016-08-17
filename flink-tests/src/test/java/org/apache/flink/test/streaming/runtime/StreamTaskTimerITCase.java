@@ -311,6 +311,16 @@ public class StreamTaskTimerITCase extends StreamingMultipleProgramsTestBase {
 		public void processWatermark2(Watermark mark) throws Exception {
 			//ignore
 		}
+
+		@Override
+		public void processLatencyMarker1(LatencyMarker latencyMarker) throws Exception {
+			// ignore
+		}
+
+		@Override
+		public void processLatencyMarker2(LatencyMarker latencyMarker) throws Exception {
+			// ignore
+		}
 	}
 
 

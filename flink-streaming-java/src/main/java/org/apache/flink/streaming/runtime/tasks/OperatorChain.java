@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -47,6 +48,7 @@ import org.apache.flink.streaming.runtime.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
+import org.apache.flink.util.XORShiftRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -306,7 +308,7 @@ public class OperatorChain<OUT> {
 		output.setReporter(reporter);
 		output.setMetricGroup(taskEnvironment.getMetricGroup().getIOMetricGroup());
 		
-		return new RecordWriterOutput<T>(output, outSerializer, enableMultiplexing);
+		return new RecordWriterOutput<>(output, outSerializer, enableMultiplexing);
 	}
 	
 	// ------------------------------------------------------------------------
@@ -392,6 +394,8 @@ public class OperatorChain<OUT> {
 	private static class BroadcastingOutputCollector<T> implements Output<StreamRecord<T>> {
 		
 		protected final Output<StreamRecord<T>>[] outputs;
+
+		private final Random RNG = new XORShiftRandom();
 		
 		public BroadcastingOutputCollector(Output<StreamRecord<T>>[] outputs) {
 			this.outputs = outputs;
@@ -406,10 +410,8 @@ public class OperatorChain<OUT> {
 
 		@Override
 		public void emitLatencyMarker(LatencyMarker latencyMarker) {
-			// TODO consider random emission
-			for (Output<StreamRecord<T>> output : outputs) {
-				output.emitLatencyMarker(latencyMarker);
-			}
+			// randomly select an output
+			outputs[RNG.nextInt(outputs.length)].emitLatencyMarker(latencyMarker);
 		}
 
 		@Override

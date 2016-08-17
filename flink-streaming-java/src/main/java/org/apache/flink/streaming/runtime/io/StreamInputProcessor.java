@@ -88,7 +88,7 @@ public class StreamInputProcessor<IN> {
 								EventListener<CheckpointBarrier> checkpointListener,
 								CheckpointingMode checkpointMode,
 								IOManager ioManager,
-								boolean enableWatermarkMultiplexing) throws IOException {
+								boolean enableMultiplexing) throws IOException {
 
 		InputGate inputGate = InputGateUtil.createInputGate(inputGates);
 
@@ -99,20 +99,20 @@ public class StreamInputProcessor<IN> {
 			this.barrierHandler = new BarrierTracker(inputGate);
 		}
 		else {
-			throw new IllegalArgumentException("Unrecognized Checkpointing Mode: " + checkpointMode);
+			throw new IllegalArgumentException("Unrecognized checkpointing Mode: " + checkpointMode);
 		}
 		
 		if (checkpointListener != null) {
 			this.barrierHandler.registerCheckpointEventHandler(checkpointListener);
 		}
 		
-		if (enableWatermarkMultiplexing) {
-			MultiplexingStreamRecordSerializer<IN> ser = new MultiplexingStreamRecordSerializer<IN>(inputSerializer);
-			this.deserializationDelegate = new NonReusingDeserializationDelegate<StreamElement>(ser);
+		if (enableMultiplexing) {
+			MultiplexingStreamRecordSerializer<IN> ser = new MultiplexingStreamRecordSerializer<>(inputSerializer);
+			this.deserializationDelegate = new NonReusingDeserializationDelegate<>(ser);
 		} else {
 			StreamRecordSerializer<IN> ser = new StreamRecordSerializer<IN>(inputSerializer);
 			this.deserializationDelegate = (NonReusingDeserializationDelegate<StreamElement>)
-					(NonReusingDeserializationDelegate<?>) new NonReusingDeserializationDelegate<StreamRecord<IN>>(ser);
+					(NonReusingDeserializationDelegate<?>) new NonReusingDeserializationDelegate<>(ser);
 		}
 		
 		// Initialize one deserializer per input channel

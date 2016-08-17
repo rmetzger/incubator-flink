@@ -100,7 +100,7 @@ public class RecordWriterOutput<OUT> implements Output<StreamRecord<OUT>> {
 		serializationDelegate.setInstance(latencyMarker);
 
 		try {
-			recordWriter.broadcastEmit(serializationDelegate);
+			recordWriter.randomEmit(serializationDelegate);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);

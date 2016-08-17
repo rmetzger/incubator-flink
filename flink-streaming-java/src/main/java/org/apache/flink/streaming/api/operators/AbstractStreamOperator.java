@@ -42,7 +42,6 @@ import org.apache.flink.streaming.runtime.tasks.StreamTaskState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Map;
@@ -376,6 +375,7 @@ public abstract class AbstractStreamOperator<OUT>
 		}
 
 		public void reportLatency(LatencyMarker marker) {
+			LOG.info("Reported latency " + marker);
 			LatencySourceDescriptor sourceDescriptor = LatencySourceDescriptor.of(marker);
 			DescriptiveStatistics sourceStats = latencyStats.get(sourceDescriptor);
 			if(sourceStats == null) {

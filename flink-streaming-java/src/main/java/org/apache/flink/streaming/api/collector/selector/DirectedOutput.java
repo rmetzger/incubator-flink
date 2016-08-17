@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -31,6 +32,7 @@ import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.util.XORShiftRandom;
 
 
 public class DirectedOutput<OUT> implements Output<StreamRecord<OUT>> {
@@ -42,6 +44,8 @@ public class DirectedOutput<OUT> implements Output<StreamRecord<OUT>> {
 	protected final HashMap<String, Output<StreamRecord<OUT>>[]> outputMap;
 	
 	protected final Output<StreamRecord<OUT>>[] allOutputs;
+
+	private final Random RNG = new XORShiftRandom();
 
 	
 	@SuppressWarnings({"unchecked", "rawtypes"})
@@ -103,9 +107,8 @@ public class DirectedOutput<OUT> implements Output<StreamRecord<OUT>> {
 
 	@Override
 	public void emitLatencyMarker(LatencyMarker latencyMarker) {
-		for (Output<StreamRecord<OUT>> out: allOutputs) {
-			out.emitLatencyMarker(latencyMarker);
-		}
+		// randomly select an output
+		allOutputs[RNG.nextInt(allOutputs.length)].emitLatencyMarker(latencyMarker);
 	}
 
 	protected Set<Output<StreamRecord<OUT>>> selectOutputs(StreamRecord<OUT> record)  {
