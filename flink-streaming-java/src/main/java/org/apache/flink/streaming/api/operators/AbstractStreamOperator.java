@@ -375,7 +375,6 @@ public abstract class AbstractStreamOperator<OUT>
 		}
 
 		public void reportLatency(LatencyMarker marker) {
-			LOG.info("Reported latency " + marker);
 			LatencySourceDescriptor sourceDescriptor = LatencySourceDescriptor.of(marker);
 			DescriptiveStatistics sourceStats = latencyStats.get(sourceDescriptor);
 			if(sourceStats == null) {

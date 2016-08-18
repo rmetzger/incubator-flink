@@ -56,10 +56,10 @@ public interface TwoInputStreamOperator<IN1, IN2, OUT> extends StreamOperator<OU
 	void processWatermark1(Watermark mark) throws Exception;
 
 	/**
-	 * Processes a {@link LatencyMarker} that arrived on the second input of this two-input operator.
+	 * Processes a {@link Watermark} that arrived on the second input of this two-input operator.
 	 * This method is guaranteed to not be called concurrently with other methods of the operator.
 	 *
-	 * @see org.apache.flink.streaming.runtime.streamrecord.LatencyMarker
+	 * @see org.apache.flink.streaming.api.watermark.Watermark
 	 */
 	void processWatermark2(Watermark mark) throws Exception;
 

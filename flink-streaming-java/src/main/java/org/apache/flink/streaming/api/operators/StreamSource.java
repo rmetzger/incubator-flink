@@ -391,9 +391,8 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 			this.latencyMarkTimer = scheduleExecutor.scheduleAtFixedRate(new Runnable() {
 				@Override
 				public void run() {
-					final long currentTime = System.currentTimeMillis();
 					synchronized (lockingObject) {
-						output.emitLatencyMarker(new LatencyMarker(currentTime, vertexID, subtaskIndex));
+						output.emitLatencyMarker(new LatencyMarker(System.currentTimeMillis(), vertexID, subtaskIndex));
 					}
 				}
 			}, 0, latencyTrackingInterval, TimeUnit.MILLISECONDS);

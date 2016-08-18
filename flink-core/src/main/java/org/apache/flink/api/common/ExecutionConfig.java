@@ -203,13 +203,12 @@ public class ExecutionConfig implements Serializable {
 	 *
 	 * Recommended value: 2000 (2 seconds).
 	 *
-	 * @param interval Interval in milliseconds
+	 * Setting a tracking interval <= 0 disables the latency tracking.
+	 *
+	 * @param interval Interval in milliseconds.
 	 */
 	@PublicEvolving
 	public ExecutionConfig setLatencyTrackingInterval(long interval) {
-		if(interval < 0) {
-			throw new IllegalArgumentException("The latency interval has to be at least zero");
-		}
 		this.latencyTrackingInterval = interval;
 		return this;
 	}
@@ -224,7 +223,7 @@ public class ExecutionConfig implements Serializable {
 	}
 
 	/**
-	 * Retzurns if latency tracking is enabled
+	 * Returns if latency tracking is enabled
 	 * @return True, if the tracking is enabled, false otherwise.
 	 */
 	@PublicEvolving
