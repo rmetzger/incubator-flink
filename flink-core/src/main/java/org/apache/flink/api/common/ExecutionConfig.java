@@ -228,7 +228,7 @@ public class ExecutionConfig implements Serializable {
 	 */
 	@PublicEvolving
 	public boolean isLatencyTrackingEnabled() {
-		return latencyTrackingInterval >= 0;
+		return latencyTrackingInterval > 0;
 	}
 
 

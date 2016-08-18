@@ -34,10 +34,12 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.streaming.runtime.tasks.DefaultTimeServiceProvider;
 import org.apache.flink.streaming.runtime.tasks.StreamTask;
 
 import org.apache.flink.streaming.runtime.tasks.TestTimeServiceProvider;
 import org.apache.flink.streaming.runtime.tasks.TimeServiceProvider;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -45,6 +47,7 @@ import org.mockito.stubbing.Answer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 
 import static org.junit.Assert.*;
@@ -67,7 +70,7 @@ public class StreamSourceOperatorTest {
 
 		final List<StreamElement> output = new ArrayList<>();
 		
-		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, null);
+		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, 0, null);
 		operator.run(new Object(), new CollectorOutput<String>(output));
 		
 		assertEquals(1, output.size());
@@ -84,7 +87,7 @@ public class StreamSourceOperatorTest {
 				new StreamSource<>(new InfiniteSource<String>());
 
 
-		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, null);
+		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, 0, null);
 		operator.cancel();
 
 		// run and exit
@@ -104,7 +107,7 @@ public class StreamSourceOperatorTest {
 				new StreamSource<>(new InfiniteSource<String>());
 
 		
-		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, null);
+		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, 0, null);
 		
 		// trigger an async cancel in a bit
 		new Thread("canceler") {
@@ -137,7 +140,7 @@ public class StreamSourceOperatorTest {
 				new StoppableStreamSource<>(new InfiniteSource<String>());
 
 
-		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, null);
+		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, 0, null);
 		operator.stop();
 
 		// run and stop
@@ -156,7 +159,7 @@ public class StreamSourceOperatorTest {
 				new StoppableStreamSource<>(new InfiniteSource<String>());
 
 
-		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, null);
+		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, 0, null);
 
 		// trigger an async cancel in a bit
 		new Thread("canceler") {
@@ -174,7 +177,49 @@ public class StreamSourceOperatorTest {
 
 		assertTrue(output.isEmpty());
 	}
-	
+
+	/**
+	 * Test that latency marks are emitted
+	 */
+	@Test
+	public void testLatencyMarkEmission() throws Exception {
+		final long now = System.currentTimeMillis();
+
+		final List<StreamElement> output = new ArrayList<>();
+
+		// regular stream source operator
+		final StoppableStreamSource<String, InfiniteSource<String>> operator =
+				new StoppableStreamSource<>(new InfiniteSource<String>());
+
+		// emit latency marks every 10 milliseconds.
+		setupSourceOperator(operator, TimeCharacteristic.EventTime, 0, 10, null);
+
+		// trigger an async cancel in a bit
+		new Thread("canceler") {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException ignored) {}
+				operator.stop();
+			}
+		}.start();
+
+		// run and wait to be stopped
+		operator.run(new Object(), new CollectorOutput<String>(output));
+
+		// ensure that there has been some output
+		assertTrue(output.size() > 0);
+		// and that its only latency markers
+		for(StreamElement se: output) {
+			Assert.assertTrue(se.isLatencyMarker());
+			Assert.assertEquals(-1, se.asLatencyMarker().getVertexID());
+			Assert.assertEquals(0, se.asLatencyMarker().getSubtaskIndex());
+			Assert.assertTrue(se.asLatencyMarker().getMarkedTime() >= now);
+		}
+	}
+
+
 	@Test
 	public void testAutomaticWatermarkContext() throws Exception {
 
@@ -184,7 +229,7 @@ public class StreamSourceOperatorTest {
 
 		long watermarkInterval = 10;
 		TestTimeServiceProvider timeProvider = new TestTimeServiceProvider();
-		setupSourceOperator(operator, TimeCharacteristic.IngestionTime, watermarkInterval, timeProvider);
+		setupSourceOperator(operator, TimeCharacteristic.IngestionTime, watermarkInterval, 0, timeProvider);
 
 		final List<StreamElement> output = new ArrayList<>();
 
@@ -219,10 +264,12 @@ public class StreamSourceOperatorTest {
 	private static <T> void setupSourceOperator(StreamSource<T, ?> operator,
 												TimeCharacteristic timeChar,
 												long watermarkInterval,
+												long latencyMarkInterval,
 												final TimeServiceProvider timeProvider) {
 
 		ExecutionConfig executionConfig = new ExecutionConfig();
 		executionConfig.setAutoWatermarkInterval(watermarkInterval);
+		executionConfig.setLatencyTrackingInterval(latencyMarkInterval);
 
 		StreamConfig cfg = new StreamConfig(new Configuration());
 		
