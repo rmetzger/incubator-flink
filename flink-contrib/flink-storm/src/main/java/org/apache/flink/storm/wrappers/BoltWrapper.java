@@ -324,5 +324,4 @@ public class BoltWrapper<IN, OUT> extends AbstractStreamOperator<OUT> implements
 		this.output.emitWatermark(mark);
 	}
 
-
 }

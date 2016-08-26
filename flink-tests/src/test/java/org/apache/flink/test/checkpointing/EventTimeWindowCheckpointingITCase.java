@@ -148,6 +148,7 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
 			env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 0));
 			env.getConfig().disableSysoutLogging();
 			env.setStateBackend(this.stateBackend);
+			env.getConfig().setLatencyTrackingInterval(0);
 
 			env
 					.addSource(new FailingSource(NUM_KEYS, NUM_ELEMENTS_PER_KEY, NUM_ELEMENTS_PER_KEY / 3))
@@ -222,6 +223,7 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
 			env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 0));
 			env.getConfig().disableSysoutLogging();
 			env.setStateBackend(this.stateBackend);
+			env.getConfig().setLatencyTrackingInterval(0);
 
 			env
 					.addSource(new FailingSource(NUM_KEYS, NUM_ELEMENTS_PER_KEY, NUM_ELEMENTS_PER_KEY / 3))
@@ -290,6 +292,7 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
 			env.enableCheckpointing(100);
 			env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 0));
 			env.getConfig().disableSysoutLogging();
+			env.getConfig().setLatencyTrackingInterval(0);
 			env.setStateBackend(this.stateBackend);
 
 			env
@@ -324,6 +327,7 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
 								sum += value.f1.value;
 								key = value.f0;
 							}
+							// System.out.println("Emitting window with start " + window.getStart() + " end " + window.getEnd() + " and sum " + sum);
 							out.collect(new Tuple4<>(key, window.getStart(), window.getEnd(), new IntType(sum)));
 						}
 					})
@@ -355,6 +359,7 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
 			env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 0));
 			env.getConfig().disableSysoutLogging();
 			env.setStateBackend(this.stateBackend);
+			env.getConfig().setLatencyTrackingInterval(0);
 
 			env
 					.addSource(new FailingSource(NUM_KEYS, NUM_ELEMENTS_PER_KEY, NUM_ELEMENTS_PER_KEY / 3))
@@ -428,6 +433,7 @@ public class EventTimeWindowCheckpointingITCase extends TestLogger {
 			env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 0));
 			env.getConfig().disableSysoutLogging();
 			env.setStateBackend(this.stateBackend);
+			env.getConfig().setLatencyTrackingInterval(0);
 
 			env
 					.addSource(new FailingSource(NUM_KEYS, NUM_ELEMENTS_PER_KEY, NUM_ELEMENTS_PER_KEY / 3))
