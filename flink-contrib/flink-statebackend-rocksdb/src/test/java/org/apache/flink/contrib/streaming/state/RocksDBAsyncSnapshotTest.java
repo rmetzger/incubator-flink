@@ -401,11 +401,6 @@ public class RocksDBAsyncSnapshotTest {
 		public void processWatermark(Watermark mark) throws Exception {
 			// not interested
 		}
-
-		@Override
-		public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-			// ignore
-		}
 	}
 
 	public static class DummyMapFunction<T> implements MapFunction<T, T> {

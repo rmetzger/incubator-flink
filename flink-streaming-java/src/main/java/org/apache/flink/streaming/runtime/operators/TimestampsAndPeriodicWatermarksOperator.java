@@ -22,7 +22,6 @@ import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
-import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 /**
@@ -88,11 +87,6 @@ public class TimestampsAndPeriodicWatermarksOperator<T>
 			currentWatermark = Long.MAX_VALUE;
 			output.emitWatermark(mark);
 		}
-	}
-
-	@Override
-	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		reportOrForwardLatencyMarker(latencyMarker);
 	}
 
 	@Override

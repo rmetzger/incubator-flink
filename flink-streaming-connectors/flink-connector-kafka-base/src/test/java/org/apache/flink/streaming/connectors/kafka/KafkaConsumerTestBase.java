@@ -1977,11 +1977,6 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		}
 
 		@Override
-		public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-			// ignore
-		}
-
-		@Override
 		public void close() throws Exception {
 			super.close();
 			perPartitionMaxTs.clear();
