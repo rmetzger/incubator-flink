@@ -35,7 +35,6 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.runtime.operators.Triggerable;
-import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 import static java.util.Objects.requireNonNull;
@@ -211,11 +210,6 @@ public abstract class AbstractAlignedProcessingTimeWindowOperator<KEY, IN, OUT, 
 	@Override
 	public void processWatermark(Watermark mark) {
 		// this operator does not react to watermarks
-	}
-
-	@Override
-	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
-		reportOrForwardLatencyMarker(latencyMarker);
 	}
 
 	@Override

@@ -22,7 +22,6 @@ import org.apache.flink.streaming.api.functions.co.CoMapFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
-import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 @Internal
@@ -70,15 +69,5 @@ public class CoStreamMap<IN1, IN2, OUT>
 			combinedWatermark = newMin;
 			output.emitWatermark(new Watermark(combinedWatermark));
 		}
-	}
-
-	@Override
-	public void processLatencyMarker1(LatencyMarker latencyMarker) throws Exception {
-		reportOrForwardLatencyMarker(latencyMarker);
-	}
-
-	@Override
-	public void processLatencyMarker2(LatencyMarker latencyMarker) throws Exception {
-		reportOrForwardLatencyMarker(latencyMarker);
 	}
 }

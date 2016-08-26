@@ -346,7 +346,22 @@ public abstract class AbstractStreamOperator<OUT>
 	//  Metrics
 	// ------------------------------------------------------------------------
 
-	public void reportOrForwardLatencyMarker(LatencyMarker maker) {
+	// ------- One input stream
+	public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {
+		reportOrForwardLatencyMarker(latencyMarker);
+	}
+
+	// ------- Two input stream
+	public void processLatencyMarker1(LatencyMarker latencyMarker) throws Exception {
+		reportOrForwardLatencyMarker(latencyMarker);
+	}
+
+	public void processLatencyMarker2(LatencyMarker latencyMarker) throws Exception {
+		reportOrForwardLatencyMarker(latencyMarker);
+	}
+
+
+	protected void reportOrForwardLatencyMarker(LatencyMarker maker) {
 		if(isSink) {
 			this.latencyGauge.reportLatency(maker);
 		} else {
