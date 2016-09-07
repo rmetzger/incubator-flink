@@ -94,7 +94,7 @@ public class DummyEnvironment implements Environment {
 
 	@Override
 	public TaskManagerRuntimeInfo getTaskManagerInfo() {
-		return null;
+		return new TaskManagerRuntimeInfo("foo", new Configuration(), "foo");
 	}
 
 	@Override
