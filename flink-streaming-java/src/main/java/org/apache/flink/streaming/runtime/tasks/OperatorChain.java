@@ -410,7 +410,9 @@ public class OperatorChain<OUT> {
 
 		@Override
 		public void emitLatencyMarker(LatencyMarker latencyMarker) {
-			if(outputs.length == 1) {
+			if(outputs.length <= 0) {
+				// ignore
+			} else if(outputs.length == 1) {
 				outputs[0].emitLatencyMarker(latencyMarker);
 			} else {
 				// randomly select an output
