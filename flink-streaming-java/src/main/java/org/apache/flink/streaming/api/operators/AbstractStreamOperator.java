@@ -25,6 +25,8 @@ import org.apache.flink.api.common.state.State;
 import org.apache.flink.api.common.state.StateDescriptor;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FSDataInputStream;
 import org.apache.flink.core.fs.FSDataOutputStream;
 import org.apache.flink.metrics.Counter;
@@ -124,9 +126,14 @@ public abstract class AbstractStreamOperator<OUT>
 		this.metrics = container.getEnvironment().getMetricGroup().addOperator(operatorName);
 		this.output = new CountingOutput(output, this.metrics.counter("numRecordsOut"));
 		this.isSink = isSink;
-		if(isSink) {
-			latencyGauge = new LatencyGauge(this.metrics);
+		Configuration taskManagerConfig = container.getEnvironment().getTaskManagerInfo().getConfiguration();
+		int historySize = taskManagerConfig.getInteger(ConfigConstants.METRICS_LATENCY_HISTORY_SIZE, ConfigConstants.DEFAULT_METRICS_LATENCY_HISTORY_SIZE);
+		if(historySize <= 0) {
+			LOG.warn("{} has been set to a value below 0: {}. Using default.", ConfigConstants.METRICS_LATENCY_HISTORY_SIZE, historySize);
+			historySize = ConfigConstants.DEFAULT_METRICS_LATENCY_HISTORY_SIZE;
 		}
+
+		latencyGauge = new LatencyGauge(this.metrics, historySize, !isSink);
 		this.runtimeContext = new StreamingRuntimeContext(this, container.getEnvironment(), container.getAccumulatorMap());
 
 		stateKeySelector1 = config.getStatePartitioner(0, getUserCodeClassloader());
@@ -151,8 +158,6 @@ public abstract class AbstractStreamOperator<OUT>
 			TypeSerializer<Object> keySerializer = config.getStateKeySerializer(getUserCodeClassloader());
 			// create a keyed state backend if there is keyed state, as indicated by the presence of a key serializer
 			if (null != keySerializer) {
-				ExecutionConfig execConf = container.getEnvironment().getExecutionConfig();;
-
 				KeyGroupRange subTaskKeyGroupRange = KeyGroupRangeAssignment.computeKeyGroupRangeForOperatorIndex(
 						container.getEnvironment().getTaskInfo().getNumberOfKeyGroups(),
 						container.getEnvironment().getTaskInfo().getNumberOfParallelSubtasks(),
@@ -378,17 +383,21 @@ public abstract class AbstractStreamOperator<OUT>
 	 */
 	private static class LatencyGauge implements Gauge<Map<String, HashMap<String, Double>>> {
 		private final Map<LatencySourceDescriptor, DescriptiveStatistics> latencyStats = new HashMap<>();
+		private final int historySize;
+		private final boolean ignoreSubtaskIndex;
 
-		LatencyGauge(MetricGroup metrics) {
+		LatencyGauge(MetricGroup metrics, int historySize, boolean ignoreSubtaskIndex) {
+			this.historySize = historySize;
+			this.ignoreSubtaskIndex = ignoreSubtaskIndex;
 			metrics.gauge("latency", this);
 		}
 
 		public void reportLatency(LatencyMarker marker) {
-			LatencySourceDescriptor sourceDescriptor = LatencySourceDescriptor.of(marker);
+			LatencySourceDescriptor sourceDescriptor = LatencySourceDescriptor.of(marker, this.ignoreSubtaskIndex);
 			DescriptiveStatistics sourceStats = latencyStats.get(sourceDescriptor);
 			if(sourceStats == null) {
 				// 512 element window (4 kb)
-				sourceStats = new DescriptiveStatistics(512); // TODO make configurable
+				sourceStats = new DescriptiveStatistics(this.historySize);
 				latencyStats.put(sourceDescriptor, sourceStats);
 			}
 			long now = System.currentTimeMillis();
@@ -428,8 +437,19 @@ public abstract class AbstractStreamOperator<OUT>
 
 		private final int subtaskIndex;
 
-		public static LatencySourceDescriptor of(LatencyMarker marker) {
-			return new LatencySourceDescriptor(marker.getVertexID(), marker.getSubtaskIndex());
+		/**
+		 *
+		 * @param marker The latency marker to extract the LatencySourceDescriptor from.
+		 * @param ignoreSubtaskIndex Set to true to ignore the subtask index, to treat the latencies from all the parallel instances of a source as the same.
+		 * @return A LatencySourceDescriptor for the given marker.
+		 */
+		public static LatencySourceDescriptor of(LatencyMarker marker, boolean ignoreSubtaskIndex) {
+			if(ignoreSubtaskIndex) {
+				return new LatencySourceDescriptor(marker.getVertexID(), -1);
+			} else {
+				return new LatencySourceDescriptor(marker.getVertexID(), marker.getSubtaskIndex());
+			}
+
 		}
 
 		private LatencySourceDescriptor(int vertexID, int subtaskIndex) {

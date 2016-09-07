@@ -81,7 +81,7 @@ public interface Environment {
 	ExecutionAttemptID getExecutionId();
 
 	/**
-	 * Returns the task-wide configuration object, originally attache to the job vertex.
+	 * Returns the task-wide configuration object, originally attached to the job vertex.
 	 *
 	 * @return The task-wide configuration
 	 */
