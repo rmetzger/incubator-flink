@@ -286,6 +286,7 @@ angular.module('flinkApp')
   $scope.dropped = (event, index, item, external, type) ->
 
     MetricsService.orderMetrics($scope.jobid, $scope.nodeid, item, index)
+    $scope.$broadcast "metrics:refresh", item
     loadMetrics()
     false
 
@@ -299,8 +300,12 @@ angular.module('flinkApp')
     MetricsService.addMetric($scope.jobid, $scope.nodeid, metric.id)
     loadMetrics()
 
-  $scope.removeMetric = (metricId) ->
-    MetricsService.removeMetric($scope.jobid, $scope.nodeid, metricId)
+  $scope.removeMetric = (metric) ->
+    MetricsService.removeMetric($scope.jobid, $scope.nodeid, metric)
+    loadMetrics()
+
+  $scope.setMetricSize = (metric, size) ->
+    MetricsService.setMetricSize($scope.jobid, $scope.nodeid, metric, size)
     loadMetrics()
 
   $scope.getValues = (metric) ->

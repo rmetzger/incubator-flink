@@ -27,17 +27,21 @@ nav.navbar.navbar-default.navbar-secondary-additional.navbar-secondary-additiona
       | Add metric
       | &nbsp;
       span.caret
-    ul.dropdown-menu.dropdown-menu-right
-      li(ng-repeat="metric in availableMetrics")
-        a(ng-click="addMetric(metric)") {{ metric.id }}
+    ul.dropdown-menu.dropdown-menu-right.metric-menu
+      li(ng-repeat="metric in availableMetrics track by $index")
+        a(ng-click="addMetric(metric)") {{ metric.name }}
+
+  .dropup.add-metrics(ng-if="!availableMetrics.length")
+    button.btn.btn-default.navbar-btn.dropdown-toggle(type='button', data-toggle='dropdown', disabled='disabled')
+      i No metrics available
 
 .row.metric-row(ng-if="nodeid && metrics.length == 0")
   p.p-info
     em No metrics selected
 
 ul.metric-row(ng-if="nodeid && metrics.length > 0" dnd-list="metrics" dnd-drop="dropped(event, index, item, external, type, external)")
-  li.metric-col(ng-repeat="metric in metrics" dnd-draggable="metric" dnd-dragstart="dragStart()" dnd-dragend="dragEnd()" dnd-canceled="dragEnd()")
-    metrics-graph(mtype="{{metric}}" window="window" get-values="getValues(metric)" remove-metric="removeMetric(metric)")
+  li.metric-col(ng-repeat="metric in metrics track by metric.id" dnd-draggable="metric" dnd-dragstart="dragStart()" dnd-dragend="dragEnd()" dnd-canceled="dragEnd()" ng-class="{big: metric.size != 'small'}")
+    metrics-graph(metric="metric" window="window" get-values="getValues(metric.id)" remove-metric="removeMetric(metric)" set-metric-size="setMetricSize")
 
 .clearfix
 

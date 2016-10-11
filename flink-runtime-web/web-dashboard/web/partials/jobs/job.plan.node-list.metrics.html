@@ -26,17 +26,20 @@ limitations under the License.
       Add metric
       &nbsp;<span class="caret"></span>
     </button>
-    <ul class="dropdown-menu dropdown-menu-right">
-      <li ng-repeat="metric in availableMetrics"><a ng-click="addMetric(metric)">{{ metric.id }}</a></li>
+    <ul class="dropdown-menu dropdown-menu-right metric-menu">
+      <li ng-repeat="metric in availableMetrics track by $index"><a ng-click="addMetric(metric)">{{ metric.name }}</a></li>
     </ul>
+  </div>
+  <div ng-if="!availableMetrics.length" class="dropup add-metrics">
+    <button type="button" data-toggle="dropdown" disabled="disabled" class="btn btn-default navbar-btn dropdown-toggle"><i>No metrics available</i></button>
   </div>
 </nav>
 <div ng-if="nodeid &amp;&amp; metrics.length == 0" class="row metric-row">
   <p class="p-info"><em>No metrics selected</em></p>
 </div>
 <ul ng-if="nodeid &amp;&amp; metrics.length &gt; 0" dnd-list="metrics" dnd-drop="dropped(event, index, item, external, type, external)" class="metric-row">
-  <li ng-repeat="metric in metrics" dnd-draggable="metric" dnd-dragstart="dragStart()" dnd-dragend="dragEnd()" dnd-canceled="dragEnd()" class="metric-col">
-    <metrics-graph mtype="{{metric}}" window="window" get-values="getValues(metric)" remove-metric="removeMetric(metric)"></metrics-graph>
+  <li ng-repeat="metric in metrics track by metric.id" dnd-draggable="metric" dnd-dragstart="dragStart()" dnd-dragend="dragEnd()" dnd-canceled="dragEnd()" ng-class="{big: metric.size != 'small'}" class="metric-col">
+    <metrics-graph metric="metric" window="window" get-values="getValues(metric.id)" remove-metric="removeMetric(metric)" set-metric-size="setMetricSize"></metrics-graph>
   </li>
 </ul>
 <div class="clearfix"></div>

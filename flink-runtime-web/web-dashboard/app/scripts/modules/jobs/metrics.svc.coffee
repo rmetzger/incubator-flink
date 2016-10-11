@@ -112,14 +112,25 @@ angular.module('flinkApp')
   @addMetric = (jobid, nodeid, metricid) ->
     @setupLSFor(jobid, nodeid)
 
-    @metrics[jobid][nodeid].push(metricid)
+    @metrics[jobid][nodeid].push({id: metricid, size: 'small'})
 
     @saveSetup()
 
-  @removeMetric = (jobid, nodeid, metricid) =>
+  @removeMetric = (jobid, nodeid, metric) =>
     if @metrics[jobid][nodeid]?
-      i = @metrics[jobid][nodeid].indexOf(metricid)
+      i = @metrics[jobid][nodeid].indexOf(metric)
+      i = _.findIndex(@metrics[jobid][nodeid], { id: metric }) if i == -1
+
       @metrics[jobid][nodeid].splice(i, 1) if i != -1
+
+      @saveSetup()
+
+  @setMetricSize = (jobid, nodeid, metric, size) =>
+    if @metrics[jobid][nodeid]?
+      i = @metrics[jobid][nodeid].indexOf(metric.id)
+      i = _.findIndex(@metrics[jobid][nodeid], { id: metric.id }) if i == -1
+
+      @metrics[jobid][nodeid][i] = { id: metric.id, size: size } if i != -1
 
       @saveSetup()
 
@@ -127,7 +138,7 @@ angular.module('flinkApp')
     @setupLSFor(jobid, nodeid)
 
     angular.forEach @metrics[jobid][nodeid], (v, k) =>
-      if v == item
+      if v.id == item.id
         @metrics[jobid][nodeid].splice(k, 1)
         if k < index
           index = index - 1
@@ -137,15 +148,10 @@ angular.module('flinkApp')
     @saveSetup()
 
   @getMetricsSetup = (jobid, nodeid) =>
-    fl = []
-    angular.forEach @metrics[jobid][nodeid], (v, k) =>
-      fl.push {
-        name: v
-      }
-
     {
-      names: @metrics[jobid][nodeid]
-      list: fl
+      names: _.map(@metrics[jobid][nodeid], (value) =>
+        if _.isString(value) then { id: value, size: "small" } else value
+      )
     }
 
   @getAvailableMetrics = (jobid, nodeid) =>
@@ -156,8 +162,11 @@ angular.module('flinkApp')
     $http.get flinkConfig.jobServer + "jobs/" + jobid + "/vertices/" + nodeid + "/metrics"
     .success (data) =>
       results = []
-      angular.forEach data, (v, k) =>
-        if @metrics[jobid][nodeid].indexOf(v.id) == -1
+      angular.forEach data.available, (v, k) =>
+        i = @metrics[jobid][nodeid].indexOf(v.id)
+        i = _.findIndex(@metrics[jobid][nodeid], { id: v.id }) if i == -1
+
+        if i == -1
           results.push(v)
 
       deferred.resolve(results)

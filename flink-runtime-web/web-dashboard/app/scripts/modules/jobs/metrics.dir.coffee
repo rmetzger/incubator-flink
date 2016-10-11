@@ -22,54 +22,91 @@ angular.module('flinkApp')
 
 .directive 'metricsGraph', ->
   template: '<div class="panel panel-default panel-metric">
-               <div class="panel-heading">{{mtype}}
-                 <a title="Remove" class="btn btn-default btn-xs pull-right" ng-click="removeMetric()"><i class="fa fa-close" /></a>
+               <div class="panel-heading">
+                 {{metric.id}}
+                 <div class="buttons">
+                   <div class="btn-group">
+                     <button type="button" ng-class="[btnClasses, {active: metric.size != \'big\'}]" ng-click="setSize(\'small\')">Small</button>
+                     <button type="button" ng-class="[btnClasses, {active: metric.size == \'big\'}]" ng-click="setSize(\'big\')">Big</button>
+                   </div>
+                   <a title="Remove" class="btn btn-default btn-xs remove" ng-click="removeMetric()"><i class="fa fa-close" /></a>
+                 </div>
                </div>
                <div class="panel-body">
-                 <nvd3 options="options" data="data"></nvd3>
+                  <svg />
                </div>
              </div>'
   replace: true
   scope:
-    mtype: "@"
+    metric: "="
     window: "="
     removeMetric: "&"
+    setMetricSize: "="
     getValues: "&"
 
   link: (scope, element, attrs) ->
+    scope.btnClasses = ['btn', 'btn-default', 'btn-xs']
+
     scope.value = null
     scope.data = [{
       values: scope.getValues()
     }]
 
     scope.options = {
-      chart:
-        type: 'lineChart'
-        showLegend: false
-        margin: {
-          top: 15
-          left: 50
-          bottom: 30
-          right: 30
-        }
-        height: 200
-        x: (d, i) ->
-          d.x
-        y: (d, i) ->
-          d.y
+      x: (d, i) ->
+        d.x
+      y: (d, i) ->
+        d.y
 
-        xTickFormat: (d) ->
-#          console.log d
-          d3.time.format('%H:%M:%S')(new Date(d))
+      xTickFormat: (d) ->
+        d3.time.format('%H:%M:%S')(new Date(d))
 
-        duration: 250
+      yTickFormat: (d) ->
+        if d >= 1000000
+          "#{d / 1000000}m"
+        else if d >= 1000
+          "#{d / 1000}k"
+        else
+          d
     }
 
-    scope.remove = ->
-      scope.$destroy()
+    scope.showChart = ->
+      d3.select(element.find("svg")[0])
+      .datum(scope.data)
+      .transition().duration(250)
+      .call(scope.chart)
+
+    scope.chart = nv.models.lineChart()
+      .options(scope.options)
+      .showLegend(false)
+      .margin({
+        top: 15
+        left: 50
+        bottom: 30
+        right: 30
+      })
+
+    scope.chart.yAxis.showMaxMin(false)
+    scope.chart.tooltip.hideDelay(0)
+    scope.chart.tooltip.contentGenerator((obj) ->
+      "<p>#{d3.time.format('%H:%M:%S')(new Date(obj.point.x))} | #{obj.point.y}</p>"
+    )
+
+    nv.utils.windowResize(scope.chart.update);
+
+#    scope.remove = ->
+#      scope.$destroy()
+
+    scope.setSize = (size) ->
+      scope.setMetricSize(scope.metric, size)
+#      scope.metric.size = size
+#      scope.chart.update()
+
+    scope.showChart()
 
     scope.$on 'metrics:data:update', (event, timestamp, data) ->
-      scope.value = parseInt(data[scope.mtype])
+#      console.log data, scope.metric, scope.metric.id
+      scope.value = parseInt(data[scope.metric.id])
 
       scope.data[0].values.push {
         x: timestamp
@@ -78,3 +115,7 @@ angular.module('flinkApp')
 
       if scope.data[0].values.length > scope.window
         scope.data[0].values.shift()
+
+      scope.showChart()
+      scope.chart.clearHighlights()
+      scope.chart.tooltip.hidden(true)

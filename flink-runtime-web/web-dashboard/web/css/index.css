@@ -659,6 +659,10 @@ svg.graph .node-label {
 #content .navbar-secondary-additional.navbar-secondary-additional-2 .add-metrics a {
   cursor: pointer;
 }
+#content .navbar-secondary-additional.navbar-secondary-additional-2 .metric-menu {
+  max-height: 300px;
+  overflow-y: scroll;
+}
 .metric-row {
   margin: 0px;
   min-height: 275px;
@@ -670,6 +674,9 @@ svg.graph .node-label {
   width: 33.33%;
   float: left;
 }
+.metric-row .metric-col.big {
+  width: 100%;
+}
 .metric-row .metric-col .panel {
   margin-left: 5px;
   margin-right: 5px;
@@ -678,10 +685,21 @@ svg.graph .node-label {
 }
 .metric-row .metric-col .panel .panel-body {
   background-color: transparent;
+  height: 265px;
+  position: relative;
 }
 .metric-row .metric-col .panel .panel-heading {
-  padding: 10px 10px;
+  padding: 0px 10px;
   background-color: transparent;
+  height: 41px;
+  line-height: 41px;
+  position: relative;
+  overflow: hidden;
+}
+.metric-row .metric-col .panel .panel-heading .buttons {
+  position: absolute;
+  top: 0;
+  right: 10px;
 }
 .metric-row .metric-col.dndDraggingSource {
   display: none;
@@ -689,7 +707,7 @@ svg.graph .node-label {
 .metric-row .dndPlaceholder {
   position: relative;
   background-color: #f0f0f0;
-  min-height: 265px;
+  min-height: 305px;
   display: block;
   width: 33.33%;
   float: left;
