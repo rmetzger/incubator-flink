@@ -58,16 +58,19 @@ public class SocketWindowWordCount {
 
 		// get input data by connecting to the socket
 		DataStream<String> text = env.addSource(new SourceFunction<String>() {
+			public boolean running = true;
+
 			@Override
 			public void run(SourceContext<String> ctx) throws Exception {
-				synchronized (ctx) {
-					ctx.wait();
+				while(running) {
+					ctx.collect("abc");
+					Thread.sleep(1000);
 				}
 			}
 
 			@Override
 			public void cancel() {
-
+				running = false;
 			}
 		});
 
