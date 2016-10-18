@@ -273,7 +273,7 @@ public final class ConfigConstants {
 	public static final String TASK_MANAGER_REFUSED_REGISTRATION_PAUSE = "taskmanager.refused-registration-pause";
 
 	/**
-	 * Deprecated. Please use {@link TaskOptions#CANCELLATION_INTERVAL}.
+	 * Deprecated. Please use {@link TaskManagerOptions#TASK_CANCELLATION_INTERVAL}.
 	 */
 	@PublicEvolving
 	@Deprecated
@@ -1086,7 +1086,7 @@ public final class ConfigConstants {
 	public static final boolean DEFAULT_TASK_MANAGER_MEMORY_PRE_ALLOCATE = false;
 
 	/**
-	 * Deprecated. Please use {@link TaskOptions#CANCELLATION_INTERVAL}.
+	 * Deprecated. Please use {@link TaskManagerOptions#TASK_CANCELLATION_INTERVAL}.
 	 */
 	@Deprecated
 	public static final long DEFAULT_TASK_CANCELLATION_INTERVAL_MILLIS = 30000;

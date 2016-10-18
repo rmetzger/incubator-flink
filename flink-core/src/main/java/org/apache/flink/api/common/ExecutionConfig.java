@@ -22,6 +22,7 @@ import com.esotericsoftware.kryo.Serializer;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.configuration.TaskManagerOptions;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -345,7 +346,7 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 	 * Sets the timeout (in milliseconds) after which an ongoing task cancellation
 	 * is considered failed, leading to a fatal TaskManager error.
 	 *
-	 * <p>The cluster default is configured via {@link org.apache.flink.configuration.TaskOptions#CANCELLATION_TIMEOUT}.
+	 * <p>The cluster default is configured via {@link TaskManagerOptions#TASK_CANCELLATION_TIMEOUT}.
 	 *
 	 * @param timeout The task cancellation timeout (in milliseconds).
 	 */

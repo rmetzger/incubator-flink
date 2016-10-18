@@ -21,7 +21,7 @@ package org.apache.flink.runtime.taskmanager;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.TaskOptions;
+import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.runtime.blob.BlobKey;
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager;
@@ -576,8 +576,8 @@ public class TaskTest {
 	@Test
 	public void testWatchDogInterruptsTask() throws Exception {
 		Configuration config = new Configuration();
-		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 5);
-		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 50);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_INTERVAL.key(), 5);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_TIMEOUT.key(), 50);
 
 		Task task = createTask(InvokableBlockingInCancel.class, config);
 		task.startTaskThread();
@@ -585,8 +585,7 @@ public class TaskTest {
 		awaitLatch.await();
 
 		task.cancelExecution();
-
-		triggerLatch.await();
+		task.getExecutingThread().join();
 
 		// No fatal error
 		for (Object msg : taskManagerMessages) {
@@ -602,8 +601,8 @@ public class TaskTest {
 	@Test
 	public void testInterruptableSharedLockInInvokeAndCancel() throws Exception {
 		Configuration config = new Configuration();
-		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 5);
-		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 50);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_INTERVAL.key(), 5);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_TIMEOUT.key(), 50);
 
 		Task task = createTask(InvokableInterruptableSharedLockInInvokeAndCancel.class, config);
 		task.startTaskThread();
@@ -612,7 +611,7 @@ public class TaskTest {
 
 		task.cancelExecution();
 
-		triggerLatch.await();
+		task.getExecutingThread().join();
 
 		// No fatal error
 		for (Object msg : taskManagerMessages) {
@@ -627,8 +626,8 @@ public class TaskTest {
 	@Test
 	public void testFatalErrorAfterUninterruptibleInvoke() throws Exception {
 		Configuration config = new Configuration();
-		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 5);
-		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 50);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_INTERVAL.key(), 5);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_TIMEOUT.key(), 50);
 
 		Task task = createTask(InvokableUninterruptibleBlockingInvoke.class, config);
 
@@ -670,8 +669,8 @@ public class TaskTest {
 		long timeout = interval + 19292;
 
 		Configuration config = new Configuration();
-		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), interval);
-		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), timeout);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_INTERVAL.key(), interval);
+		config.setLong(TaskManagerOptions.TASK_CANCELLATION_TIMEOUT.key(), timeout);
 
 		ExecutionConfig executionConfig = new ExecutionConfig();
 		executionConfig.setTaskCancellationInterval(interval + 1337);
@@ -1066,7 +1065,6 @@ public class TaskTest {
 					wait();
 				}
 			} catch (InterruptedException ignored) {
-				triggerLatch.trigger();
 			}
 		}
 

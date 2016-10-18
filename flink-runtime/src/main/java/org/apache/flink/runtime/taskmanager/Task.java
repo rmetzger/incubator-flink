@@ -24,7 +24,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.TaskInfo;
 import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.TaskOptions;
+import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.accumulators.AccumulatorRegistry;
 import org.apache.flink.runtime.blob.BlobKey;
@@ -291,8 +291,8 @@ public class Task implements Runnable, TaskActions {
 		this.keyGroupStates = tdd.getKeyGroupState();
 		this.partitionableOperatorState = tdd.getPartitionableOperatorState();
 		Configuration taskConfig = tdd.getTaskConfiguration();
-		this.taskCancellationInterval = taskConfig.getLong(TaskOptions.CANCELLATION_INTERVAL);
-		this.taskCancellationTimeout = taskConfig.getLong(TaskOptions.CANCELLATION_TIMEOUT);
+		this.taskCancellationInterval = taskConfig.getLong(TaskManagerOptions.TASK_CANCELLATION_INTERVAL);
+		this.taskCancellationTimeout = taskConfig.getLong(TaskManagerOptions.TASK_CANCELLATION_TIMEOUT);
 		this.memoryManager = checkNotNull(memManager);
 		this.ioManager = checkNotNull(ioManager);
 		this.broadcastVariableManager = checkNotNull(bcVarManager);
@@ -1407,7 +1407,7 @@ public class Task implements Runnable, TaskActions {
 
 					executor.interrupt();
 					try {
-						long timeLeftNanos = Math.min(intervalNanos, deadline - now - intervalNanos);
+						long timeLeftNanos = Math.min(intervalNanos, deadline - now);
 						long timeLeftMillis = TimeUnit.MILLISECONDS.convert(timeLeftNanos, TimeUnit.NANOSECONDS);
 
 						if (timeLeftMillis > 0) {

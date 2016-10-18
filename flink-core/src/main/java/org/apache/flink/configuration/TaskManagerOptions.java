@@ -23,16 +23,26 @@ import org.apache.flink.annotation.PublicEvolving;
 import static org.apache.flink.configuration.ConfigOptions.key;
 
 /**
- * The set of configuration options relating to task settings.
+ * The set of configuration options relating to TaskManager and Task settings.
  */
 @PublicEvolving
-public class TaskOptions {
+public class TaskManagerOptions {
+
+	// ------------------------------------------------------------------------
+	//  TaskManager Options
+	// ------------------------------------------------------------------------
+
+	// @TODO Migrate 'taskmanager.*' config options from ConfigConstants
+
+	// ------------------------------------------------------------------------
+	//  Task Options
+	// ------------------------------------------------------------------------
 
 	/**
 	 * Time interval in milliseconds between two successive task cancellation
 	 * attempts.
 	 */
-	public static final ConfigOption<Long> CANCELLATION_INTERVAL =
+	public static final ConfigOption<Long> TASK_CANCELLATION_INTERVAL =
 			key("task.cancellation.interval")
 					.defaultValue(30000L)
 					.withDeprecatedKeys("task.cancellation-interval");
@@ -41,13 +51,13 @@ public class TaskOptions {
 	 * Timeout in milliseconds after which a task cancellation times out and
 	 * leads to a fatal TaskManager error.
 	 */
-	public static final ConfigOption<Long> CANCELLATION_TIMEOUT =
+	public static final ConfigOption<Long> TASK_CANCELLATION_TIMEOUT =
 			key("task.cancellation.timeout")
 					.defaultValue(180000L);
 
 	// ------------------------------------------------------------------------
 
 	/** Not intended to be instantiated */
-	private TaskOptions() {
+	private TaskManagerOptions() {
 	}
 }
