@@ -1338,13 +1338,21 @@ public class Task implements Runnable, TaskActions {
 
 		@Override
 		public void run() {
+			boolean synced = false;
 			try {
 				// Synchronize with task canceler
-				if (!taskCancellerLatch.await(interruptTimeout, TimeUnit.MILLISECONDS)) {
-					return; // Did not return
+				synced = taskCancellerLatch.await(interruptTimeout, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException ignored) {
+			} finally {
+				if (!synced) {
+					long duration = TimeUnit.SECONDS.convert(interruptInterval, TimeUnit.MILLISECONDS);
+					String msg = String.format("Task canceller did not cancel task '%s' within " +
+							"the task cancellation timeout of %d seconds.",
+							taskName,
+							duration);
+					taskManager.notifyFatalError(msg, null);
+					return;
 				}
-			} catch (InterruptedException e) {
-				return;
 			}
 
 			long deadline = System.currentTimeMillis() + interruptTimeout;
