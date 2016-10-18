@@ -1356,7 +1356,6 @@ public class Task implements Runnable, TaskActions {
 
 		@Override
 		public void run() {
-			boolean synced = false;
 			try {
 				// Synchronize with task canceler
 				taskCancellerLatch.await();
@@ -1367,16 +1366,14 @@ public class Task implements Runnable, TaskActions {
 				return;
 			}
 
-			long deadline = System.currentTimeMillis() + interruptTimeout;
+			long intervalNanos = TimeUnit.NANOSECONDS.convert(interruptInterval, TimeUnit.MILLISECONDS);
+			long timeoutNanos = TimeUnit.NANOSECONDS.convert(interruptTimeout, TimeUnit.MILLISECONDS);
+			long deadline = System.nanoTime() + timeoutNanos;
 
-			// Initial wait before interrupting periodically
-			if (executor.isAlive()) {
-				try {
-					Thread.sleep(interruptInterval);
-				} catch (InterruptedException ignored) {
-				}
-			} else {
-				return; // already done
+			try {
+				// Initial wait before interrupting periodically
+				Thread.sleep(interruptInterval);
+			} catch (InterruptedException ignored) {
 			}
 
 			// It is possible that the user code does not react to the task canceller.
@@ -1384,7 +1381,7 @@ public class Task implements Runnable, TaskActions {
 			// the user code until it exits. If the suer user code does not exit within
 			// the timeout, we notify the job manager about a fatal error.
 			while (executor.isAlive()) {
-				long now = System.currentTimeMillis();
+				long now = System.nanoTime();
 
 				// build the stack trace of where the thread is stuck, for the log
 				StringBuilder bld = new StringBuilder();
@@ -1403,17 +1400,17 @@ public class Task implements Runnable, TaskActions {
 
 					taskManager.notifyFatalError(msg, null);
 
-					break; // done, don't forget to leave the loop
+					return; // done, don't forget to leave the loop
 				} else {
 					logger.warn("Task '{}' did not react to cancelling signal, but is stuck in method:\n {}",
 							taskName, bld.toString());
 
 					executor.interrupt();
 					try {
-						long timeLeft = deadline - now - interruptInterval;
-						if (timeLeft > 0) {
-							long interval = Math.min(interruptInterval, timeLeft);
-							executor.join(interval);
+						long timeLeftNanos = Math.min(intervalNanos, deadline - now - intervalNanos);
+						if (timeLeftNanos > 0) {
+							long timeLeftMs = TimeUnit.MILLISECONDS.convert(timeLeftNanos, TimeUnit.NANOSECONDS);
+							executor.join(timeLeftMs);
 						}
 					} catch (InterruptedException ignored) {
 					}
