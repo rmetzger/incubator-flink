@@ -595,20 +595,31 @@ public class TaskTest {
 		config.setLong(ConfigConstants.TASK_CANCELLATION_TIMEOUT_MILLIS, 200);
 
 		Task task = createTask(InvokableBlockingInvokeAndCancel.class, config);
-		task.startTaskThread();
 
-		awaitLatch.await();
+		try {
+			task.startTaskThread();
 
-		task.cancelExecution();
+			awaitLatch.await();
 
-		for (int i = 0; i < 10; i++) {
-			Object msg = taskManagerMessages.poll(1, TimeUnit.SECONDS);
-			if (msg instanceof TaskManagerMessages.FatalError) {
-				return; // success
+			task.cancelExecution();
+
+			for (int i = 0; i < 10; i++) {
+				Object msg = taskManagerMessages.poll(1, TimeUnit.SECONDS);
+				if (msg instanceof TaskManagerMessages.FatalError) {
+					return; // success
+				}
 			}
-		}
 
-		fail("Did not receive expected task manager message");
+			fail("Did not receive expected task manager message");
+		} finally {
+			triggerLatch.trigger();
+			Thread taskThread = task.getExecutingThread();
+
+			taskThread.interrupt();
+			taskThread.join(10000);
+
+			assertEquals("Test stability: did not shut down task Thread", false, taskThread.isAlive());
+		}
 	}
 
 	// ------------------------------------------------------------------------
@@ -989,6 +1000,10 @@ public class TaskTest {
 						wait();
 					}
 				} catch (InterruptedException ignored) {
+					// Don't leave Thread running
+					if (triggerLatch.isTriggered()) {
+						break;
+					}
 				}
 			}
 		}
