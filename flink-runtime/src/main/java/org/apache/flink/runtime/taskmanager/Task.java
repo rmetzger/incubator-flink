@@ -919,6 +919,7 @@ public class Task implements Runnable, TaskActions {
 
 						// The canceller calls cancel and interrupts the executing thread once
 						Runnable canceler = new TaskCanceler(
+								LOG,
 								invokable,
 								executingThread,
 								taskCancellationInterval,
@@ -935,6 +936,7 @@ public class Task implements Runnable, TaskActions {
 						// task manager is notified about a fatal error) or the
 						// executor has terminated.
 						Runnable watchDog = new TaskCancellationWatchDog(
+								LOG,
 								executingThread,
 								taskCancellationInterval,
 								taskCancellationTimeout,
@@ -1225,6 +1227,7 @@ public class Task implements Runnable, TaskActions {
 	 */
 	private static class TaskCanceler implements Runnable {
 
+		private final Logger logger;
 		private final AbstractInvokable invokable;
 		private final Thread executer;
 		private final long taskCancellationIntervalMillis;
@@ -1233,6 +1236,7 @@ public class Task implements Runnable, TaskActions {
 		private final CountDownLatch watchDogLatch;
 
 		public TaskCanceler(
+				Logger logger,
 				AbstractInvokable invokable,
 				Thread executer,
 				long cancelationInterval,
@@ -1240,6 +1244,7 @@ public class Task implements Runnable, TaskActions {
 				SingleInputGate[] inputGates,
 				CountDownLatch watchDogLatch) {
 
+			this.logger = logger;
 			this.invokable = invokable;
 			this.executer = executer;
 			this.taskCancellationIntervalMillis = cancelationInterval;
@@ -1260,7 +1265,7 @@ public class Task implements Runnable, TaskActions {
 					invokable.cancel();
 				}
 				catch (Throwable t) {
-					LOG.error("Error while canceling the task", t);
+					logger.error("Error while canceling the task", t);
 				}
 
 				// Early release of input and output buffer pools. We do this
@@ -1274,7 +1279,7 @@ public class Task implements Runnable, TaskActions {
 					try {
 						partition.destroyBufferPool();
 					} catch (Throwable t) {
-						LOG.error("Failed to release result partition buffer pool.", t);
+						logger.error("Failed to release result partition buffer pool.", t);
 					}
 				}
 
@@ -1282,7 +1287,7 @@ public class Task implements Runnable, TaskActions {
 					try {
 						inputGate.releaseAllResources();
 					} catch (Throwable t) {
-						LOG.error("Failed to release input gate.", t);
+						logger.error("Failed to release input gate.", t);
 					}
 				}
 
@@ -1296,7 +1301,7 @@ public class Task implements Runnable, TaskActions {
 				}
 			}
 			catch (Throwable t) {
-				LOG.error("Error in the task canceler", t);
+				logger.error("Error in the task canceler", t);
 			}
 		}
 	}
@@ -1306,6 +1311,12 @@ public class Task implements Runnable, TaskActions {
 	 * we notify the task manager about a fatal error.
 	 */
 	private static class TaskCancellationWatchDog extends TimerTask {
+
+		/**
+		 * Pass logger in order to prevent that the compiler needs to inject static bridge methods
+		 * to access it.
+		 */
+		private final Logger logger;
 
 		/** Thread executing the Task. */
 		private final Thread executor;
@@ -1326,6 +1337,7 @@ public class Task implements Runnable, TaskActions {
 		private final CountDownLatch taskCancellerLatch;
 
 		public TaskCancellationWatchDog(
+				Logger logger,
 				Thread executor,
 				long interruptInterval,
 				long interruptTimeout,
@@ -1333,6 +1345,7 @@ public class Task implements Runnable, TaskActions {
 				String taskName,
 				CountDownLatch taskCancellerLatch) {
 
+			this.logger = checkNotNull(logger);
 			this.executor = checkNotNull(executor);
 			this.interruptInterval = checkNotNull(interruptInterval);
 			this.interruptTimeout = checkNotNull(interruptTimeout);
@@ -1346,25 +1359,24 @@ public class Task implements Runnable, TaskActions {
 			boolean synced = false;
 			try {
 				// Synchronize with task canceler
-				synced = taskCancellerLatch.await(interruptTimeout, TimeUnit.MILLISECONDS);
-			} catch (InterruptedException ignored) {
-			} finally {
-				if (!synced) {
-					long duration = TimeUnit.SECONDS.convert(interruptInterval, TimeUnit.MILLISECONDS);
-					String msg = String.format("Task canceller did not cancel task '%s' within " +
-							"the task cancellation timeout of %d seconds.",
-							taskName,
-							duration);
-					taskManager.notifyFatalError(msg, null);
-					return;
-				}
+				taskCancellerLatch.await();
+			} catch (Exception e) {
+				String msg = String.format("Exception while waiting on task " +
+						"canceller to cancel task '%s'.", taskName);
+				taskManager.notifyFatalError(msg, e);
+				return;
 			}
 
 			long deadline = System.currentTimeMillis() + interruptTimeout;
 
-			try {
-				Thread.sleep(interruptInterval);
-			} catch (InterruptedException ignored) {
+			// Initial wait before interrupting periodically
+			if (executor.isAlive()) {
+				try {
+					Thread.sleep(interruptInterval);
+				} catch (InterruptedException ignored) {
+				}
+			} else {
+				return; // already done
 			}
 
 			// It is possible that the user code does not react to the task canceller.
@@ -1393,7 +1405,7 @@ public class Task implements Runnable, TaskActions {
 
 					break; // done, don't forget to leave the loop
 				} else {
-					LOG.warn("Task '{}' did not react to cancelling signal, but is stuck in method:\n {}",
+					logger.warn("Task '{}' did not react to cancelling signal, but is stuck in method:\n {}",
 							taskName, bld.toString());
 
 					executor.interrupt();
