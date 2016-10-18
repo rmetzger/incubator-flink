@@ -604,7 +604,6 @@ public class TaskTest {
 		for (int i = 0; i < 10; i++) {
 			Object msg = taskManagerMessages.poll(1, TimeUnit.SECONDS);
 			if (msg instanceof TaskManagerMessages.FatalError) {
-				System.out.println(msg);
 				return; // success
 			}
 		}

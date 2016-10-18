@@ -1293,8 +1293,6 @@ public class Task implements Runnable, TaskActions {
 			catch (Throwable t) {
 				LOG.error("Error in the task canceler", t);
 			}
-
-			System.out.println("Canceler done");
 		}
 	}
 
