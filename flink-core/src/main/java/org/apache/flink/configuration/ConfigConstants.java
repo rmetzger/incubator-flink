@@ -278,6 +278,12 @@ public final class ConfigConstants {
 	@PublicEvolving
 	public static final String TASK_CANCELLATION_INTERVAL_MILLIS = "task.cancellation-interval";
 
+	/**
+	 * Timeout (in millis) after which a stuck task cancellation leads to a fatal TaskManager error.
+	 */
+	@PublicEvolving
+	public static final String TASK_CANCELLATION_TIMEOUT_MILLIS = "task.cancellation-timeout";
+
 	// --------------------------- Runtime Algorithms -------------------------------
 	
 	/**
@@ -1089,6 +1095,12 @@ public final class ConfigConstants {
 	 * The default interval (in milliseconds) to wait between consecutive task cancellation attempts (= 30000 msec).
 	 * */
 	public static final long DEFAULT_TASK_CANCELLATION_INTERVAL_MILLIS = 30000;
+
+	/**
+	 * Timeout (in millis) after which a stuck task cancellation leads to a fatal TaskManager error.
+	 */
+	@PublicEvolving
+	public static final long DEFAULT_TASK_CANCELLATION_TIMEOUT_MILLIS = 180000;
 
 	// ------------------------ Runtime Algorithms ------------------------
 	

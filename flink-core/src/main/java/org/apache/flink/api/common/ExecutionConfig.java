@@ -19,11 +19,9 @@
 package org.apache.flink.api.common;
 
 import com.esotericsoftware.kryo.Serializer;
-import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.Public;
+import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
-import org.apache.flink.util.Preconditions;
-
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -31,6 +29,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+
+import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
  * A config to define the behavior of the program execution. It allows to define (among other
@@ -134,6 +134,12 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 	private RestartStrategies.RestartStrategyConfiguration restartStrategyConfiguration;
 	
 	private long taskCancellationIntervalMillis = -1;
+
+	/**
+	 * Timeout after which an ongoing task cancellation will lead to a fatal
+	 * TaskManager error, usually killing the JVM.
+	 */
+	private long taskCancellationTimeoutMillis = -1;
 
 	// ------------------------------- User code values --------------------------------------------
 
@@ -305,7 +311,7 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 	 */
 	@PublicEvolving
 	public void setMaxParallelism(int maxParallelism) {
-		Preconditions.checkArgument(maxParallelism > 0, "The maximum parallelism must be greater than 0.");
+		checkArgument(maxParallelism > 0, "The maximum parallelism must be greater than 0.");
 		this.maxParallelism = maxParallelism;
 	}
 
@@ -323,6 +329,30 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 	 */
 	public ExecutionConfig setTaskCancellationInterval(long interval) {
 		this.taskCancellationIntervalMillis = interval;
+		return this;
+	}
+
+	/**
+	 * Returns the timeout (in milliseconds) after which an ongoing task
+	 * cancellation leads to a fatal TaskManager error.
+	 */
+	@PublicEvolving
+	public long getTaskCancellationTimeout() {
+		return this.taskCancellationTimeoutMillis;
+	}
+
+	/**
+	 * Sets the timeout (in milliseconds) after which an ongoing task cancellation
+	 * is considered failed, leading to a fatal TaskManager error.
+	 *
+	 * <p>The cluster default is configured via {@link org.apache.flink.configuration.ConfigConstants#TASK_CANCELLATION_TIMEOUT_MILLIS}.
+	 *
+	 * @param timeout The task cancellation timeout (in milliseconds).
+	 */
+	@PublicEvolving
+	public ExecutionConfig setTaskCancellationTimeout(long timeout) {
+		checkArgument(timeout > 0, "Timeout needs to be positive.");
+		this.taskCancellationIntervalMillis = timeout;
 		return this;
 	}
 
