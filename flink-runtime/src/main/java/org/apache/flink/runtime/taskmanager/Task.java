@@ -1408,9 +1408,10 @@ public class Task implements Runnable, TaskActions {
 					executor.interrupt();
 					try {
 						long timeLeftNanos = Math.min(intervalNanos, deadline - now - intervalNanos);
-						if (timeLeftNanos > 0) {
-							long timeLeftMs = TimeUnit.MILLISECONDS.convert(timeLeftNanos, TimeUnit.NANOSECONDS);
-							executor.join(timeLeftMs);
+						long timeLeftMillis = TimeUnit.MILLISECONDS.convert(timeLeftNanos, TimeUnit.NANOSECONDS);
+
+						if (timeLeftMillis > 0) {
+							executor.join(timeLeftMillis);
 						}
 					} catch (InterruptedException ignored) {
 					}

@@ -31,7 +31,6 @@ import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor;
 import org.apache.flink.runtime.execution.CancelTaskException;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
-import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.filecache.FileCache;
 import org.apache.flink.runtime.instance.ActorGateway;
@@ -570,16 +569,17 @@ public class TaskTest {
 	}
 
 	/**
+	 * Tests that interrupt happens via watch dog if canceller is stuck in cancel.
 	 * Task cancellation blocks the task canceller. Interrupt after cancel via
 	 * cancellation watch dog.
 	 */
 	@Test
-	public void testTaskCancelWatchDog() throws Exception {
+	public void testWatchDogInterruptsTask() throws Exception {
 		Configuration config = new Configuration();
-		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 100);
-		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 1000);
+		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 5);
+		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 50);
 
-		Task task = createTask(InvokableBlockingInCancel.class, config, new ExecutionConfig());
+		Task task = createTask(InvokableBlockingInCancel.class, config);
 		task.startTaskThread();
 
 		awaitLatch.await();
@@ -587,15 +587,50 @@ public class TaskTest {
 		task.cancelExecution();
 
 		triggerLatch.await();
+
+		// No fatal error
+		for (Object msg : taskManagerMessages) {
+			assertEquals(false, msg instanceof TaskManagerMessages.FatalError);
+		}
 	}
 
+	/**
+	 * The invoke() method holds a lock (trigger awaitLatch after acquisition)
+	 * and cancel cannot complete because it also tries to acquire the same lock.
+	 * This is resolved by the watch dog, no fatal error.
+	 */
 	@Test
-	public void testReportFatalErrorAfterCancellationTimeout() throws Exception {
+	public void testInterruptableSharedLockInInvokeAndCancel() throws Exception {
 		Configuration config = new Configuration();
-		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 10);
-		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 200);
+		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 5);
+		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 50);
 
-		Task task = createTask(InvokableBlockingInvokeAndCancel.class, config, new ExecutionConfig());
+		Task task = createTask(InvokableInterruptableSharedLockInInvokeAndCancel.class, config);
+		task.startTaskThread();
+
+		awaitLatch.await();
+
+		task.cancelExecution();
+
+		triggerLatch.await();
+
+		// No fatal error
+		for (Object msg : taskManagerMessages) {
+			assertEquals(false, msg instanceof TaskManagerMessages.FatalError);
+		}
+	}
+
+	/**
+	 * The invoke() method blocks infinitely, but cancel() does not block. Only
+	 * resolved by a fatal error.
+	 */
+	@Test
+	public void testFatalErrorAfterUninterruptibleInvoke() throws Exception {
+		Configuration config = new Configuration();
+		config.setLong(TaskOptions.CANCELLATION_INTERVAL.key(), 5);
+		config.setLong(TaskOptions.CANCELLATION_TIMEOUT.key(), 50);
+
+		Task task = createTask(InvokableUninterruptibleBlockingInvoke.class, config);
 
 		try {
 			task.startTaskThread();
@@ -613,13 +648,16 @@ public class TaskTest {
 
 			fail("Did not receive expected task manager message");
 		} finally {
+			// Interrupt again to clean up Thread
 			triggerLatch.trigger();
 			Thread taskThread = task.getExecutingThread();
 
 			taskThread.interrupt();
 			taskThread.join(10000);
 
-			assertEquals("Test stability: did not shut down task Thread", false, taskThread.isAlive());
+			if (taskThread.isAlive()) {
+				fail("Test stability: did not shut down task Thread");
+			}
 		}
 	}
 
@@ -685,6 +723,12 @@ public class TaskTest {
 
 	private Task createTask(Class<? extends AbstractInvokable> invokable) {
 		return createTask(invokable, new Configuration(), new ExecutionConfig());
+	}
+
+	private Task createTask(Class<? extends AbstractInvokable> invokable, Configuration config) {
+		LibraryCacheManager libCache = mock(LibraryCacheManager.class);
+		when(libCache.getClassLoader(any(JobID.class))).thenReturn(getClass().getClassLoader());
+		return createTask(invokable, libCache, config, new ExecutionConfig());
 	}
 
 	private Task createTask(Class<? extends AbstractInvokable> invokable, Configuration config, ExecutionConfig execConfig) {
@@ -987,6 +1031,26 @@ public class TaskTest {
 		}
 	}
 
+	public static final class InvokableInterruptableSharedLockInInvokeAndCancel extends AbstractInvokable {
+
+		private final Object lock = new Object();
+
+		@Override
+		public void invoke() throws Exception {
+			synchronized (lock) {
+				awaitLatch.trigger();
+				wait();
+			}
+		}
+
+		@Override
+		public void cancel() throws Exception {
+			synchronized (lock) {
+				triggerLatch.trigger();
+			}
+		}
+	}
+
 	public static final class InvokableBlockingInCancel extends AbstractInvokable {
 
 		private final CountDownLatch cancelLatch = new CountDownLatch(1);
@@ -995,18 +1059,13 @@ public class TaskTest {
 		public void invoke() throws Exception {
 			awaitLatch.trigger();
 
-			cancelLatch.await();
-
 			try {
+				cancelLatch.await();
+
 				synchronized (this) {
 					wait();
 				}
 			} catch (InterruptedException ignored) {
-				boolean cancelled = cancelLatch.getCount() == 0;
-				if (!cancelled) {
-					throw new IllegalStateException("Did not call cancel before interrupt");
-				}
-
 				triggerLatch.trigger();
 			}
 		}
@@ -1021,15 +1080,14 @@ public class TaskTest {
 		}
 	}
 
-	public static final class InvokableBlockingInvokeAndCancel extends AbstractInvokable {
+	public static final class InvokableUninterruptibleBlockingInvoke extends AbstractInvokable {
 
 		@Override
 		public void invoke() throws Exception {
-			awaitLatch.trigger();
-
 			while (true) {
 				try {
 					synchronized (this) {
+						awaitLatch.trigger();
 						wait();
 					}
 				} catch (InterruptedException ignored) {
@@ -1043,9 +1101,6 @@ public class TaskTest {
 
 		@Override
 		public void cancel() throws Exception {
-			synchronized (this) {
-				wait();
-			}
 		}
 	}
 }
