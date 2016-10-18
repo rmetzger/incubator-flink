@@ -18,12 +18,13 @@
 
 package org.apache.flink.runtime.taskmanager;
 
+import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.TaskInfo;
 import org.apache.flink.api.common.cache.DistributedCache;
-import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.TaskOptions;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.accumulators.AccumulatorRegistry;
 import org.apache.flink.runtime.blob.BlobKey;
@@ -289,15 +290,9 @@ public class Task implements Runnable, TaskActions {
 		this.serializedExecutionConfig = checkNotNull(tdd.getSerializedExecutionConfig());
 		this.keyGroupStates = tdd.getKeyGroupState();
 		this.partitionableOperatorState = tdd.getPartitionableOperatorState();
-
-		this.taskCancellationInterval = jobConfiguration.getLong(
-			ConfigConstants.TASK_CANCELLATION_INTERVAL_MILLIS,
-			ConfigConstants.DEFAULT_TASK_CANCELLATION_INTERVAL_MILLIS);
-
-		this.taskCancellationTimeout = jobConfiguration.getLong(
-				ConfigConstants.TASK_CANCELLATION_TIMEOUT_MILLIS,
-				ConfigConstants.DEFAULT_TASK_CANCELLATION_TIMEOUT_MILLIS);
-
+		Configuration taskConfig = tdd.getTaskConfiguration();
+		this.taskCancellationInterval = taskConfig.getLong(TaskOptions.CANCELLATION_INTERVAL);
+		this.taskCancellationTimeout = taskConfig.getLong(TaskOptions.CANCELLATION_TIMEOUT);
 		this.memoryManager = checkNotNull(memManager);
 		this.ioManager = checkNotNull(ioManager);
 		this.broadcastVariableManager = checkNotNull(bcVarManager);
@@ -425,6 +420,16 @@ public class Task implements Runnable, TaskActions {
 		return executingThread;
 	}
 
+	@VisibleForTesting
+	long getTaskCancellationInterval() {
+		return taskCancellationInterval;
+	}
+
+	@VisibleForTesting
+	long getTaskCancellationTimeout() {
+		return taskCancellationTimeout;
+	}
+
 	// ------------------------------------------------------------------------
 	//  Task Execution
 	// ------------------------------------------------------------------------
@@ -522,7 +527,7 @@ public class Task implements Runnable, TaskActions {
 				taskCancellationInterval = executionConfig.getTaskCancellationInterval();
 			}
 
-			if (executionConfig.getTaskCancellationInterval() > 0) {
+			if (executionConfig.getTaskCancellationTimeout() > 0) {
 				// override task cancellation timeout from Flink config if set in ExecutionConfig
 				taskCancellationTimeout = executionConfig.getTaskCancellationTimeout();
 			}

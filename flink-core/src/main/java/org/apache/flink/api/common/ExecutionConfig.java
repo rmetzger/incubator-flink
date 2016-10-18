@@ -345,14 +345,14 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 	 * Sets the timeout (in milliseconds) after which an ongoing task cancellation
 	 * is considered failed, leading to a fatal TaskManager error.
 	 *
-	 * <p>The cluster default is configured via {@link org.apache.flink.configuration.ConfigConstants#TASK_CANCELLATION_TIMEOUT_MILLIS}.
+	 * <p>The cluster default is configured via {@link org.apache.flink.configuration.TaskOptions#CANCELLATION_TIMEOUT}.
 	 *
 	 * @param timeout The task cancellation timeout (in milliseconds).
 	 */
 	@PublicEvolving
 	public ExecutionConfig setTaskCancellationTimeout(long timeout) {
 		checkArgument(timeout > 0, "Timeout needs to be positive.");
-		this.taskCancellationIntervalMillis = timeout;
+		this.taskCancellationTimeoutMillis = timeout;
 		return this;
 	}
 
