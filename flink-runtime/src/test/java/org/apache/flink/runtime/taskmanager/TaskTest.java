@@ -589,7 +589,7 @@ public class TaskTest {
 
 		// No fatal error
 		for (Object msg : taskManagerMessages) {
-			assertEquals(false, msg instanceof TaskManagerMessages.FatalError);
+			assertFalse("Unexpected FatalError message", msg instanceof TaskManagerMessages.FatalError);
 		}
 	}
 
@@ -615,7 +615,7 @@ public class TaskTest {
 
 		// No fatal error
 		for (Object msg : taskManagerMessages) {
-			assertEquals(false, msg instanceof TaskManagerMessages.FatalError);
+			assertFalse("Unexpected FatalError message", msg instanceof TaskManagerMessages.FatalError);
 		}
 	}
 
