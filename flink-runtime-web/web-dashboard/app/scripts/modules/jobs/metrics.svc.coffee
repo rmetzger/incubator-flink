@@ -38,9 +38,10 @@ angular.module('flinkApp')
           angular.forEach data, (metric, mk) =>
             names.push metric.id
 
-          @getMetrics(jobid, nodeid, names).then (values) =>
-            if jobid == @observer.jobid && nodeid == @observer.nodeid
-              @observer.callback(values) if @observer.callback
+          if names.length > 0
+            @getMetrics(jobid, nodeid, names).then (values) =>
+              if jobid == @observer.jobid && nodeid == @observer.nodeid
+                @observer.callback(values) if @observer.callback
 
 
   , flinkConfig["refresh-interval"]
