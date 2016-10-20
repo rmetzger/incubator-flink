@@ -27,7 +27,7 @@ limitations under the License.
       &nbsp;<span class="caret"></span>
     </button>
     <ul class="dropdown-menu dropdown-menu-right metric-menu">
-      <li ng-repeat="metric in availableMetrics track by $index"><a ng-click="addMetric(metric)">{{ metric.name }}</a></li>
+      <li ng-repeat="metric in availableMetrics track by $index"><a ng-click="addMetric(metric)">{{ metric.id }}</a></li>
     </ul>
   </div>
   <div ng-if="!availableMetrics.length" class="dropup add-metrics">

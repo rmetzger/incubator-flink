@@ -29,7 +29,7 @@ nav.navbar.navbar-default.navbar-secondary-additional.navbar-secondary-additiona
       span.caret
     ul.dropdown-menu.dropdown-menu-right.metric-menu
       li(ng-repeat="metric in availableMetrics track by $index")
-        a(ng-click="addMetric(metric)") {{ metric.name }}
+        a(ng-click="addMetric(metric)") {{ metric.id }}
 
   .dropup.add-metrics(ng-if="!availableMetrics.length")
     button.btn.btn-default.navbar-btn.dropdown-toggle(type='button', data-toggle='dropdown', disabled='disabled')

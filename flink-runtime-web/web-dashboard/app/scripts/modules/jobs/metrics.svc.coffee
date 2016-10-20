@@ -162,7 +162,7 @@ angular.module('flinkApp')
     $http.get flinkConfig.jobServer + "jobs/" + jobid + "/vertices/" + nodeid + "/metrics"
     .success (data) =>
       results = []
-      angular.forEach data.available, (v, k) =>
+      angular.forEach data, (v, k) =>
         i = @metrics[jobid][nodeid].indexOf(v.id)
         i = _.findIndex(@metrics[jobid][nodeid], { id: v.id }) if i == -1
 
