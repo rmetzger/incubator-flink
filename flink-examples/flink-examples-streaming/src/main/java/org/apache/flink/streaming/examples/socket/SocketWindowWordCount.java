@@ -54,7 +54,8 @@ public class SocketWindowWordCount {
 		// get the execution environment
 		Configuration conf = new Configuration();
 		conf.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true);
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(10, conf);
+		// final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(10, conf);
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
 		// get input data by connecting to the socket
 		DataStream<String> text = env.addSource(new SourceFunction<String>() {
