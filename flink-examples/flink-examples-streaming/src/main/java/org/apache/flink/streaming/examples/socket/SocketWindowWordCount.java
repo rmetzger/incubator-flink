@@ -20,11 +20,9 @@ package org.apache.flink.streaming.examples.socket;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
-import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.configuration.Configuration;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 
@@ -32,7 +30,7 @@ import org.apache.flink.util.Collector;
  * Implements a streaming windowed version of the "WordCount" program.
  *
  * This program connects to a server socket and reads strings from the socket.
- * The easiest way to try this out is to open a text sever (at port 12345) 
+ * The easiest way to try this out is to open a text sever (at port 12345)
  * using the <i>netcat</i> tool via
  * <pre>
  * nc -l 12345
@@ -41,43 +39,31 @@ import org.apache.flink.util.Collector;
  */
 @SuppressWarnings("serial")
 public class SocketWindowWordCount {
-	
+
 	public static void main(String[] args) throws Exception {
 
-		//
-		//	DO NOT MERGE THIS FILE LIKE THIS.
-		// IT HAS BEEN CHANGED A BIT TO GET A WEB INTERFACE WITH A LONG RUNNING FLINK JOB
-		// To see the web interface, please call with class with the "flink-dist" package
-		// classpath.
-		//
+		// the port to connect to
+		final int port;
+		try {
+			final ParameterTool params = ParameterTool.fromArgs(args);
+			port = params.getInt("port");
+		} catch (Exception e) {
+			System.err.println("No port specified. Please run 'SocketWindowWordCount --port <port>', " +
+					"where port is the address of the text server");
+			System.err.println("To start a simple text server, run 'netcat -l <port>' and type the input text " +
+					"into the command line");
+			return;
+		}
 
 		// get the execution environment
-		Configuration conf = new Configuration();
-		conf.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true);
-		// final StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment(10, conf);
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
 		// get input data by connecting to the socket
-		DataStream<String> text = env.addSource(new SourceFunction<String>() {
-			public boolean running = true;
+		DataStream<String> text = env.socketTextStream("localhost", port, "\n");
 
-			@Override
-			public void run(SourceContext<String> ctx) throws Exception {
-				while(running) {
-					ctx.collect("abc");
-					Thread.sleep(1000);
-				}
-			}
-
-			@Override
-			public void cancel() {
-				running = false;
-			}
-		});
-
-		// parse the data, group it, window it, and aggregate the counts 
+		// parse the data, group it, window it, and aggregate the counts
 		DataStream<WordWithCount> windowCounts = text
-				
+
 				.flatMap(new FlatMapFunction<String, WordWithCount>() {
 					@Override
 					public void flatMap(String value, Collector<WordWithCount> out) {
@@ -86,10 +72,10 @@ public class SocketWindowWordCount {
 						}
 					}
 				})
-				
+
 				.keyBy("word")
 				.timeWindow(Time.seconds(5), Time.seconds(1))
-				
+
 				.reduce(new ReduceFunction<WordWithCount>() {
 					@Override
 					public WordWithCount reduce(WordWithCount a, WordWithCount b) {
@@ -98,21 +84,21 @@ public class SocketWindowWordCount {
 				});
 
 		// print the results with a single thread, rather than in parallel
-		windowCounts.print().setParallelism(10);
+		windowCounts.print().setParallelism(1);
 
 		env.execute("Socket Window WordCount");
 	}
-	
+
 	// ------------------------------------------------------------------------
 
 	/**
 	 * Data type for words with count
 	 */
 	public static class WordWithCount {
-		
+
 		public String word;
 		public long count;
-		
+
 		public WordWithCount() {}
 
 		public WordWithCount(String word, long count) {
