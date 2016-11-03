@@ -290,11 +290,31 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 	@Override
 	public void open(Configuration configuration) {
-		List<KafkaTopicPartition> kafkaTopicPartitions = getKafkaPartitions(topics);
+		subscribedPartitions = new ArrayList<>();
+		if (restoreToOffset != null) {
+			// restoreToOffset contains an empty map if no partitions were assigned to this parallel subtask
+			subscribedPartitions.addAll(restoreToOffset.keySet());
+		} else {
+			// query all topic partitions for the given topics from Kafka
+			List<KafkaTopicPartition> kafkaTopicPartitions = getKafkaPartitions(topics);
+			Collections.sort(kafkaTopicPartitions, new Comparator<KafkaTopicPartition>() {
+				@Override
+				public int compare(KafkaTopicPartition o1, KafkaTopicPartition o2) {
+					int topicComparison = o1.getTopic().compareTo(o2.getTopic());
 
-		if (kafkaTopicPartitions != null) {
-			assignTopicPartitions(kafkaTopicPartitions);
+					if (topicComparison == 0) {
+						return o1.getPartition() - o2.getPartition();
+					} else {
+						return topicComparison;
+					}
+				}
+			});
+
+			for (int i = getRuntimeContext().getIndexOfThisSubtask(); i < kafkaTopicPartitions.size(); i += getRuntimeContext().getNumberOfParallelSubtasks()) {
+				subscribedPartitions.add(kafkaTopicPartitions.get(i));
+			}
 		}
+
 	}
 
 	@Override
@@ -337,7 +357,6 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 		if (!running) {
 			LOG.debug("snapshotState() called on closed source");
 		} else {
-
 			offsetsStateForCheckpoint.clear();
 
 			final AbstractFetcher<?, ?> fetcher = this.kafkaFetcher;
@@ -468,35 +487,6 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	// ------------------------------------------------------------------------
 	//  Utilities
 	// ------------------------------------------------------------------------
-
-	private void assignTopicPartitions(List<KafkaTopicPartition> kafkaTopicPartitions) {
-		subscribedPartitions = new ArrayList<>();
-
-		if (restoreToOffset != null) {
-			for (KafkaTopicPartition kafkaTopicPartition : kafkaTopicPartitions) {
-				if (restoreToOffset.containsKey(kafkaTopicPartition)) {
-					subscribedPartitions.add(kafkaTopicPartition);
-				}
-			}
-		} else {
-			Collections.sort(kafkaTopicPartitions, new Comparator<KafkaTopicPartition>() {
-				@Override
-				public int compare(KafkaTopicPartition o1, KafkaTopicPartition o2) {
-					int topicComparison = o1.getTopic().compareTo(o2.getTopic());
-
-					if (topicComparison == 0) {
-						return o1.getPartition() - o2.getPartition();
-					} else {
-						return topicComparison;
-					}
-				}
-			});
-
-			for (int i = getRuntimeContext().getIndexOfThisSubtask(); i < kafkaTopicPartitions.size(); i += getRuntimeContext().getNumberOfParallelSubtasks()) {
-				subscribedPartitions.add(kafkaTopicPartitions.get(i));
-			}
-		}
-	}
 
 	/**
 	 * Selects which of the given partitions should be handled by a specific consumer,
