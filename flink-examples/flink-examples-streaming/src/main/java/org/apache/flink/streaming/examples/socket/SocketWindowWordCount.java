@@ -21,10 +21,16 @@ package org.apache.flink.streaming.examples.socket;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
+import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
+
+import javax.annotation.Nullable;
+import java.util.Random;
 
 /**
  * Implements a streaming windowed version of the "WordCount" program.
@@ -57,9 +63,11 @@ public class SocketWindowWordCount {
 
 		// get the execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		env.disableOperatorChaining();
 
 		// get input data by connecting to the socket
-		DataStream<String> text = env.socketTextStream("localhost", port, "\n");
+		DataStream<String> text = env.socketTextStream("localhost", port, "\n").assignTimestampsAndWatermarks(new FakeWMGen());
 
 		// parse the data, group it, window it, and aggregate the counts
 		DataStream<WordWithCount> windowCounts = text
@@ -89,6 +97,26 @@ public class SocketWindowWordCount {
 		env.execute("Socket Window WordCount");
 	}
 
+	public static class FakeWMGen implements AssignerWithPeriodicWatermarks<String> {
+		int off = 0;
+		long curr = 0;
+		public FakeWMGen() {
+			Random rnd = new Random();
+			off = rnd.nextInt(200);
+		}
+
+		@Override
+		public long extractTimestamp(String element, long previousElementTimestamp) {
+			return 0;
+		}
+
+		@Nullable
+		@Override
+		public Watermark getCurrentWatermark() {
+			curr += off;
+			return new Watermark(curr);
+		}
+	}
 	// ------------------------------------------------------------------------
 
 	/**
