@@ -839,6 +839,10 @@ under the License.
 						<exclude>flink-runtime-web/web-dashboard/bower_components/**</exclude>
 						<exclude>flink-runtime-web/web-dashboard/tmp/**</exclude>
 
+						<!-- web dashboard -->
+						<exclude>flink-runtime-web/web-dashboard/assets/images/*.svg</exclude>
+						<exclude>flink-runtime-web/web-dashboard/assets/images/*.json</exclude>
+
 						<!-- Test Data. -->
 						<exclude>flink-tests/src/test/resources/testdata/terainput.txt</exclude>
 						<exclude>flink-connectors/flink-avro/src/test/resources/avro/*.avsc</exclude>
