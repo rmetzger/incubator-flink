@@ -310,7 +310,7 @@ public class BootstrapTools {
 			boolean hasLog4j,
 			Class<?> mainClass) {
 
-		StringBuilder tmCommand = new StringBuilder("$JAVA_HOME/bin/java");
+		StringBuilder tmCommand = new StringBuilder("ulimit -c unlimited ; $JAVA_HOME/bin/java");
 		tmCommand.append(" -Xms").append(tmParams.taskManagerHeapSizeMB()).append("m");
 		tmCommand.append(" -Xmx").append(tmParams.taskManagerHeapSizeMB()).append("m");
 		tmCommand.append(" -XX:MaxDirectMemorySize=").append(tmParams.taskManagerDirectMemoryLimitMB()).append("m");
