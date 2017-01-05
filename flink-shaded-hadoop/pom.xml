@@ -126,6 +126,22 @@ under the License.
 									<include>net.java.dev.jets3t:jets3t</include>
 									<include>org.apache.httpcomponents:*</include>
 									<include>commons-httpclient:commons-httpclient</include>
+
+									<include>org.tukaani:xz</include>
+									<include>commons-cli:commons-cli</include>
+									<!-- Includes commons-math3 -->
+									<include>org.apache.commons:*</include>
+									<include>commons-io:commons-io</include>
+									<include>commons-net:commons-net</include>
+									<include>commons-collections:commons-collections</include>
+									<include>commons-logging:commons-logging</include>
+									<include>commons-el:commons-el</include>
+									<include>commons-codec:commons-codec</include>
+									<include>commons-lang:commons-lang</include>
+									<include>commons-configuration:commons-configuration</include>
+									<include>commons-digester:commons-digester</include>
+									<include>commons-beanutils:commons-beanutils</include>
+									<include>commons-daemon:commons-daemon</include>
 								</includes>
 							</artifactSet>
 							<relocations>
@@ -152,13 +168,19 @@ under the License.
 									<pattern>org.apache.http</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.http</shadedPattern>
 								</relocation>
+								<!-- Matches ALL Apache commons -->
 								<relocation>
-									<pattern>org.apache.commons.httpclient</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.commons.httpclient</shadedPattern>
+									<pattern>org.apache.commons</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.commons</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.htrace</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.htrace</shadedPattern>
+								</relocation>
+
+								<relocation>
+									<pattern>org.tukaani.xz</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.tukaani.xz</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>
