@@ -18,12 +18,13 @@
 
 package org.apache.flink.hadoopcompatibility;
 
-// we include the shaded dependency here. Its only internal.
-import org.apache.flink.hadoop.shaded.org.apache.commons.cli.Option;
+// we include the shaded dependency here. Its only internal. (org.apache.flink.hadoop.shaded.
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,13 +41,22 @@ public class HadoopUtils {
 	 * @see GenericOptionsParser
 	 */
 	public static ParameterTool paramsFromGenericOptionsParser(String[] args) throws IOException {
-		Option[] options = new GenericOptionsParser(args).getCommandLine().getOptions();
-		Map<String, String> map = new HashMap<String, String>();
-		for (Option option : options) {
-			String[] split = option.getValue().split("=");
-			map.put(split[0], split[1]);
+		Object[] options = new GenericOptionsParser(args).getCommandLine().getOptions();
+		if(options.length == 0) {
+			return ParameterTool.fromMap(new HashMap<String, String>());
 		}
-		return ParameterTool.fromMap(map);
+		try {
+			Method method = options[0].getClass().getMethod("getValue");
+			Map<String, String> map = new HashMap<String, String>();
+			for (Object option : options) {
+				String val = (String)method.invoke(option);
+				String[] split = val.split("=");
+				map.put(split[0], split[1]);
+			}
+			return ParameterTool.fromMap(map);
+		} catch(NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+			throw new RuntimeException("Missing commons-cli dependency in runtime classpath", e);
+		}
 	}
 }
 

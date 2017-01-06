@@ -272,6 +272,11 @@ under the License.
 									<pattern>org.apache.jute</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.jute</shadedPattern>
 								</relocation>
+								<relocation>
+									<pattern>org.mortbay</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.mortbay</shadedPattern>
+								</relocation>
+
 							</relocations>
 						</configuration>
 					</execution>
