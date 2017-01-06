@@ -148,10 +148,4 @@ public class ParameterToolTest extends AbstractParameterToolTest {
 		ParameterTool parameter = parameter1.mergeWith(parameter2);
 		validate(parameter);
 	}
-
-	@Test
-	public void testFromGenericOptionsParser() throws IOException {
-		ParameterTool parameter = ParameterTool.fromGenericOptionsParser(new String[]{"-D", "input=myInput", "-DexpectedCount=15"});
-		validate(parameter);
-	}
 }

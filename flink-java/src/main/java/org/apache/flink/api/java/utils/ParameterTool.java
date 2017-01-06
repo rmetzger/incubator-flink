@@ -17,14 +17,11 @@
  */
 package org.apache.flink.api.java.utils;
 
-import org.apache.commons.cli.Option;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.flink.annotation.Public;
-import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Preconditions;
-import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -184,27 +181,6 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 		return fromMap((Map) System.getProperties());
 	}
 
-	/**
-	 * Returns {@link ParameterTool} for the arguments parsed by {@link GenericOptionsParser}
-	 *
-	 * @param args Input array arguments. It should be parsable by {@link GenericOptionsParser}
-	 * @return A {@link ParameterTool}
-	 * @throws IOException If arguments cannot be parsed by {@link GenericOptionsParser}
-	 * @see GenericOptionsParser
-	 * @deprecated Please use {@link org.apache.flink.hadoopcompatibility.HadoopUtils#paramsFromGenericOptionsParser(String[])}
-	 * from project flink-hadoop-compatibility
-	 */
-	@Deprecated
-	@PublicEvolving
-	public static ParameterTool fromGenericOptionsParser(String[] args) throws IOException {
-		Option[] options = new GenericOptionsParser(args).getCommandLine().getOptions();
-		Map<String, String> map = new HashMap<String, String>();
-		for (Option option : options) {
-			String[] split = option.getValue().split("=");
-			map.put(split[0], split[1]);
-		}
-		return fromMap(map);
-	}
 
 	// ------------------ ParameterUtil  ------------------------
 	protected final Map<String, String> data;

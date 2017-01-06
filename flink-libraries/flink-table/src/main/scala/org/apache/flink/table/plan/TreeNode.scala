@@ -17,7 +17,7 @@
  */
 package org.apache.flink.table.plan
 
-import org.apache.commons.lang.ClassUtils
+import org.apache.commons.lang3.ClassUtils
 
 /**
  * Generic base class for trees that can be transformed and traversed.
@@ -100,7 +100,7 @@ abstract class TreeNode[A <: TreeNode[A]] extends Product { self: A =>
         false
       } else {
         val argsClasses: Array[Class[_]] = newArgs.map(_.getClass)
-        ClassUtils.isAssignable(argsClasses, ctor.getParameterTypes)
+        ClassUtils.isAssignable(argsClasses, ctor.getParameterTypes:_*)
       }
     }.getOrElse(ctors.maxBy(_.getParameterTypes.size))
 

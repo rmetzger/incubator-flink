@@ -142,6 +142,21 @@ under the License.
 									<include>commons-digester:commons-digester</include>
 									<include>commons-beanutils:commons-beanutils</include>
 									<include>commons-daemon:commons-daemon</include>
+									<include>commons-beanutils:commons-beanutils-bean-collections</include>
+									<include>xmlenc:xmlenc</include>
+									<include>javax.servlet:servlet-api</include>
+									<include>org.mortbay.jetty:jetty-util</include>
+									<include>com.sun.jersey:jersey-core</include>
+									<include>com.jamesmurty.utils:java-xmlbuilder</include>
+									<include>org.codehaus.jackson:*</include>
+									<include>org.apache.avro:*</include>
+									<include>com.thoughtworks.paranamer:paranamer</include>
+									<include>org.xerial.snappy:snappy-java</include>
+									<include>com.jcraft:jsch</include>
+									<include>org.apache.zookeeper:*</include>
+									<include>javax.xml.bind:jaxb-api</include>
+									<include>javax.xml.stream:stax-api</include>
+									<include>javax.activation:activation</include>
 								</includes>
 							</artifactSet>
 							<relocations>
@@ -181,6 +196,81 @@ under the License.
 								<relocation>
 									<pattern>org.tukaani.xz</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.tukaani.xz</shadedPattern>
+								</relocation>
+
+								<relocation>
+									<pattern>org.znerd.xmlenc</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.znerd.xmlenc</shadedPattern>
+								</relocation>
+
+								<relocation>
+									<pattern>javax.servlet</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.servlet</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>javax.servlet</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.servlet</shadedPattern>
+								</relocation>
+								<!-- jersey-core -->
+								<relocation>
+									<pattern>javax.ws.rs</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.ws.rs</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.sun.jersey</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.jersey</shadedPattern>
+								</relocation>
+								<!-- jets3t -->
+								<relocation>
+									<pattern>contribs.mx</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.contribs.mx</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.jets3t.service</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.jets3t.service</shadedPattern>
+								</relocation>
+								<!-- com.jamesmurty.utils:java-xmlbuilder -->
+								<relocation>
+									<pattern>com.jamesmurty.utils</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.jamesmurty.utils</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>net.iharder.base64</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.net.iharder.base64</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.codehaus.jackson</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.codehaus.jackson</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.avro</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.avro</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.thoughtworks.paranamer</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.thoughtworks.paranamer</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.xerial.snappy</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.xerial.snappy</shadedPattern>
+								</relocation>
+
+								<relocation>
+									<pattern>com.jcraft.jsch</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.jcraft.jsch</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.zookeeper</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.zookeeper</shadedPattern>
+								</relocation>
+								<!-- javax.xml.bind:jaxb-api -->
+								<relocation>
+									<pattern>org.apache.zookeeper</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.zookeeper</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.jute</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.jute</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>

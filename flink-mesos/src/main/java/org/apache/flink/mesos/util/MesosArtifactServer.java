@@ -54,7 +54,6 @@ import org.apache.flink.core.fs.Path;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.net.SSLUtils;
-import org.jets3t.service.utils.Mimetypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -310,7 +309,7 @@ public class MesosArtifactServer implements MesosArtifactResolver {
 			HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
 			HttpHeaders.setHeader(response, CONNECTION, HttpHeaders.Values.CLOSE);
 			HttpHeaders.setHeader(response, CACHE_CONTROL, "private");
-			HttpHeaders.setHeader(response, CONTENT_TYPE, Mimetypes.MIMETYPE_OCTET_STREAM);
+			HttpHeaders.setHeader(response, CONTENT_TYPE, "application/octet-stream");
 			HttpHeaders.setContentLength(response, status.getLen());
 
 			ctx.write(response);

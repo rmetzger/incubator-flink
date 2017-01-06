@@ -18,7 +18,8 @@
 
 package org.apache.flink.hadoopcompatibility;
 
-import org.apache.commons.cli.Option;
+// we include the shaded dependency here. Its only internal.
+import org.apache.flink.hadoop.shaded.org.apache.commons.cli.Option;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.hadoop.util.GenericOptionsParser;
 
