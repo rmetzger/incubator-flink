@@ -145,8 +145,8 @@ under the License.
 									<include>commons-beanutils:commons-beanutils-bean-collections</include>
 									<include>xmlenc:xmlenc</include>
 									<include>javax.servlet:servlet-api</include>
-									<include>org.mortbay.jetty:jetty-util</include>
-									<include>com.sun.jersey:jersey-core</include>
+									<include>org.mortbay.jetty:*</include>
+									<include>com.sun.jersey:*</include>
 									<include>com.jamesmurty.utils:java-xmlbuilder</include>
 									<include>org.codehaus.jackson:*</include>
 									<include>org.apache.avro:*</include>
