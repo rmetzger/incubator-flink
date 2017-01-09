@@ -213,12 +213,38 @@ under the License.
 								</relocation>
 
 								<relocation>
-									<pattern>javax</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.javax</shadedPattern>
+									<pattern>javax.activation</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.activation</shadedPattern>
 								</relocation>
 								<relocation>
-									<pattern>com.sun</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun</shadedPattern>
+									<pattern>javax.servlet</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.servlet</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>javax.ws</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.ws</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>javax.xml.bind</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml.bind</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>javax.xml.stream</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml.stream</shadedPattern>
+								</relocation>
+
+
+								<relocation>
+									<pattern>com.sun.activation</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.activation</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.sun.research</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.research</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.sun.jersey</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.jersey</shadedPattern>
 								</relocation>
 								<!-- jets3t -->
 								<relocation>
@@ -263,11 +289,7 @@ under the License.
 									<pattern>org.apache.zookeeper</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.zookeeper</shadedPattern>
 								</relocation>
-								<!-- javax.xml.bind:jaxb-api -->
-								<relocation>
-									<pattern>org.apache.zookeeper</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.zookeeper</shadedPattern>
-								</relocation>
+				
 								<relocation>
 									<pattern>org.apache.jute</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.jute</shadedPattern>
