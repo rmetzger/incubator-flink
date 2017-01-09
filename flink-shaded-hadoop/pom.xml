@@ -147,6 +147,15 @@ under the License.
 									<include>javax.servlet:servlet-api</include>
 									<include>org.mortbay.jetty:*</include>
 									<include>com.sun.jersey:*</include>
+									<include>com.sun.xml.bind:*</include>
+									<include>com.google.inject.extensions:*</include>
+									<include>com.google.inject:*</include>
+									<include>javax.inject:*</include>
+									<include>aopalliance:*</include>
+									<include>com.sun.jersey.contribs:*</include>
+									<include>tomcat:*</include>
+									<include>javax.servlet.jsp:*</include>
+									<include>org.codehaus.jettison:*</include>
 									<include>com.jamesmurty.utils:java-xmlbuilder</include>
 									<include>org.codehaus.jackson:*</include>
 									<include>org.apache.avro:*</include>
@@ -163,9 +172,9 @@ under the License.
 								<relocation>
 									<pattern>com.google</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.com.google</shadedPattern>
-									<excludes>
+									<!--<excludes>
 										<exclude>com.google.inject.**</exclude>
-									</excludes>
+									</excludes> -->
 								</relocation>
 								<relocation>
 									<pattern>org.objectweb.asm</pattern>
@@ -204,21 +213,12 @@ under the License.
 								</relocation>
 
 								<relocation>
-									<pattern>javax.servlet</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.javax.servlet</shadedPattern>
+									<pattern>javax</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax</shadedPattern>
 								</relocation>
 								<relocation>
-									<pattern>javax.servlet</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.javax.servlet</shadedPattern>
-								</relocation>
-								<!-- jersey-core -->
-								<relocation>
-									<pattern>javax.ws.rs</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.javax.ws.rs</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>com.sun.jersey</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.jersey</shadedPattern>
+									<pattern>com.sun</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun</shadedPattern>
 								</relocation>
 								<!-- jets3t -->
 								<relocation>
@@ -277,6 +277,20 @@ under the License.
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.mortbay</shadedPattern>
 								</relocation>
 
+								<relocation>
+									<pattern>org.aopalliance</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.aopalliance</shadedPattern>
+								</relocation>
+
+								<relocation>
+									<pattern>org.apache.jasper</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.jasper</shadedPattern>
+								</relocation>
+
+								<relocation>
+									<pattern>org.codehaus</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.codehaus</shadedPattern>
+								</relocation>
 							</relocations>
 						</configuration>
 					</execution>
