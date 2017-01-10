@@ -116,8 +116,9 @@ under the License.
 									<include>com.google.guava:*</include>
 									<include>com.google.protobuf:*</include>
 									<include>com.google.code.findbugs:*</include>
+									<include>com.google.code.gson:*</include>
 									<include>asm:asm</include>
-									<include>io.netty:netty:*</include>
+									<include>io.netty:*</include>
 									<include>org.apache.curator:*</include>
 									<include>org.apache.hadoop:*</include>
 									<include>org.htrace:htrace-core</include>
@@ -166,6 +167,12 @@ under the License.
 									<include>javax.xml.bind:jaxb-api</include>
 									<include>javax.xml.stream:stax-api</include>
 									<include>javax.activation:activation</include>
+									<include>org.apache.directory.server:*</include>
+									<include>org.apache.directory.api:*</include>
+									<include>org.apache.htrace:*</include>
+									<include>xerces:*</include>
+									<include>xml-apis:*</include>
+									<include>org.fusesource.leveldbjni:*</include>
 								</includes>
 							</artifactSet>
 							<relocations>
@@ -224,13 +231,17 @@ under the License.
 									<pattern>javax.ws</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.javax.ws</shadedPattern>
 								</relocation>
-								<relocation>
+								<!--<relocation>
 									<pattern>javax.xml.bind</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml.bind</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.xml.stream</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml.stream</shadedPattern>
+								</relocation> -->
+								<relocation>
+									<pattern>javax.xml</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml</shadedPattern>
 								</relocation>
 
 
@@ -313,6 +324,64 @@ under the License.
 									<pattern>org.codehaus</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.codehaus</shadedPattern>
 								</relocation>
+								<relocation>
+									<pattern>com.sun.ws.rs.ext</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.com.sun.ws.rs.ext</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.netty</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.io.netty</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.xml.sax</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.xml.sax</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.fusesource</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.fusesource</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.iq80.leveldb</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.iq80.leveldb</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.w3c.dom</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.w3c.dom</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.xml.sax</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.xml.sax</shadedPattern>
+								</relocation>
+
+								<relocation>
+									<pattern>org.apache.directory</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.directory</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.html</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.html</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.htrace</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.htrace</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.wml</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.wml</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.xerces</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.xerces</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.xml</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.xml</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.xmlcommons</pattern>
+									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.xmlcommons</shadedPattern>
+								</relocation>
+
 							</relocations>
 						</configuration>
 					</execution>
