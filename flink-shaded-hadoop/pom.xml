@@ -328,10 +328,10 @@ under the License.
 									<pattern>io.netty</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.io.netty</shadedPattern>
 								</relocation>
-								<relocation>
+								<!--<relocation>
 									<pattern>org.xml.sax</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.xml.sax</shadedPattern>
-								</relocation>
+								</relocation> -->
 								<relocation>
 									<pattern>org.fusesource</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.fusesource</shadedPattern>
