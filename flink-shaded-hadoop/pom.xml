@@ -357,10 +357,10 @@ under the License.
 									<pattern>org.apache.wml</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.wml</shadedPattern>
 								</relocation>
-								<relocation>
+							<!--	<relocation>
 									<pattern>org.apache.xerces</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.xerces</shadedPattern>
-								</relocation>
+								</relocation> -->
 								<relocation>
 									<pattern>org.apache.xml</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.apache.xml</shadedPattern>
