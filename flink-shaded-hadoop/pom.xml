@@ -340,11 +340,6 @@ under the License.
 									<pattern>org.iq80.leveldb</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.org.iq80.leveldb</shadedPattern>
 								</relocation>
-								
-								<relocation>
-									<pattern>org.xml.sax</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.org.xml.sax</shadedPattern>
-								</relocation>
 
 								<relocation>
 									<pattern>org.apache.directory</pattern>
