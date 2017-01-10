@@ -231,17 +231,13 @@ under the License.
 									<pattern>javax.ws</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.javax.ws</shadedPattern>
 								</relocation>
-								<!--<relocation>
+								<relocation>
 									<pattern>javax.xml.bind</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml.bind</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>javax.xml.stream</pattern>
 									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml.stream</shadedPattern>
-								</relocation> -->
-								<relocation>
-									<pattern>javax.xml</pattern>
-									<shadedPattern>org.apache.flink.hadoop.shaded.javax.xml</shadedPattern>
 								</relocation>
 
 
