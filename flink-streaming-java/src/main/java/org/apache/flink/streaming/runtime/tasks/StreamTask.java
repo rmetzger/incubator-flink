@@ -568,9 +568,10 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 	}
 
 	private boolean performCheckpoint(CheckpointMetaData checkpointMetaData) throws Exception {
-		LOG.debug("Starting checkpoint {} on task {}", checkpointMetaData.getCheckpointId(), getName());
+		LOG.info("Starting checkpoint {} on task {}", checkpointMetaData.getCheckpointId(), getName());
 
 		synchronized (lock) {
+			LOG.info("Got lock for checkpoint {} on task {}", checkpointMetaData.getCheckpointId(), getName());
 			if (isRunning) {
 				// we can do a checkpoint
 
@@ -580,7 +581,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 				// can start their checkpoint work as soon as possible
 				operatorChain.broadcastCheckpointBarrier(
 						checkpointMetaData.getCheckpointId(), checkpointMetaData.getTimestamp());
-
+				LOG.info("Broadcasted barrier for task {}", getName());
 				checkpointState(checkpointMetaData);
 				return true;
 			}
@@ -1007,10 +1008,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 					checkpointStreamOperator(op);
 				}
 
-				if (LOG.isDebugEnabled()) {
-					LOG.debug("Finished synchronous checkpoints for checkpoint {} on task {}",
-							checkpointMetaData.getCheckpointId(), owner.getName());
-				}
+				LOG.info("Finished synchronous checkpoints for checkpoint {} on task {}",
+						checkpointMetaData.getCheckpointId(), owner.getName());
 
 				startAsyncPartNano = System.nanoTime();
 
@@ -1048,7 +1047,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 		private void checkpointStreamOperator(StreamOperator<?> op) throws Exception {
 			if (null != op) {
 				createStreamFactory(op);
+				LOG.info("createStreamFactory() for task {}", op);
 				snapshotNonPartitionableState(op);
+				LOG.info("snapshotNonPartitionableState() for task {}", op);
 
 				OperatorSnapshotResult snapshotInProgress = op.snapshotState(
 						checkpointMetaData.getCheckpointId(),
@@ -1056,10 +1057,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 						streamFactory);
 
 				snapshotInProgressList.add(snapshotInProgress);
+				LOG.info("snapshotState() for task {}", op);
 			} else {
 				nonPartitionedStates.add(null);
 				OperatorSnapshotResult emptySnapshotInProgress = new OperatorSnapshotResult();
 				snapshotInProgressList.add(emptySnapshotInProgress);
+				LOG.info("OperatorSnapshotResult for task null");
 			}
 		}
 
