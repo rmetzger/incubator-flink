@@ -18,13 +18,14 @@
 
 package org.apache.flink.streaming.examples.socket;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
@@ -48,26 +49,13 @@ public class SocketWindowWordCount {
 
 	public static void main(String[] args) throws Exception {
 
-		// the port to connect to
-		final int port;
-		try {
-			final ParameterTool params = ParameterTool.fromArgs(args);
-			port = params.getInt("port");
-		} catch (Exception e) {
-			System.err.println("No port specified. Please run 'SocketWindowWordCount --port <port>', " +
-					"where port is the address of the text server");
-			System.err.println("To start a simple text server, run 'netcat -l <port>' and type the input text " +
-					"into the command line");
-			return;
-		}
-
 		// get the execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.disableOperatorChaining();
 
 		// get input data by connecting to the socket
-		DataStream<String> text = env.socketTextStream("localhost", port, "\n").assignTimestampsAndWatermarks(new FakeWMGen());
+		DataStream<String> text = env.addSource(new Datagen()).assignTimestampsAndWatermarks(new FakeWMGen());
 
 		// parse the data, group it, window it, and aggregate the counts
 		DataStream<WordWithCount> windowCounts = text
@@ -137,6 +125,23 @@ public class SocketWindowWordCount {
 		@Override
 		public String toString() {
 			return word + " : " + count;
+		}
+	}
+
+	private static class Datagen implements SourceFunction<String> {
+		private boolean running = true;
+
+		@Override
+		public void run(SourceContext<String> ctx) throws Exception {
+			while(running) {
+				ctx.collect(RandomStringUtils.random(10));
+				Thread.sleep(10);
+			}
+		}
+
+		@Override
+		public void cancel() {
+			running = false;
 		}
 	}
 }
