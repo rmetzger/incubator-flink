@@ -39,7 +39,7 @@ import java.util.List;
 public class StandaloneClusterClient extends ClusterClient {
 
 	public StandaloneClusterClient(Configuration config) throws IOException {
-		super(config);
+		super(config, null);
 	}
 
 	@Override

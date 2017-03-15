@@ -64,7 +64,7 @@ public class YarnClusterClientV2 extends ClusterClient {
 			final AbstractYarnClusterDescriptor clusterDescriptor,
 			org.apache.flink.configuration.Configuration flinkConfig) throws IOException {
 
-		super(flinkConfig);
+		super(flinkConfig, null);
 
 		this.clusterDescriptor = clusterDescriptor;
 		this.yarnClient = clusterDescriptor.getYarnClient();

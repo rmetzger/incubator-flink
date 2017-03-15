@@ -84,7 +84,7 @@ public abstract class ClusterClient {
 	final Optimizer compiler;
 
 	/** The actor system used to communicate with the JobManager. Lazily initialized upon first use */
-	protected final LazyActorSystemLoader actorSystemLoader;
+	protected final ActorSystemLoader actorSystemLoader;
 
 	/** Configuration of the client */
 	protected final Configuration flinkConfig;
@@ -121,7 +121,7 @@ public abstract class ClusterClient {
 	 *
 	 * @throws java.io.IOException Thrown, if the client's actor system could not be started.
 	 */
-	public ClusterClient(Configuration flinkConfig) throws IOException {
+	public ClusterClient(Configuration flinkConfig, ActorSystemLoader actorLoader) throws IOException {
 
 		this.flinkConfig = Preconditions.checkNotNull(flinkConfig);
 		this.compiler = new Optimizer(new DataStatistics(), new DefaultCostEstimator(), flinkConfig);
@@ -129,14 +129,38 @@ public abstract class ClusterClient {
 		this.timeout = AkkaUtils.getClientTimeout(flinkConfig);
 		this.lookupTimeout = AkkaUtils.getLookupTimeout(flinkConfig);
 
-		this.actorSystemLoader = new LazyActorSystemLoader(flinkConfig, LOG);
+		if(actorLoader == null) {
+			this.actorSystemLoader = new LazyActorSystemLoader(flinkConfig, LOG);
+		} else {
+			this.actorSystemLoader = actorLoader;
+		}
 	}
 
 	// ------------------------------------------------------------------------
 	//  Startup & Shutdown
 	// ------------------------------------------------------------------------
 
-	protected static class LazyActorSystemLoader {
+	/**
+	 * Interface for getting an actor system.
+	 */
+	public static abstract class ActorSystemLoader {
+
+		/**
+		 * Get the actor system
+		 * @return Actor system instance
+		 */
+		public abstract ActorSystem get();
+
+		/**
+		 * Shutdown the actor system
+		 */
+		public abstract void shutdown();
+	}
+
+	/**
+	 * Lazy actor system loader returning an actor system based on Flink's config.
+	 */
+	protected static class LazyActorSystemLoader extends ActorSystemLoader {
 
 		private final Logger LOG;
 
@@ -157,6 +181,7 @@ public abstract class ClusterClient {
 			return actorSystem != null;
 		}
 
+		@Override
 		public void shutdown() {
 			if (isLoaded()) {
 				actorSystem.shutdown();
@@ -169,6 +194,7 @@ public abstract class ClusterClient {
 		 * Creates a new ActorSystem or returns an existing one.
 		 * @return ActorSystem
 		 */
+		@Override
 		public ActorSystem get() {
 
 			if (!isLoaded()) {

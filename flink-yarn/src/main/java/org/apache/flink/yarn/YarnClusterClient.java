@@ -80,7 +80,7 @@ public class YarnClusterClient extends ClusterClient {
 	//---------- Class internal fields -------------------
 
 	private final AbstractYarnClusterDescriptor clusterDescriptor;
-	private final LazApplicationClientLoader applicationClient;
+	private final LazyApplicationClientLoader applicationClient;
 	private final FiniteDuration akkaDuration;
 	private final ApplicationReport appReport;
 	private final ApplicationId appId;
@@ -111,7 +111,7 @@ public class YarnClusterClient extends ClusterClient {
 		Path sessionFilesDir,
 		boolean newlyCreatedCluster) throws IOException, YarnException {
 
-		super(flinkConfig);
+		super(flinkConfig, null);
 
 		this.akkaDuration = AkkaUtils.getTimeout(flinkConfig);
 		this.clusterDescriptor = clusterDescriptor;
@@ -123,7 +123,7 @@ public class YarnClusterClient extends ClusterClient {
 		this.trackingURL = appReport.getTrackingUrl();
 		this.newlyCreatedCluster = newlyCreatedCluster;
 
-		this.applicationClient = new LazApplicationClientLoader(flinkConfig, actorSystemLoader);
+		this.applicationClient = new LazyApplicationClientLoader(flinkConfig, actorSystemLoader);
 
 		this.pollingRunner = new PollingThread(yarnClient, appId);
 		this.pollingRunner.setDaemon(true);
@@ -541,16 +541,16 @@ public class YarnClusterClient extends ClusterClient {
 		return appId;
 	}
 
-	private static class LazApplicationClientLoader {
+	private static class LazyApplicationClientLoader {
 
 		private final org.apache.flink.configuration.Configuration flinkConfig;
-		private final LazyActorSystemLoader actorSystemLoader;
+		private final ActorSystemLoader actorSystemLoader;
 
 		private ActorRef applicationClient;
 
-		private LazApplicationClientLoader(
+		private LazyApplicationClientLoader(
 				org.apache.flink.configuration.Configuration flinkConfig,
-				LazyActorSystemLoader actorSystemLoader) {
+				ActorSystemLoader actorSystemLoader) {
 			this.flinkConfig = flinkConfig;
 			this.actorSystemLoader = actorSystemLoader;
 		}
