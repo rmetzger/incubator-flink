@@ -36,16 +36,6 @@ under the License.
 
 	<packaging>jar</packaging>
 
-	<repositories>
-		<repository>
-			<id>frocksdb-staging</id>
-			<url>https://oss.sonatype.org/content/repositories/comdata-artisans-1012</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
-	</repositories>
-
 	<dependencies>
 
 		<!-- core dependencies -->
