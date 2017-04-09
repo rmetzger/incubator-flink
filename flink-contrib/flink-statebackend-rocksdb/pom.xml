@@ -36,6 +36,16 @@ under the License.
 
 	<packaging>jar</packaging>
 
+	<repositories>
+		<repository>
+			<id>frocksdb-staging</id>
+			<url>https://oss.sonatype.org/content/repositories/comdata-artisans-1011</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</repository>
+	</repositories>
+
 	<dependencies>
 
 		<!-- core dependencies -->
@@ -55,9 +65,9 @@ under the License.
 		</dependency>
 
 		<dependency>
-			<groupId>org.rocksdb</groupId>
-			<artifactId>rocksdbjni</artifactId>
-			<version>4.11.2</version>
+			<groupId>com.data-artisans</groupId>
+			<artifactId>frocksdbjni</artifactId>
+			<version>4.11.2-artisans</version>
 		</dependency>
 
 		<!-- test dependencies -->
