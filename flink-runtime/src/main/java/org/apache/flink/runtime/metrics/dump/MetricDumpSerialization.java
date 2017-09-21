@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.metrics.dump;
 
+
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.metrics.Counter;
@@ -32,6 +33,8 @@ import org.apache.flink.util.Preconditions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -215,12 +218,21 @@ public class MetricDumpSerialization {
 		out.writeLong(count);
 	}
 
+	private static ObjectMapper jsonMapper = new ObjectMapper();
+
 	private static void serializeGauge(DataOutput out, QueryScopeInfo info, String name, Gauge<?> gauge) throws IOException {
 		Object value = gauge.getValue();
+		String stringValue;
 		if (value == null) {
 			throw new NullPointerException("Value returned by gauge " + name + " was null.");
 		}
-		String stringValue = gauge.getValue().toString();
+		if (value instanceof Map) {
+			// ATTENTION: HACK :)
+			// turn value into JSON String
+			stringValue = jsonMapper.writeValueAsString(value);
+		} else {
+			stringValue = gauge.getValue().toString();
+		}
 		if (stringValue == null) {
 			throw new NullPointerException("toString() of the value returned by gauge " + name + " returned null.");
 		}
