@@ -30,9 +30,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MetricOptions;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
-import org.apache.flink.metrics.Counter;
-import org.apache.flink.metrics.Gauge;
-import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.metrics.*;
 import org.apache.flink.runtime.checkpoint.CheckpointOptions;
 import org.apache.flink.runtime.checkpoint.CheckpointOptions.CheckpointType;
 import org.apache.flink.runtime.checkpoint.OperatorSubtaskState;
@@ -156,7 +154,6 @@ public abstract class AbstractStreamOperator<OUT>
 	/** Metric group for the operator. */
 	protected transient MetricGroup metrics;
 
-	protected transient LatencyGauge latencyGauge;
 
 	// ---------------- time handler ------------------
 
@@ -193,7 +190,7 @@ public abstract class AbstractStreamOperator<OUT>
 			historySize = MetricOptions.LATENCY_HISTORY_SIZE.defaultValue();
 		}
 
-		latencyGauge = this.metrics.gauge("latency", new LatencyGauge(historySize));
+
 		this.runtimeContext = new StreamingRuntimeContext(this, container.getEnvironment(), container.getAccumulatorMap());
 
 		stateKeySelector1 = config.getStatePartitioner(0, getUserCodeClassloader());
@@ -666,38 +663,43 @@ public abstract class AbstractStreamOperator<OUT>
 
 	protected void reportOrForwardLatencyMarker(LatencyMarker marker) {
 		// all operators are tracking latencies
-		this.latencyGauge.reportLatency(marker, false);
+		this.latencyHistrogram.reportLatency(marker, false);
 
 		// everything except sinks forwards latency markers
 		this.output.emitLatencyMarker(marker);
 	}
 
-	// ----------------------- Helper classes -----------------------
+	// ----------------------- Metrics / Latency helper -----------------------
 
+
+	private Map<LatencySourceDescriptor, LatencyHistrogram> latencyStats = new HashMap<>();
+
+	public void reportLatency(LatencyMarker marker, boolean isSink) {
+		LatencySourceDescriptor sourceDescriptor = LatencySourceDescriptor.of(marker, !isSink);
+		LatencyHistrogram histogram = latencyStats.get(sourceDescriptor);
+
+		DescriptiveStatistics sourceStats = latencyStats.get(sourceDescriptor);
+		if (sourceStats == null) {
+			// 512 element window (4 kb)
+			sourceStats = new DescriptiveStatistics(this.historySize);
+			latencyStats.put(sourceDescriptor, sourceStats);
+		}
+		long now = System.currentTimeMillis();
+		sourceStats.addValue(now - marker.getMarkedTime());
+	}
 
 	/**
 	 * The gauge uses a HashMap internally to avoid classloading issues when accessing
 	 * the values using JMX.
 	 */
-	protected static class LatencyGauge implements Gauge<Map<String, HashMap<String, Double>>> {
+	protected static class LatencyHistrogram implements Histogram {
 		private final Map<LatencySourceDescriptor, DescriptiveStatistics> latencyStats = new HashMap<>();
 		private final int historySize;
 
-		LatencyGauge(int historySize) {
+		LatencyHistrogram(int historySize) {
 			this.historySize = historySize;
 		}
 
-		public void reportLatency(LatencyMarker marker, boolean isSink) {
-			LatencySourceDescriptor sourceDescriptor = LatencySourceDescriptor.of(marker, !isSink);
-			DescriptiveStatistics sourceStats = latencyStats.get(sourceDescriptor);
-			if (sourceStats == null) {
-				// 512 element window (4 kb)
-				sourceStats = new DescriptiveStatistics(this.historySize);
-				latencyStats.put(sourceDescriptor, sourceStats);
-			}
-			long now = System.currentTimeMillis();
-			sourceStats.addValue(now - marker.getMarkedTime());
-		}
 
 		@Override
 		public Map<String, HashMap<String, Double>> getValue() {
@@ -723,6 +725,21 @@ public abstract class AbstractStreamOperator<OUT>
 					LOG.debug("Unable to report latency statistics", ignore);
 				}
 			}
+		}
+
+		@Override
+		public void update(long value) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public long getCount() {
+			return 0;
+		}
+
+		@Override
+		public HistogramStatistics getStatistics() {
+			return null;
 		}
 	}
 
