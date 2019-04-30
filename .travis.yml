@@ -31,7 +31,7 @@ cache:
   # cache for frontend-maven-plugin in flink-runtime-web
   - $HOME/.npm
   - /home/travis/build/apache/flink/flink-runtime-web/web-dashboard/node
-  - /home/travis/build/apache/flink/flink-runtime-web/web-dashboard/node_modules
+  #- /home/travis/build/apache/flink/flink-runtime-web/web-dashboard/node_modules
 
 # do not cache our own artifacts
 before_cache:
