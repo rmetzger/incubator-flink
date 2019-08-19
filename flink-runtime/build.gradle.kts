@@ -1,0 +1,46 @@
+description = "flink-runtime"
+
+plugins {
+    id("scala")
+}
+
+dependencies {
+    implementation(project(":flink-core"))
+    implementation(project(":flink-java"))
+    implementation(project(":flink-queryable-state:flink-queryable-state-client-java"))
+    implementation(project(":flink-filesystems:flink-hadoop-fs"))
+    implementation("org.apache.flink:flink-shaded-hadoop-2:2.4.1-7.0")
+    implementation("commons-io:commons-io:2.4")
+    implementation("org.apache.flink:flink-shaded-netty:4.1.32.Final-7.0")
+    implementation("org.apache.flink:flink-shaded-guava:18.0-7.0")
+    implementation("org.apache.flink:flink-shaded-asm-6:6.2.1-7.0")
+    implementation("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
+    implementation("org.apache.commons:commons-lang3:3.3.2")
+    implementation("commons-cli:commons-cli:1.3.1")
+    implementation("org.javassist:javassist:3.24.0-GA")
+    implementation("org.scala-lang:scala-library:2.11.12")
+    implementation("com.typesafe.akka:akka-actor_${Versions.baseScala}:2.5.21")
+    implementation("com.typesafe.akka:akka-remote_${Versions.baseScala}:2.5.21")
+    implementation("com.typesafe.akka:akka-stream_${Versions.baseScala}:2.5.21")
+    implementation("com.typesafe.akka:akka-protobuf_${Versions.baseScala}:2.5.21")
+    implementation("com.typesafe.akka:akka-slf4j_${Versions.baseScala}:2.5.21")
+    implementation("org.clapper:grizzled-slf4j_${Versions.baseScala}:1.3.2")
+    implementation("com.github.scopt:scopt_${Versions.baseScala}:3.5.0")
+    implementation("org.xerial.snappy:snappy-java:1.1.4")
+    implementation("com.twitter:chill_${Versions.baseScala}:0.7.6")
+    implementation("org.apache.zookeeper:zookeeper:3.4.10")
+    implementation(project(":flink-shaded-curator"))
+    implementation("com.github.oshi:oshi-core:3.4.0")
+    testImplementation(project(":flink-test-utils-parent:flink-test-utils-junit"))
+    testImplementation(project(path = ":flink-metrics:flink-metrics-core", configuration = "testArtifacts"))
+    testImplementation(project(path = ":flink-core", configuration = "testArtifacts"))
+    testImplementation("org.apache.flink:flink-shaded-netty-tcnative-dynamic:2.0.25.Final-7.0")
+    testImplementation("org.apache.curator:curator-test:2.12.0")
+    testImplementation("org.scalatest:scalatest_${Versions.baseScala}:3.0.0")
+    testImplementation("com.squareup.okhttp3:okhttp:3.7.0")
+    testImplementation("com.typesafe.akka:akka-testkit_${Versions.baseScala}:2.5.21")
+    testImplementation("org.reflections:reflections:0.9.10")
+}
+
+flinkJointScalaJavaCompilation()
+flinkCreateTestJar()

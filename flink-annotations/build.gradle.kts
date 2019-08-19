@@ -1,0 +1,1 @@
+description = "flink-annotations"

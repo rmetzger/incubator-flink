@@ -18,7 +18,7 @@
 
 package org.apache.flink.table.planner.calcite
 
-import org.apache.flink.sql.parser.ExtendedSqlNode
+//import org.apache.flink.sql.parser.ExtendedSqlNode
 import org.apache.flink.table.api.{SqlParserException, TableException, ValidationException}
 
 import com.google.common.collect.ImmutableList
@@ -102,11 +102,11 @@ class FlinkPlannerImpl(
     // do pre-validate rewrite.
     sqlNode.accept(new PreValidateReWriter(catalogReader, typeFactory))
     // do extended validation.
-    sqlNode match {
-      case node: ExtendedSqlNode =>
-        node.validate()
-      case _ =>
-    }
+//    sqlNode match {
+//      case node: ExtendedSqlNode =>
+//        node.validate()
+//      case _ =>
+//    }
     // no need to validate row type for DDL and insert nodes.
     if (sqlNode.getKind.belongsTo(SqlKind.DDL)
       || sqlNode.getKind == SqlKind.INSERT) {

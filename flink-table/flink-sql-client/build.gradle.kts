@@ -1,0 +1,26 @@
+dependencies {
+    implementation(project(":flink-core"))
+    implementation(project(":flink-clients"))
+    implementation(project(":flink-streaming-scala"))
+    implementation(project(":flink-table:flink-table-common"))
+    implementation(project(":flink-table:flink-table-api-java"))
+    implementation(project(":flink-table:flink-table-api-java-bridge"))
+    implementation(project(":flink-table:flink-table-planner"))
+    implementation(project(":flink-table:flink-table-planner-blink"))
+    implementation(project(":flink-table:flink-table-runtime-blink"))
+    implementation("org.jline:jline-terminal:3.9.0")
+    implementation("org.jline:jline-reader:3.9.0")
+    implementation("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
+    testImplementation(project(":flink-runtime"))
+    testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
+    testImplementation(project(":flink-clients"))
+    testImplementation(project(":flink-connectors:flink-connector-hive"))
+    testImplementation(project(":flink-connectors:flink-hadoop-compatibility"))
+    testImplementation("org.apache.hive:hive-metastore:2.3.4")
+    testImplementation("org.apache.hive:hive-exec:2.3.4")
+    testImplementation("org.apache.hadoop:hadoop-common:2.7.5")
+    compileOnly(project(":flink-connectors:flink-connector-hive"))
+    compileOnly("org.apache.hadoop:hadoop-mapreduce-client-core:2.7.5")
+}
+
+description = "flink-sql-client"

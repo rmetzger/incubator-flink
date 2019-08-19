@@ -19,11 +19,7 @@
 package org.apache.flink.table.planner.delegation;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;
-import org.apache.flink.sql.parser.validate.FlinkSqlConformance;
-import org.apache.flink.table.api.SqlDialect;
 import org.apache.flink.table.api.TableConfig;
-import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.catalog.FunctionCatalog;
 import org.apache.flink.table.planner.calcite.CalciteConfig;
 import org.apache.flink.table.planner.calcite.CalciteConfig$;
@@ -62,6 +58,9 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+
+//import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;
+//import org.apache.flink.sql.parser.validate.FlinkSqlConformance;
 
 /**
  * Utility class to create {@link org.apache.calcite.tools.RelBuilder} or {@link FrameworkConfig} used to create
@@ -198,24 +197,24 @@ public class PlannerContext {
 				// and cases are preserved
 				() -> SqlParser
 						.configBuilder()
-						.setParserFactory(FlinkSqlParserImpl.FACTORY)
-						.setConformance(getSqlConformance())
+//						.setParserFactory(FlinkSqlParserImpl.FACTORY)
+//						.setConformance(getSqlConformance())
 						.setLex(Lex.JAVA)
 						.setIdentifierMaxLength(256)
 						.build());
 	}
 
-	private FlinkSqlConformance getSqlConformance() {
-		SqlDialect sqlDialect = tableConfig.getSqlDialect();
-		switch (sqlDialect) {
-			case HIVE:
-				return FlinkSqlConformance.HIVE;
-			case DEFAULT:
-				return FlinkSqlConformance.DEFAULT;
-			default:
-				throw new TableException("Unsupported SQL dialect: " + sqlDialect);
-		}
-	}
+//	private FlinkSqlConformance getSqlConformance() {
+//		SqlDialect sqlDialect = tableConfig.getSqlDialect();
+//		switch (sqlDialect) {
+//			case HIVE:
+//				return FlinkSqlConformance.HIVE;
+//			case DEFAULT:
+//				return FlinkSqlConformance.DEFAULT;
+//			default:
+//				throw new TableException("Unsupported SQL dialect: " + sqlDialect);
+//		}
+//	}
 
 	/**
 	 * Returns the {@link SqlToRelConverter} config.

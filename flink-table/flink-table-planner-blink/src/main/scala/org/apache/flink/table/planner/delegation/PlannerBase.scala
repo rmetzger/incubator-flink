@@ -21,7 +21,7 @@ package org.apache.flink.table.planner.delegation
 import org.apache.flink.annotation.VisibleForTesting
 import org.apache.flink.api.dag.Transformation
 import org.apache.flink.configuration.Configuration
-import org.apache.flink.sql.parser.dml.RichSqlInsert
+//import org.apache.flink.sql.parser.dml.RichSqlInsert
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.table.api.config.ExecutionConfigOptions
 import org.apache.flink.table.api.{TableConfig, TableEnvironment, TableException}
@@ -126,8 +126,8 @@ abstract class PlannerBase(
     // parse the sql query
     val parsed = planner.parse(stmt)
     parsed match {
-      case insert: RichSqlInsert =>
-        List(SqlToOperationConverter.convert(planner, insert))
+//      case insert: RichSqlInsert =>
+//        List(SqlToOperationConverter.convert(planner, insert))
       case query if query.getKind.belongsTo(SqlKind.QUERY) =>
         List(SqlToOperationConverter.convert(planner, query))
       case ddl if ddl.getKind.belongsTo(SqlKind.DDL) =>

@@ -19,7 +19,7 @@
 package org.apache.flink.table.planner;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;
+//import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;
 import org.apache.flink.sql.parser.validate.FlinkSqlConformance;
 import org.apache.flink.table.api.SqlDialect;
 import org.apache.flink.table.api.TableConfig;
@@ -156,7 +156,7 @@ public class PlanningConfigurationBuilder {
 			// and cases are preserved
 			SqlParser
 				.configBuilder()
-				.setParserFactory(FlinkSqlParserImpl.FACTORY)
+//				.setParserFactory(FlinkSqlParserImpl.FACTORY)
 				.setConformance(getSqlConformance())
 				.setLex(Lex.JAVA)
 				.build());
