@@ -1505,19 +1505,19 @@ under the License.
 						</configuration>
 					</execution>
 					<!--execute all the integration tests-->
-					<execution>
-						<id>integration-tests</id>
-						<phase>integration-test</phase>
-						<goals>
-							<goal>test</goal>
-						</goals>
-						<configuration>
-							<includes>
-								<include>**/*ITCase.*</include>
-							</includes>
-							<reuseForks>false</reuseForks>
-						</configuration>
-					</execution>
+					<!--<execution>-->
+						<!--<id>integration-tests</id>-->
+						<!--<phase>integration-test</phase>-->
+						<!--<goals>-->
+							<!--<goal>test</goal>-->
+						<!--</goals>-->
+						<!--<configuration>-->
+							<!--<includes>-->
+								<!--<include>**/*ITCase.*</include>-->
+							<!--</includes>-->
+							<!--<reuseForks>false</reuseForks>-->
+						<!--</configuration>-->
+					<!--</execution>-->
 				</executions>
 			</plugin>
 			<plugin>
