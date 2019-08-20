@@ -7,7 +7,7 @@ trigger:
 - master
 
 pool:
-  name: 'Google Cloud'
+  vmImage: 'ubuntu-latest'
 
 steps:
 - task: Maven@3
@@ -20,3 +20,4 @@ steps:
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'install'
+    timeoutInMinutes: 0
