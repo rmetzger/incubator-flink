@@ -6,11 +6,11 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'ubuntu-latest'
 
 jobs:
 - job: main
+  pool:
+    vmImage: 'ubuntu-latest'
   timeoutInMinutes: 0
   steps:
   - task: Maven@3
