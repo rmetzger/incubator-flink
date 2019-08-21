@@ -13,7 +13,7 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.3.2")
     implementation("org.apache.commons:commons-math3:3.5")
     testImplementation(project(":flink-test-utils-parent:flink-test-utils-junit"))
-    testImplementation("junit:junit:4.12")
+    testImplementation(Libs.junit)
     testImplementation("org.hamcrest:hamcrest-all:1.3")
 }
 

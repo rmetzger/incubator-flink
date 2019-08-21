@@ -38,7 +38,7 @@ subprojects {
         // TODO move these to only the modules that need them and remove them
         "implementation"("org.slf4j:slf4j-api:1.7.15")
         "implementation"("com.google.code.findbugs:jsr305:1.3.9")
-        "testImplementation"("junit:junit:4.12")
+        "testImplementation"(Libs.junit)
         "testImplementation"("org.mockito:mockito-core:2.21.0")
         "testImplementation"("org.powermock:powermock-module-junit4:2.0.2")
         "testImplementation"("org.powermock:powermock-api-mockito2:2.0.2")

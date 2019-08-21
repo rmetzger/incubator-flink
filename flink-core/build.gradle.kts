@@ -15,7 +15,7 @@ dependencies {
     testImplementation("org.joda:joda-convert:1.7")
     testImplementation("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
     testImplementation("org.projectlombok:lombok:1.16.22")
-    testImplementation("junit:junit:4.12")
+    testImplementation(Libs.junit)
     testImplementation("org.mockito:mockito-core:2.21.0")
     testImplementation("org.powermock:powermock-module-junit4:2.0.2")
     testImplementation("org.powermock:powermock-api-mockito2:2.0.2")

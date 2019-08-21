@@ -4,7 +4,7 @@ dependencies {
     implementation(project(":flink-core"))
     implementation(project(":flink-annotations"))
     implementation(project(":flink-metrics:flink-metrics-core"))
-    testImplementation("junit:junit:4.12")
+    testImplementation(Libs.junit)
     testImplementation("com.esotericsoftware.kryo:kryo:2.24.0")
 }
 
