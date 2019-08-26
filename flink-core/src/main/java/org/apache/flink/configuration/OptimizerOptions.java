@@ -27,6 +27,8 @@ import static org.apache.flink.configuration.ConfigOptions.key;
  */
 @PublicEvolving
 public class OptimizerOptions {
+	// some change
+	public static int abc = 1234;
 
 	/**
 	 * The maximum number of line samples taken by the compiler for delimited inputs. The samples are used to estimate
