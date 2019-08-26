@@ -17,7 +17,7 @@ allprojects {
 }
 
 subprojects {
-    apply(plugin = "java")
+    apply(plugin = "java-library")
 
     repositories {
         mavenCentral()
@@ -36,14 +36,14 @@ subprojects {
 
     dependencies {
         // TODO move these to only the modules that need them and remove them
-        "implementation"("org.slf4j:slf4j-api:1.7.15")
-        "implementation"("com.google.code.findbugs:jsr305:1.3.9")
+        "implementation"(Libs.slf4j_api)
+        "implementation"(Libs.jsr305)
         "testImplementation"(Libs.junit)
-        "testImplementation"("org.mockito:mockito-core:2.21.0")
-        "testImplementation"("org.powermock:powermock-module-junit4:2.0.2")
-        "testImplementation"("org.powermock:powermock-api-mockito2:2.0.2")
-        "testImplementation"("org.hamcrest:hamcrest-all:1.3")
-        "testImplementation"("org.slf4j:slf4j-log4j12:1.7.15")
-        "testImplementation"("log4j:log4j:1.2.17")
+        "testImplementation"(Libs.mockito_core)
+        "testImplementation"(Libs.powermock_module_junit4)
+        "testImplementation"(Libs.powermock_api_mockito2)
+        "testImplementation"(Libs.hamcrest_all)
+        "testImplementation"(Libs.slf4j_log4j12)
+        "testImplementation"(Libs.log4j)
     }
 }

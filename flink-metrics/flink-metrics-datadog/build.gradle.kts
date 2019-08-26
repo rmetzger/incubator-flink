@@ -1,10 +1,10 @@
 dependencies {
-    implementation("org.slf4j:slf4j-api:1.7.15")
-    implementation("com.squareup.okhttp3:okhttp:3.7.0")
+    implementation(Libs.slf4j_api)
+    implementation(Libs.okhttp)
     compileOnly(project(":flink-metrics:flink-metrics-core"))
-    compileOnly("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
+    compileOnly(Libs.flink_shaded_jackson)
     testImplementation(project(":flink-metrics:flink-metrics-core"))
-    testImplementation("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
+    testImplementation(Libs.flink_shaded_jackson)
 }
 
 description = "flink-metrics-datadog"

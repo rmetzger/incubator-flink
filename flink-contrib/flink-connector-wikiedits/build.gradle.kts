@@ -1,6 +1,6 @@
 dependencies {
     implementation(project(":flink-streaming-java"))
-    implementation("org.schwering:irclib:1.10")
+    implementation(Libs.irclib)
 }
 
 description = "flink-connector-wikiedits"

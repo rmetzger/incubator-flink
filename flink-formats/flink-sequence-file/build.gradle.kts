@@ -3,7 +3,7 @@ dependencies {
     testImplementation(project(":flink-streaming-java"))
     testImplementation(project(":flink-connectors:flink-hadoop-compatibility"))
     compileOnly(project(":flink-core"))
-    compileOnly("org.apache.flink:flink-shaded-hadoop-2:2.4.1-7.0")
+    compileOnly(Libs.flink_shaded_hadoop_2)
 }
 
 description = "flink-sequence-file"

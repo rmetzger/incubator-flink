@@ -4,7 +4,7 @@ dependencies {
     testImplementation(project(":flink-core"))
     compileOnly(project(":flink-java"))
     compileOnly(project(":flink-scala"))
-    compileOnly("org.apache.flink:flink-shaded-hadoop-2:2.4.1-7.0")
+    compileOnly(Libs.flink_shaded_hadoop_2)
 }
 
 description = "flink-hadoop-compatibility"

@@ -4,7 +4,7 @@ dependencies {
     testImplementation(project(":flink-optimizer"))
     compileOnly(project(":flink-java"))
     compileOnly(project(":flink-clients"))
-    compileOnly("org.apache.commons:commons-lang3:3.3.2")
+    compileOnly(Libs.commons_lang3)
 }
 
 description = "flink-gelly"

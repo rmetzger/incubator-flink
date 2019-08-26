@@ -1,5 +1,5 @@
 plugins {
-    id("scala")
+    scala
 }
 
 dependencies {

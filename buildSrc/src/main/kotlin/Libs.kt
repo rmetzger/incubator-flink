@@ -138,8 +138,6 @@ object Libs {
    */
   const val okhttp: String = "com.squareup.okhttp3:okhttp:" + Versions.okhttp
 
-  const val chill2_11: String = "com.twitter:chill2.11:" + Versions.chill2_11
-
   /**
    * https://github.com/twitter/chill
    */
@@ -397,7 +395,7 @@ object Libs {
   const val hadoop_openstack: String = "org.apache.hadoop:hadoop-openstack:" +
       Versions.hadoop_openstack
 
-  const val hadoop_yarn_: String = "org.apache.hadoop:hadoop-yarn-:" + Versions.hadoop_yarn_
+  const val hadoop_yarn_api: String = "org.apache.hadoop:hadoop-yarn-api:" + Versions.hadoop_yarn_api
 
   const val hadoop_yarn_client: String = "org.apache.hadoop:hadoop-yarn-client:" +
       Versions.hadoop_yarn_client
@@ -615,8 +613,6 @@ object Libs {
    * https://www.scala-lang.org/
    */
   const val scala_reflect: String = "org.scala-lang:scala-reflect:" + Versions.org_scala_lang
-
-  const val scalatest2_11: String = "org.scalatest:scalatest2.11:" + Versions.org_scalatest
 
   /**
    * http://www.artima.com/scalatest/

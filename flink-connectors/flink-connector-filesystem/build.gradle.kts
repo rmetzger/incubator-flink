@@ -6,11 +6,11 @@ dependencies {
     testImplementation(project(":flink-core"))
     testImplementation(project(":flink-tests"))
     testImplementation(project(":flink-runtime"))
-    testImplementation("org.apache.hadoop:hadoop-hdfs:2.4.1")
-    testImplementation("org.apache.hadoop:hadoop-common:2.4.1")
-    testImplementation("org.apache.hadoop:hadoop-minikdc:2.7.2")
+    testImplementation(Libs.hadoop_hdfs)
+    testImplementation(Libs.hadoop_common)
+    testImplementation(Libs.hadoop_minikdc)
     compileOnly(project(":flink-streaming-java"))
-    compileOnly("org.apache.flink:flink-shaded-hadoop-2:2.4.1-7.0")
+    compileOnly(Libs.flink_shaded_hadoop_2)
 }
 
 description = "flink-connector-filesystem"

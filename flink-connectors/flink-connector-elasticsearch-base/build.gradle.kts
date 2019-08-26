@@ -1,5 +1,5 @@
 dependencies {
-    implementation("org.elasticsearch:elasticsearch:2.3.5")
+    implementation(Libs.elasticsearch)
     testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
     testImplementation(project(":flink-runtime"))
     testImplementation(project(":flink-streaming-java"))

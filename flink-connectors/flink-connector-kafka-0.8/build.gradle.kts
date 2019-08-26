@@ -2,9 +2,9 @@ dependencies {
     implementation(project(":flink-connectors:flink-connector-kafka-base")) {
         exclude(group = "org.apache.kafka", module = "kafka-clients")
     }
-    implementation("org.apache.kafka:kafka_${Versions.baseScala}:0.8.2.2")
+    implementation(Libs.kafka_2_11)
     testImplementation(project(":flink-streaming-java"))
-    testImplementation("org.apache.curator:curator-test:2.12.0")
+    testImplementation(Libs.curator_test)
     testImplementation(project(":flink-metrics:flink-metrics-jmx"))
     testImplementation(project(":flink-connectors:flink-connector-kafka-base"))
     testImplementation(project(":flink-runtime"))

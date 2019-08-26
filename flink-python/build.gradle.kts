@@ -1,6 +1,6 @@
 dependencies {
-    implementation("net.sf.py4j:py4j:0.10.8.1")
-    implementation("net.razorvine:pyrolite:4.13")
+    implementation(Libs.py4j)
+    implementation(Libs.pyrolite)
     compileOnly(project(":flink-core"))
     compileOnly(project(":flink-java"))
     compileOnly(project(":flink-streaming-java"))

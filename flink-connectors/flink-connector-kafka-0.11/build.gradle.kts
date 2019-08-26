@@ -1,11 +1,11 @@
 dependencies {
     implementation(project(":flink-connectors:flink-connector-kafka-0.10"))
-    implementation("org.apache.kafka:kafka-clients:0.11.0.2")
+    implementation(Libs.kafka_clients)
     testImplementation(project(":flink-core"))
     testImplementation(project(":flink-streaming-java"))
     testImplementation(project(":flink-connectors:flink-connector-kafka-0.9"))
     testImplementation(project(":flink-connectors:flink-connector-kafka-base"))
-    testImplementation("org.apache.kafka:kafka:0.11.0.2")
+    testImplementation(Libs.kafka_2_11)
     testImplementation(project(":flink-tests"))
     testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
     testImplementation(project(":flink-runtime"))

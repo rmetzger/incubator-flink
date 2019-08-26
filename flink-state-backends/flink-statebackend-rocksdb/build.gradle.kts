@@ -1,5 +1,5 @@
 dependencies {
-    implementation("com.data-artisans:frocksdbjni:5.17.2-artisans-1.0")
+    implementation(Libs.frocksdbjni)
     testImplementation(project(":flink-test-utils-parent:flink-test-utils-junit"))
     testImplementation(project(":flink-core"))
     testImplementation(project(":flink-streaming-java"))

@@ -1,7 +1,7 @@
 dependencies {
     implementation(project(":flink-metrics:flink-metrics-dropwizard"))
-    implementation("io.dropwizard.metrics:metrics-core:3.1.5")
-    implementation("io.dropwizard.metrics:metrics-graphite:3.1.5")
+    implementation(Libs.metrics_core)
+    implementation(Libs.metrics_graphite)
     compileOnly(project(":flink-annotations"))
     compileOnly(project(":flink-metrics:flink-metrics-core"))
 }
