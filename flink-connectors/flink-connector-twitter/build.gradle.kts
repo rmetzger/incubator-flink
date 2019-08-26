@@ -1,6 +1,6 @@
 dependencies {
     implementation(project(":flink-streaming-java"))
-    implementation("com.twitter:hbc-core:2.2.0")
+    implementation(Libs.hbc_core)
 }
 
 description = "flink-connector-twitter"

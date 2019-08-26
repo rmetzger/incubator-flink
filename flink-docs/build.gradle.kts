@@ -9,10 +9,10 @@ dependencies {
     implementation(project(":flink-runtime-web"))
     implementation(project(":flink-yarn"))
     implementation(project(":flink-mesos"))
-    implementation("org.apache.flink:flink-shaded-netty:4.1.32.Final-7.0")
-    implementation("org.apache.flink:flink-shaded-jackson-module-jsonSchema:2.9.8-7.0")
+    implementation(Libs.flink_shaded_netty)
+    implementation(Libs.flink_shaded_jackson_module_jsonschema)
     implementation(project(":flink-state-backends:flink-statebackend-rocksdb"))
-    testImplementation("org.jsoup:jsoup:1.11.2")
+    testImplementation(Libs.jsoup)
 }
 
 description = "flink-docs"

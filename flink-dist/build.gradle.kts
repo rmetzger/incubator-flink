@@ -50,7 +50,7 @@ dependencies {
     compileOnly(project(":flink-filesystems:flink-oss-fs-hadoop"))
     compileOnly(project(":flink-queryable-state:flink-queryable-state-runtime"))
     compileOnly(project(":flink-python"))
-    compileOnly("org.apache.flink:flink-shaded-netty-tcnative-dynamic:2.0.25.Final-7.0")
+    compileOnly(Libs.flink_shaded_netty_tcnative_dynamic)
 }
 
 description = "flink-dist"

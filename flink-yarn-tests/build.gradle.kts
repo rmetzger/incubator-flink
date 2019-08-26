@@ -9,11 +9,11 @@ dependencies {
     testImplementation(project(":flink-yarn"))
     testImplementation(project(":flink-examples:flink-examples-batch"))
     testImplementation(project(":flink-examples:flink-examples-streaming"))
-    testImplementation("org.apache.hadoop:hadoop-common:2.4.1")
-    testImplementation("org.apache.hadoop:hadoop-yarn-client:2.4.1")
-    testImplementation("org.apache.hadoop:hadoop-yarn-:2.4.1")
-    testImplementation("org.apache.hadoop:hadoop-minicluster:2.4.1")
-    testImplementation("org.apache.hadoop:hadoop-minikdc:2.7.2")
+    testImplementation(Libs.hadoop_common)
+    testImplementation(Libs.hadoop_yarn_client)
+    testImplementation(Libs.hadoop_yarn_api)
+    testImplementation(Libs.hadoop_minicluster)
+    testImplementation(Libs.hadoop_minikdc)
 }
 
 description = "flink-yarn-tests"

@@ -4,9 +4,9 @@ dependencies {
     testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
     compileOnly(project(":flink-scala"))
     compileOnly(project(":flink-clients"))
-    compileOnly("org.scala-lang:scala-reflect:2.11.12")
-    compileOnly("org.scala-lang:scala-library:2.11.12")
-    compileOnly("org.scala-lang:scala-compiler:2.11.12")
+    compileOnly(Libs.scala_reflect)
+    compileOnly(Libs.scala_library)
+    compileOnly(Libs.scala_compiler)
 }
 
 description = "flink-gelly-scala"

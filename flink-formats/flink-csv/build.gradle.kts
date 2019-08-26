@@ -1,5 +1,5 @@
 dependencies {
-    compileOnly("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
+    compileOnly(Libs.flink_shaded_jackson)
     compileOnly(project(":flink-core"))
     implementation(project(":flink-annotations"))
     compileOnly(project(":flink-table:flink-table-common"))

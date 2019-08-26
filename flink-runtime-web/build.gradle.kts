@@ -1,15 +1,15 @@
 dependencies {
     implementation(project(":flink-runtime"))
     implementation(project(":flink-clients"))
-    implementation("org.apache.flink:flink-shaded-netty:4.1.32.Final-7.0")
-    implementation("org.apache.flink:flink-shaded-guava:18.0-7.0")
-    implementation("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
-    implementation("org.javassist:javassist:3.24.0-GA")
+    implementation(Libs.flink_shaded_netty)
+    implementation(Libs.flink_shaded_guava)
+    implementation(Libs.flink_shaded_jackson)
+    implementation(Libs.javassist)
     testImplementation(project(":flink-test-utils-parent:flink-test-utils-junit"))
     testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
-    testImplementation("org.apache.curator:curator-test:2.12.0")
+    testImplementation(Libs.curator_test)
     testImplementation(project(":flink-runtime"))
-    testImplementation("org.apache.flink:flink-shaded-jackson-module-jsonSchema:2.9.8-7.0")
+    testImplementation(Libs.flink_shaded_jackson_module_jsonschema)
 }
 
 description = "flink-runtime-web"

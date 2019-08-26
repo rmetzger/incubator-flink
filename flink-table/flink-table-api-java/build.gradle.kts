@@ -1,6 +1,6 @@
 dependencies {
-    implementation("com.google.code.findbugs:jsr305:1.3.9")
-    implementation("org.slf4j:slf4j-api:1.7.15")
+    implementation(Libs.jsr305)
+    implementation(Libs.slf4j_api)
     implementation(project(":flink-table:flink-table-common"))
     implementation(project(":flink-annotations"))
     implementation(project(":flink-core"))

@@ -1,5 +1,5 @@
 dependencies {
-    implementation("io.confluent:kafka-schema-registry-client:3.3.1")
+    implementation(Libs.kafka_schema_registry_client)
     implementation(project(":flink-formats:flink-avro"))
     compileOnly(project(":flink-core"))
 }

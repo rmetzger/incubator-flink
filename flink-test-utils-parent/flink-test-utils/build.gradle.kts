@@ -4,9 +4,9 @@ dependencies {
     implementation(project(path = ":flink-runtime", configuration = "testArtifacts"))
     implementation(project(":flink-clients"))
     implementation(project(":flink-streaming-java"))
-    implementation("io.netty:netty:3.10.6.Final")
-    implementation("org.apache.curator:curator-test:2.12.0")
-    implementation("org.apache.hadoop:hadoop-minikdc:2.7.2")
+    implementation(Libs.netty)
+    implementation(Libs.curator_test)
+    implementation(Libs.hadoop_minikdc)
 }
 
 description = "flink-test-utils"

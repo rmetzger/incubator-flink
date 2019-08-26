@@ -1,5 +1,5 @@
 dependencies {
-    implementation("io.dropwizard.metrics:metrics-core:3.1.5")
+    implementation(Libs.metrics_core)
     testImplementation(project(":flink-metrics:flink-metrics-core"))
     testImplementation(project(":flink-core"))
     testImplementation(project(":flink-runtime"))

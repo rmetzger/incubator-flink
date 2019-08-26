@@ -1,5 +1,5 @@
 dependencies {
-    implementation("org.slf4j:slf4j-api:1.7.15")
+    implementation(Libs.slf4j_api)
     testImplementation(project(":flink-core"))
     testImplementation(project(":flink-metrics:flink-metrics-core"))
     testImplementation(project(":flink-runtime"))

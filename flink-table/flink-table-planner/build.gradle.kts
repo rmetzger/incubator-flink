@@ -1,5 +1,5 @@
 plugins {
-    id("scala")
+    scala
 }
 
 dependencies {
@@ -7,9 +7,9 @@ dependencies {
     implementation(project(":flink-table:flink-table-api-java-bridge"))
     implementation(project(":flink-table:flink-table-api-scala-bridge"))
     implementation(project(":flink-table:flink-sql-parser"))
-    implementation("org.codehaus.janino:janino:3.0.9")
-    implementation("org.apache.calcite:calcite-core:1.20.0")
-    implementation("joda-time:joda-time:2.5")
+    implementation(Libs.janino)
+    implementation(Libs.calcite_core)
+    implementation(Libs.joda_time)
     testImplementation(project(":flink-table:flink-table-common"))
     testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
     testImplementation(project(":flink-tests"))
@@ -20,7 +20,7 @@ dependencies {
     compileOnly(project(":flink-scala"))
     compileOnly(project(":flink-streaming-scala"))
     compileOnly(project(":flink-libraries:flink-cep"))
-    compileOnly("org.apache.flink:flink-shaded-jackson:2.9.8-7.0")
+    compileOnly(Libs.flink_shaded_jackson)
 }
 
 description = "flink-table-planner"

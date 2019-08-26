@@ -3,24 +3,24 @@ plugins {
 }
 
 dependencies {
-    implementation("org.slf4j:slf4j-api:1.7.15")
-    implementation("org.apache.commons:commons-lang3:3.3.2")
+    implementation(Libs.slf4j_api)
+    implementation(Libs.commons_lang3)
     implementation(project(":flink-core"))
     implementation(project(":flink-java"))
     implementation(project(":flink-annotations"))
     implementation(project(":flink-metrics:flink-metrics-core"))
-    implementation("org.apache.flink:flink-shaded-asm-6:6.2.1-7.0")
-    implementation("org.apache.flink:flink-shaded-guava:18.0-7.0")
-    implementation("org.scala-lang:scala-reflect:2.11.12")
-    implementation("org.scala-lang:scala-library:2.11.12")
-    implementation("org.scala-lang:scala-compiler:2.11.12")
-    testImplementation("org.scalatest:scalatest${Versions.baseScala}:3.0.0")
+    implementation(Libs.flink_shaded_asm_6)
+    implementation(Libs.flink_shaded_guava)
+    implementation(Libs.scala_reflect)
+    implementation(Libs.scala_library)
+    implementation(Libs.scala_compiler)
+    testImplementation(Libs.scalatest_2_11)
     testImplementation(project(":flink-test-utils-parent:flink-test-utils-junit"))
-    testImplementation("com.twitter:chill${Versions.baseScala}:0.7.6")
+    testImplementation(Libs.chill_2_11)
     testImplementation(project(":flink-runtime"))
     testImplementation(project(":flink-core"))
-    testImplementation("joda-time:joda-time:2.5")
-    testImplementation("org.joda:joda-convert:1.7")
+    testImplementation(Libs.joda_time)
+    testImplementation(Libs.joda_convert)
 }
 
 description = "flink-scala"

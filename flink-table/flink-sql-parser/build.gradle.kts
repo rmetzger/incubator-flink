@@ -1,6 +1,6 @@
 dependencies {
-    implementation("org.apache.calcite:calcite-core:1.20.0")
-    testImplementation("org.apache.calcite:calcite-core:1.20.0")
+    implementation(Libs.calcite_core)
+    testImplementation(Libs.calcite_core)
 }
 
 description = "flink-sql-parser"

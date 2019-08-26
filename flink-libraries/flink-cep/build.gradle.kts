@@ -1,5 +1,5 @@
 dependencies {
-    implementation("org.apache.flink:flink-shaded-guava:18.0-7.0")
+    implementation(Libs.flink_shaded_guava)
     testImplementation(project(":flink-core"))
     testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
     testImplementation(project(":flink-streaming-java"))

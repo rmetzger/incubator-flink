@@ -1,5 +1,5 @@
 dependencies {
-    testImplementation("org.apache.flink:flink-shaded-hadoop-2:2.4.1-7.0")
+    testImplementation(Libs.flink_shaded_hadoop_2)
     testImplementation(project(":flink-streaming-java"))
     testImplementation(project(":flink-examples:flink-examples-batch"))
     testImplementation(project(":flink-formats:flink-avro"))
@@ -7,8 +7,8 @@ dependencies {
     testImplementation(project(":flink-test-utils-parent:flink-test-utils"))
     testImplementation(project(":flink-runtime"))
     testImplementation(project(":flink-core"))
-    testImplementation("org.apache.hadoop:hadoop-hdfs:2.4.1")
-    testImplementation("org.apache.hadoop:hadoop-common:2.4.1")
+    testImplementation(Libs.hadoop_hdfs)
+    testImplementation(Libs.hadoop_common)
 }
 
 description = "flink-fs-tests"

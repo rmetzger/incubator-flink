@@ -19,13 +19,13 @@ object Versions {
 
   const val aliyun_sdk_oss: String = "3.4.1" // available: "3.6.0"
 
-  const val aws_java_sdk_core: String = "1.11.271" // available: "1.11.615"
+  const val aws_java_sdk_core: String = "1.11.271" // available: "1.11.618"
 
-  const val aws_java_sdk_dynamodb: String = "1.11.271" // available: "1.11.615"
+  const val aws_java_sdk_dynamodb: String = "1.11.271" // available: "1.11.618"
 
-  const val aws_java_sdk_kms: String = "1.11.271" // available: "1.11.615"
+  const val aws_java_sdk_kms: String = "1.11.271" // available: "1.11.618"
 
-  const val aws_java_sdk_s3: String = "1.11.437" // available: "1.11.615"
+  const val aws_java_sdk_s3: String = "1.11.437" // available: "1.11.618"
 
   const val frocksdbjni: String = "5.17.2-artisans-1.0"
 
@@ -43,7 +43,7 @@ object Versions {
 
   const val wiremock: String = "2.19.0" // available: "2.24.1"
 
-  const val google_cloud_pubsub: String = "1.62.0" // available: "1.87.0"
+  const val google_cloud_pubsub: String = "1.62.0" // available: "1.88.0"
 
   const val jsr305: String = "1.3.9" // available: "3.0.2"
 
@@ -53,7 +53,7 @@ object Versions {
 
   const val unirest_java: String = "1.4.9"
 
-  const val azure: String = "1.16.0" // available: "1.24.2"
+  const val azure: String = "1.16.0" // available: "1.25.0"
 
   const val fenzo_core: String = "0.10.1" // available: "1.0.1"
 
@@ -153,7 +153,7 @@ object Versions {
 
   const val hadoop_openstack: String = "2.8.1" // available: "3.2.0"
 
-  const val hadoop_yarn_: String = "2.4.1"
+  const val hadoop_yarn_api: String = "2.4.1"
 
   const val hadoop_yarn_client: String = "2.4.1" // available: "3.2.0"
 
@@ -191,11 +191,11 @@ object Versions {
 
   const val janino: String = "3.0.9" // available: "3.1.0"
 
-  const val org_elasticsearch_client: String = "6.3.1" // available: "7.3.0"
+  const val org_elasticsearch_client: String = "6.3.1" // available: "7.3.1"
 
-  const val transport_netty4_client: String = "6.3.1" // available: "7.3.0"
+  const val transport_netty4_client: String = "6.3.1" // available: "7.3.1"
 
-  const val elasticsearch: String = "2.3.5" // available: "7.3.0"
+  const val elasticsearch: String = "2.3.5" // available: "7.3.1"
 
   const val hamcrest_all: String = "1.3"
 
@@ -236,7 +236,7 @@ object Versions {
    */
   const val gradleLatestVersion: String = "5.6"
 
-  const val gradleCurrentVersion: String = "5.6"
+  const val gradleCurrentVersion: String = "5.5.1"
 }
 
 /**
