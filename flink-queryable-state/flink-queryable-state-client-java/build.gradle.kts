@@ -4,6 +4,7 @@ dependencies {
     implementation(Libs.flink_shaded_guava)
     implementation(project(":flink-annotations"))
     testImplementation(project(path = ":flink-core", configuration = "testArtifacts"))
+    testImplementation(project(":flink-test-utils-parent:flink-test-utils-junit"))
     compileOnly(project(":flink-core"))
 }
 

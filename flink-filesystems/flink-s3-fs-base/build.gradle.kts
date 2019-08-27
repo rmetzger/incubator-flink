@@ -6,6 +6,7 @@ dependencies {
     implementation(Libs.aws_java_sdk_kms)
     implementation(Libs.aws_java_sdk_dynamodb)
     implementation(Libs.hadoop_aws)
+    implementation(Libs.commons_io)
     compileOnly(project(":flink-core"))
 }
 

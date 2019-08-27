@@ -19,15 +19,15 @@ allprojects {
 subprojects {
     apply(plugin = "java-library")
 
+    configure<JavaPluginConvention> {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
     repositories {
         mavenCentral()
         mavenLocal()
         maven(url = "https://packages.confluent.io/maven/")
-    }
-
-    configure<JavaPluginConvention> {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     tasks.withType<JavaCompile>().configureEach {

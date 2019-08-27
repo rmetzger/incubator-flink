@@ -31,6 +31,7 @@ dependencies {
     implementation(Libs.zookeeper)
     implementation(project(":flink-shaded-curator"))
     implementation(Libs.oshi_core)
+    api(project(":flink-metrics:flink-metrics-core"))
     testImplementation(project(":flink-test-utils-parent:flink-test-utils-junit"))
     testImplementation(project(path = ":flink-metrics:flink-metrics-core", configuration = "testArtifacts"))
     testImplementation(project(path = ":flink-core", configuration = "testArtifacts"))
@@ -40,6 +41,11 @@ dependencies {
     testImplementation(Libs.okhttp)
     testImplementation(Libs.akka_testkit_2_11)
     testImplementation(Libs.reflections)
+    testImplementation(Libs.jcip_annotations)
+}
+
+tasks.withType<Test> {
+    maxHeapSize = "1024m"
 }
 
 flinkJointScalaJavaCompilation()
