@@ -217,7 +217,8 @@ object Versions {
 
   const val org_powermock: String = "2.0.2"
 
-  const val lombok: String = "1.16.22" // available: "1.18.8"
+  // updated from 1.16.22 to 1.18.2 because of https://github.com/rzwitserloot/lombok/issues/1716
+  const val lombok: String = "1.18.2" // available: "1.18.8"
 
   const val reflections: String = "0.9.8" // available: "0.9.11"
 

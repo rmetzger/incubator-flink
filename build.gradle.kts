@@ -46,4 +46,13 @@ subprojects {
         "testImplementation"(Libs.slf4j_log4j12)
         "testImplementation"(Libs.log4j)
     }
+
+    tasks.withType<Test>().configureEach {
+        useJUnit()
+        systemProperty("log4j.configuration", "log4j-test.properties")
+        maxParallelForks = 24
+
+        jvmArgs("-Xms256m", "-Xmx2048m", "-XX:+UseG1GC")
+        include("**/*Test.*")
+    }
 }

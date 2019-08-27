@@ -15,6 +15,7 @@ dependencies {
     testImplementation(Libs.joda_convert)
     testImplementation(Libs.flink_shaded_jackson)
     testImplementation(Libs.lombok)
+    testAnnotationProcessor(Libs.lombok)
     testImplementation(Libs.junit)
     testImplementation(Libs.mockito_core)
     testImplementation(Libs.powermock_module_junit4)
