@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":flink-table:flink-table-api-java-bridge"))
     implementation(project(":flink-table:flink-table-api-scala-bridge"))
     implementation(project(":flink-table:flink-sql-parser"))
+    implementation(Libs.scala_library)
     implementation(Libs.janino)
     implementation(Libs.calcite_core)
     implementation(Libs.joda_time)

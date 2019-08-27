@@ -203,6 +203,8 @@ object Versions {
 
   const val javassist: String = "3.24.0-GA" // available: "3.25.0-GA"
 
+  const val jcip_annotations: String = "1.0"
+
   const val org_jline: String = "3.9.0" // available: "3.12.1"
 
   const val joda_convert: String = "1.7" // available: "2.2.1"

@@ -1,7 +1,7 @@
 dependencies {
     implementation(Libs.slf4j_api)
     implementation(Libs.jsr305)
-    implementation(project(":flink-annotations"))
+    api(project(":flink-annotations"))
     implementation(project(":flink-metrics:flink-metrics-core"))
     implementation(Libs.flink_shaded_asm_6)
     implementation(Libs.commons_lang3)

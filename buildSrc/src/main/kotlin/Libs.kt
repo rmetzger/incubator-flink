@@ -551,6 +551,8 @@ object Libs {
    */
   const val javassist: String = "org.javassist:javassist:" + Versions.javassist
 
+  const val jcip_annotations: String = "net.jcip:jcip-annotations:" + Versions.jcip_annotations
+
   const val jline_reader: String = "org.jline:jline-reader:" + Versions.org_jline
 
   const val jline_terminal: String = "org.jline:jline-terminal:" + Versions.org_jline

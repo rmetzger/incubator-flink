@@ -1,5 +1,5 @@
 dependencies {
-    implementation(Libs.curator_recipes)
+    api(Libs.curator_recipes)
 }
 
 description = "flink-shaded-curator"
