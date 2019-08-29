@@ -25,6 +25,7 @@ jobs:
   container: flink-build-container
   timeoutInMinutes: 0
   steps:
+  - script: chown -R user:user .
   - script: gosu user mvn clean install
   #- task: Maven@3
   #  inputs:
