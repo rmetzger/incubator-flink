@@ -26,6 +26,8 @@ jobs:
   timeoutInMinutes: 0
   steps:
   - script: chown -R user:user .
+  - script: ls -lisah
+  - script: ls -lisah /home/user/
   - script: gosu user mvn clean install
   #- task: Maven@3
   #  inputs:
