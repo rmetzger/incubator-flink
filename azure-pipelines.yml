@@ -10,7 +10,8 @@ trigger:
 resources:
   containers:
   - container: flink-build-container
-    image: maven:3.6-jdk-8
+    image: rmetzger/flink-ci:latest
+  # maven:3.6-jdk-8
   # rmetzger/flink-ci:latest
   #  volumes: 
   #  - $(Build.Repository.LocalPath)/flink:/home/user/flink
@@ -24,7 +25,7 @@ jobs:
   container: flink-build-container
   timeoutInMinutes: 0
   steps:
-  - script: mvn clean install
+  - script: gosu mvn clean install
   #- task: Maven@3
   #  inputs:
   #    mavenPomFile: 'pom.xml'
