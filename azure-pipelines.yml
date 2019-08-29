@@ -10,7 +10,8 @@ trigger:
 resources:
   containers:
   - container: flink-build-container
-    image: rmetzger/flink-ci:latest
+    image: maven:3.6-jdk-8
+  # rmetzger/flink-ci:latest
   #  volumes: 
   #  - $(Build.Repository.LocalPath)/flink:/home/user/flink
   #  - $(Build.Repository.LocalPath)/m2:/home/user/.m2
