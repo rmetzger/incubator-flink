@@ -7,21 +7,29 @@ trigger:
 - master
 
 
+resources:
+   container: 
+    image: rmetzger/flink-ci:latest
+    volumes: 
+    - $(Build.Repository.LocalPath)/flink:/home/user/flink
+    - $(Build.Repository.LocalPath)/m2:/home/user/.m2
 jobs:
 - job: main
   pool:
     name: Default
     #vmImage: 'ubuntu-latest'
+
   timeoutInMinutes: 0
   steps:
-  - task: Maven@3
-    inputs:
-      mavenPomFile: 'pom.xml'
-      mavenOptions: '-Xmx3072m'
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '1.8'
-      jdkArchitectureOption: 'x64'
-      publishJUnitResults: true
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      goals: 'install'
-      timeoutInMinutes: 0
+  - script: mvn clean install
+  #- task: Maven@3
+  #  inputs:
+  #    mavenPomFile: 'pom.xml'
+  #    mavenOptions: '-Xmx3072m'
+  #    javaHomeOption: 'JDKVersion'
+  #    jdkVersionOption: '1.8'
+  #    jdkArchitectureOption: 'x64'
+  #    publishJUnitResults: true
+  #    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+  #    goals: 'install'
+  #    timeoutInMinutes: 0
