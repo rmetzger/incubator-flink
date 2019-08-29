@@ -10,7 +10,8 @@ trigger:
 jobs:
 - job: main
   pool:
-    vmImage: 'ubuntu-latest'
+    name: Default
+    #vmImage: 'ubuntu-latest'
   timeoutInMinutes: 0
   steps:
   - task: Maven@3
