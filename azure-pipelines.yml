@@ -8,11 +8,12 @@ trigger:
 
 
 resources:
-   container: 
-    image: rmetzger/flink-ci:latest
-    volumes: 
-    - $(Build.Repository.LocalPath)/flink:/home/user/flink
-    - $(Build.Repository.LocalPath)/m2:/home/user/.m2
+  containers:
+  - container: flink-build-container
+      image: rmetzger/flink-ci:latest
+      volumes: 
+      - $(Build.Repository.LocalPath)/flink:/home/user/flink
+      - $(Build.Repository.LocalPath)/m2:/home/user/.m2
 jobs:
 - job: main
   pool:
