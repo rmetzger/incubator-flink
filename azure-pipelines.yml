@@ -14,12 +14,13 @@ resources:
     volumes: 
     - $(Build.Repository.LocalPath)/flink:/home/user/flink
     - $(Build.Repository.LocalPath)/m2:/home/user/.m2
+
 jobs:
 - job: main
   pool:
     name: Default
     #vmImage: 'ubuntu-latest'
-
+  container: flink-build-container
   timeoutInMinutes: 0
   steps:
   - script: mvn clean install
