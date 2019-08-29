@@ -25,7 +25,7 @@ jobs:
   container: flink-build-container
   timeoutInMinutes: 0
   steps:
-  - script: gosu mvn clean install
+  - script: gosu user mvn clean install
   #- task: Maven@3
   #  inputs:
   #    mavenPomFile: 'pom.xml'
