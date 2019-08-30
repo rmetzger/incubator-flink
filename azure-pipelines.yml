@@ -6,6 +6,10 @@
 trigger:
 - master
 
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+
 
 resources:
   containers:
@@ -35,6 +39,11 @@ jobs:
   #- script: gosu user mvn clean install
   - script: ls -lisah ; pwd
   - script: ls -lisah /home/user
+  - task: CacheBeta@0
+    inputs:
+      key: maven | **/pom.xml
+      path: $(MAVEN_CACHE_FOLDER)
+    displayName: Cache Maven local repo
   - task: Maven@3
     inputs:
       mavenPomFile: 'pom.xml'
