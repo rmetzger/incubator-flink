@@ -26,15 +26,15 @@ jobs:
   timeoutInMinutes: 0
   steps:
   - script: chown -R user:user /home/user
-  - script: gosu user mvn clean install
-  #- task: Maven@3
-  #  inputs:
-  #    mavenPomFile: 'pom.xml'
-  #    mavenOptions: '-Xmx3072m'
-  #    javaHomeOption: 'JDKVersion'
-  #    jdkVersionOption: '1.8'
-  #    jdkArchitectureOption: 'x64'
-  #    publishJUnitResults: true
-  #    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-  #    goals: 'install'
-  #    timeoutInMinutes: 0
+  #- script: gosu user mvn clean install
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'clean install'
+      timeoutInMinutes: 0
