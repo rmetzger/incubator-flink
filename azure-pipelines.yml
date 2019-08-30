@@ -32,6 +32,8 @@ jobs:
 #    timeoutInMinutes: 1
 #  - script: whoami
   #- script: gosu user mvn clean install
+  - script: ls -lisah ; pwd
+  - script: ls -lisah /home/user
   - task: Maven@3
     inputs:
       mavenPomFile: 'pom.xml'
