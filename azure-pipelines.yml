@@ -45,6 +45,7 @@ jobs:
       key: maven | **/pom.xml
       path: $(MAVEN_CACHE_FOLDER)
     displayName: Cache Maven local repo
+  - script: ls -lisah $MAVEN_CACHE_FOLDER
   - task: Maven@3
     inputs:
       mavenPomFile: 'pom.xml'
@@ -57,3 +58,4 @@ jobs:
       goals: 'clean install'
       timeoutInMinutes: 0
       #options: '-X'
+  - script: ls -lisah $MAVEN_CACHE_FOLDER
