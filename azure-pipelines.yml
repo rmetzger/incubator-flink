@@ -15,17 +15,50 @@ resources:
   containers:
   - container: flink-build-container
     image: rmetzger/flink-ci:latest
-  # maven:3.6-jdk-8
-  # rmetzger/flink-ci:latest
-  #  volumes: 
-  #  - $(Build.Repository.LocalPath)/flink:/home/user/flink
-  #  - $(Build.Repository.LocalPath)/m2:/home/user/.m2
 
 jobs:
-- job: main
+- job: runOnASF
+  condition: eq(variables['Build.Repository.Name'], 'rmetzger/flink')
   pool:
     name: Default
     #vmImage: 'ubuntu-latest'
+  container: flink-build-container
+  timeoutInMinutes: 0
+  steps:
+  - script: chown -R user:user /home/user
+  - script: chown -R user:user .
+  - script: ls -lisah $MAVEN_CACHE_FOLDER
+#  - script: whoami
+#  - script: su user
+#    continueOnError: true
+#    timeoutInMinutes: 1
+#  - script: whoami
+  #- script: gosu user mvn clean install
+  - script: ls -lisah ; pwd
+  - script: ls -lisah /home/user
+  - task: CacheBeta@0
+    inputs:
+      key: maven | **/pom.xml
+      path: /home/user/.m2/repository
+    displayName: Cache Maven local repo
+  - script: ls -lisah $MAVEN_CACHE_FOLDER
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'clean install'
+      timeoutInMinutes: 0
+      #options: '-X'
+  - script: ls -lisah $MAVEN_CACHE_FOLDER
+- job: runOnAzure
+  condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
+  pool:
+    vmImage: 'ubuntu-latest'
   container: flink-build-container
   timeoutInMinutes: 0
   steps:
