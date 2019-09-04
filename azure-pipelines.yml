@@ -14,18 +14,17 @@ variables:
 resources:
   containers:
   - container: flink-build-container
-    image: rmetzger/flink-ci:latest
+    image: rmetzger/flink-ci:2
 
 jobs:
 - job: runOnASF
   pool:
     name: Default
-    #vmImage: 'ubuntu-latest'
   container: flink-build-container
   timeoutInMinutes: 0
   steps:
-    # Azure pipelines can only evaluate conditions with the build repo name in the steps.
-    # if the repo != "rmetzger/flink", we stop
+  # Azure pipelines can only evaluate conditions with the build repo name in the steps.
+  # if the repo != "rmetzger/flink", we stop
   - script: exit 1
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - script: chown -R user:user /home/user
