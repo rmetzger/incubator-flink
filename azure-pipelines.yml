@@ -25,7 +25,7 @@ jobs:
   timeoutInMinutes: 0
   steps:
   - script: echo "Azure pipelines can only evaluate conditions with the build repo name in the steps."
-    condition: eq(variables.Build.Repository.Name, 'rmetzger/flink') 
+    condition: eq(variables['Build.Repository.Name'], 'rmetzger/flink') 
   - script: chown -R user:user /home/user
   - script: chown -R user:user .
   - script: ls -lisah $MAVEN_CACHE_FOLDER
@@ -57,14 +57,13 @@ jobs:
       #options: '-X'
   - script: ls -lisah $MAVEN_CACHE_FOLDER
 - job: runOnAzure
-  condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
   timeoutInMinutes: 0
   steps:
   - script: echo "Azure pipelines can only evaluate conditions with the build repo name in the steps."
-    condition: eq(variables.Build.Repository.Name, 'rmetzger/flink') 
+    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - script: chown -R user:user /home/user
   - script: chown -R user:user .
   - script: ls -lisah $MAVEN_CACHE_FOLDER
