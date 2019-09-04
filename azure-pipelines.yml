@@ -28,8 +28,8 @@ jobs:
     # if the repo != "rmetzger/flink", we stop
   - script: exit 1
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
-  - script: chown -R user:user /home/user
-  - script: chown -R user:user .
+  - script: sudo chown -R user:user /home/user
+  - script: sudo chown -R user:user .
   - script: ls -lisah $MAVEN_CACHE_FOLDER
 #  - script: whoami
 #  - script: su user
@@ -68,8 +68,8 @@ jobs:
   # if the repo == "rmetzger/flink", we stop
   - script: exit 1
     condition: eq(variables['Build.Repository.Name'], 'rmetzger/flink')
-  - script: chown -R user:user /home/user
-  - script: chown -R user:user .
+  - script: sudo chown -R user:user /home/user
+  - script: sudo chown -R user:user .
   - script: ls -lisah $MAVEN_CACHE_FOLDER
 #  - script: whoami
 #  - script: su user
