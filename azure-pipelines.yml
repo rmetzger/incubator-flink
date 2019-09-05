@@ -4,7 +4,7 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/java
 
 trigger:
-- master
+- '*'
 
 variables:
   MAVEN_CACHE_FOLDER: /home/user/.m2/repository
