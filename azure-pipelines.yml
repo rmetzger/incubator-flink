@@ -31,5 +31,45 @@ resources:
       endpoint: flink-ci
 
 jobs:
-- template: flink-build-jobs.yml@templates
+- job: runOnDefaultAgentPool
+  pool:
+    name: Default
+  container: flink-build-container
+  timeoutInMinutes: 0
+  steps:
+  - script: sudo chown -R user:user /home/user
+  - script: sudo chown -R user:user .
+  - task: Maven@3
+    condition: eq(variables['Build.Repository.Name'], 'flink-ci/flink')
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'clean install'
+      timeoutInMinutes: 0
+
+- job: runOnAzure
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: flink-build-container
+  timeoutInMinutes: 0
+  steps:   
+  - script: sudo chown -R user:user /home/user
+  - script: sudo chown -R user:user .
+  - task: Maven@3
+    condition: not(eq(variables['Build.Repository.Name'], 'flink-ci/flink'))
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'clean install'
+      timeoutInMinutes: 0
 
