@@ -24,12 +24,53 @@ resources:
   # Container with Maven 3.2.5 to have the same environment everywhere.
   - container: flink-build-container
     image: rmetzger/flink-ci:3
-  repositories:
-    - repository: templates
-      type: github
-      name: flink-ci/flink-azure-builds
-      endpoint: flink-ci
 
 jobs:
-- template: flink-build-jobs.yml@templates
+- job: runOnDefaultAgentPool
+  pool:
+    name: Default
+  container: flink-build-container
+  timeoutInMinutes: 0
+  steps:
+  # Azure pipelines can only evaluate conditions with the build repo name in the steps.
+  # if the repo != "flink-ci/flink", we stop
+  - script: exit 1
+    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
+  - script: sudo chown -R user:user /home/user
+  - script: sudo chown -R user:user .
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'clean install'
+      timeoutInMinutes: 0
+
+- job: runOnAzure
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: flink-build-container
+  timeoutInMinutes: 0
+  steps:
+  # Azure pipelines can only evaluate conditions with the build repo name in the steps.
+  # if the repo == "flink-ci/flink", we stop
+  - script: exit 1
+    condition: eq(variables['Build.Repository.Name'], 'rmetzger/flink')
+  - script: sudo chown -R user:user /home/user
+  - script: sudo chown -R user:user .
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'clean install'
+      timeoutInMinutes: 0
 
