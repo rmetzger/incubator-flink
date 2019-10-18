@@ -48,7 +48,7 @@ jobs:
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       goals: 'clean install'
-      timeoutInMinutes: 0
+      timeoutInMinutes: 120
 
 - job: runOnAzure
   pool:
@@ -72,5 +72,5 @@ jobs:
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       goals: 'clean install'
-      timeoutInMinutes: 0
+      timeoutInMinutes: 240
 
