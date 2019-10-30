@@ -25,6 +25,13 @@ resources:
   - container: flink-build-container
     image: rmetzger/flink-ci:3
 
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+  CACHE_KEY: maven | $(Agent.OS) | **/pom.xml
+  CACHE_FALLBACK_KEY: maven | $(Agent.OS)
+
+
 jobs:
 - job: runOnDefaultAgentPool
   pool:
@@ -38,6 +45,13 @@ jobs:
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - script: sudo chown -R user:user /home/user
   - script: sudo chown -R user:user .
+  - task: CacheBeta@1
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+      cacheHitVar: CACHE_RESTORED
+    displayName: Cache Maven local repo
   - task: Maven@3
     inputs:
       mavenPomFile: 'pom.xml'
