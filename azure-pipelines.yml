@@ -52,17 +52,8 @@ jobs:
       path: $(MAVEN_CACHE_FOLDER)
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
-  - task: Maven@3
-    inputs:
-      mavenPomFile: 'pom.xml'
-      mavenOptions: '-Xmx3072m'
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '1.8'
-      jdkArchitectureOption: 'x64'
-      publishJUnitResults: true
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      goals: 'clean install'
-      timeoutInMinutes: 120
+  - script: mvn clean install
+    displayName: Build
 
 - job: runOnAzure
   pool:
@@ -83,15 +74,6 @@ jobs:
       path: $(MAVEN_CACHE_FOLDER)
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
-  - task: Maven@3
-    inputs:
-      mavenPomFile: 'pom.xml'
-      mavenOptions: '-Xmx3072m'
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '1.8'
-      jdkArchitectureOption: 'x64'
-      publishJUnitResults: true
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      goals: 'clean install'
-      timeoutInMinutes: 240
+  - script: mvn clean install
+    displayName: Build
 
