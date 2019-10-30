@@ -76,6 +76,13 @@ jobs:
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - script: sudo chown -R user:user /home/user
   - script: sudo chown -R user:user .
+  - task: CacheBeta@1
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+      cacheHitVar: CACHE_RESTORED
+    displayName: Cache Maven local repo
   - task: Maven@3
     inputs:
       mavenPomFile: 'pom.xml'
