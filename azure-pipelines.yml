@@ -45,6 +45,7 @@ jobs:
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - script: sudo chown -R user:user /home/user
   - script: sudo chown -R user:user .
+  - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
   - task: CacheBeta@1
     inputs:
@@ -68,6 +69,7 @@ jobs:
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - script: sudo chown -R user:user /home/user
   - script: sudo chown -R user:user .
+  - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
   - task: CacheBeta@1
     inputs:
