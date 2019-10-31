@@ -54,6 +54,7 @@ jobs:
       path: $(MAVEN_CACHE_FOLDER)
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
+  - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
   - script: mvn clean install
     displayName: Build
 
@@ -78,6 +79,7 @@ jobs:
       path: $(MAVEN_CACHE_FOLDER)
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
+  - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
   - script: mvn clean install
     displayName: Build
 
