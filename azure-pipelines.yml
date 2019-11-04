@@ -58,7 +58,7 @@ jobs:
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-  - script: ls -lisah /home/user/.m2/repository
+  - script: ls -lisah $(MAVEN_CACHE_FOLDER)
 #  - script: mvn clean install
 #    displayName: Build
   - task: Maven@3
