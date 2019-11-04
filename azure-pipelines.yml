@@ -49,6 +49,7 @@ jobs:
   - script: sudo chown -R user:user .
   - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
+  - script: ls -lisah /home/user/.m2/repository
   - task: CacheBeta@1
     inputs:
       key: $(CACHE_KEY)
@@ -57,6 +58,7 @@ jobs:
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
+  - script: ls -lisah /home/user/.m2/repository
 #  - script: mvn clean install
 #    displayName: Build
   - task: Maven@3
