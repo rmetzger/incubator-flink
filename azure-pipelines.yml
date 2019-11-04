@@ -26,7 +26,7 @@ resources:
     image: rmetzger/flink-ci:3
 
 variables:
-  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_CACHE_FOLDER: /.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   CACHE_KEY: maven | $(Agent.OS) | **/pom.xml
   CACHE_FALLBACK_KEY: maven | $(Agent.OS)
@@ -37,10 +37,11 @@ jobs:
   pool:
     name: Default
   container: flink-build-container
-  timeoutInMinutes: 0
+  timeoutInMinutes: 120
   steps:
   # Azure pipelines can only evaluate conditions with the build repo name in the steps.
   # if the repo != "flink-ci/flink", we stop
+  - script: echo $(Pipeline.Workspace)
   - script: exit 1
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - script: sudo chown -R user:user /home/user
@@ -55,14 +56,25 @@ jobs:
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-  - script: mvn clean install
-    displayName: Build
+#  - script: mvn clean install
+#    displayName: Build
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'clean install'
+      timeoutInMinutes: 120
 
 - job: runOnAzure
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
-  timeoutInMinutes: 0
+  timeoutInMinutes: 240
   steps:
   # Azure pipelines can only evaluate conditions with the build repo name in the steps.
   # if the repo == "flink-ci/flink", we stop
