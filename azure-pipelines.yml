@@ -74,7 +74,7 @@ jobs:
 #       goals: 'clean install'
 #       timeoutInMinutes: 120
 
-- job: runOnAzure - compile
+- job: runOnAzure_compile
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
@@ -109,7 +109,7 @@ jobs:
       path: $(CACHE_FLINK_DIR)
       artifact: FlinkCompileCacheDir
 
-- job: runOnAzure - test
+- job: runOnAzure_test
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
