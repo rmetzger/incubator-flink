@@ -110,6 +110,7 @@ jobs:
       artifact: FlinkCompileCacheDir
 
 - job: runOnAzure_test
+  dependsOn: runOnAzure_compile
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
