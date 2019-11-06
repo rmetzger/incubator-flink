@@ -75,8 +75,6 @@ function deleteOldCaches() {
 	done
 }
 
-# delete leftover caches from previous builds; except the most recent
-find "$CACHE_DIR" -mindepth 1 -maxdepth 1 | grep -v "$TRAVIS_BUILD_NUMBER" | sort -Vr | tail -n +2 | deleteOldCaches
 
 STAGE=$1
 echo "Current stage: \"$STAGE\""
