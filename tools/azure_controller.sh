@@ -25,6 +25,27 @@ mvn -version
 
 echo "Commit: $(git rev-parse HEAD)"
 
+mkdir ~/.m2/
+
+cat << EOF > ~/.m2/settings.xml
+<settings>
+  <mirrors>
+    <mirror>
+      <id>google-maven-central</id>
+      <name>GCS Maven Central mirror</name>
+      <url>https://maven-central.storage-download.googleapis.com/repos/central/data/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+    <mirror>
+      <id>UK</id>
+      <name>UK Central</name>
+      <url>http://repo.maven.apache.org/maven2</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+
 
 HERE="`dirname \"$0\"`"				# relative
 HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
@@ -83,7 +104,7 @@ EXIT_CODE=0
 
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
-	MVN="mvn clean install -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+	MVN="mvn clean install -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
 	$MVN
 	EXIT_CODE=$?
 
