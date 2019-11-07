@@ -40,6 +40,9 @@ cat << EOF > ~/.m2/settings.xml
 </settings>
 EOF
 
+echo "Hopefully wrote the settings file"
+cat ~/.m2/settings.xml
+
 
 HERE="`dirname \"$0\"`"				# relative
 HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
