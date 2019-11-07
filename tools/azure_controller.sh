@@ -30,7 +30,7 @@ sudo chown -R user:user /home/user/.m2/
 ls -lisah /home/user/.m2/
 sudo ls -lisah /home/user/.m2/
 
-sudo cat << EOF > /home/user/.m2/settings.xml
+cat << EOF > tmp_file
 <settings>
   <mirrors>
     <mirror>
@@ -43,6 +43,8 @@ sudo cat << EOF > /home/user/.m2/settings.xml
   </mirrors>
 </settings>
 EOF
+
+sudo mv tmp_file /home/user/.m2/settings.xml
 
 echo "Hopefully wrote the settings file"
 cat /home/user/.m2/settings.xml
