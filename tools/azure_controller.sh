@@ -25,12 +25,8 @@ mvn -version
 
 echo "Commit: $(git rev-parse HEAD)"
 
-sudo mkdir /home/user/.m2/
-sudo chown -R user:user /home/user/.m2/
-ls -lisah /home/user/.m2/
-sudo ls -lisah /home/user/.m2/
 
-cat << EOF > tmp_file
+cat << EOF > /tmp/az_settings.xml
 <settings>
   <mirrors>
     <mirror>
@@ -44,10 +40,10 @@ cat << EOF > tmp_file
 </settings>
 EOF
 
-sudo mv tmp_file /home/user/.m2/settings.xml
+
 
 echo "Hopefully wrote the settings file"
-cat /home/user/.m2/settings.xml
+cat /tmp/az_settings.xml
 
 
 HERE="`dirname \"$0\"`"				# relative
@@ -107,7 +103,7 @@ EXIT_CODE=0
 
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
-	MVN="mvn clean install --settings /home/user/.m2/settings.xml -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
+	MVN="mvn clean install --settings /tmp/az_settings.xml -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
 	$MVN
 	EXIT_CODE=$?
 
