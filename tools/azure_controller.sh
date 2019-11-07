@@ -25,9 +25,9 @@ mvn -version
 
 echo "Commit: $(git rev-parse HEAD)"
 
-mkdir ~/.m2/
+mkdir /home/user/.m2/
 
-cat << EOF > ~/.m2/settings.xml
+cat << EOF > /home/user/.m2/settings.xml
 <settings>
   <mirrors>
     <mirror>
@@ -102,7 +102,7 @@ EXIT_CODE=0
 
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
-	MVN="mvn clean install --settings ~/.m2/settings.xml -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
+	MVN="mvn clean install --settings /home/user/.m2/settings.xml -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
 	$MVN
 	EXIT_CODE=$?
 
