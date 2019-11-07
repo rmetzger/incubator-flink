@@ -36,6 +36,7 @@ cat << EOF > ~/.m2/settings.xml
       <url>https://maven-central.storage-download.googleapis.com/repos/central/data/</url>
       <mirrorOf>*</mirrorOf>
     </mirror>
+    EROERERER
   </mirrors>
 </settings>
 EOF
