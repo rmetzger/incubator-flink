@@ -25,7 +25,8 @@ mvn -version
 
 echo "Commit: $(git rev-parse HEAD)"
 
-mkdir /home/user/.m2/
+sudo mkdir /home/user/.m2/
+sudo chown -R user:user /home/user/.m2/
 
 cat << EOF > /home/user/.m2/settings.xml
 <settings>
@@ -42,7 +43,7 @@ cat << EOF > /home/user/.m2/settings.xml
 EOF
 
 echo "Hopefully wrote the settings file"
-cat ~/.m2/settings.xml
+cat /home/user/.m2/settings.xml
 
 
 HERE="`dirname \"$0\"`"				# relative
