@@ -27,8 +27,10 @@ echo "Commit: $(git rev-parse HEAD)"
 
 sudo mkdir /home/user/.m2/
 sudo chown -R user:user /home/user/.m2/
+ls -lisah /home/user/.m2/
+sudo ls -lisah /home/user/.m2/
 
-cat << EOF > /home/user/.m2/settings.xml
+sudo cat << EOF > /home/user/.m2/settings.xml
 <settings>
   <mirrors>
     <mirror>
