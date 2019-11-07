@@ -33,9 +33,8 @@ cat << EOF > /tmp/az_settings.xml
       <id>google-maven-central</id>
       <name>GCS Maven Central mirror</name>
       <url>https://maven-central.storage-download.googleapis.com/repos/central/data/</url>
-      <mirrorOf>*</mirrorOf>
+      <mirrorOf>central</mirrorOf>
     </mirror>
-    EROERERER
   </mirrors>
 </settings>
 EOF
