@@ -36,12 +36,6 @@ cat << EOF > ~/.m2/settings.xml
       <url>https://maven-central.storage-download.googleapis.com/repos/central/data/</url>
       <mirrorOf>central</mirrorOf>
     </mirror>
-    <mirror>
-      <id>UK</id>
-      <name>UK Central</name>
-      <url>http://repo.maven.apache.org/maven2</url>
-      <mirrorOf>central</mirrorOf>
-    </mirror>
   </mirrors>
 </settings>
 EOF
