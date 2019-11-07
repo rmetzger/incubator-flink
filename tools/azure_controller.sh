@@ -34,7 +34,7 @@ cat << EOF > ~/.m2/settings.xml
       <id>google-maven-central</id>
       <name>GCS Maven Central mirror</name>
       <url>https://maven-central.storage-download.googleapis.com/repos/central/data/</url>
-      <mirrorOf>central</mirrorOf>
+      <mirrorOf>*</mirrorOf>
     </mirror>
   </mirrors>
 </settings>
