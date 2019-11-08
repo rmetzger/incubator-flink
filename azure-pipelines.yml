@@ -79,7 +79,8 @@ jobs:
   condition: eq(variables['MODE'], 'e2e')
   pool:
     vmImage: 'ubuntu-latest'
-  container: flink-build-container
+  #We are not running this test on a container, but in a VM.
+  #container: flink-build-container
   timeoutInMinutes: 240
   steps:
     - script: echo "Wrong repository or mode"; exit 1

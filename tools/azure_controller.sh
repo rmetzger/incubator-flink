@@ -21,11 +21,6 @@ echo $M2_HOME
 echo $PATH
 echo $MAVEN_OPTS
 echo "Parameters to the script: '$@'"
-whoami
-echo "checking if 'jar' is available"
-jar
-
-#export PATH=/usr/local/openjdk-8/bin:$PATH
 
 mvn -version
 echo "Commit: $(git rev-parse HEAD)"
