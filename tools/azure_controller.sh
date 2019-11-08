@@ -17,6 +17,10 @@
 # limitations under the License.
 ################################################################################
 
+
+# quickfix for now
+export PATH=/usr/local/openjdk-8/bin:$PATH
+
 echo $M2_HOME
 echo $PATH
 echo $MAVEN_OPTS
