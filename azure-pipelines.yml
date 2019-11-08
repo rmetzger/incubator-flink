@@ -31,7 +31,6 @@ variables:
   CACHE_KEY: maven | maven-mirror-google | $(Agent.OS) | **/pom.xml
   CACHE_FALLBACK_KEY: maven | $(Agent.OS)
   CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
-  MODE: tests
 
 
 jobs:
