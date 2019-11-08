@@ -23,7 +23,7 @@ resources:
   containers:
   # Container with Maven 3.2.5 to have the same environment everywhere.
   - container: flink-build-container
-    image: rmetzger/flink-ci:4
+    image: rmetzger/flink-ci:4-nouser
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -87,13 +87,13 @@ jobs:
   - script: exit 1
     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   #- script: sudo chown -R user:user /home/user
-  - script: sudo chown -R user:user .
+  #- script: sudo chown -R user:user .
   #- script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
   #- script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
   #- script: sudo chmod -R 777 /home/user
-  - script: sudo chown -R user:azure_pipelines_docker /home/user
+  #- script: sudo chown -R user:azure_pipelines_docker /home/user
   #- script: ls -lisah $(MAVEN_CACHE_FOLDER) ; find $(MAVEN_CACHE_FOLDER)
-  - script: pwd ; ls -lisah . ; ls -lisah $(Pipeline.Workspace) 
+  #- script: pwd ; ls -lisah . ; ls -lisah $(Pipeline.Workspace) 
   # user vsts_azpcontainer is in group azure_pipelines_docker?
   # Idea: make user part of the azure_pipelines_docker group. allow this group everything
   #- script: groups vsts_azpcontainer
@@ -104,11 +104,11 @@ jobs:
       path: $(MAVEN_CACHE_FOLDER)
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
-  - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
+  #- script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
 
   # Compile
   # backup: STAGE=compile HOME=/home/user sudo --preserve-env su --preserve-environment user
-  - script: sudo su user ./tools/azure_controller.sh compile
+  - script: STAGE=compile ./tools/azure_controller.sh compile
     displayName: Build
 
   # upload artifacts for next stage

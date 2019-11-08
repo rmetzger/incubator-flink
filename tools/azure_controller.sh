@@ -24,7 +24,7 @@ whoami
 echo "checking if 'jar' is available"
 jar
 
-export PATH=/usr/local/openjdk-8/bin:$PATH
+#export PATH=/usr/local/openjdk-8/bin:$PATH
 
 mvn -version
 echo "Commit: $(git rev-parse HEAD)"
@@ -145,8 +145,8 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
 
     if [ $EXIT_CODE == 0 ]; then
         echo "Creating cache build directory $CACHE_FLINK_DIR"
-        sudo mkdir -p "$CACHE_FLINK_DIR"
-        sudo chown -R user:user "$CACHE_FLINK_DIR"
+        #sudo mkdir -p "$CACHE_FLINK_DIR"
+        #sudo chown -R user:user "$CACHE_FLINK_DIR"
     
         cp -r . "$CACHE_FLINK_DIR"
 
@@ -174,7 +174,6 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
             # not deleting this can cause build stability issues
             # merging the cached version sometimes fails
             rm -rf "$CACHE_FLINK_DIR/.git"
-
 
             # AZ Pipelines has a problem with links. TODO: Check if needed for e2e tests
             rm "$CACHE_FLINK_DIR/build-target"
