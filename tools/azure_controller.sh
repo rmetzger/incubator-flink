@@ -20,7 +20,7 @@
 echo $M2_HOME
 echo $PATH
 echo $MAVEN_OPTS
-
+whoami
 mvn -version
 
 echo "Commit: $(git rev-parse HEAD)"
@@ -75,8 +75,8 @@ print_system_info() {
 	end_fold "disk_info"
 
 	start_fold "cache_info" "Cache information"
-	echo "Maven: $(du -s --si $HOME/.m2)"
-	echo "Flink: $(du -s --si $HOME/flink_cache)"
+	echo "Maven: $(du -s --si $MAVEN_CACHE_FOLDER)"
+	echo "Flink: $(du -s --si $CACHE_FLINK_DIR)"
 	echo "Maven (binaries): $(du -s --si $HOME/maven_cache)"
 	echo "gems: $(du -s --si $HOME/gem_cache)"
 	end_fold "cache_info"
@@ -125,18 +125,19 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
         echo "debugging artifact checking"
         pwd
         ls -lisah
-        # check_shaded_artifacts
-        # EXIT_CODE=$(($EXIT_CODE+$?))
-        # check_shaded_artifacts_s3_fs hadoop
-        # EXIT_CODE=$(($EXIT_CODE+$?))
-        # check_shaded_artifacts_s3_fs presto
-        # EXIT_CODE=$(($EXIT_CODE+$?))
-        # check_shaded_artifacts_connector_elasticsearch 2
-        # EXIT_CODE=$(($EXIT_CODE+$?))
-        # check_shaded_artifacts_connector_elasticsearch 5
-        # EXIT_CODE=$(($EXIT_CODE+$?))
-        # check_shaded_artifacts_connector_elasticsearch 6
-        # EXIT_CODE=$(($EXIT_CODE+$?))
+        whoami
+        check_shaded_artifacts
+        EXIT_CODE=$(($EXIT_CODE+$?))
+        check_shaded_artifacts_s3_fs hadoop
+        EXIT_CODE=$(($EXIT_CODE+$?))
+        check_shaded_artifacts_s3_fs presto
+        EXIT_CODE=$(($EXIT_CODE+$?))
+        check_shaded_artifacts_connector_elasticsearch 2
+        EXIT_CODE=$(($EXIT_CODE+$?))
+        check_shaded_artifacts_connector_elasticsearch 5
+        EXIT_CODE=$(($EXIT_CODE+$?))
+        check_shaded_artifacts_connector_elasticsearch 6
+        EXIT_CODE=$(($EXIT_CODE+$?))
     else
         echo "=============================================================================="
         echo "Previous build failure detected, skipping shaded dependency check."
