@@ -102,8 +102,10 @@ EXIT_CODE=0
 
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
-	MVN="mvn clean install --settings /tmp/az_settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
-	$MVN
+    # --settings /tmp/az_settings.xml
+	MVN="mvn clean install  $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
+	echo "invoking maven with '$MVN'."
+    $MVN
 	EXIT_CODE=$?
 
     if [ $EXIT_CODE == 0 ]; then
