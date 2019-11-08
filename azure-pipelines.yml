@@ -77,7 +77,7 @@ jobs:
 
 
 - job: runOnAzure_e2e
-  condition: eq(variables['mode'], 'e2e')
+  condition: eq(variables['MODE'], 'e2e')
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
@@ -100,6 +100,7 @@ jobs:
 
 
 - job: runOnAzure_compile
+  condition: not(eq(variables['MODE'], 'e2e'))
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
@@ -111,7 +112,7 @@ jobs:
 
   # Preparation
   - script: echo "Wrong repository or mode"; exit 1
-    condition: and(not(eq(variables['Build.Repository.Name'], 'rmetzger/flink')),eq(variables['mode'], 'e2e'))
+    condition: and(not(eq(variables['Build.Repository.Name'], 'rmetzger/flink')),eq(variables['MODE'], 'e2e'))
   #- script: sudo chown -R user:user /home/user
   #- script: sudo chown -R user:user .
   #- script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
@@ -130,7 +131,6 @@ jobs:
       path: $(MAVEN_CACHE_FOLDER)
       cacheHitVar: CACHE_RESTORED
     displayName: Cache Maven local repo
-  - script: ls -lisah $(MAVEN_CACHE_FOLDER); find $(MAVEN_CACHE_FOLDER) ; exit 1
 
   # Compile
   # backup: STAGE=compile HOME=/home/user sudo --preserve-env su --preserve-environment user
@@ -145,12 +145,19 @@ jobs:
 
 - job: runOnAzure_test
   dependsOn: runOnAzure_compile
+  condition: not(eq(variables['MODE'], 'e2e'))
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
   timeoutInMinutes: 240
   strategy:
-    parallel: 10
+    matrix:
+      core:
+        parameter: core
+      python:
+        parameter: python
+      libraries:
+        parameter: libraries
   steps:
 
   # Preparation
@@ -164,27 +171,25 @@ jobs:
       artifact: FlinkCompileCacheDir
 
   # Test
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh core
-    displayName: Test - core
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh python
-    displayName: Test - python
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh libraries
-    displayName: Test - libraries
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh blink_planner
-    displayName: Test - blink_planner
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh connectors
-    displayName: Test - connectors
+  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh ${parameter}
+    displayName: Test - ${parameter}
+  
 
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh kafka/gelly
-    displayName: Test - kafka/gelly
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh tests
-    displayName: Test - tests
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_core
-    displayName: Test - scheduler_ng_core
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_tests
-    displayName: Test - scheduler_ng_tests
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh misc
-    displayName: Test - misc
+  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh blink_planner
+  #   displayName: Test - blink_planner
+  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh connectors
+  #   displayName: Test - connectors
+
+  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh kafka/gelly
+  #   displayName: Test - kafka/gelly
+  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh tests
+  #   displayName: Test - tests
+  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_core
+  #   displayName: Test - scheduler_ng_core
+  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_tests
+  #   displayName: Test - scheduler_ng_tests
+  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh misc
+  #   displayName: Test - misc
 
     
 
