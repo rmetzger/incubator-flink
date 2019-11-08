@@ -111,56 +111,56 @@ jobs:
   - script: STAGE=compile ./tools/azure_controller.sh compile
     displayName: Build
 
-  # upload artifacts for next stage
-  - task: PublishPipelineArtifact@1
-    inputs:
-      path: $(CACHE_FLINK_DIR)
-      artifact: FlinkCompileCacheDir
+#   # upload artifacts for next stage
+#   - task: PublishPipelineArtifact@1
+#     inputs:
+#       path: $(CACHE_FLINK_DIR)
+#       artifact: FlinkCompileCacheDir
 
-- job: runOnAzure_test
-  dependsOn: runOnAzure_compile
-  pool:
-    vmImage: 'ubuntu-latest'
-  container: flink-build-container
-  timeoutInMinutes: 240
-  strategy:
-    parallel: 10
-  steps:
+# - job: runOnAzure_test
+#   dependsOn: runOnAzure_compile
+#   pool:
+#     vmImage: 'ubuntu-latest'
+#   container: flink-build-container
+#   timeoutInMinutes: 240
+#   strategy:
+#     parallel: 10
+#   steps:
 
-  # Preparation
-  - script: exit 1
-    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
-  - script: sudo chown -R user:user /home/user
-  - script: sudo chown -R user:user .
+#   # Preparation
+#   - script: exit 1
+#     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
+#   - script: sudo chown -R user:user /home/user
+#   - script: sudo chown -R user:user .
 
-  # download artifacts
-  - task: DownloadPipelineArtifact@2
-    inputs:
-      path: $(CACHE_FLINK_DIR)
-      artifact: FlinkCompileCacheDir
+#   # download artifacts
+#   - task: DownloadPipelineArtifact@2
+#     inputs:
+#       path: $(CACHE_FLINK_DIR)
+#       artifact: FlinkCompileCacheDir
 
-  # Test
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh core
-    displayName: Test - core
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh python
-    displayName: Test - python
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh libraries
-    displayName: Test - libraries
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh blink_planner
-    displayName: Test - blink_planner
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh connectors
-    displayName: Test - connectors
+#   # Test
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh core
+#     displayName: Test - core
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh python
+#     displayName: Test - python
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh libraries
+#     displayName: Test - libraries
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh blink_planner
+#     displayName: Test - blink_planner
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh connectors
+#     displayName: Test - connectors
 
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh kafka/gelly
-    displayName: Test - kafka/gelly
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh tests
-    displayName: Test - tests
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_core
-    displayName: Test - scheduler_ng_core
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_tests
-    displayName: Test - scheduler_ng_tests
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh misc
-    displayName: Test - misc
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh kafka/gelly
+#     displayName: Test - kafka/gelly
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh tests
+#     displayName: Test - tests
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_core
+#     displayName: Test - scheduler_ng_core
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_tests
+#     displayName: Test - scheduler_ng_tests
+#   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh misc
+#     displayName: Test - misc
 
     
 
