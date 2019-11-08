@@ -26,11 +26,11 @@ resources:
     image: rmetzger/flink-ci:3
 
 variables:
-  MAVEN_CACHE_FOLDER: /home/user/.m2/repository
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   CACHE_KEY: maven | $(Agent.OS) | **/pom.xml
   CACHE_FALLBACK_KEY: maven | $(Agent.OS)
-  CACHE_FLINK_DIR: /home/user/flink_cache
+  CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
 
 
 jobs:
@@ -93,7 +93,7 @@ jobs:
   - script: sudo chmod -R 777 /home/user
   - script: sudo chown -R user:azure_pipelines_docker /home/user
   - script: ls -lisah $(MAVEN_CACHE_FOLDER) ; find $(MAVEN_CACHE_FOLDER)
-  - script: pwd ; ls -lisah . ; ls -lisah $(Pipeline.Workspace) ; find /
+  - script: pwd ; ls -lisah . ; ls -lisah $(Pipeline.Workspace) 
   # user vsts_azpcontainer is in group azure_pipelines_docker?
   # Idea: make user part of the azure_pipelines_docker group. allow this group everything
   - script: groups vsts_azpcontainer
