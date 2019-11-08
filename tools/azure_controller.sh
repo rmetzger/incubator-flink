@@ -21,6 +21,8 @@ echo $M2_HOME
 echo $PATH
 echo $MAVEN_OPTS
 whoami
+echo "checking if 'jar' is available"
+jar
 mvn -version
 
 echo "Commit: $(git rev-parse HEAD)"
