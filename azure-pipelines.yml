@@ -23,7 +23,7 @@ resources:
   containers:
   # Container with Maven 3.2.5 to have the same environment everywhere.
   - container: flink-build-container
-    image: rmetzger/flink-ci:3
+    image: rmetzger/flink-ci:4
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
