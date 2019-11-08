@@ -92,6 +92,7 @@ jobs:
         path: $(MAVEN_CACHE_FOLDER)
         cacheHitVar: CACHE_RESTORED
       displayName: Cache Maven local repo
+    - script: ./travis/setup_maven.sh
     - script: STAGE=compile ./tools/azure_controller.sh compile
       displayName: Build
     - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
