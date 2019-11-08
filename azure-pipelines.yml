@@ -90,8 +90,12 @@ jobs:
   - script: sudo chown -R user:user .
   - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-  - script: sudo chmod 777 $(MAVEN_CACHE_FOLDER)
+  - script: sudo chmod -R 777 /home/user
+  - script: sudo chown -R user:user /home/user
   - script: ls -lisah $(MAVEN_CACHE_FOLDER) ; find $(MAVEN_CACHE_FOLDER)
+  # user vsts_azpcontainer is in group azure_pipelines_docker?
+  # Idea: make user part of the azure_pipelines_docker group. allow this group everything
+  - script: groups vsts_azpcontainer
   - task: CacheBeta@1
     inputs:
       key: $(CACHE_KEY)
