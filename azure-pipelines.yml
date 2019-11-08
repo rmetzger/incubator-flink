@@ -90,20 +90,20 @@ jobs:
   - script: sudo chown -R user:user .
   - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-#  - task: CacheBeta@1
-#    inputs:
-#      key: $(CACHE_KEY)
-#      restoreKeys: $(CACHE_FALLBACK_KEY)
-#      path: $(MAVEN_CACHE_FOLDER)
-#      cacheHitVar: CACHE_RESTORED
-#    displayName: Cache Maven local repo
+  - task: CacheBeta@1
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+      cacheHitVar: CACHE_RESTORED
+    displayName: Cache Maven local repo
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
 
   # Compile
   - script: STAGE=compile ./tools/azure_controller.sh compile
     displayName: Build
 
-  # upload artifacts
+  # upload artifacts for next stage
   - task: PublishPipelineArtifact@1
     inputs:
       path: $(CACHE_FLINK_DIR)
