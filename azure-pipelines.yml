@@ -91,7 +91,7 @@ jobs:
   - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
   - script: sudo chmod -R 777 /home/user
-  - script: sudo chown -R user:user /home/user
+  - script: sudo chown -R user:azure_pipelines_docker /home/user
   - script: ls -lisah $(MAVEN_CACHE_FOLDER) ; find $(MAVEN_CACHE_FOLDER)
   # user vsts_azpcontainer is in group azure_pipelines_docker?
   # Idea: make user part of the azure_pipelines_docker group. allow this group everything
