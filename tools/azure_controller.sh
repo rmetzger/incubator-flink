@@ -23,8 +23,10 @@ echo $MAVEN_OPTS
 whoami
 echo "checking if 'jar' is available"
 jar
-mvn -version
 
+export PATH=/usr/local/openjdk-8/bin:$PATH
+
+mvn -version
 echo "Commit: $(git rev-parse HEAD)"
 
 
@@ -123,10 +125,6 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
     fi
     
     if [ $EXIT_CODE == 0 ]; then
-        echo "debugging artifact checking"
-        pwd
-        ls -lisah
-        whoami
         check_shaded_artifacts
         EXIT_CODE=$(($EXIT_CODE+$?))
         check_shaded_artifacts_s3_fs hadoop
@@ -176,6 +174,10 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
             # not deleting this can cause build stability issues
             # merging the cached version sometimes fails
             rm -rf "$CACHE_FLINK_DIR/.git"
+
+
+            # AZ Pipelines has a problem with links. TODO: Check if needed for e2e tests
+            rm "$CACHE_FLINK_DIR/build-target"
         }
     
         start_fold "minimize_cache" "Minimizing cache"
@@ -183,6 +185,9 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
         minimizeCachedFiles
         travis_time_finish
         end_fold "minimize_cache"
+
+        echo "DEBUGGING: Printing cache dir contents"
+        find $CACHE_FLINK_DIR
     else
         echo "=============================================================================="
         echo "Previous build failure detected, skipping cache setup."
