@@ -20,6 +20,7 @@
 echo $M2_HOME
 echo $PATH
 echo $MAVEN_OPTS
+echo "Parameters to the script: '$@'"
 whoami
 echo "checking if 'jar' is available"
 jar
