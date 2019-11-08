@@ -143,7 +143,8 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
 
     if [ $EXIT_CODE == 0 ]; then
         echo "Creating cache build directory $CACHE_FLINK_DIR"
-        mkdir -p "$CACHE_FLINK_DIR"
+        sudo mkdir -p "$CACHE_FLINK_DIR"
+        sudo chown -R user:user "$CACHE_FLINK_DIR"
     
         cp -r . "$CACHE_FLINK_DIR"
 
