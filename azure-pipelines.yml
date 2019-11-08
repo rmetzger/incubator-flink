@@ -85,15 +85,16 @@ jobs:
     - script: echo "Wrong repository or mode"; exit 1
       condition: and(not(eq(variables['Build.Repository.Name'], 'rmetzger/flink')),not(eq(variables['mode'], 'e2e')))
     - task: CacheBeta@1
-    inputs:
-      key: $(CACHE_KEY)
-      restoreKeys: $(CACHE_FALLBACK_KEY)
-      path: $(MAVEN_CACHE_FOLDER)
-      cacheHitVar: CACHE_RESTORED
-    displayName: Cache Maven local repo
+      inputs:
+        key: $(CACHE_KEY)
+        restoreKeys: $(CACHE_FALLBACK_KEY)
+        path: $(MAVEN_CACHE_FOLDER)
+        cacheHitVar: CACHE_RESTORED
+      displayName: Cache Maven local repo
     - script: STAGE=compile ./tools/azure_controller.sh compile
-    displayName: Build
+      displayName: Build
     - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
+      displayName: Run nightly e2e tests
 
 
 
