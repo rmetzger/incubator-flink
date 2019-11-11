@@ -93,7 +93,7 @@ jobs:
         cacheHitVar: CACHE_RESTORED
       displayName: Cache Maven local repo
     - script: ./tools/travis/setup_maven.sh
-    - script: STAGE=compile PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH ./tools/azure_controller.sh compile
+    - script: STAGE=compile M2_HOME=/home/vsts/maven_cache/apache-maven-3.2.5/ PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH ./tools/azure_controller.sh compile
       displayName: Build
     - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
       displayName: Run nightly e2e tests
