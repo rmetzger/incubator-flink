@@ -39,10 +39,8 @@ cat << EOF > /tmp/az_settings.xml
 </settings>
 EOF
 
-
-
-echo "Hopefully wrote the settings file"
-cat /tmp/az_settings.xml
+echo "Build number: $BUILD_BUILDNUMBER"
+env
 
 
 HERE="`dirname \"$0\"`"				# relative

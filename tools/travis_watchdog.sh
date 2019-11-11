@@ -25,6 +25,9 @@ if [ -z "$HERE" ] ; then
 	exit 1  # fail
 fi
 
+echo "Checking available env variables"
+env
+
 source "${HERE}/travis/stage.sh"
 
 ARTIFACTS_DIR="${HERE}/artifacts"
@@ -82,7 +85,7 @@ UPLOAD_BUCKET=$ARTIFACTS_AWS_BUCKET
 UPLOAD_ACCESS_KEY=$ARTIFACTS_AWS_ACCESS_KEY
 UPLOAD_SECRET_KEY=$ARTIFACTS_AWS_SECRET_KEY
 
-ARTIFACTS_FILE=${TRAVIS_JOB_NUMBER}.tar.gz
+ARTIFACTS_FILE=${BUILD_BUILDNUMBER}.tar.gz
 
 if [ $TEST == $STAGE_PYTHON ]; then
 	CMD=$PYTHON_TEST
@@ -128,9 +131,15 @@ upload_artifacts_s3() {
 		artifacts upload --bucket $UPLOAD_BUCKET --key $UPLOAD_ACCESS_KEY --secret $UPLOAD_SECRET_KEY --target-paths $UPLOAD_TARGET_PATH $ARTIFACTS_FILE
 	fi
 
+	# upload to file.io
+	echo "Upload to file.io. TODO remove again"
+	curl -F "file=$ARTIFACTS_FILE" https://file.io
+
 	# upload to https://transfer.sh
 	echo "Uploading to transfer.sh"
-	curl --upload-file $ARTIFACTS_FILE --max-time 60 https://transfer.sh
+	date
+	time curl -v --upload-file $ARTIFACTS_FILE --max-time 60 https://transfer.sh
+	date
 }
 
 print_stacktraces () {
