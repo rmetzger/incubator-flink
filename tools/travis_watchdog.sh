@@ -131,9 +131,6 @@ upload_artifacts_s3() {
 		artifacts upload --bucket $UPLOAD_BUCKET --key $UPLOAD_ACCESS_KEY --secret $UPLOAD_SECRET_KEY --target-paths $UPLOAD_TARGET_PATH $ARTIFACTS_FILE
 	fi
 
-	# upload to file.io
-	echo "Upload to file.io. TODO remove again"
-	curl -F "file=$ARTIFACTS_FILE" https://file.io
 
 	# upload to https://transfer.sh
 	echo "Uploading to transfer.sh"

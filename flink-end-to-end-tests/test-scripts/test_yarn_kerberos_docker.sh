@@ -100,6 +100,21 @@ function start_hadoop_cluster() {
             return 1
         else
             echo "We only have $nm_running NodeManagers up. We have been trying for $time_diff seconds, retrying ..."
+
+            echo "=================DEBUGGING==============="
+            echo "========================================="
+            echo "docker ps"
+            docker ps
+
+            echo "========================================="
+            echo "docker logs master"
+            docker logs master
+
+            echo "========================================="
+            echo "yarn node list"
+            docker exec -it master bash -c "yarn node -list"
+
+            echo "========================================="
             sleep 1
         fi
 

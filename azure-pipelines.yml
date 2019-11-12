@@ -23,7 +23,7 @@ resources:
   containers:
   # Container with Maven 3.2.5 to have the same environment everywhere.
   - container: flink-build-container
-    image: rmetzger/flink-ci:4-nouser
+    image: rmetzger/flink-ci:5-ubuntu
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -131,6 +131,7 @@ jobs:
       restoreKeys: $(CACHE_FALLBACK_KEY)
       path: $(MAVEN_CACHE_FOLDER)
       cacheHitVar: CACHE_RESTORED
+    continueOnError: true # continue the build even if the cache fails.
     displayName: Cache Maven local repo
 
   # Compile

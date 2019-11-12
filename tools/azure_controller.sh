@@ -178,9 +178,6 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
         minimizeCachedFiles
         travis_time_finish
         end_fold "minimize_cache"
-
-        echo "DEBUGGING: Printing cache dir contents"
-        find $CACHE_FLINK_DIR
     else
         echo "=============================================================================="
         echo "Previous build failure detected, skipping cache setup."
