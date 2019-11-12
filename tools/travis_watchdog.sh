@@ -28,6 +28,9 @@ fi
 echo "Checking available env variables"
 env
 
+echo "printing all files"
+find .
+
 source "${HERE}/travis/stage.sh"
 
 ARTIFACTS_DIR="${HERE}/artifacts"

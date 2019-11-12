@@ -111,6 +111,14 @@ function start_hadoop_cluster() {
             docker logs master
 
             echo "========================================="
+            echo "docker logs slave1"
+            docker logs slave1
+
+            echo "========================================="
+            echo "docker logs slave2"
+            docker logs slave2
+
+            echo "========================================="
             echo "yarn node list"
             docker exec -it master bash -c "yarn node -list"
 
