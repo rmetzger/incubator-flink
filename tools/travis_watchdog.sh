@@ -92,7 +92,7 @@ ARTIFACTS_FILE=${BUILD_BUILDNUMBER}.tar.gz
 
 if [ $TEST == $STAGE_PYTHON ]; then
 	echo "===== Python stage found. Re-compiling"
-	mvn install -DskipTests
+	mvn install -DskipTests -Drat.skip
 	echo "Done compiling ... "
 	CMD=$PYTHON_TEST
 	CMD_PID=$PYTHON_PID
