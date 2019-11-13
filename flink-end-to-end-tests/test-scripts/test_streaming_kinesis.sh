@@ -27,6 +27,12 @@ export AWS_ACCESS_KEY_ID=flinkKinesisTestFakeAccessKeyId
 export AWS_SECRET_KEY=flinkKinesisTestFakeAccessKey
 
 KINESALITE_PORT=4567
+KINESALITE_HOST=localhost
+
+# set different host if we are in azure pipelines
+if [[ -z "${TF_BUILD}" ]]; then
+  KINESALITE_HOST="host.docker.internal"
+fi
 
 function start_kinesalite {
     #docker run -d --rm --name flink-test-kinesis -p ${KINESALITE_PORT}:${KINESALITE_PORT} instructure/kinesalite
@@ -65,6 +71,6 @@ TEST_JAR="${END_TO_END_DIR}/flink-streaming-kinesis-test/target/KinesisExample.j
 JVM_ARGS=${DISABLE_CERT_CHECKING_JAVA_OPTS} \
 $FLINK_DIR/bin/flink run -p 1 -c org.apache.flink.streaming.kinesis.test.KinesisExampleTest $TEST_JAR \
   --input-stream test-input --output-stream test-output \
-  --aws.endpoint https://localhost:${KINESALITE_PORT} --aws.credentials.provider.basic.secretkey fakekey --aws.credentials.provider.basic.accesskeyid fakeid \
+  --aws.endpoint https://${KINESALITE_HOST}:${KINESALITE_PORT} --aws.credentials.provider.basic.secretkey fakekey --aws.credentials.provider.basic.accesskeyid fakeid \
   --flink.stream.initpos TRIM_HORIZON \
   --flink.partition-discovery.interval-millis 1000
