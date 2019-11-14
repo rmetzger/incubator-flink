@@ -40,8 +40,7 @@ echo "flink-end-to-end-test directory: $END_TO_END_DIR"
 echo "Flink distribution directory: $FLINK_DIR"
 
 echo "System information"
-docker -v
-docker-compose -v
+docker version
 
 
 # Template for adding a test:
