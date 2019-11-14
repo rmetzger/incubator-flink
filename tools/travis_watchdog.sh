@@ -28,8 +28,6 @@ fi
 echo "Checking available env variables"
 env
 
-echo "printing all files"
-find .
 
 source "${HERE}/travis/stage.sh"
 
@@ -173,6 +171,9 @@ put_yarn_logs_to_artifacts() {
 		mkdir -p "$ARTIFACTS_DIR/yarn-tests/$TARGET_DIR"
 		cp $file "$ARTIFACTS_DIR/yarn-tests/$TARGET_FILE"
 	done
+
+	echo "DEBUGGING: all files"
+	find ./flink-yarn-tests/target/
 }
 
 mod_time () {
