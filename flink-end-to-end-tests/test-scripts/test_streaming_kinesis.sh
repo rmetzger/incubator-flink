@@ -30,9 +30,10 @@ KINESALITE_PORT=4567
 KINESALITE_HOST=localhost
 
 # set different host if we are in azure pipelines
-if [[ -z "${TF_BUILD}" ]]; then
+if [[ ! -z "${TF_BUILD}" ]]; then
   KINESALITE_HOST="host.docker.internal"
 fi
+
 
 function start_kinesalite {
     #docker run -d --rm --name flink-test-kinesis -p ${KINESALITE_PORT}:${KINESALITE_PORT} instructure/kinesalite
