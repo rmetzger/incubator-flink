@@ -13,9 +13,6 @@ tmate -S /tmp/tmate.sock wait tmate-ready
 tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
 tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
 
-echo "Need to output a lot?"
-
-find / 
 
 echo "Sleeping a bit"
 sleep 10000000
