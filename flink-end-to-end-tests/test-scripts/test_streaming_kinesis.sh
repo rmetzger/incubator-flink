@@ -27,19 +27,28 @@ export AWS_ACCESS_KEY_ID=flinkKinesisTestFakeAccessKeyId
 export AWS_SECRET_KEY=flinkKinesisTestFakeAccessKey
 
 KINESALITE_PORT=4567
-KINESALITE_HOST=localhost
+KINESALITE_HOST=kinesalite-container
+KINESALITE_NETWORK=some
 
-# set different host if we are in azure pipelines
+# set different network if we are in azure pipelines
 if [[ ! -z "${TF_BUILD}" ]]; then
-  KINESALITE_HOST="host.docker.internal"
+  KINESALITE_NETWORK=`docker network ls --filter name=vsts --format "{{.Name}}"`
+  echo "Set network to '${KINESALITE_NETWORK}'"
+  echo "=="
+  docker network ls
+  echo "=="
+  docker network ls --filter name=vsts --format "{{.Name}}"
+  echo "=="
 fi
+
+
 
 
 function start_kinesalite {
     #docker run -d --rm --name flink-test-kinesis -p ${KINESALITE_PORT}:${KINESALITE_PORT} instructure/kinesalite
     # override entrypoint to enable SSL
     docker run -d --rm --entrypoint "/tini" \
-        --name flink-test-kinesis \
+        --name ${KINESALITE_HOST} --network KINESALITE_NETWORK \
         -p ${KINESALITE_PORT}:${KINESALITE_PORT} \
         instructure/kinesalite -- \
         /usr/src/app/node_modules/kinesalite/cli.js --path /var/lib/kinesalite --ssl
