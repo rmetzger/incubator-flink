@@ -48,7 +48,7 @@ function start_kinesalite {
     #docker run -d --rm --name flink-test-kinesis -p ${KINESALITE_PORT}:${KINESALITE_PORT} instructure/kinesalite
     # override entrypoint to enable SSL
     docker run -d --rm --entrypoint "/tini" \
-        --name ${KINESALITE_HOST} --network KINESALITE_NETWORK \
+        --name ${KINESALITE_HOST} --network ${KINESALITE_NETWORK} \
         -p ${KINESALITE_PORT}:${KINESALITE_PORT} \
         instructure/kinesalite -- \
         /usr/src/app/node_modules/kinesalite/cli.js --path /var/lib/kinesalite --ssl
