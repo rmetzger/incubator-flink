@@ -12,3 +12,7 @@ tmate -S /tmp/tmate.sock new-session -d
 tmate -S /tmp/tmate.sock wait tmate-ready
 tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
 tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
+
+
+echo "Sleeping a bit"
+sleep 10000000
