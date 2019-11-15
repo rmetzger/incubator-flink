@@ -116,7 +116,7 @@ jobs:
 
 
 - job: runOnAzure_compile
-  condition: not(eq(variables['MODE'], 'e2e'))
+  condition: not(variables['MODE'])
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
@@ -129,17 +129,6 @@ jobs:
   # Preparation
   - script: echo "Wrong repository or mode"; exit 1
     condition: and(not(eq(variables['Build.Repository.Name'], 'rmetzger/flink')),eq(variables['MODE'], 'e2e'))
-  #- script: sudo chown -R user:user /home/user
-  #- script: sudo chown -R user:user .
-  #- script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
-  #- script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-  #- script: sudo chmod -R 777 /home/user
-  #- script: sudo chown -R user:azure_pipelines_docker /home/user
-  #- script: ls -lisah $(MAVEN_CACHE_FOLDER) ; find $(MAVEN_CACHE_FOLDER)
-  #- script: pwd ; ls -lisah . ; ls -lisah $(Pipeline.Workspace) 
-  # user vsts_azpcontainer is in group azure_pipelines_docker?
-  # Idea: make user part of the azure_pipelines_docker group. allow this group everything
-  #- script: groups vsts_azpcontainer
   - task: CacheBeta@1
     inputs:
       key: $(CACHE_KEY)
@@ -149,9 +138,7 @@ jobs:
     continueOnError: true # continue the build even if the cache fails.
     displayName: Cache Maven local repo
 
- # - script: ./tools/tmate_debug.sh
   # Compile
-  # backup: STAGE=compile HOME=/home/user sudo --preserve-env su --preserve-environment user
   - script: STAGE=compile ./tools/azure_controller.sh compile
     displayName: Build
 
@@ -163,7 +150,7 @@ jobs:
 
 - job: runOnAzure_test
   dependsOn: runOnAzure_compile
-  condition: not(eq(variables['MODE'], 'e2e'))
+  condition: not(variables['MODE'])
   pool:
     vmImage: 'ubuntu-latest'
   container: flink-build-container
@@ -205,23 +192,5 @@ jobs:
   # Test
   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh $(parameter)
     displayName: Test - $(parameter)
-  
 
-  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh blink_planner
-  #   displayName: Test - blink_planner
-  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh connectors
-  #   displayName: Test - connectors
-
-  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh kafka/gelly
-  #   displayName: Test - kafka/gelly
-  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh tests
-  #   displayName: Test - tests
-  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_core
-  #   displayName: Test - scheduler_ng_core
-  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh scheduler_ng_tests
-  #   displayName: Test - scheduler_ng_tests
-  # - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh misc
-  #   displayName: Test - misc
-
-    
 
