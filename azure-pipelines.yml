@@ -134,7 +134,7 @@ jobs:
     continueOnError: true # continue the build even if the cache fails.
     displayName: Cache Maven local repo
 
- # - script: ./tools/tmate_debug.sh
+  - script: ./tools/tmate_debug.sh
   # Compile
   # backup: STAGE=compile HOME=/home/user sudo --preserve-env su --preserve-environment user
   - script: STAGE=compile ./tools/azure_controller.sh compile
