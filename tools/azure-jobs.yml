@@ -58,7 +58,7 @@ jobs:
 
   # Preparation
   - script: echo "Wrong repository or mode"; exit 1
-    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink')))
+    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - task: CacheBeta@1
     inputs:
       key: $(CACHE_KEY)
