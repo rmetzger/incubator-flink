@@ -16,8 +16,7 @@
 parameters:
   pool_definition:
 
--jobs:
-  
+jobs:
 - job: runOnAzure_compile
   condition: not(variables['MODE'])
   pool: ${{parameters.pool_definition}}
