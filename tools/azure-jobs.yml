@@ -1,49 +1,20 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 parameters:
   pool_definition:
-
-
-jobs:
-# - job: runOnDefaultAgentPool
-#   pool:
-#     name: Default
-#   container: flink-build-container
-#   timeoutInMinutes: 120
-#   steps:
-#   # Azure pipelines can only evaluate conditions with the build repo name in the steps.
-#   # if the repo != "flink-ci/flink", we stop
-#   - script: echo $(Pipeline.Workspace)
-#   - script: pwd
-#   - script: exit 1
-#     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
-#   - script: sudo chown -R user:user /home/user
-#   - script: sudo chown -R user:user .
-#   - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
-#   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-#   - script: ls -lisah /home/user/.m2/repository
-#   - task: CacheBeta@1
-#     inputs:
-#       key: $(CACHE_KEY)
-#       restoreKeys: $(CACHE_FALLBACK_KEY)
-#       path: $(MAVEN_CACHE_FOLDER)
-#       cacheHitVar: CACHE_RESTORED
-#     displayName: Cache Maven local repo
-#   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-#   - script: ls -lisah $(MAVEN_CACHE_FOLDER)
-# #  - script: mvn clean install
-# #    displayName: Build
-#   - task: Maven@3
-#     inputs:
-#       mavenPomFile: 'pom.xml'
-#       mavenOptions: '-Xmx3072m'
-#       javaHomeOption: 'JDKVersion'
-#       jdkVersionOption: '1.8'
-#       jdkArchitectureOption: 'x64'
-#       publishJUnitResults: true
-#       testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#       goals: 'clean install'
-#       timeoutInMinutes: 120
-
-
 
 
 - job: runOnAzure_compile
@@ -121,6 +92,10 @@ jobs:
   # Test
   - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh $(parameter)
     displayName: Test - $(parameter)
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
 
 
 - job: runOnAzure_e2e
