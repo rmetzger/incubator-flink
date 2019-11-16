@@ -46,6 +46,6 @@ stages:
       - template: tools/azure-jobs.yml
         parameters:
           pool_definition:
-          vmImage: 'ubuntu-18.04'
+            vmImage: 'ubuntu-18.04'
 
 

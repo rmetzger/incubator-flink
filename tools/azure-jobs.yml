@@ -1,5 +1,5 @@
 parameters:
-  pool_definition: ''
+  pool_definition:
 
 
 jobs:
@@ -48,8 +48,7 @@ jobs:
 
 - job: runOnAzure_compile
   condition: not(variables['MODE'])
-  pool:
-    ${{pool_definition}}
+  pool: ${{parameters.pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
   steps:
@@ -82,8 +81,7 @@ jobs:
 - job: runOnAzure_test
   dependsOn: runOnAzure_compile
   condition: not(variables['MODE'])
-  pool:
-    ${{pool_definition}}
+  pool: ${{parameters.pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
   strategy:
@@ -128,8 +126,7 @@ jobs:
 - job: runOnAzure_e2e
   condition: eq(variables['MODE'], 'e2e')
   #We are not running this test on a container, but in a VM.
-  pool:
-    ${{pool_definition}}
+  pool: ${{parameters.pool_definition}}
   timeoutInMinutes: 240
   steps:
     - script: echo "Wrong repository or mode"; exit 1
@@ -149,8 +146,7 @@ jobs:
 
 - job: runOnAzure_tmate
   condition: eq(variables['MODE'], 'tmate')
-  pool:
-    ${{pool_definition}}
+  pool: ${{parameters.pool_definition}}
   container: flink-build-container
   steps:
   - task: CacheBeta@1
