@@ -36,13 +36,13 @@ stages:
   - stage: build_on_default_pool
     displayName: "Build on 'Default' pool (Flink Community Build Resources)"
     jobs:
-      - templates: tools/azure-jobs.yml
+      - template: tools/azure-jobs.yml
         parameters:
           name: Default
   - stage: build_on_azure_os_free_pool
     displayName: "Build on free (for OS) Azure Resource Pool"
     jobs:
-      - templates: tools/azure-jobs.yml
+      - template: tools/azure-jobs.yml
         parameters:
           vmImage: 'ubuntu-18.04'
 
