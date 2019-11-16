@@ -21,176 +21,29 @@ trigger:
 
 resources:
   containers:
-  # Container with Maven 3.2.5 to have the same environment everywhere.
+  # Container with Maven 3.2.5, SSL to have the same environment everywhere.
   - container: flink-build-container
     image: rmetzger/flink-ci:5-ubuntu
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-  CACHE_KEY: maven | maven-mirror-google | $(Agent.OS) | **/pom.xml
+  CACHE_KEY: maven | $(Agent.OS) | **/pom.xml
   CACHE_FALLBACK_KEY: maven | $(Agent.OS)
   CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
 
-
-jobs:
-# - job: runOnDefaultAgentPool
-#   pool:
-#     name: Default
-#   container: flink-build-container
-#   timeoutInMinutes: 120
-#   steps:
-#   # Azure pipelines can only evaluate conditions with the build repo name in the steps.
-#   # if the repo != "flink-ci/flink", we stop
-#   - script: echo $(Pipeline.Workspace)
-#   - script: pwd
-#   - script: exit 1
-#     condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
-#   - script: sudo chown -R user:user /home/user
-#   - script: sudo chown -R user:user .
-#   - script: sudo mkdir -p $(MAVEN_CACHE_FOLDER)
-#   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-#   - script: ls -lisah /home/user/.m2/repository
-#   - task: CacheBeta@1
-#     inputs:
-#       key: $(CACHE_KEY)
-#       restoreKeys: $(CACHE_FALLBACK_KEY)
-#       path: $(MAVEN_CACHE_FOLDER)
-#       cacheHitVar: CACHE_RESTORED
-#     displayName: Cache Maven local repo
-#   - script: sudo chown -R user:user $(MAVEN_CACHE_FOLDER)
-#   - script: ls -lisah $(MAVEN_CACHE_FOLDER)
-# #  - script: mvn clean install
-# #    displayName: Build
-#   - task: Maven@3
-#     inputs:
-#       mavenPomFile: 'pom.xml'
-#       mavenOptions: '-Xmx3072m'
-#       javaHomeOption: 'JDKVersion'
-#       jdkVersionOption: '1.8'
-#       jdkArchitectureOption: 'x64'
-#       publishJUnitResults: true
-#       testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#       goals: 'clean install'
-#       timeoutInMinutes: 120
-
-
-- job: runOnAzure_e2e
-  condition: eq(variables['MODE'], 'e2e')
-  pool:
-    vmImage: 'ubuntu-latest'
-  #We are not running this test on a container, but in a VM.
-  #container: flink-build-container
-  timeoutInMinutes: 240
-  steps:
-    - script: echo "Wrong repository or mode"; exit 1
-      condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
-    - task: CacheBeta@1
-      inputs:
-        key: $(CACHE_KEY)
-        restoreKeys: $(CACHE_FALLBACK_KEY)
-        path: $(MAVEN_CACHE_FOLDER)
-        cacheHitVar: CACHE_RESTORED
-      displayName: Cache Maven local repo
-    - script: ./tools/travis/setup_maven.sh
-    - script: STAGE=compile M2_HOME=/home/vsts/maven_cache/apache-maven-3.2.5/ PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH ./tools/azure_controller.sh compile
-      displayName: Build
-    - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
-      displayName: Run nightly e2e tests
-
-- job: runOnAzure_tmate
-  condition: eq(variables['MODE'], 'tmate')
-  pool:
-    vmImage: 'ubuntu-latest'
-  container: flink-build-container
-  steps:
-  - task: CacheBeta@1
-    inputs:
-      key: $(CACHE_KEY)
-      restoreKeys: $(CACHE_FALLBACK_KEY)
-      path: $(MAVEN_CACHE_FOLDER)
-      cacheHitVar: CACHE_RESTORED
-    continueOnError: true # continue the build even if the cache fails.
-    displayName: Cache Maven local repo
-  - script: ./tools/tmate_debug.sh
-
-
-- job: runOnAzure_compile
-  condition: not(variables['MODE'])
-  pool:
-    vmImage: 'ubuntu-latest'
-  container: flink-build-container
-  timeoutInMinutes: 240
-  steps:
-
-  # Azure pipelines can only evaluate conditions with the build repo name in the steps.
-  # if the repo == "flink-ci/flink", we stop
-
-  # Preparation
-  - script: echo "Wrong repository or mode"; exit 1
-    condition: and(not(eq(variables['Build.Repository.Name'], 'rmetzger/flink')),eq(variables['MODE'], 'e2e'))
-  - task: CacheBeta@1
-    inputs:
-      key: $(CACHE_KEY)
-      restoreKeys: $(CACHE_FALLBACK_KEY)
-      path: $(MAVEN_CACHE_FOLDER)
-      cacheHitVar: CACHE_RESTORED
-    continueOnError: true # continue the build even if the cache fails.
-    displayName: Cache Maven local repo
-
-  # Compile
-  - script: STAGE=compile ./tools/azure_controller.sh compile
-    displayName: Build
-
-  # upload artifacts for next stage
-  - task: PublishPipelineArtifact@1
-    inputs:
-      path: $(CACHE_FLINK_DIR)
-      artifact: FlinkCompileCacheDir
-
-- job: runOnAzure_test
-  dependsOn: runOnAzure_compile
-  condition: not(variables['MODE'])
-  pool:
-    vmImage: 'ubuntu-latest'
-  container: flink-build-container
-  timeoutInMinutes: 240
-  strategy:
-    matrix:
-      core:
-        parameter: core
-      python:
-        parameter: python
-      libraries:
-        parameter: libraries
-      blink_planner:
-        parameter: blink_planner
-      connectors:
-        parameter: connectors
-      kafka_gelly:
-        parameter: kafka/gelly
-      tests:
-        parameter: tests
-      scheduler_ng_core:
-        parameter: scheduler_ng_core
-      scheduler_ng_tests:
-        parameter: scheduler_ng_tests
-      misc:
-        parameter: misc
-  steps:
-
-  # Preparation
-  - script: exit 1
-    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
-
-  # download artifacts
-  - task: DownloadPipelineArtifact@2
-    inputs:
-      path: $(CACHE_FLINK_DIR)
-      artifact: FlinkCompileCacheDir
-
-  # Test
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh $(parameter)
-    displayName: Test - $(parameter)
+stages:
+  - stage: build_on_default_pool
+    displayName: "Build on 'Default' pool (Flink Community Build Resources)"
+    jobs:
+      - templates: tools/azure-jobs.yml
+        parameters:
+          name: Default
+  - stage: build_on_azure_os_free_pool
+    displayName: "Build on free (for OS) Azure Resource Pool"
+    jobs:
+      - templates: tools/azure-jobs.yml
+        parameters:
+          vmImage: 'ubuntu-18.04'
 
 
