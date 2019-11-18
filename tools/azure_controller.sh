@@ -20,7 +20,6 @@
 echo $M2_HOME
 echo $PATH
 echo $MAVEN_OPTS
-echo "Parameters to the script: '$@'"
 
 mvn -version
 echo "Commit: $(git rev-parse HEAD)"
@@ -56,28 +55,14 @@ source "${HERE}/travis/stage.sh"
 source "${HERE}/travis/shade.sh"
 
 print_system_info() {
-	FOLD_ESCAPE="\x0d\x1b"
-	COLOR_ON="\x5b\x30\x4b\x1b\x5b\x33\x33\x3b\x31\x6d"
-	COLOR_OFF="\x1b\x5b\x30\x6d"
-
-	start_fold "cpu_info" "CPU information"
+	echo "CPU information"
 	lscpu
-	end_fold "cpu_info"
 
-	start_fold "mem_info" "Memory information"
+	echo "Memory information"
 	cat /proc/meminfo
-	end_fold "mem_info"
 
-	start_fold "disk_info" "Disk information"
+	eco "Disk information"
 	df -hH
-	end_fold "disk_info"
-
-	start_fold "cache_info" "Cache information"
-	echo "Maven: $(du -s --si $MAVEN_CACHE_FOLDER)"
-	echo "Flink: $(du -s --si $CACHE_FLINK_DIR)"
-	echo "Maven (binaries): $(du -s --si $HOME/maven_cache)"
-	echo "gems: $(du -s --si $HOME/gem_cache)"
-	end_fold "cache_info"
 }
 
 print_system_info
@@ -101,7 +86,6 @@ EXIT_CODE=0
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
 	MVN="mvn clean install --settings /tmp/az_settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
-	echo "invoking maven with '$MVN'."
     $MVN
 	EXIT_CODE=$?
 
