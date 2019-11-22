@@ -144,16 +144,16 @@ under the License.
 
 				In other words, the connector jar is routing Elasticsearch 5.x's Log4j2 API's to SLF4J,
 				but for the test builds, we still stick to directly using Log4j2.
-
+			-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
+				<configuration combine.self="append" combine.children="append">
 					<classpathDependencyExcludes>
 						<classpathDependencyExclude>org.apache.logging.log4j:log4j-to-slf4j</classpathDependencyExclude>
 					</classpathDependencyExcludes>
 				</configuration>
-			</plugin> -->
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
