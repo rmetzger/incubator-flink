@@ -162,6 +162,12 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
         minimizeCachedFiles
         travis_time_finish
         end_fold "minimize_cache"
+
+        echo "For debugging purposes"
+        namei /home/agent/_work/1/flink_cache/flink-runtime-web/web-dashboard/node_modules/.bin/
+        ls -lisah /home/agent/_work/1/flink_cache/flink-runtime-web/web-dashboard/node_modules/.bin/
+        ls -lisah /home/agent/_work/1/flink_cache/
+
     else
         echo "=============================================================================="
         echo "Previous build failure detected, skipping cache setup."
