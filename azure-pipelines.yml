@@ -38,6 +38,7 @@ stages:
     jobs:
       - template: tools/azure-jobs.yml
         parameters:
+          stage_name: build_on_default_pool
           pool_definition:
             name: Default
   - stage: build_on_azure_os_free_pool
@@ -46,6 +47,7 @@ stages:
     jobs:
       - template: tools/azure-jobs.yml
         parameters:
+          stage_name: build_on_azure_os_free_pool
           pool_definition:
             vmImage: 'ubuntu-18.04'
 
