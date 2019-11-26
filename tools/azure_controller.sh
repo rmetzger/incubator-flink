@@ -164,7 +164,8 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
         end_fold "minimize_cache"
 
         echo "For debugging purposes"
-        namei /home/agent/_work/1/flink_cache/flink-runtime-web/web-dashboard/node_modules/.bin/
+        namei -m -o -v $CACHE_FLINK_DIR
+        namei -m -o -v /home/agent/_work/1/flink_cache/flink-runtime-web/web-dashboard/node_modules/.bin/
         ls -lisah /home/agent/_work/1/flink_cache/flink-runtime-web/web-dashboard/node_modules/.bin/
         ls -lisah /home/agent/_work/1/flink_cache/
 
