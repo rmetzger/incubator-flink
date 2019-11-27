@@ -49,6 +49,6 @@ stages:
         parameters:
           stage_name: build_on_azure_os_free_pool
           pool_definition:
-            vmImage: 'ubuntu-18.04'
+            vmImage: 'ubuntu-latest' #ES5DEBUG: ubuntu-18.04
 
 
