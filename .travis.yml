@@ -1,0 +1,2 @@
+language: ruby
+script: free -h ; docker run -it  rmetzger/flink-ci:5-ubuntu-amd64 free -h

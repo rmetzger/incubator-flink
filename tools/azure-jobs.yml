@@ -126,12 +126,4 @@ jobs:
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
   steps:
-  - task: CacheBeta@1
-    inputs:
-      key: $(CACHE_KEY)
-      restoreKeys: $(CACHE_FALLBACK_KEY)
-      path: $(MAVEN_CACHE_FOLDER)
-      cacheHitVar: CACHE_RESTORED
-    continueOnError: true # continue the build even if the cache fails.
-    displayName: Cache Maven local repo
   - script: ./tools/tmate_debug.sh
