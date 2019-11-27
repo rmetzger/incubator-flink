@@ -19,6 +19,15 @@
 # Download minikube.
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
 sudo minikube start --vm-driver=none --kubernetes-version=v1.9.0
+
+sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
+sudo chown -R $USER $HOME/.kube
+sudo chgrp -R $USER $HOME/.kube
+
+sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
+sudo chown -R $USER $HOME/.minikube
+sudo chgrp -R $USER $HOME/.minikube 
+
 # Fix the kubectl context, as it's often stale.
 minikube update-context
 # Wait for Kubernetes to be up and ready.
