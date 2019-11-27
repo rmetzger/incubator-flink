@@ -19,6 +19,15 @@ trigger:
     include:
     - '*' 
 
+schedules:
+- cron: "0 0 * * *"
+  displayName: Daily midnight build
+  branches:
+    include:
+    - master
+    - azure_playground
+  always: true # run even if there were no changes to the mentioned branches
+
 resources:
   containers:
   # Container with Maven 3.2.5, SSL to have the same environment everywhere.
@@ -33,22 +42,64 @@ variables:
   CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
 
 stages:
-  - stage: build_on_default_pool
+  # CI / PR triggered stage:
+  - stage: ci_build_on_default_pool
     displayName: "Build on 'Default' pool (Flink Community Build Resources)"
+    condition: not(eq(variables['Build.Reason'], 'Schedule'))
     jobs:
-      - template: tools/azure-jobs.yml
+      - template: tools/azure-pipelnes/azure-jobs.yml
         parameters:
-          stage_name: build_on_default_pool
+          stage_name: ci_build_on_default_pool
           pool_definition:
             name: Default
-  - stage: build_on_azure_os_free_pool
+          test_strategy:
+            - template: tools/azure-pipelnes/ci-build-matrix.yml
+  # CI / PR triggered stage:          
+  - stage: ci_build_on_azure_os_free_pool
     displayName: "Build on free (for OS) Azure Resource Pool"
     dependsOn: [] # depending on an empty array makes the stages run in parallel
+    condition: not(eq(variables['Build.Reason'], 'Schedule'))
     jobs:
-      - template: tools/azure-jobs.yml
+      - template: tools/azure-pipelnes/azure-jobs.yml
         parameters:
-          stage_name: build_on_azure_os_free_pool
+          stage_name: ci_build_on_azure_os_free_pool
           pool_definition:
-            vmImage: 'ubuntu-latest' #ES5DEBUG: ubuntu-18.04
+            vmImage: 'ubuntu-latest'
+          test_strategy:
+            - template: tools/azure-pipelnes/ci-build-matrix.yml
+  # Special stage for midnight build:
+  - stage: cron_build_on_azure_os_free_pool
+    displayName: "Cron build on free (for OS) Azure Resource Pool"
+    dependsOn: [] # depending on an empty array makes the stages run in parallel
+    condition: eq(variables['Build.Reason'], 'Schedule')
+    jobs:
+      - template: tools/azure-pipelnes/azure-jobs.yml
+        parameters:
+          stage_name: cron_build_on_azure_os_free_pool
+          pool_definition:
+            vmImage: 'ubuntu-latest'
+          test_strategy:
+            strategy:
+              matrix:
+                core:
+                  parameter: core
+                python:
+                  parameter: python
+                libraries:
+                  parameter: libraries
+                blink_planner:
+                  parameter: blink_planner
+                connectors:
+                  parameter: connectors
+                kafka_gelly:
+                  parameter: kafka/gelly
+                tests:
+                  parameter: tests
+                scheduler_ng_core:
+                  parameter: scheduler_ng_core
+                scheduler_ng_tests:
+                  parameter: scheduler_ng_tests
+                misc:
+                  parameter: misc
 
 

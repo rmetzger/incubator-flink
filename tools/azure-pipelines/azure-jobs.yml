@@ -16,6 +16,7 @@
 parameters:
   pool_definition:
   stage_name:
+  test_strategy:
 
 jobs:
 - job: runOnAzure_compile
@@ -56,28 +57,7 @@ jobs:
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
-  strategy:
-    matrix:
-      core:
-        parameter: core
-      python:
-        parameter: python
-      libraries:
-        parameter: libraries
-      blink_planner:
-        parameter: blink_planner
-      connectors:
-        parameter: connectors
-      kafka_gelly:
-        parameter: kafka/gelly
-      tests:
-        parameter: tests
-      scheduler_ng_core:
-        parameter: scheduler_ng_core
-      scheduler_ng_tests:
-        parameter: scheduler_ng_tests
-      misc:
-        parameter: misc
+  strategy: ${{parameters.test_strategy}}
   steps:
 
   # Preparation
