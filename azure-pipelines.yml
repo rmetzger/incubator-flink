@@ -54,7 +54,6 @@ stages:
             name: Default
           test_strategy:
             #- template: tools/azure-pipelnes/ci-build-matrix.yml
-            strategy:
               matrix:
                 core:
                   parameter: core
@@ -90,7 +89,6 @@ stages:
             vmImage: 'ubuntu-latest'
           test_strategy:
             #- template: tools/azure-pipelnes/ci-build-matrix.yml
-            strategy:
               matrix:
                 core:
                   parameter: core
@@ -125,7 +123,6 @@ stages:
           pool_definition:
             vmImage: 'ubuntu-latest'
           test_strategy:
-            strategy:
               matrix:
                 core:
                   parameter: core
