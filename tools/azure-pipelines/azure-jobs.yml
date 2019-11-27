@@ -16,7 +16,7 @@
 parameters:
   pool_definition:
   stage_name:
-  test_strategy:
+  test_strategy: {}
 
 jobs:
 - job: runOnAzure_compile
