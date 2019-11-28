@@ -17,9 +17,11 @@
 #curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
 # Download minikube.
+echo "Download minikube"
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
 sudo minikube start --vm-driver=none --kubernetes-version=v1.9.0
 
+echo "Move files and change permissions"
 sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
 sudo chown -R $USER $HOME/.kube
 sudo chgrp -R $USER $HOME/.kube
@@ -28,7 +30,7 @@ sudo mv /root/.minikube $HOME/.minikube # this will write over any previous conf
 sudo chown -R $USER $HOME/.minikube
 sudo chgrp -R $USER $HOME/.minikube 
 
-# Fix the kubectl context, as it's often stale.
+echo "Fix the kubectl context, as it's often stale."
 minikube update-context
-# Wait for Kubernetes to be up and ready.
+echo "Wait for Kubernetes to be up and ready."
 JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done

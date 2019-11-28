@@ -53,7 +53,27 @@ stages:
           pool_definition:
             name: Default
           test_strategy:
-            - template: tools/azure-pipelnes/ci-build-matrix.yml
+              matrix:
+                core:
+                  parameter: core
+                python:
+                  parameter: python
+                libraries:
+                  parameter: libraries
+                blink_planner:
+                  parameter: blink_planner
+                connectors:
+                  parameter: connectors
+                kafka_gelly:
+                  parameter: kafka/gelly
+                tests:
+                  parameter: tests
+                scheduler_ng_core:
+                  parameter: scheduler_ng_core
+                scheduler_ng_tests:
+                  parameter: scheduler_ng_tests
+                misc:
+                  parameter: misc
 
   # CI / PR triggered stage:          
   - stage: ci_build_on_azure_os_free_pool
@@ -67,7 +87,27 @@ stages:
           pool_definition:
             vmImage: 'ubuntu-latest'
           test_strategy:
-            - template: tools/azure-pipelnes/ci-build-matrix.yml
+              matrix:
+                core:
+                  parameter: core
+                python:
+                  parameter: python
+                libraries:
+                  parameter: libraries
+                blink_planner:
+                  parameter: blink_planner
+                connectors:
+                  parameter: connectors
+                kafka_gelly:
+                  parameter: kafka/gelly
+                tests:
+                  parameter: tests
+                scheduler_ng_core:
+                  parameter: scheduler_ng_core
+                scheduler_ng_tests:
+                  parameter: scheduler_ng_tests
+                misc:
+                  parameter: misc
 
   # Special stage for midnight build:
   - stage: cron_build_on_azure_os_free_pool
