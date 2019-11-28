@@ -55,25 +55,25 @@ stages:
           test_strategy:
               matrix:
                 core:
-                  parameter: core
+                  module: core
                 python:
-                  parameter: python
+                  module: python
                 libraries:
-                  parameter: libraries
+                  module: libraries
                 blink_planner:
-                  parameter: blink_planner
+                  module: blink_planner
                 connectors:
-                  parameter: connectors
+                  module: connectors
                 kafka_gelly:
-                  parameter: kafka/gelly
+                  module: kafka/gelly
                 tests:
-                  parameter: tests
+                  module: tests
                 scheduler_ng_core:
-                  parameter: scheduler_ng_core
+                  module: scheduler_ng_core
                 scheduler_ng_tests:
-                  parameter: scheduler_ng_tests
+                  module: scheduler_ng_tests
                 misc:
-                  parameter: misc
+                  module: misc
 
   # CI / PR triggered stage:          
   - stage: ci_build_on_azure_os_free_pool
@@ -89,25 +89,25 @@ stages:
           test_strategy:
               matrix:
                 core:
-                  parameter: core
+                  module: core
                 python:
-                  parameter: python
+                  module: python
                 libraries:
-                  parameter: libraries
+                  module: libraries
                 blink_planner:
-                  parameter: blink_planner
+                  module: blink_planner
                 connectors:
-                  parameter: connectors
+                  module: connectors
                 kafka_gelly:
-                  parameter: kafka/gelly
+                  module: kafka/gelly
                 tests:
-                  parameter: tests
+                  module: tests
                 scheduler_ng_core:
-                  parameter: scheduler_ng_core
+                  module: scheduler_ng_core
                 scheduler_ng_tests:
-                  parameter: scheduler_ng_tests
+                  module: scheduler_ng_tests
                 misc:
-                  parameter: misc
+                  module: misc
 
   # Special stage for midnight build:
   - stage: cron_build_on_azure_os_free_pool
@@ -123,24 +123,24 @@ stages:
           test_strategy:
               matrix:
                 core:
-                  parameter: core
+                  module: core
                 python:
-                  parameter: python
+                  module: python
                 libraries:
-                  parameter: libraries
+                  module: libraries
                 blink_planner:
-                  parameter: blink_planner
+                  module: blink_planner
                 connectors:
-                  parameter: connectors
+                  module: connectors
                 kafka_gelly:
-                  parameter: kafka/gelly
+                  module: kafka/gelly
                 tests:
-                  parameter: tests
+                  module: tests
                 scheduler_ng_core:
-                  parameter: scheduler_ng_core
+                  module: scheduler_ng_core
                 scheduler_ng_tests:
-                  parameter: scheduler_ng_tests
+                  module: scheduler_ng_tests
                 misc:
-                  parameter: misc
+                  module: misc
 
 
