@@ -42,7 +42,7 @@ jobs:
     displayName: Cache Maven local repo
 
   # Compile
-  - script: STAGE=compile ./tools/azure_controller.sh compile
+  - script: STAGE=compile $(environment) ./tools/azure_controller.sh compile
     displayName: Build
 
   # upload artifacts for next stage
@@ -71,7 +71,7 @@ jobs:
       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
   # Test
-  - script: STAGE=test PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11" ./tools/azure_controller.sh $(module)
+  - script: STAGE=test $(environment) ./tools/azure_controller.sh $(module)
     displayName: Test - $(module)
 
   - task: PublishTestResults@2
