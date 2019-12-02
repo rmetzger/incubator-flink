@@ -52,7 +52,7 @@ jobs:
       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
 - job: runOnAzure_test_${{parameters.stage_name}}
-  dependsOn: runOnAzure_compile
+  dependsOn: runOnAzure_compile_${{parameters.stage_name}}
   condition: not(variables['MODE'])
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
