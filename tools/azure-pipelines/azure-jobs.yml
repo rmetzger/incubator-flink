@@ -20,7 +20,7 @@ parameters:
 
 jobs:
 - job: runOnAzure_compile_${{parameters.stage_name}}
-  condition: not(variables['MODE'])
+  condition: not(eq(variables['MODE'], 'e2e'))
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
@@ -53,7 +53,7 @@ jobs:
 
 - job: runOnAzure_test_${{parameters.stage_name}}
   dependsOn: runOnAzure_compile_${{parameters.stage_name}}
-  condition: not(variables['MODE'])
+  condition: not(eq(variables['MODE'], 'e2e'))
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
@@ -101,7 +101,7 @@ jobs:
 
 
 - job: runOnAzure_e2e_${{parameters.stage_name}}
-  condition: eq(variables['MODE'], 'e2e')
+  condition: not(eq(variables['MODE'], 'e2e'))
   #We are not running this test on a container, but in a VM.
   pool: ${{parameters.pool_definition}}
   timeoutInMinutes: 240
@@ -128,3 +128,4 @@ jobs:
   container: flink-build-container
   steps:
   - script: ./tools/tmate_debug.sh
+  
