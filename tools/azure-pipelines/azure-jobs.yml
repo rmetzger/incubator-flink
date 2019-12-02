@@ -19,7 +19,7 @@ parameters:
   environment:
 
 jobs:
-- job: runOnAzure_compile
+- job: runOnAzure_compile_${{parameters.stage_name}}
   condition: not(variables['MODE'])
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
@@ -51,7 +51,7 @@ jobs:
       path: $(CACHE_FLINK_DIR)
       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
-- job: runOnAzure_test
+- job: runOnAzure_test_${{parameters.stage_name}}
   dependsOn: runOnAzure_compile
   condition: not(variables['MODE'])
   pool: ${{parameters.pool_definition}}
@@ -100,7 +100,7 @@ jobs:
       testResultsFormat: 'JUnit'
 
 
-- job: runOnAzure_e2e
+- job: runOnAzure_e2e_${{parameters.stage_name}}
   condition: eq(variables['MODE'], 'e2e')
   #We are not running this test on a container, but in a VM.
   pool: ${{parameters.pool_definition}}
@@ -122,7 +122,7 @@ jobs:
     - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
       displayName: Run nightly e2e tests
 
-- job: runOnAzure_tmate
+- job: runOnAzure_tmate_${{parameters.stage_name}}
   condition: eq(variables['MODE'], 'tmate')
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
