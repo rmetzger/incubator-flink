@@ -72,7 +72,7 @@ stages:
   - stage: cron_build_on_azure_os_free_pool
     displayName: "Cron build on free (for OS) Azure Resource Pool"
     dependsOn: [] # depending on an empty array makes the stages run in parallel
-    condition: eq(variables['Build.Reason'], 'Schedule')
+    condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
     jobs:
       - template: tools/azure-pipelines/azure-jobs.yml
         parameters:
