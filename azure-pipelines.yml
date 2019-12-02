@@ -45,7 +45,7 @@ stages:
   # CI / PR triggered stage:
   - stage: ci_build_on_default_pool
     displayName: "Build on 'Default' pool (Flink Community Build Resources)"
-    condition: not(eq(variables['Build.Reason'], 'Schedule'))
+    condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
     jobs:
       - template: tools/azure-pipelines/azure-jobs.yml
         parameters:
@@ -59,7 +59,7 @@ stages:
   - stage: ci_build_on_azure_os_free_pool
     displayName: "Build on free (for OS) Azure Resource Pool"
     dependsOn: [] # depending on an empty array makes the stages run in parallel
-    condition: not(eq(variables['Build.Reason'], 'Schedule'))
+    condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
     jobs:
       - template: tools/azure-pipelines/azure-jobs.yml
         parameters:
