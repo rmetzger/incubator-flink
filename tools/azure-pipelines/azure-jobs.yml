@@ -16,7 +16,7 @@
 parameters:
   pool_definition:
   stage_name:
-  test_strategy: {}
+  environment:
 
 jobs:
 - job: runOnAzure_compile
@@ -42,7 +42,7 @@ jobs:
     displayName: Cache Maven local repo
 
   # Compile
-  - script: STAGE=compile $(environment) ./tools/azure_controller.sh compile
+  - script: STAGE=compile ${{parameters.environment}} ./tools/azure_controller.sh compile
     displayName: Build
 
   # upload artifacts for next stage
@@ -57,7 +57,28 @@ jobs:
   pool: ${{parameters.pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
-  strategy: ${{parameters.test_strategy}}
+  strategy:
+    matrix:
+      core:
+        module: core
+      python:
+        module: python
+      libraries:
+        module: libraries
+      blink_planner:
+        module: blink_planner
+      connectors:
+        module: connectors
+      kafka_gelly:
+        module: kafka/gelly
+      tests:
+        module: tests
+      scheduler_ng_core:
+        module: scheduler_ng_core
+      scheduler_ng_tests:
+        module: scheduler_ng_tests
+      misc:
+        module: misc
   steps:
 
   # Preparation
@@ -71,7 +92,7 @@ jobs:
       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
   # Test
-  - script: STAGE=test $(environment) ./tools/azure_controller.sh $(module)
+  - script: STAGE=test ${{parameters.environment}} ./tools/azure_controller.sh $(module)
     displayName: Test - $(module)
 
   - task: PublishTestResults@2

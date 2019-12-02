@@ -52,38 +52,8 @@ stages:
           stage_name: ci_build_on_default_pool
           pool_definition:
             name: Default
-          test_strategy:
-              matrix:
-                core:
-                  module: core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                python:
-                  module: python
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                libraries:
-                  module: libraries
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                blink_planner:
-                  module: blink_planner
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                connectors:
-                  module: connectors
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                kafka_gelly:
-                  module: kafka/gelly
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                tests:
-                  module: tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                scheduler_ng_core:
-                  module: scheduler_ng_core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                scheduler_ng_tests:
-                  module: scheduler_ng_tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                misc:
-                  module: misc
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+
 
   # CI / PR triggered stage:          
   - stage: ci_build_on_azure_os_free_pool
@@ -96,38 +66,7 @@ stages:
           stage_name: ci_build_on_azure_os_free_pool
           pool_definition:
             vmImage: 'ubuntu-latest'
-          test_strategy:
-              matrix:
-                core:
-                  module: core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                python:
-                  module: python
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                libraries:
-                  module: libraries
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                blink_planner:
-                  module: blink_planner
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                connectors:
-                  module: connectors
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                kafka_gelly:
-                  module: kafka/gelly
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                tests:
-                  module: tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                scheduler_ng_core:
-                  module: scheduler_ng_core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                scheduler_ng_tests:
-                  module: scheduler_ng_tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                misc:
-                  module: misc
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
 
   # Special stage for midnight build:
   - stage: cron_build_on_azure_os_free_pool
@@ -137,134 +76,21 @@ stages:
     jobs:
       - template: tools/azure-pipelines/azure-jobs.yml
         parameters:
-          stage_name: cron_build_on_azure_os_free_pool
+          stage_name: ci_build_on_azure_os_free_pool_default
           pool_definition:
             vmImage: 'ubuntu-latest'
-          test_strategy:
-              matrix:
-                # regular build
-                core:
-                  module: core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                python:
-                  module: python
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                libraries:
-                  module: libraries
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                blink_planner:
-                  module: blink_planner
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                connectors:
-                  module: connectors
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                kafka_gelly:
-                  module: kafka/gelly
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                tests:
-                  module: tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                scheduler_ng_core:
-                  module: scheduler_ng_core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                scheduler_ng_tests:
-                  module: scheduler_ng_tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                misc:
-                  module: misc
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-                # scala 2.12
-                core212:
-                  module: core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                python212:
-                  module: python
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                libraries212:
-                  module: libraries
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                blink_planner212:
-                  module: blink_planner
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                connectors212:
-                  module: connectors
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                kafka_gelly212:
-                  module: kafka/gelly
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                tests212:
-                  module: tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                scheduler_ng_core212:
-                  module: scheduler_ng_core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                scheduler_ng_tests212:
-                  module: scheduler_ng_tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                misc212:
-                  module: misc
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-                # hadoop 241
-                core_hadoop241:
-                  module: core
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                python_hadoop241:
-                  module: python
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                libraries_hadoop241:
-                  module: libraries
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                blink_planner_hadoop241:
-                  module: blink_planner
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                connectors_hadoop241:
-                  module: connectors
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                kafka_gelly_hadoop241:
-                  module: kafka/gelly
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                tests_hadoop241:
-                  module: tests
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                scheduler_ng_core_hadoop241:
-                  module: scheduler_ng_core
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                scheduler_ng_tests_hadoop241:
-                  module: scheduler_ng_tests
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                misc_hadoop241:
-                  module: misc
-                  environment: PROFILE="-Dhadoop.version=2.4.1 -Pskip-hive-tests"
-                # jdk11
-                core_jdk11:
-                  module: core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                python_jdk11:
-                  module: python
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                libraries_jdk11:
-                  module: libraries
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                blink_planner_jdk11:
-                  module: blink_planner
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                connectors_jdk11:
-                  module: connectors
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                kafka_gelly_jdk11:
-                  module: kafka/gelly
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                tests_jdk11:
-                  module: tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                scheduler_ng_core_jdk11:
-                  module: scheduler_ng_core
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                scheduler_ng_tests_jdk11:
-                  module: scheduler_ng_tests
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
-                misc_jdk11:
-                  module: misc
-                  environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
+          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+      - template: tools/azure-pipelines/azure-jobs.yml
+        parameters:
+          stage_name: ci_build_on_azure_os_free_pool_scala2_12
+          pool_definition:
+            vmImage: 'ubuntu-latest'
+          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
+      - template: tools/azure-pipelines/azure-jobs.yml
+        parameters:
+          stage_name: ci_build_on_azure_os_free_pool_jdk11
+          pool_definition:
+            vmImage: 'ubuntu-latest'
+          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
 
 
