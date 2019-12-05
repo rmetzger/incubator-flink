@@ -38,9 +38,6 @@ cat << EOF > /tmp/az_settings.xml
 </settings>
 EOF
 
-echo "Build number: $BUILD_BUILDNUMBER"
-env
-
 
 HERE="`dirname \"$0\"`"				# relative
 HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
@@ -61,8 +58,11 @@ print_system_info() {
 	echo "Memory information"
 	cat /proc/meminfo
 
-	eco "Disk information"
+	echo "Disk information"
 	df -hH
+
+	echo "Running build as"
+	whoami
 }
 
 print_system_info
