@@ -44,16 +44,16 @@ variables:
 
 stages:
   # CI / PR triggered stage:
-  - stage: ci_build_on_default_pool
-    displayName: "Build on 'Default' pool (Flink Community Build Resources)"
-    condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
-    jobs:
-      - template: tools/azure-pipelines/azure-jobs.yml
-        parameters:
-          stage_name: ci_build_on_default_pool
-          pool_definition:
-            name: Default
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+#  - stage: ci_build_on_default_pool
+#    displayName: "Build on 'Default' pool (Flink Community Build Resources)"
+#    condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
+#    jobs:
+#      - template: tools/azure-pipelines/azure-jobs.yml
+#        parameters:
+#          stage_name: ci_build_on_default_pool
+#          pool_definition:
+#            name: Default
+#          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
 
 
   # CI / PR triggered stage:          
