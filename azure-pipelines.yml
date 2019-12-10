@@ -14,16 +14,19 @@
 # limitations under the License.
 
 
+#
+# The Flink on Azure Pipelines build is mostly controlled through the 
+# "flink-ci/flink-azure-builds" repository, so that changes to the 
+# build system do not require a pull request / review cycle for every
+# change. Once AZP is the main build system, this might change.
+#
+
 trigger:
   branches:
     include:
     - '*' 
 
 resources:
-  containers:
-  # Container with Maven 3.2.5 to have the same environment everywhere.
-  - container: flink-build-container
-    image: rmetzger/flink-ci:3
   repositories:
     - repository: templates
       type: github
