@@ -30,7 +30,18 @@ resources:
   repositories:
     - repository: templates
       type: github
-      name: flink-ci/flink-azure-builds
+
+
+
+
+      ########################### CHANGE ME BACK TO flink-ci ####################################
+
+
+
+
+
+
+      name: rmetzger/flink-azure-builds
       endpoint: flink-ci
 
 jobs:
