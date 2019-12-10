@@ -88,7 +88,11 @@ run_test "Resuming Externalized Checkpoint after terminal failure (rocks, increm
 # Docker
 ################################################################################
 
-run_test "Running Kerberized YARN on Docker test (default input)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh"
+# Only run this test if we are not on Azure Pipelines.
+if [ ! -z "$TF_BUILD" ] ; then
+	echo "you should not see this here .ä.ä."
+	run_test "Running Kerberized YARN on Docker test (default input)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh"
+fi
 # Disabled because of https://issues.apache.org/jira/browse/FLINK-14968
 # run_test "Running Kerberized YARN on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh dummy-fs"
 
@@ -146,7 +150,8 @@ run_test "Walkthrough DataStream Scala nightly end-to-end test" "$END_TO_END_DIR
 
 run_test "Test PubSub connector with Docker based Google PubSub Emulator" "$END_TO_END_DIR/test-scripts/test_streaming_gcp_pubsub.sh"
 
-run_test "Avro Confluent Schema Registry nightly end-to-end test" "$END_TO_END_DIR/test-scripts/test_confluent_schema_registry.sh"
+# Disabled until FLINK-13567 has been fixed
+#run_test "Avro Confluent Schema Registry nightly end-to-end test" "$END_TO_END_DIR/test-scripts/test_confluent_schema_registry.sh"
 
 run_test "State TTL Heap backend end-to-end test" "$END_TO_END_DIR/test-scripts/test_stream_state_ttl.sh file"
 run_test "State TTL RocksDb backend end-to-end test" "$END_TO_END_DIR/test-scripts/test_stream_state_ttl.sh rocks"
