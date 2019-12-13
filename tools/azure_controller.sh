@@ -123,8 +123,6 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
 
     if [ $EXIT_CODE == 0 ]; then
         echo "Creating cache build directory $CACHE_FLINK_DIR"
-        #sudo mkdir -p "$CACHE_FLINK_DIR"
-        #sudo chown -R user:user "$CACHE_FLINK_DIR"
     
         cp -r . "$CACHE_FLINK_DIR"
 
@@ -162,13 +160,6 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
         minimizeCachedFiles
         travis_time_finish
         end_fold "minimize_cache"
-
-        echo "For debugging purposes"
-        namei -m -o -v $CACHE_FLINK_DIR
-        namei -m -o -v /home/agent/_work/1/flink_cache/flink-runtime-web/web-dashboard/node_modules/.bin/
-        ls -lisah /home/agent/_work/1/flink_cache/flink-runtime-web/web-dashboard/node_modules/.bin/
-        ls -lisah /home/agent/_work/1/flink_cache/
-
     else
         echo "=============================================================================="
         echo "Previous build failure detected, skipping cache setup."

@@ -14,14 +14,15 @@
 # limitations under the License.
 
 parameters:
-  pool_definition:
-  stage_name:
-  environment:
+  test_pool_definition: # where is compiliation and unit test execution happening
+  e2e_pool_definion: # where is e2e test execution happening
+  stage_name: # needed to make job names unique if they are included multiple times
+  environment: # used to pass environment variables into the downstream scripts
 
 jobs:
-- job: runOnAzure_compile_${{parameters.stage_name}}
+- job: compile_${{parameters.stage_name}}
   condition: not(eq(variables['MODE'], 'e2e'))
-  pool: ${{parameters.pool_definition}}
+  pool: ${{parameters.test_pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
   steps:
@@ -51,10 +52,10 @@ jobs:
       path: $(CACHE_FLINK_DIR)
       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
-- job: runOnAzure_test_${{parameters.stage_name}}
-  dependsOn: runOnAzure_compile_${{parameters.stage_name}}
+- job: test_${{parameters.stage_name}}
+  dependsOn: compile_${{parameters.stage_name}}
   condition: not(eq(variables['MODE'], 'e2e'))
-  pool: ${{parameters.pool_definition}}
+  pool: ${{parameters.test_pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
   strategy:
@@ -100,10 +101,10 @@ jobs:
       testResultsFormat: 'JUnit'
 
 
-- job: runOnAzure_e2e_${{parameters.stage_name}}
+- job: e2e_${{parameters.stage_name}}
   condition: eq(variables['MODE'], 'e2e')
   # We are not running this job on a container, but in a VM.
-  pool: ${{parameters.pool_definition}}
+  pool: ${{parameters.e2e_pool_definition}}
   timeoutInMinutes: 240
   steps:
     - script: echo "Wrong repository or mode"; exit 1
@@ -117,7 +118,7 @@ jobs:
       displayName: Cache Maven local repo
     - script: ./tools/travis/setup_maven.sh
     - script: ./tools/azure-pipelines/setup_kubernetes.sh
-    - script: M2_HOME=/home/vsts/maven_cache/apache-maven-3.2.5/ PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH PROFILE="-Dinclude-hadoop -Dhadoop.version=2.8.3 -De2e-metrics" STAGE=compile ./tools/azure_controller.sh compile
+    - script: M2_HOME=/home/vsts/maven_cache/apache-maven-3.2.5/ PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH PROFILE="-Dinclude-hadoop -Dhadoop.version=2.8.3 -De2e-metrics -Dmaven.wagon.http.pool=false" STAGE=compile ./tools/azure_controller.sh compile
       displayName: Build
     - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
       displayName: Run nightly e2e tests
