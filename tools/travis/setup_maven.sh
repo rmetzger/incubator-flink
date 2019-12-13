@@ -21,6 +21,7 @@ MAVEN_VERSION="3.2.5"
 MAVEN_CACHE_DIR=${HOME}/maven_cache
 MAVEN_VERSIONED_DIR=${MAVEN_CACHE_DIR}/apache-maven-${MAVEN_VERSION}
 
+
 if [ ! -d "${MAVEN_VERSIONED_DIR}" ]; then
   wget https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.zip
   unzip -d "${MAVEN_CACHE_DIR}" -qq "apache-maven-${MAVEN_VERSION}-bin.zip"
@@ -36,3 +37,4 @@ if [ -d "${HOME}/.m2/repository/" ]; then
   find ${HOME}/.m2/repository/ -name "*.jar" -exec sh -c 'if ! zip -T {} >/dev/null ; then echo "deleting invalid file: {}"; rm -f {} ; fi' \;
 fi
 
+echo "Installed Maven ${MAVEN_VERSION} to ${M2_HOME}"

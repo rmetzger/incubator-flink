@@ -1401,6 +1401,7 @@ under the License.
 						<exclude>docs/_includes/generated/**</exclude>
 						<!-- Tools: watchdog -->
 						<exclude>tools/artifacts/**</exclude>
+						<exclude>tools/**</exclude>
 						<exclude>tools/flink*/**</exclude>
 						<!-- Tools: japicmp output -->
 						<exclude>tools/japicmp-output/**</exclude>

@@ -27,12 +27,28 @@ export AWS_ACCESS_KEY_ID=flinkKinesisTestFakeAccessKeyId
 export AWS_SECRET_KEY=flinkKinesisTestFakeAccessKey
 
 KINESALITE_PORT=4567
+KINESALITE_HOST=kinesalite-container
+KINESALITE_NETWORK=some
+
+# set different network if we are in azure pipelines
+if [[ ! -z "${TF_BUILD}" ]]; then
+  KINESALITE_NETWORK=`docker network ls --filter name=vsts --format "{{.Name}}"`
+  echo "Set network to '${KINESALITE_NETWORK}'"
+  echo "=="
+  docker network ls
+  echo "=="
+  docker network ls --filter name=vsts --format "{{.Name}}"
+  echo "=="
+fi
+
+
+
 
 function start_kinesalite {
     #docker run -d --rm --name flink-test-kinesis -p ${KINESALITE_PORT}:${KINESALITE_PORT} instructure/kinesalite
     # override entrypoint to enable SSL
     docker run -d --rm --entrypoint "/tini" \
-        --name flink-test-kinesis \
+        --name ${KINESALITE_HOST} --network ${KINESALITE_NETWORK} \
         -p ${KINESALITE_PORT}:${KINESALITE_PORT} \
         instructure/kinesalite -- \
         /usr/src/app/node_modules/kinesalite/cli.js --path /var/lib/kinesalite --ssl
@@ -65,6 +81,6 @@ TEST_JAR="${END_TO_END_DIR}/flink-streaming-kinesis-test/target/KinesisExample.j
 JVM_ARGS=${DISABLE_CERT_CHECKING_JAVA_OPTS} \
 $FLINK_DIR/bin/flink run -p 1 -c org.apache.flink.streaming.kinesis.test.KinesisExampleTest $TEST_JAR \
   --input-stream test-input --output-stream test-output \
-  --aws.endpoint https://localhost:${KINESALITE_PORT} --aws.credentials.provider.basic.secretkey fakekey --aws.credentials.provider.basic.accesskeyid fakeid \
+  --aws.endpoint https://${KINESALITE_HOST}:${KINESALITE_PORT} --aws.credentials.provider.basic.secretkey fakekey --aws.credentials.provider.basic.accesskeyid fakeid \
   --flink.stream.initpos TRIM_HORIZON \
   --flink.partition-discovery.interval-millis 1000
