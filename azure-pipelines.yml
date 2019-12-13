@@ -48,7 +48,7 @@ variables:
 
 
 jobs:
-  - template: tools/azure-pipelines/azure-jobs.yml
+  - template: tools/azure-pipelines/jobs-template.yml
     parameters:
       stage_name: ci_build_on_azure_os_free_pool
       pool_definition:

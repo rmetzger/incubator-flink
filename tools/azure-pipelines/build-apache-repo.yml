@@ -47,7 +47,7 @@ stages:
    displayName: "Build on 'Default' pool (Flink Community Build Resources)"
    condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
    jobs:
-     - template: tools/azure-pipelines/azure-jobs.yml
+     - template: tools/azure-pipelines/jobs-template.yml
        parameters:
          stage_name: ci_build_on_default_pool
          pool_definition:
@@ -61,7 +61,7 @@ stages:
     dependsOn: [] # depending on an empty array makes the stages run in parallel
     condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
     jobs:
-      - template: tools/azure-pipelines/azure-jobs.yml
+      - template: tools/azure-pipelines/jobs-template.yml
         parameters:
           stage_name: ci_build_on_azure_os_free_pool
           pool_definition:
@@ -74,19 +74,19 @@ stages:
     dependsOn: [] # depending on an empty array makes the stages run in parallel
     condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
     jobs:
-      - template: tools/azure-pipelines/azure-jobs.yml
+      - template: tools/azure-pipelines/jobs-template.yml
         parameters:
           stage_name: ci_build_on_azure_os_free_pool_default
           pool_definition:
             vmImage: 'ubuntu-latest'
           environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-      - template: tools/azure-pipelines/azure-jobs.yml
+      - template: tools/azure-pipelines/jobs-template.yml
         parameters:
           stage_name: ci_build_on_azure_os_free_pool_scala2_12
           pool_definition:
             vmImage: 'ubuntu-latest'
           environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-      - template: tools/azure-pipelines/azure-jobs.yml
+      - template: tools/azure-pipelines/jobs-template.yml
         parameters:
           stage_name: ci_build_on_azure_os_free_pool_jdk11
           pool_definition:

@@ -1,0 +1,124 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+parameters:
+  pool_definition:
+  stage_name:
+  environment:
+
+jobs:
+- job: runOnAzure_compile_${{parameters.stage_name}}
+  condition: not(eq(variables['MODE'], 'e2e'))
+  pool: ${{parameters.pool_definition}}
+  container: flink-build-container
+  timeoutInMinutes: 240
+  steps:
+
+  # Azure pipelines can only evaluate conditions with the build repo name in the steps.
+  # if the repo == "flink-ci/flink", we stop
+
+  # Preparation
+  - script: echo "Wrong repository or mode"; exit 1
+    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
+  - task: CacheBeta@1
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+      cacheHitVar: CACHE_RESTORED
+    continueOnError: true # continue the build even if the cache fails.
+    displayName: Cache Maven local repo
+
+  # Compile
+  - script: STAGE=compile ${{parameters.environment}} ./tools/azure_controller.sh compile
+    displayName: Build
+
+  # upload artifacts for next stage
+  - task: PublishPipelineArtifact@1
+    inputs:
+      path: $(CACHE_FLINK_DIR)
+      artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+
+- job: runOnAzure_test_${{parameters.stage_name}}
+  dependsOn: runOnAzure_compile_${{parameters.stage_name}}
+  condition: not(eq(variables['MODE'], 'e2e'))
+  pool: ${{parameters.pool_definition}}
+  container: flink-build-container
+  timeoutInMinutes: 240
+  strategy:
+    matrix:
+      core:
+        module: core
+      python:
+        module: python
+      libraries:
+        module: libraries
+      blink_planner:
+        module: blink_planner
+      connectors:
+        module: connectors
+      kafka_gelly:
+        module: kafka/gelly
+      tests:
+        module: tests
+      scheduler_ng_core:
+        module: scheduler_ng_core
+      scheduler_ng_tests:
+        module: scheduler_ng_tests
+      misc:
+        module: misc
+  steps:
+
+  # Preparation
+  - script: exit 1
+    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
+
+  # download artifacts
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      path: $(CACHE_FLINK_DIR)
+      artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+
+  # Test
+  - script: STAGE=test ${{parameters.environment}} ./tools/azure_controller.sh $(module)
+    displayName: Test - $(module)
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+
+
+- job: runOnAzure_e2e_${{parameters.stage_name}}
+  condition: eq(variables['MODE'], 'e2e')
+  # We are not running this job on a container, but in a VM.
+  pool: ${{parameters.pool_definition}}
+  timeoutInMinutes: 240
+  steps:
+    - script: echo "Wrong repository or mode"; exit 1
+      condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
+    - task: CacheBeta@1
+      inputs:
+        key: $(CACHE_KEY)
+        restoreKeys: $(CACHE_FALLBACK_KEY)
+        path: $(MAVEN_CACHE_FOLDER)
+        cacheHitVar: CACHE_RESTORED
+      displayName: Cache Maven local repo
+    - script: ./tools/travis/setup_maven.sh
+    - script: ./tools/azure-pipelines/setup_kubernetes.sh
+    - script: M2_HOME=/home/vsts/maven_cache/apache-maven-3.2.5/ PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH PROFILE="-Dinclude-hadoop -Dhadoop.version=2.8.3 -De2e-metrics" STAGE=compile ./tools/azure_controller.sh compile
+      displayName: Build
+    - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
+      displayName: Run nightly e2e tests
+
