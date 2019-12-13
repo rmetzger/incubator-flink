@@ -1,0 +1,62 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+#
+# This file defines a set of jobs for building and testing Flink.
+#
+
+parameters:
+  pool_definition:
+  timeout:
+  maven:
+  job_name:
+
+variables:
+  DEBUG_LOGS: $(Pipeline.Workspace)/debug_logs/
+
+jobs:
+- job: ${{parameters.job_name}}
+  condition: not(eq(variables['MODE'], 'e2e'))
+  pool: ${{parameters.pool_definition}}
+  container: flink-build-container
+  timeoutInMinutes: ${{parameters.timeout}}
+  steps:
+  - script: |
+      source ./tools/tools/azure-pipelines/common.sh 
+      mkdir -p $DEBUG_LOGS
+      print_system_info | tee ${DEBUG_LOGS}/system_info
+      env >> ${DEBUG_LOGS}/system_info
+  - script: |
+      mvn clean verify $MAVEN_OPTS -nsu -B -Dmaven.javadoc.skip=true -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 \
+      -Dflink.forkCountTestPackage=2 -Dflink.tests.with-openssl \
+      -Dlog.dir=${DEBUG_LOGS} -Dlog4j.configuration=file://./tools/log4j-travis.properties \
+      ${{parameters.maven}}
+    name: "mvn clean verify"
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+  - script: echo "gotta validate those suffixes and that shading"
+  - script: ./flink-python/dev/lint-python.sh
+    name: "python tests"
+  - script: FLINK_DIR=build-target flink-end-to-end-tests/run-pre-commit-tests.sh
+    name: "pre commit tests"
+    # TODO upload nightlies
+  - script: |
+        ARTIFACT=$(BUILD_BUILDNUMBER)-${{parameters.job_name}}.tgz \
+        tar -zcvf $ARTIFACT $DEBUG_LOGS \
+        curl -v --upload-file $ARTIFACT --max-time 60 https://transfer.sh
+    name: "uploading debug logs"
+

@@ -17,12 +17,6 @@
 # limitations under the License.
 ################################################################################
 
-echo $M2_HOME
-echo $PATH
-echo $MAVEN_OPTS
-
-
-
 
 HERE="`dirname \"$0\"`"				# relative
 HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
@@ -34,27 +28,8 @@ fi
 
 source "${HERE}/../travis/shade.sh"
 
-print_system_info() {
-	echo "CPU information:"
-	lscpu
 
-	echo "Memory information:"
-	cat /proc/meminfo
 
-	echo "Disk information:"
-	df -hH
-
-	echo "Running build as:"
-	whoami
-
-    echo "Maven Version:"
-    mvn -version
-
-    echo "Commit:"
-    git rev-parse HEAD
-}
-
-print_system_info
 
 
 STAGE=$1

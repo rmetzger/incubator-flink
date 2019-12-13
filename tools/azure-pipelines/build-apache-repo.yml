@@ -15,18 +15,12 @@
 
 
 #
-# This file defines an Azure Pipeline build for testing Flink. It is intended to be used
-# with a free Azure Pipelines account.
-# It has the following features:
-#  - default builds for pushes / pull requests to a Flink fork and custom AZP account
-#  - end2end tests
+# This file defines the Flink build for the "apache/flink" repository, including
+# the following:
+#  - PR builds
+#  - custom triggered e2e tests
 #
-#
-# For the "apache/flink" repository, we are using the pipeline definition located in
-#   tools/azure-pipelines/build-apache-repo.yml
-# That file points to custom, self-hosted build agents for faster pull request build processing and 
-# integration with Flinkbot.
-#
+
 
 trigger:
   branches:
@@ -34,12 +28,24 @@ trigger:
     - '*' 
 
 
-jobs:
-- template: tools/azure-pipelines/template-build-jobs.yml
-  parameters:
-    timeout: 240
-    pool_definition:
-      vmImage: 'ubuntu-latest'
-    maven: -Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11
-- template: tools/azure-pipelines/template-e2e-jobs.yml
+resources:
+  containers:
+  # Container with Maven 3.2.5, SSL to have the same environment everywhere.
+  - container: flink-build-container
+    image: rmetzger/flink-ci:ubuntu-jdk8-amd64-e005e00
+
+stages:
+  # CI / PR triggered stage:
+ - stage: ci_build_on_default_pool
+   displayName: "Build on 'Default' pool (Flink Community Build Resources)"
+   condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
+   jobs:
+     - template: tools/azure-pipelines/azure-jobs.yml
+       parameters:
+         timeout: 120
+         pool_definition:
+           name: Default
+         environment: -Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11
+
+
 
