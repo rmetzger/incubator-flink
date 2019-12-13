@@ -25,6 +25,7 @@ if [ -z "$HERE" ] ; then
 	exit 1  # fail
 fi
 
+
 source "${HERE}/travis/stage.sh"
 
 ARTIFACTS_DIR="${HERE}/artifacts"
@@ -85,9 +86,18 @@ UPLOAD_BUCKET=$ARTIFACTS_AWS_BUCKET
 UPLOAD_ACCESS_KEY=$ARTIFACTS_AWS_ACCESS_KEY
 UPLOAD_SECRET_KEY=$ARTIFACTS_AWS_SECRET_KEY
 
-ARTIFACTS_FILE=${TRAVIS_JOB_NUMBER}.tar.gz
+ARTIFACTS_FILE=${BUILD_BUILDNUMBER}.tar.gz
+
+if [ $TEST == "misc" ]; then
+	echo "===== misc stage: recompile"
+	mvn install -DskipTests -Drat.skip
+	echo "done compiling ..."
+fi
 
 if [ $TEST == $STAGE_PYTHON ]; then
+	echo "===== Python stage found. Re-compiling"
+	mvn install -DskipTests -Drat.skip
+	echo "Done compiling ... "
 	CMD=$PYTHON_TEST
 	CMD_PID=$PYTHON_PID
 	CMD_OUT=$PYTHON_OUT
@@ -131,9 +141,12 @@ upload_artifacts_s3() {
 		artifacts upload --bucket $UPLOAD_BUCKET --key $UPLOAD_ACCESS_KEY --secret $UPLOAD_SECRET_KEY --target-paths $UPLOAD_TARGET_PATH $ARTIFACTS_FILE
 	fi
 
+
 	# upload to https://transfer.sh
 	echo "Uploading to transfer.sh"
-	curl --upload-file $ARTIFACTS_FILE --max-time 60 https://transfer.sh
+	date
+	time curl -v --upload-file $ARTIFACTS_FILE --max-time 60 https://transfer.sh
+	date
 }
 
 print_stacktraces () {
@@ -158,7 +171,7 @@ print_stacktraces () {
 put_yarn_logs_to_artifacts() {
 	# Make sure to be in project root
 	cd $HERE/../
-	for file in `find ./flink-yarn-tests/target/flink-yarn-tests* -type f -name '*.log'`; do
+	for file in `find ./flink-yarn-tests/target -type f -name '*.log'`; do
 		TARGET_FILE=`echo "$file" | grep -Eo "container_[0-9_]+/(.*).log"`
 		TARGET_DIR=`dirname	 "$TARGET_FILE"`
 		mkdir -p "$ARTIFACTS_DIR/yarn-tests/$TARGET_DIR"
