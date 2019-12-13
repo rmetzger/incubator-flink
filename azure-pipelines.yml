@@ -13,27 +13,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#
+# This file defines an Azure Pipeline build for testing Flink. It is intended to be used
+# with a free Azure Pipelines account.
+# It has the following features:
+#  - default builds for pushes / pull requests to a Flink fork and custom AZP account
+#  - end2end tests
+#
+#
+# For the "apache/flink" repository, we are using the pipeline definition located in
+#   tools/azure-pipelines/build-apache-repo.yml
+# That file points to custom, self-hosted build agents for faster pull request build processing and 
+# integration with Flinkbot.
+#
 
 trigger:
   branches:
     include:
     - '*' 
 
-schedules:
-- cron: "0 0 * * *"
-  displayName: Daily midnight build
-  branches:
-    include:
-    - master
-    - azure_playground
-  always: true # run even if there were no changes to the mentioned branches
 
 resources:
   containers:
   # Container with Maven 3.2.5, SSL to have the same environment everywhere.
   - container: flink-build-container
-    image: rmetzger/flink-ci:5-ubuntu-amd64
-    options: --memory=30g
+    image: rmetzger/flink-ci:ubuntu-jdk8-amd64-e005e00
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -42,56 +46,14 @@ variables:
   CACHE_FALLBACK_KEY: maven | $(Agent.OS)
   CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
 
-stages:
-  # CI / PR triggered stage:
-#  - stage: ci_build_on_default_pool
-#    displayName: "Build on 'Default' pool (Flink Community Build Resources)"
-#    condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
-#    jobs:
-#      - template: tools/azure-pipelines/azure-jobs.yml
-#        parameters:
-#          stage_name: ci_build_on_default_pool
-#          pool_definition:
-#            name: Default
-#          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
 
+jobs:
+  - template: tools/azure-pipelines/azure-jobs.yml
+    parameters:
+      stage_name: ci_build_on_azure_os_free_pool
+      pool_definition:
+        vmImage: 'ubuntu-latest'
+      environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
 
-  # CI / PR triggered stage:          
-  - stage: ci_build_on_azure_os_free_pool
-    displayName: "Build on free (for OS) Azure Resource Pool"
-    dependsOn: [] # depending on an empty array makes the stages run in parallel
-    condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
-    jobs:
-      - template: tools/azure-pipelines/azure-jobs.yml
-        parameters:
-          stage_name: ci_build_on_azure_os_free_pool
-          pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-
-  # Special stage for midnight build:
-  - stage: cron_build_on_azure_os_free_pool
-    displayName: "Cron build on free (for OS) Azure Resource Pool"
-    dependsOn: [] # depending on an empty array makes the stages run in parallel
-    condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
-    jobs:
-      - template: tools/azure-pipelines/azure-jobs.yml
-        parameters:
-          stage_name: ci_build_on_azure_os_free_pool_default
-          pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-      - template: tools/azure-pipelines/azure-jobs.yml
-        parameters:
-          stage_name: ci_build_on_azure_os_free_pool_scala2_12
-          pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-      - template: tools/azure-pipelines/azure-jobs.yml
-        parameters:
-          stage_name: ci_build_on_azure_os_free_pool_jdk11
-          pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
 
 
