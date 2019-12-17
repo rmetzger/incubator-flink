@@ -39,29 +39,29 @@ cat << EOF > /tmp/az_settings.xml
 EOF
 
 
-HERE="`dirname \"$0\"`"				# relative
-HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
+HERE="`dirname \"$0\"`"             # relative
+HERE="`( cd \"$HERE\" && pwd )`"    # absolutized and normalized
 if [ -z "$HERE" ] ; then
-	# error; for some reason, the path is not accessible
-	# to the script (e.g. permissions re-evaled after suid)
-	exit 1  # fail
+    # error; for some reason, the path is not accessible
+    # to the script (e.g. permissions re-evaled after suid)
+    exit 1  # fail
 fi
 
 source "${HERE}/travis/stage.sh"
 source "${HERE}/travis/shade.sh"
 
 print_system_info() {
-	echo "CPU information"
-	lscpu
+    echo "CPU information"
+    lscpu
 
-	echo "Memory information"
-	cat /proc/meminfo
+    echo "Memory information"
+    cat /proc/meminfo
 
-	echo "Disk information"
-	df -hH
+    echo "Disk information"
+    df -hH
 
-	echo "Running build as"
-	whoami
+    echo "Running build as"
+    whoami
 }
 
 print_system_info
@@ -75,9 +75,9 @@ EXIT_CODE=0
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
     #adding -Dmaven.wagon.http.pool=false (see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html)
-	MVN="mvn clean install --settings /tmp/az_settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.wagon.http.pool=false -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
+    MVN="mvn clean install --settings /tmp/az_settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.wagon.http.pool=false -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
     $MVN
-	EXIT_CODE=$?
+    EXIT_CODE=$?
 
     if [ $EXIT_CODE == 0 ]; then
         printf "\n\n==============================================================================\n"
@@ -142,7 +142,9 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
             rm -rf "$CACHE_FLINK_DIR/.git"
 
             # AZ Pipelines has a problem with links. TODO: Check if needed for e2e tests
-            rm "$CACHE_FLINK_DIR/build-target"
+            ##########
+            #########
+            #TODO rm "$CACHE_FLINK_DIR/build-target"
         }
     
         echo "Minimizing cache"
@@ -153,29 +155,29 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
         echo "=============================================================================="
     fi
 elif [ $STAGE != "$STAGE_CLEANUP" ]; then
-	if ! [ -e $CACHE_FLINK_DIR ]; then
-		echo "Cached flink dir $CACHE_FLINK_DIR does not exist. Exiting build."
-		exit 1
-	fi
-	# merged compiled flink into local clone
-	# this prevents the cache from being re-uploaded
-	echo "Merging cache"
-	cp -RT "$CACHE_FLINK_DIR" "."
+    if ! [ -e $CACHE_FLINK_DIR ]; then
+        echo "Cached flink dir $CACHE_FLINK_DIR does not exist. Exiting build."
+        exit 1
+    fi
+    # merged compiled flink into local clone
+    # this prevents the cache from being re-uploaded
+    echo "Merging cache"
+    cp -RT "$CACHE_FLINK_DIR" "."
 
-	echo "Adjusting timestamps"
-	# adjust timestamps to prevent recompilation
-	find . -type f -name '*.java' | xargs touch
-	find . -type f -name '*.scala' | xargs touch
-	# wait a bit for better odds of different timestamps
-	sleep 5
-	find . -type f -name '*.class' | xargs touch
-	find . -type f -name '*.timestamp' | xargs touch
+    echo "Adjusting timestamps"
+    # adjust timestamps to prevent recompilation
+    find . -type f -name '*.java' | xargs touch
+    find . -type f -name '*.scala' | xargs touch
+    # wait a bit for better odds of different timestamps
+    sleep 5
+    find . -type f -name '*.class' | xargs touch
+    find . -type f -name '*.timestamp' | xargs touch
 
-	TEST="$STAGE" "./tools/travis_watchdog.sh" 300
-	EXIT_CODE=$?
+    TEST="$STAGE" "./tools/travis_watchdog.sh" 300
+    EXIT_CODE=$?
 elif [ $STAGE == "$STAGE_CLEANUP" ]; then
-	echo "Cleaning up $CACHE_BUILD_DIR"
-	rm -rf "$CACHE_BUILD_DIR"
+    echo "Cleaning up $CACHE_BUILD_DIR"
+    rm -rf "$CACHE_BUILD_DIR"
 else
     echo "Invalid Stage specified: $STAGE"
     exit 1
