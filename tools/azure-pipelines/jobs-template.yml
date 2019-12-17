@@ -83,10 +83,6 @@ jobs:
         module: misc
   steps:
 
-  # Preparation
-  - script: exit 1
-    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
-
   # download artifacts
   - task: DownloadPipelineArtifact@2
     inputs:
