@@ -25,9 +25,6 @@ if [ -z "$HERE" ] ; then
 	exit 1  # fail
 fi
 
-echo "Checking available env variables"
-env
-
 
 source "${HERE}/travis/stage.sh"
 

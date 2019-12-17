@@ -32,31 +32,8 @@ echo "Flink tarball filename $FLINK_TARBALL"
 echo "Flink distribution directory name $FLINK_DIRNAME"
 echo "End-to-end directory $END_TO_END_DIR"
 
-#docker version
-#docker-compose version
-
-# docker on azure: 
-# 2019-11-12T13:24:01.9468284Z Docker version 3.0.8, build 2355349d
-# 2019-11-12T13:24:03.0487637Z docker-compose version 1.22.0, build f46880fe
-# docker on travis:
-# docker version
-# Client:
-#  Version:           18.06.0-ce
-#  API version:       1.38
-#  Go version:        go1.10.3
-#  Git commit:        0ffa825
-#  Built:             Wed Jul 18 19:11:02 2018
-#  OS/Arch:           linux/amd64
-#  Experimental:      false
-# Server:
-#  Engine:
-#   Version:          18.06.0-ce
-#   API version:      1.38 (minimum version 1.12)
-#   Go version:       go1.10.3
-#   Git commit:       0ffa825
-#   Built:            Wed Jul 18 19:09:05 2018
-#   OS/Arch:          linux/amd64
-#   Experimental:     false
+docker version
+docker-compose version
 
 # Configure Flink dir before making tarball.
 INPUT_TYPE=${1:-default-input}
@@ -124,29 +101,6 @@ function start_hadoop_cluster() {
             return 1
         else
             echo "We only have $nm_running NodeManagers up. We have been trying for $time_diff seconds, retrying ..."
-
-            # echo "=================DEBUGGING==============="
-            # echo "========================================="
-            # echo "docker ps"
-            # docker ps
-
-            # echo "========================================="
-            # echo "docker logs master"
-            # docker logs master
-
-            # echo "========================================="
-            # echo "docker logs slave1"
-            # docker logs slave1
-
-            # echo "========================================="
-            # echo "docker logs slave2"
-            # docker logs slave2
-
-            # echo "========================================="
-            # echo "yarn node list"
-            # docker exec -it master bash -c "yarn node -list"
-
-            # echo "========================================="
             sleep 1
         fi
 
