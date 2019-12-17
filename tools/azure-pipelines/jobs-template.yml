@@ -25,6 +25,9 @@ jobs:
   pool: ${{parameters.test_pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
+  cancelTimeoutInMinutes: 1
+  workspace:
+    clean: all
   steps:
 
   # Azure pipelines can only evaluate conditions with the build repo name in the steps.
@@ -58,6 +61,9 @@ jobs:
   pool: ${{parameters.test_pool_definition}}
   container: flink-build-container
   timeoutInMinutes: 240
+  cancelTimeoutInMinutes: 1
+  workspace:
+    clean: all
   strategy:
     matrix:
       core:
@@ -106,6 +112,9 @@ jobs:
   # We are not running this job on a container, but in a VM.
   pool: ${{parameters.e2e_pool_definition}}
   timeoutInMinutes: 240
+  cancelTimeoutInMinutes: 1
+  workspace:
+    clean: all
   steps:
     - script: echo "Wrong repository or mode"; exit 1
       condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
