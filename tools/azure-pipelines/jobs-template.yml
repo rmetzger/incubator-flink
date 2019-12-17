@@ -30,12 +30,7 @@ jobs:
     clean: all
   steps:
 
-  # Azure pipelines can only evaluate conditions with the build repo name in the steps.
-  # if the repo == "flink-ci/flink", we stop
-
   # Preparation
-  - script: echo "Wrong repository or mode"; exit 1
-    condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
   - task: CacheBeta@1
     inputs:
       key: $(CACHE_KEY)
@@ -116,8 +111,6 @@ jobs:
   workspace:
     clean: all
   steps:
-    - script: echo "Wrong repository or mode"; exit 1
-      condition: not(eq(variables['Build.Repository.Name'], 'rmetzger/flink'))
     - task: CacheBeta@1
       inputs:
         key: $(CACHE_KEY)
