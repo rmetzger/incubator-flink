@@ -54,8 +54,8 @@ variables:
 
 stages:
   # CI / PR triggered stage:
-  - stage: ci_build_on_default_pool
-    displayName: "Build on 'Default' pool (Flink Community Build Resources)"
+  - stage: ci_build
+    displayName: "CI Build (custom builders)"
     condition: not(eq(variables['Build.Reason'], in('Schedule', 'Manual')))
     jobs:
       - template: jobs-template.yml
@@ -69,13 +69,13 @@ stages:
 
   # Special stage for midnight builds:
   - stage: cron_build_on_azure_os_free_pool
-    displayName: "Cron build on free (for OS) Azure Resource Pool"
+    displayName: "Cron build on free Azure Resource Pool"
     dependsOn: [] # depending on an empty array makes the stages run in parallel
     condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
     jobs:
       - template: jobs-template.yml
         parameters:
-          stage_name: ci_build_default
+          stage_name: cron_build_default
           test_pool_definition:
             vmImage: 'ubuntu-latest'
           e2e_pool_definition:
@@ -83,7 +83,7 @@ stages:
           environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
       - template: jobs-template.yml
         parameters:
-          stage_name: ci_build_scala2_12
+          stage_name: cron_build_scala2_12
           test_pool_definition:
             vmImage: 'ubuntu-latest'
           e2e_pool_definition:
@@ -91,7 +91,7 @@ stages:
           environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
       - template: jobs-template.yml
         parameters:
-          stage_name: ci_build_jdk11
+          stage_name: cron_build_jdk11
           test_pool_definition:
             vmImage: 'ubuntu-latest'
           e2e_pool_definition:

@@ -47,7 +47,6 @@ if [ -z "$HERE" ] ; then
 	exit 1  # fail
 fi
 
-source "${HERE}/travis/fold.sh"
 source "${HERE}/travis/stage.sh"
 source "${HERE}/travis/shade.sh"
 
@@ -66,16 +65,6 @@ print_system_info() {
 }
 
 print_system_info
-
-function deleteOldCaches() {
-	while read CACHE_DIR; do
-		local old_number="${CACHE_DIR##*/}"
-		if [ "$old_number" -lt "$TRAVIS_BUILD_NUMBER" ]; then
-			echo "Deleting old cache $CACHE_DIR"
-			rm -rf "$CACHE_DIR"
-		fi
-	done
-}
 
 
 STAGE=$1
@@ -156,11 +145,8 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
             rm "$CACHE_FLINK_DIR/build-target"
         }
     
-        start_fold "minimize_cache" "Minimizing cache"
-        travis_time_start
+        echo "Minimizing cache"
         minimizeCachedFiles
-        travis_time_finish
-        end_fold "minimize_cache"
     else
         echo "=============================================================================="
         echo "Previous build failure detected, skipping cache setup."
@@ -173,14 +159,10 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
 	fi
 	# merged compiled flink into local clone
 	# this prevents the cache from being re-uploaded
-	start_fold "merge_cache" "Merging cache"
-	travis_time_start
+	echo "Merging cache"
 	cp -RT "$CACHE_FLINK_DIR" "."
-	travis_time_finish
-	end_fold "merge_cache"
 
-	start_fold "adjust_timestamps" "Adjusting timestamps"
-	travis_time_start
+	echo "Adjusting timestamps"
 	# adjust timestamps to prevent recompilation
 	find . -type f -name '*.java' | xargs touch
 	find . -type f -name '*.scala' | xargs touch
@@ -188,8 +170,6 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
 	sleep 5
 	find . -type f -name '*.class' | xargs touch
 	find . -type f -name '*.timestamp' | xargs touch
-	travis_time_finish
-	end_fold "adjust_timestamps"
 
 	TEST="$STAGE" "./tools/travis_watchdog.sh" 300
 	EXIT_CODE=$?
@@ -201,5 +181,5 @@ else
     exit 1
 fi
 
-# Exit code for Travis build success/failure
+# Exit code for Azure build success/failure
 exit $EXIT_CODE
