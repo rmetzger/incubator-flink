@@ -62,7 +62,7 @@ MVN_TEST_MODULES=$(get_test_modules_for_stage ${TEST})
 # Flink, which however should all be built locally. see FLINK-7230
 #
 MVN_LOGGING_OPTIONS="-Dlog.dir=${ARTIFACTS_DIR} -Dlog4j.configuration=file://$LOG4J_PROPERTIES -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
-MVN_COMMON_OPTIONS="-nsu -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dfast -B -Pskip-webui-build $MVN_LOGGING_OPTIONS"
+MVN_COMMON_OPTIONS="-nsu -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dfast -Dmaven.wagon.http.pool=false -B -Pskip-webui-build $MVN_LOGGING_OPTIONS"
 MVN_COMPILE_OPTIONS="-DskipTests"
 MVN_TEST_OPTIONS="-Dflink.tests.with-openssl"
 
@@ -144,9 +144,7 @@ upload_artifacts_s3() {
 
 	# upload to https://transfer.sh
 	echo "Uploading to transfer.sh"
-	date
 	time curl -v --upload-file $ARTIFACTS_FILE --max-time 60 https://transfer.sh
-	date
 }
 
 print_stacktraces () {
@@ -279,27 +277,27 @@ cd ../../
 case $TEST in
     (misc)
         if [ $EXIT_CODE == 0 ]; then
-            printf "\n\n==============================================================================\n"
-            printf "Running bash end-to-end tests\n"
-            printf "==============================================================================\n"
+            echo "\n\n==============================================================================\n"
+            echo "Running bash end-to-end tests\n"
+            echo "==============================================================================\n"
 
             FLINK_DIR=build-target flink-end-to-end-tests/run-pre-commit-tests.sh
 
             EXIT_CODE=$?
         else
-            printf "\n==============================================================================\n"
-            printf "Previous build failure detected, skipping bash end-to-end tests.\n"
-            printf "==============================================================================\n"
+            echo "\n==============================================================================\n"
+            echo "Previous build failure detected, skipping bash end-to-end tests.\n"
+            echo "==============================================================================\n"
         fi
         if [ $EXIT_CODE == 0 ]; then
-            printf "\n\n==============================================================================\n"
-            printf "Running java end-to-end tests\n"
-            printf "==============================================================================\n"
+            echo "\n\n==============================================================================\n"
+            echo "Running java end-to-end tests\n"
+            echo "==============================================================================\n"
 
             run_with_watchdog "$MVN_E2E -DdistDir=$(readlink -e build-target)"
         else
-            printf "\n==============================================================================\n"
-            printf "Previous build failure detected, skipping java end-to-end tests.\n"
+            echo "\n==============================================================================\n"
+            echo "Previous build failure detected, skipping java end-to-end tests.\n"
         fi
     ;;
 esac
