@@ -46,26 +46,6 @@ start_hadoop_cluster_and_prepare_flink
 # had cached docker containers
 OUTPUT_PATH=hdfs:///user/hadoop-user/wc-out-$RANDOM
 
-function copy_and_show_logs {
-    mkdir -p $TEST_DATA_DIR/logs
-    echo "Hadoop logs:"
-    docker cp master:/var/log/hadoop/* $TEST_DATA_DIR/logs/
-    for f in $TEST_DATA_DIR/logs/*; do
-        echo "$f:"
-        cat $f
-    done
-    echo "Docker logs:"
-    docker logs master
-
-    echo "Flink logs:"
-    docker exec -it master bash -c "kinit -kt /home/hadoop-user/hadoop-user.keytab hadoop-user"
-    application_id=`docker exec -it master bash -c "yarn application -list -appStates ALL" | grep "Flink session cluster" | awk '{print \$1}'`
-    echo "Application ID: $application_id"
-    docker exec -it master bash -c "yarn logs -applicationId $application_id"
-    docker exec -it master bash -c "kdestroy"
-}
-
-start_time=$(date +%s)
 # it's important to run this with higher parallelism, otherwise we might risk that
 # JM and TM are on the same YARN node and that we therefore don't test the keytab shipping
 if docker exec -it master bash -c "export HADOOP_CLASSPATH=\`hadoop classpath\` && \
