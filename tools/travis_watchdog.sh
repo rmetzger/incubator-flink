@@ -177,11 +177,6 @@ put_yarn_logs_to_artifacts() {
 		mkdir -p "$ARTIFACTS_DIR/yarn-tests/$TARGET_DIR"
 		cp $file "$ARTIFACTS_DIR/yarn-tests/$TARGET_FILE"
 	done
-
-	echo "DEBUGGING: all target files"
-	find ./flink-yarn-tests/target/
-	echo "DEBUGGING: all files in tmp"
-	find /tmp
 }
 
 mod_time () {
