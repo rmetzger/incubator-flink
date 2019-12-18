@@ -89,7 +89,9 @@ run_test "Resuming Externalized Checkpoint after terminal failure (rocks, increm
 ################################################################################
 
 # Ignore these tests on Azure
-if [ ! -z "$TF_BUILD" ] ; then
+if [ -z "$TF_BUILD" ] ; then
+	echo "Running this on Azure ?!"
+	env
 	run_test "Running Kerberized YARN on Docker test (default input)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh"
 	run_test "Running Kerberized YARN on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh dummy-fs"
 fi
