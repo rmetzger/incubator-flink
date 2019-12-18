@@ -141,10 +141,8 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
             # merging the cached version sometimes fails
             rm -rf "$CACHE_FLINK_DIR/.git"
 
-            # AZ Pipelines has a problem with links. TODO: Check if needed for e2e tests
-            ##########
-            #########
-            #TODO rm "$CACHE_FLINK_DIR/build-target"
+            # AZ Pipelines has a problem with links.
+            rm "$CACHE_FLINK_DIR/build-target"
         }
     
         echo "Minimizing cache"
