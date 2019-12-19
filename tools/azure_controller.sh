@@ -171,6 +171,12 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     find . -type f -name '*.class' | xargs touch
     find . -type f -name '*.timestamp' | xargs touch
 
+    if [ $STAGE == $STAGE_PYTHON ]; then
+        echo "===== Python stage found. Re-compiling"
+        mvn install -DskipTests -Drat.skip
+        echo "Done compiling ... "
+    fi
+    
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
 elif [ $STAGE == "$STAGE_CLEANUP" ]; then
