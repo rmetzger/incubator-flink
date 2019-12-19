@@ -72,6 +72,18 @@ kubectl create -f ${KUBERNETES_MODULE_DIR}/job-cluster-service.yaml
 envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB} ${FLINK_JOB_PARALLELISM} ${FLINK_JOB_ARGUMENTS}' < ${CONTAINER_SCRIPTS}/job-cluster-job.yaml.template | kubectl create -f -
 envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB_PARALLELISM}' < ${CONTAINER_SCRIPTS}/task-manager-deployment.yaml.template | kubectl create -f -
 kubectl wait --for=condition=complete job/flink-job-cluster --timeout=1h
+
+
+echo "DEBUGGING"
+kubectl logs job/flink-job-cluster
+kubectl logs flink-job-cluster
+kubectl logs flink-task-manager
+kubectl logs --all-containers
+echo "END DEBUGGING"
+
+
+
+
 kubectl cp `kubectl get pods | awk '/task-manager/ {print $1}'`:/cache/${OUTPUT_FILE} ${OUTPUT_VOLUME}/${OUTPUT_FILE}
 
 check_result_hash "WordCount" ${OUTPUT_VOLUME}/${OUTPUT_FILE} "e682ec6622b5e83f2eb614617d5ab2cf"
