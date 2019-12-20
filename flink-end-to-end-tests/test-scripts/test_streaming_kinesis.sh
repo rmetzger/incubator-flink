@@ -30,13 +30,6 @@ KINESALITE_PORT=4567
 KINESALITE_HOST=kinesalite-container
 KINESALITE_NETWORK=some
 
-# set different network if we are in azure pipelines
-#if [[ ! -z "${TF_BUILD}" ]]; then
-#  KINESALITE_NETWORK=`docker network ls --filter name=vsts --format "{{.Name}}"`
-#  echo "Set network to '${KINESALITE_NETWORK}'"
-#fi
-
-
 
 
 function start_kinesalite {

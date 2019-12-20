@@ -27,7 +27,6 @@ trigger:
     include:
     - master
     - release-*
-    - FLINK-13978-multistage-rebased
 
 schedules:
 - cron: "0 0 * * *"
@@ -35,7 +34,6 @@ schedules:
   branches:
     include:
     - master
-    - FLINK-13978-multistage-rebased
   always: true # run even if there were no changes to the mentioned branches
 
 resources:

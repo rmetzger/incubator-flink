@@ -88,16 +88,7 @@ UPLOAD_SECRET_KEY=$ARTIFACTS_AWS_SECRET_KEY
 
 ARTIFACTS_FILE=${BUILD_BUILDNUMBER}.tar.gz
 
-#if [ $TEST == "misc" ]; then
-#	echo "===== misc stage: recompile"
-#	mvn install -DskipTests -Drat.skip
-#	echo "done compiling ..."
-#fi
-
 if [ $TEST == $STAGE_PYTHON ]; then
-	#echo "===== Python stage found. Re-compiling"
-	#mvn install -DskipTests -Drat.skip
-	#echo "Done compiling ... "
 	CMD=$PYTHON_TEST
 	CMD_PID=$PYTHON_PID
 	CMD_OUT=$PYTHON_OUT
