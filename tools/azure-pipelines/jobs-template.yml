@@ -14,8 +14,8 @@
 # limitations under the License.
 
 parameters:
-  test_pool_definition: # where is compiliation and unit test execution happening
-  e2e_pool_definion: # where is e2e test execution happening
+  test_pool_definition: # where is compiliation and unit test execution happening?
+  e2e_pool_definion: # where is e2e test execution happening?
   stage_name: # needed to make job names unique if they are included multiple times
   environment: # used to pass environment variables into the downstream scripts
 

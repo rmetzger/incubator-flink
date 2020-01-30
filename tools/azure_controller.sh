@@ -80,16 +80,16 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
     EXIT_CODE=$?
 
     if [ $EXIT_CODE == 0 ]; then
-        printf "\n\n==============================================================================\n"
-        printf "Checking scala suffixes\n"
-        printf "==============================================================================\n"
+        echo "\n\n==============================================================================\n"
+        echo "Checking scala suffixes\n"
+        echo "==============================================================================\n"
 
         ./tools/verify_scala_suffixes.sh "${PROFILE}"
         EXIT_CODE=$?
     else
-        printf "\n==============================================================================\n"
-        printf "Previous build failure detected, skipping scala-suffixes check.\n"
-        printf "==============================================================================\n"
+        echo "\n==============================================================================\n"
+        echo "Previous build failure detected, skipping scala-suffixes check.\n"
+        echo "==============================================================================\n"
     fi
     
     if [ $EXIT_CODE == 0 ]; then
@@ -173,7 +173,7 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
 
     if [ $STAGE == $STAGE_PYTHON ]; then
         echo "===== Python stage found. Re-compiling"
-        mvn install -DskipTests -Drat.skip
+        #mvn install -DskipTests -Drat.skip
         echo "Done compiling ... "
     fi
     

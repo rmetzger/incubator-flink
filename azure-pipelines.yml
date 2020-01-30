@@ -27,11 +27,6 @@
 # integration with Flinkbot.
 #
 
-trigger:
-  branches:
-    include:
-    - '*' 
-
 
 resources:
   containers:
