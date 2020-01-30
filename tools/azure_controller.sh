@@ -172,8 +172,10 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     find . -type f -name '*.timestamp' | xargs touch
 
     if [ $STAGE == $STAGE_PYTHON ]; then
-        echo "===== Python stage found. Re-compiling"
-        #mvn install -DskipTests -Drat.skip
+        echo "=============================================================================="
+        echo "Python stage found. Re-compiling (this is required on Azure for the python tests to pass)"
+        echo "=============================================================================="
+        mvn install -DskipTests -Drat.skip
         echo "Done compiling ... "
     fi
     
