@@ -50,8 +50,10 @@ function start_kubernetes_if_not_running {
     if ! check_kubernetes_status; then
         start_command="minikube start"
         # We need sudo permission to set vm-driver to none in linux os.
-        [[ "${OS_TYPE}" = "linux" ]] && start_command="sudo ${start_command} --vm-driver=none"
+        [[ "${OS_TYPE}" = "linux" ]] && start_command="sudo ${start_command} --vm-driver=none --ignore-preflight-errors=SystemVerification"
+        echo "Starting kubernetes with '${start_command}' "
         ${start_command}
+        echo "done starting"
         # Fix the kubectl context, as it's often stale.
         minikube update-context
     fi
