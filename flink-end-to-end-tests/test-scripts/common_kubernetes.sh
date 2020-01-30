@@ -66,6 +66,8 @@ function start_kubernetes {
         echo "Could not start minikube. Aborting..."
         exit 1
     fi
+    minikube docker-env
+    kubectl version
     eval $(minikube docker-env)
 }
 
