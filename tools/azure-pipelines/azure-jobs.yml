@@ -125,6 +125,6 @@ jobs:
 - job: runOnAzure_tmate_${{parameters.stage_name}}
   condition: eq(variables['MODE'], 'tmate')
   pool: ${{parameters.pool_definition}}
-  container: flink-build-container
+#  container: flink-build-container
   steps:
   - script: ./tools/tmate_debug.sh
