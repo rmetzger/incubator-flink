@@ -184,10 +184,37 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
         echo "Done compiling ... "
     fi
 
-    echo "===== SET DOCKER_TEST_INFRA_DIR ===== "
+    echo "===== Set DOCKER_TEST_INFRA_DIR ===== "
+    #
+    # Some tests in the "run-pre-commit-tests.sh" collection launch Docker containers.
+    # Since the regular build is executed in Docker (on Azure), we'll be launching those 
+    # containers outside of the current container (on the host, alongside the build&test container).
+    # Some of these containers mount a path. Currently, these scripts mount relative to the build container,
+    # thus this path is not available on the host (where the test container is launched).
+    # 
+    # Here, we figure out the path on the host machine, and set it.
+    #
+
+    #STUPID DEBUGGING
     env
+    docker ps
     
-    DOCKER_TEST_INFRA_DIR=$(basename $PIPELINE_WORKSPACE)/flink-end-to-end-tests/test-scripts/
+    # figure out our own container
+    if [ `docker ps --format '{{ .ID}}' | wc -l ` != "1" ]; then
+        echo "Unexpected number of docker containers: $(docker ps --format '{{ .ID}}' | wc -l)"
+        docker ps
+        exit 1
+    fi
+    DOCKER_THIS_ID=`docker ps --format '{{ .ID}}'`
+
+    #STUPID DEBUGGING
+    docker inspect $DOCKER_THIS_ID
+
+    # get volume mount source
+    DOCKER_VOLUME_MOUNT_SOURCE=`docker inspect  -f '{{json .Mounts }}' $DOCKER_THIS_ID | jq -r '.[0] | .Source'`
+    export DOCKER_TEST_INFRA_DIR=${DOCKER_VOLUME_MOUNT_SOURCE}$(basename $PIPELINE_WORKSPACE)/s/flink-end-to-end-tests/test-scripts/
+    echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
+
 
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
