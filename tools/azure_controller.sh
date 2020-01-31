@@ -178,7 +178,9 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
         echo "Python stage found. Re-compiling (this is required on Azure for the python tests to pass)"
         echo "=============================================================================="
         # run mvn install (w/o "clean"):
-        ${MVN// clean/}
+        PY_MVN="${MVN// clean/}"
+        PY_MVN="$PY_MVN -Drat.skip=true"
+        ${PY_MVN}
         echo "Done compiling ... "
     fi
     
