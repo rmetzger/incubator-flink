@@ -15,7 +15,7 @@
 
 echo "Replace moby by docker"
 docker version
-apt-get remove -y moby-engine
+sudo apt-get remove -y moby-engine
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
@@ -24,9 +24,6 @@ sudo add-apt-repository \
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 docker version
-
-# used by minikube later
-export CHANGE_MINIKUBE_NONE_USER=true
 
 # Download minikube.
 # echo "Download minikube"

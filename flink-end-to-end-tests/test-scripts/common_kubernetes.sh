@@ -48,7 +48,10 @@ function check_kubernetes_status {
 
 function start_kubernetes_if_not_running {
     if ! check_kubernetes_status; then
+        echo "Starting minikube ..."
         start_command="minikube start"
+        # This will set the appropriate file permissions for the local user
+        export CHANGE_MINIKUBE_NONE_USER=true
         # We need sudo permission to set vm-driver to none in linux os.
         [[ "${OS_TYPE}" = "linux" ]] && start_command="sudo ${start_command} --vm-driver=none"
         ${start_command}
@@ -70,6 +73,7 @@ function start_kubernetes {
 }
 
 function stop_kubernetes {
+    echo "Stopping minikube ..."
     stop_command="minikube stop"
     [[ "${OS_TYPE}" = "linux" ]] && stop_command="sudo ${stop_command}"
     if ! retry_times ${MINIKUBE_START_RETRIES} ${MINIKUBE_START_BACKOFF} "${stop_command}"; then
