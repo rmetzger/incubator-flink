@@ -23,13 +23,14 @@
 
 
 
-schedules:
-- cron: "0 0 * * *"
-  displayName: Daily midnight build
-  branches:
-    include:
-    - master
-  always: true # run even if there were no changes to the mentioned branches
+# to be enabled with FLINK-15834
+#schedules:
+#- cron: "0 0 * * *"
+#  displayName: Daily midnight build
+#  branches:
+#    include:
+#    - master
+#  always: true # run even if there were no changes to the mentioned branches
 
 resources:
   containers:
@@ -59,36 +60,36 @@ stages:
           e2e_pool_definition:
             vmImage: 'ubuntu-latest'
           environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-
+  # to be enabled with FLINK-15834
   # Special stage for midnight builds:
-  - stage: cron_build_on_azure_os_free_pool
-    displayName: "Cron build on free Azure Resource Pool"
-    dependsOn: [] # depending on an empty array makes the stages run in parallel
-    condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
-    jobs:
-      - template: jobs-template.yml
-        parameters:
-          stage_name: cron_build_default
-          test_pool_definition:
-            vmImage: 'ubuntu-latest'
-          e2e_pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-      - template: jobs-template.yml
-        parameters:
-          stage_name: cron_build_scala2_12
-          test_pool_definition:
-            vmImage: 'ubuntu-latest'
-          e2e_pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-      - template: jobs-template.yml
-        parameters:
-          stage_name: cron_build_jdk11
-          test_pool_definition:
-            vmImage: 'ubuntu-latest'
-          e2e_pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
+  # - stage: cron_build_on_azure_os_free_pool
+  #   displayName: "Cron build on free Azure Resource Pool"
+  #   dependsOn: [] # depending on an empty array makes the stages run in parallel
+  #   condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
+  #   jobs:
+  #     - template: jobs-template.yml
+  #       parameters:
+  #         stage_name: cron_build_default
+  #         test_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         e2e_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+  #     - template: jobs-template.yml
+  #       parameters:
+  #         stage_name: cron_build_scala2_12
+  #         test_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         e2e_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
+  #     - template: jobs-template.yml
+  #       parameters:
+  #         stage_name: cron_build_jdk11
+  #         test_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         e2e_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
 
 
