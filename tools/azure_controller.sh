@@ -72,10 +72,12 @@ echo "Current stage: \"$STAGE\""
 
 EXIT_CODE=0
 
+#adding -Dmaven.wagon.http.pool=false (see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html)
+MVN="mvn clean install --settings /tmp/az_settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.wagon.http.pool=false -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
+
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
-    #adding -Dmaven.wagon.http.pool=false (see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html)
-    MVN="mvn clean install --settings /tmp/az_settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.wagon.http.pool=false -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
+    # run mvn clean install:
     $MVN
     EXIT_CODE=$?
 
@@ -175,7 +177,8 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
         echo "=============================================================================="
         echo "Python stage found. Re-compiling (this is required on Azure for the python tests to pass)"
         echo "=============================================================================="
-        mvn install -DskipTests -Drat.skip
+        # run mvn install (w/o "clean"):
+        ${MVN// clean/}
         echo "Done compiling ... "
     fi
     
