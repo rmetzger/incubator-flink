@@ -25,6 +25,11 @@ mvn -version
 echo "Commit: $(git rev-parse HEAD)"
 
 
+echo "test printf"
+printf "this comes from printf"
+/usr/bin/env bash -version
+echo "done testing printf"
+
 cat << EOF > /tmp/az_settings.xml
 <settings>
   <mirrors>
