@@ -25,6 +25,8 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 docker version
 
+# used by minikube later
+export CHANGE_MINIKUBE_NONE_USER=true
 
 # Download minikube.
 # echo "Download minikube"
