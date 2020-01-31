@@ -94,6 +94,11 @@ UPLOAD_SECRET_KEY=$ARTIFACTS_AWS_SECRET_KEY
 
 ARTIFACTS_FILE=${TRAVIS_JOB_NUMBER}.tar.gz
 
+if [ ! -z "$TF_BUILD" ] ; then
+	# set proper artifacts file name on Azure Pipelines
+	ARTIFACTS_FILE=${BUILD_BUILDNUMBER}.tar.gz
+fi
+
 if [ $TEST == $STAGE_PYTHON ]; then
 	CMD=$PYTHON_TEST
 	CMD_PID=$PYTHON_PID
@@ -165,7 +170,7 @@ print_stacktraces () {
 put_yarn_logs_to_artifacts() {
 	# Make sure to be in project root
 	cd $HERE/../
-	for file in `find ./flink-yarn-tests/target/flink-yarn-tests* -type f -name '*.log'`; do
+	for file in `find ./flink-yarn-tests/target -type f -name '*.log'`; do
 		TARGET_FILE=`echo "$file" | grep -Eo "container_[0-9_]+/(.*).log"`
 		TARGET_DIR=`dirname	 "$TARGET_FILE"`
 		mkdir -p "$ARTIFACTS_DIR/yarn-tests/$TARGET_DIR"
@@ -273,27 +278,27 @@ cd ../../
 case $TEST in
     (misc)
         if [ $EXIT_CODE == 0 ]; then
-            printf "\n\n==============================================================================\n"
-            printf "Running bash end-to-end tests\n"
-            printf "==============================================================================\n"
+            echo "\n\n==============================================================================\n"
+            echo "Running bash end-to-end tests\n"
+            echo "==============================================================================\n"
 
             FLINK_DIR=build-target flink-end-to-end-tests/run-pre-commit-tests.sh
 
             EXIT_CODE=$?
         else
-            printf "\n==============================================================================\n"
-            printf "Previous build failure detected, skipping bash end-to-end tests.\n"
-            printf "==============================================================================\n"
+            echo "\n==============================================================================\n"
+            echo "Previous build failure detected, skipping bash end-to-end tests.\n"
+            echo "==============================================================================\n"
         fi
         if [ $EXIT_CODE == 0 ]; then
-            printf "\n\n==============================================================================\n"
-            printf "Running java end-to-end tests\n"
-            printf "==============================================================================\n"
+            echo "\n\n==============================================================================\n"
+            echo "Running java end-to-end tests\n"
+            echo "==============================================================================\n"
 
             run_with_watchdog "$MVN_E2E -DdistDir=$(readlink -e build-target)"
         else
-            printf "\n==============================================================================\n"
-            printf "Previous build failure detected, skipping java end-to-end tests.\n"
+            echo "\n==============================================================================\n"
+            echo "Previous build failure detected, skipping java end-to-end tests.\n"
         fi
     ;;
 esac
