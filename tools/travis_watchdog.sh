@@ -278,27 +278,27 @@ cd ../../
 case $TEST in
     (misc)
         if [ $EXIT_CODE == 0 ]; then
-            echo "\n\n==============================================================================\n"
-            echo "Running bash end-to-end tests\n"
-            echo "==============================================================================\n"
+            printf "\n\n==============================================================================\n"
+            printf "Running bash end-to-end tests\n"
+            printf "==============================================================================\n"
 
             FLINK_DIR=build-target flink-end-to-end-tests/run-pre-commit-tests.sh
 
             EXIT_CODE=$?
         else
-            echo "\n==============================================================================\n"
-            echo "Previous build failure detected, skipping bash end-to-end tests.\n"
-            echo "==============================================================================\n"
+            printf "\n==============================================================================\n"
+            printf "Previous build failure detected, skipping bash end-to-end tests.\n"
+            printf "==============================================================================\n"
         fi
         if [ $EXIT_CODE == 0 ]; then
-            echo "\n\n==============================================================================\n"
-            echo "Running java end-to-end tests\n"
-            echo "==============================================================================\n"
+            printf "\n\n==============================================================================\n"
+            printf "Running java end-to-end tests\n"
+            printf "==============================================================================\n"
 
             run_with_watchdog "$MVN_E2E -DdistDir=$(readlink -e build-target)"
         else
-            echo "\n==============================================================================\n"
-            echo "Previous build failure detected, skipping java end-to-end tests.\n"
+            printf "\n==============================================================================\n"
+            printf "Previous build failure detected, skipping java end-to-end tests.\n"
         fi
     ;;
 esac

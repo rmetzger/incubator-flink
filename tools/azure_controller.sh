@@ -25,11 +25,6 @@ mvn -version
 echo "Commit: $(git rev-parse HEAD)"
 
 
-echo "test printf"
-printf "this comes from printf"
-/usr/bin/env bash -version
-echo "done testing printf"
-
 cat << EOF > /tmp/az_settings.xml
 <settings>
   <mirrors>
@@ -188,7 +183,12 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
         ${PY_MVN}
         echo "Done compiling ... "
     fi
+
+    echo "===== SET DOCKER_TEST_INFRA_DIR ===== "
+    env
     
+    DOCKER_TEST_INFRA_DIR=$(basename $PIPELINE_WORKSPACE)/flink-end-to-end-tests/test-scripts/
+
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
 elif [ $STAGE == "$STAGE_CLEANUP" ]; then
