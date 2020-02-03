@@ -26,26 +26,28 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 docker version
 
 
-function setup_kubernetes_for_linux {
-    # Download kubectl, which is a requirement for using minikube.
-    if ! [ -x "$(command -v kubectl)" ]; then
-    	echo "Installing kubectl ..."
-        local version=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-        curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$version/bin/linux/amd64/kubectl && \
-            chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-    fi
-    # Download minikube.
-    if ! [ -x "$(command -v minikube)" ]; then
-    	echo "installing minikube ..."
-        curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && \
-            chmod +x minikube && sudo mv minikube /usr/local/bin/
-    fi
-}
+# function setup_kubernetes_for_linux {
+#     # Download kubectl, which is a requirement for using minikube.
+#     if ! [ -x "$(command -v kubectl)" ]; then
+#     	echo "Installing kubectl ..."
+#         local version=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+#         curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$version/bin/linux/amd64/kubectl && \
+#             chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+#     fi
+#     # Download minikube.
+#     if ! [ -x "$(command -v minikube)" ]; then
+#     	echo "installing minikube ..."
+#         curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && \
+#             chmod +x minikube && sudo mv minikube /usr/local/bin/
+#     fi
+# }
 
-setup_kubernetes_for_linux
-echo "Initializing minikube with the proper permissions"
-sudo CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none
-sudo minikube stop
+# setup_kubernetes_for_linux
+# echo "Initializing minikube with the proper permissions"
+# sudo CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none
+# sudo minikube stop
+
+
 
 
 # Download minikube.

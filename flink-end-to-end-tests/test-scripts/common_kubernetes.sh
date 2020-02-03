@@ -30,12 +30,14 @@ RESULT_HASH="e682ec6622b5e83f2eb614617d5ab2cf"
 function setup_kubernetes_for_linux {
     # Download kubectl, which is a requirement for using minikube.
     if ! [ -x "$(command -v kubectl)" ]; then
+        echo "Installing kubectl ..."
         local version=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
         curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$version/bin/linux/amd64/kubectl && \
             chmod +x kubectl && sudo mv kubectl /usr/local/bin/
     fi
     # Download minikube.
     if ! [ -x "$(command -v minikube)" ]; then
+        echo "Installing minikube ..."
         curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && \
             chmod +x minikube && sudo mv minikube /usr/local/bin/
     fi
@@ -51,7 +53,7 @@ function start_kubernetes_if_not_running {
         echo "Starting minikube ..."
         start_command="minikube start"
         # We need sudo permission to set vm-driver to none in linux os.
-        [[ "${OS_TYPE}" = "linux" ]] && start_command="sudo ${start_command} --vm-driver=none"
+        [[ "${OS_TYPE}" = "linux" ]] && start_command="sudo CHANGE_MINIKUBE_NONE_USER=true ${start_command} --vm-driver=none"
         ${start_command}
         # Fix the kubectl context, as it's often stale.
         minikube update-context
