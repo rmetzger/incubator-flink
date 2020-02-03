@@ -205,12 +205,12 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     docker inspect $DOCKER_THIS_ID
 
     # get volume mount source
-    DOCKER_VOLUME_MOUNT_SOURCE=`docker inspect  -f '{{json .Mounts }}' $DOCKER_THIS_ID | jq -r '.[0] | .Source'`
+    DOCKER_VOLUME_MOUNT_SOURCE=`docker inspect  -f '{{json .Mounts }}' $DOCKER_THIS_ID | jq -r '.[] | .Source | match("(.*_work/[0-9]+)") | .string'`
     export DOCKER_TEST_INFRA_DIR=${DOCKER_VOLUME_MOUNT_SOURCE}$(basename $PIPELINE_WORKSPACE)/s/flink-end-to-end-tests/test-scripts/
     echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
 
     #SMART DEBUGGING
-    docker run  -it -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 ls -lisah /test
+    docker run -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 ls -lisah /test
 
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
