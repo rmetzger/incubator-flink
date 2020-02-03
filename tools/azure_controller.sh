@@ -199,13 +199,7 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     env
     docker ps
     
-    # figure out our own container
-    if [ `docker ps --format '{{ .ID}}' | wc -l ` != "1" ]; then
-        echo "Unexpected number of docker containers: $(docker ps --format '{{ .ID}}' | wc -l)"
-        docker ps
-        exit 1
-    fi
-    DOCKER_THIS_ID=`docker ps --format '{{ .ID}}'`
+    DOCKER_THIS_ID=$AGENT_CONTAINERID
 
     #STUPID DEBUGGING
     docker inspect $DOCKER_THIS_ID
@@ -215,6 +209,8 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     export DOCKER_TEST_INFRA_DIR=${DOCKER_VOLUME_MOUNT_SOURCE}$(basename $PIPELINE_WORKSPACE)/s/flink-end-to-end-tests/test-scripts/
     echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
 
+    #SMART DEBUGGING
+    docker run  -it -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 ls -lisah /test
 
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
