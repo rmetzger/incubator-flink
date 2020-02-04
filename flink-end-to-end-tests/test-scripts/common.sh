@@ -50,6 +50,7 @@ cd $TEST_ROOT
 source "${TEST_INFRA_DIR}/common_utils.sh"
 
 NODENAME=${NODENAME:-`hostname -f`}
+NODEPORT=${NODEPORT:-8081}
 
 # REST_PROTOCOL and CURL_SSL_ARGS can be modified in common_ssl.sh if SSL is activated
 # they should be used in curl command to query Flink REST API
@@ -143,7 +144,7 @@ function create_ha_config() {
 
     # create the masters file (only one currently).
     # This must have all the masters to be used in HA.
-    echo "localhost:8081" > ${FLINK_DIR}/conf/masters
+    echo "localhost:${NODEPORT}" > ${FLINK_DIR}/conf/masters
 
     # then move on to create the flink-conf.yaml
     sed 's/^    //g' > ${FLINK_DIR}/conf/flink-conf.yaml << EOL
@@ -171,7 +172,7 @@ function create_ha_config() {
     # Web Frontend
     #==============================================================================
 
-    rest.port: 8081
+    rest.port: ${NODEPORT}
 
     queryable-state.server.ports: 9000-9009
     queryable-state.proxy.ports: 9010-9019
@@ -249,16 +250,18 @@ function wait_rest_endpoint_up {
     echo "Waiting for ${endpoint_name} REST endpoint to come up..."
     sleep 1
   done
-  echo "${endpoint_name} REST endpoint has not started within a timeout of ${TIMEOUT} sec"
+  echo "${endpoint_name} REST endpoint has not started on query url '${query_url}' within a timeout of ${TIMEOUT} sec"
   exit 1
 }
 
 function wait_dispatcher_running {
-  local query_url="${REST_PROTOCOL}://${NODENAME}:8081/taskmanagers"
+  local query_url="${REST_PROTOCOL}://${NODENAME}:${NODEPORT}/taskmanagers"
   wait_rest_endpoint_up "${query_url}" "Dispatcher" "\{\"taskmanagers\":\[.+\]\}"
 }
 
 function start_cluster {
+  echo "# Configuration appended by common.sh script for e2e tests" >> ${FLINK_DIR}/conf/flink-conf.yaml
+  echo "rest.port: ${NODEPORT}" >> ${FLINK_DIR}/conf/flink-conf.yaml
   "$FLINK_DIR"/bin/start-cluster.sh
   wait_dispatcher_running
 }
@@ -288,7 +291,7 @@ function start_and_wait_for_tm {
 }
 
 function query_running_tms {
-  local url="${REST_PROTOCOL}://${NODENAME}:8081/taskmanagers"
+  local url="${REST_PROTOCOL}://${NODENAME}:${NODEPORT}/taskmanagers"
   curl ${CURL_SSL_ARGS} -s "${url}"
 }
 
@@ -578,7 +581,7 @@ function get_job_metric {
   local job_id=$1
   local metric_name=$2
 
-  local json=$(curl ${CURL_SSL_ARGS} -s ${REST_PROTOCOL}://${NODENAME}:8081/jobs/${job_id}/metrics?get=${metric_name})
+  local json=$(curl ${CURL_SSL_ARGS} -s ${REST_PROTOCOL}://${NODENAME}:${NODEPORT}/jobs/${job_id}/metrics?get=${metric_name})
   local metric_value=$(echo ${json} | sed -n 's/.*"value":"\(.*\)".*/\1/p')
 
   echo ${metric_value}
