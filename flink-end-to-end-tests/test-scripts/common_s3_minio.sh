@@ -31,6 +31,16 @@ IT_CASE_S3_BUCKET=test-data
 
 S3_TEST_DATA_WORDS_URI="s3://$IT_CASE_S3_BUCKET/words"
 
+# allow injecting a custom data dir location.
+DATA_DIR=$TEST_INFRA_DIR
+if [ ! -z "$DOCKER_TEST_INFRA_DIR" ] ; then
+  DATA_DIR=$DOCKER_TEST_INFRA_DIR
+fi
+
+if [ ! -z "$DOCKER_NETWORK" ] ; then
+  DOCKER_NETWORK="--network $DOCKER_NETWORK"
+fi
+
 ###################################
 # Starts a docker container for s3 minio.
 #
@@ -46,15 +56,9 @@ S3_TEST_DATA_WORDS_URI="s3://$IT_CASE_S3_BUCKET/words"
 env
 
 function s3_start {
-  # allow injecting a custom data dir location.
-  DATA_DIR=$TEST_INFRA_DIR
-  if [ ! -z "$DOCKER_TEST_INFRA_DIR" ] ; then
-    DATA_DIR=$DOCKER_TEST_INFRA_DIR
-  fi
-  
   echo "Spawning minio for s3 tests with DATA_DIR=$DATA_DIR"
   export MINIO_CONTAINER_ID=$(docker run -d \
-    -P \
+    -P ${DOCKER_NETWORK} \
     --mount type=bind,source="$DATA_DIR",target=/data \
     -e "MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID" -e "MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY" -e "MINIO_DOMAIN=localhost" \
     minio/minio \
@@ -75,8 +79,11 @@ function s3_start {
 #   MINIO_CONTAINER_ID
 ###################################
 function s3_stop {
+  echo "Stopping minio ..."
   docker kill "$MINIO_CONTAINER_ID"
   docker rm "$MINIO_CONTAINER_ID"
+  # remove .minio.sys folder
+  docker run --mount type=bind,source="$DATA_DIR",target=/data alpine rm -rf /data/.minio.sys
   export S3_ENDPOINT=
   export MINIO_CONTAINER_ID=
 }

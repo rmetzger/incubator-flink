@@ -29,13 +29,18 @@
 #   AWSCLI_CONTAINER_ID
 ###################################
 function aws_cli_start() {
-    # allow injecting a custom data dir location.
+  # allow injecting a custom data dir location.
   DATA_DIR=$TEST_INFRA_DIR
   if [ ! -z "$DOCKER_TEST_INFRA_DIR" ] ; then
     DATA_DIR=$DOCKER_TEST_INFRA_DIR
   fi
+  # allow injecting a custom network
+  _DOCKER_NETWORK="host"
+  if [ ! -z "$DOCKER_NETWORK" ] ; then
+    _DOCKER_NETWORK="$DOCKER_NETWORK"
+  fi
   export AWSCLI_CONTAINER_ID=$(docker run -d \
-    --network host \
+    --network ${_DOCKER_NETWORK} \
     --mount type=bind,source="$DATA_DIR",target=/hostdir \
     -e AWS_REGION -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
     --entrypoint python \

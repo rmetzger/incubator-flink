@@ -194,15 +194,8 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     # 
     # Here, we figure out the path on the host machine, and set it.
     #
-
-    #STUPID DEBUGGING
-    
-    docker ps
     
     DOCKER_THIS_ID=$AGENT_CONTAINERID
-
-    #STUPID DEBUGGING
-    docker inspect $DOCKER_THIS_ID
 
     # get volume mount source
     DOCKER_VOLUME_MOUNT_SOURCE=`docker inspect  -f '{{json .Mounts }}' $DOCKER_THIS_ID | jq -r '.[] | .Source | match("(.*_work/[0-9]+)") | .string'`
@@ -210,15 +203,12 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
 
     echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
 
-    #SMART DEBUGGING
-    #echo "first"
-    #docker run -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 ls -lisah /test
-    #echo "second"
-    #docker run -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 find .
-    #echo "third"
-    #docker run -v $DOCKER_VOLUME_MOUNT_SOURCE:/test rmetzger/flink-ci:5-ubuntu-amd64 find .
-
-env
+    echo "===== Set DOCKER_NETWORK ===== "
+    #
+    # For the tests in "run-pre-commit-tests.sh" launching Docker containers, we need to determine the network
+    # of the test container, so that all containers run in the same network.
+    DOCKER_NETWORK=`docker network ls --filter name=vsts --format "{{.Name}}"`
+    echo "DOCKER_NETWORK determined as '$DOCKER_NETWORK'"
 
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
