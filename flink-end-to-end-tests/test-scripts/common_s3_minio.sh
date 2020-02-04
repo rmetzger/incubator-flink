@@ -48,7 +48,7 @@ env
 function s3_start {
   # allow injecting a custom data dir location.
   DATA_DIR=$TEST_INFRA_DIR
-  if [ -z "$DOCKER_TEST_INFRA_DIR" ] ; then
+  if [ ! -z "$DOCKER_TEST_INFRA_DIR" ] ; then
     DATA_DIR=$DOCKER_TEST_INFRA_DIR
   fi
   

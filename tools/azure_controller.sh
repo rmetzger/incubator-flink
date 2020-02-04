@@ -211,12 +211,12 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
 
     #SMART DEBUGGING
-    echo "first"
-    docker run -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 ls -lisah /test
-    echo "second"
-    docker run -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 find .
-    echo "third"
-    docker run -v $DOCKER_VOLUME_MOUNT_SOURCE:/test rmetzger/flink-ci:5-ubuntu-amd64 find .
+    #echo "first"
+    #docker run -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 ls -lisah /test
+    #echo "second"
+    #docker run -v $DOCKER_TEST_INFRA_DIR:/test rmetzger/flink-ci:5-ubuntu-amd64 find .
+    #echo "third"
+    #docker run -v $DOCKER_VOLUME_MOUNT_SOURCE:/test rmetzger/flink-ci:5-ubuntu-amd64 find .
 
 env
 
