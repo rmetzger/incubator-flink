@@ -50,7 +50,7 @@ cd $TEST_ROOT
 source "${TEST_INFRA_DIR}/common_utils.sh"
 
 NODENAME=${NODENAME:-`hostname -f`}
-NODEPORT=${NODEPORT:-8081}
+export NODEPORT=${NODEPORT:-8081}
 
 # REST_PROTOCOL and CURL_SSL_ARGS can be modified in common_ssl.sh if SSL is activated
 # they should be used in curl command to query Flink REST API

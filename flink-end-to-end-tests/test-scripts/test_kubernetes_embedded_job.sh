@@ -19,6 +19,11 @@
 
 source "$(dirname "$0")"/common_kubernetes.sh
 
+echo "DEBUGGING NODEPORT = $NODEPORT"
+env
+
+
+
 export FLINK_JOB=org.apache.flink.examples.java.wordcount.WordCount
 export FLINK_IMAGE_NAME=test_kubernetes_embedded_job
 export OUTPUT_VOLUME=${TEST_DATA_DIR}/out
