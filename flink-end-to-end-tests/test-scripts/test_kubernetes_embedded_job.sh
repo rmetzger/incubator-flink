@@ -47,11 +47,17 @@ cd "$DOCKER_MODULE_DIR"
 ./build.sh --from-local-dist --job-artifacts ${FLINK_DIR}/examples/batch/WordCount.jar --image-name ${FLINK_IMAGE_NAME}
 cd "$END_TO_END_DIR"
 
-
+echo "a"
 kubectl create -f ${KUBERNETES_MODULE_DIR}/job-cluster-service.yaml
+echo "b"
+envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB} ${FLINK_JOB_PARALLELISM} ${FLINK_JOB_ARGUMENTS} ${NODEPORT}' < ${CONTAINER_SCRIPTS}/job-cluster-job.yaml.template
+echo "b1"
 envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB} ${FLINK_JOB_PARALLELISM} ${FLINK_JOB_ARGUMENTS} ${NODEPORT}' < ${CONTAINER_SCRIPTS}/job-cluster-job.yaml.template | kubectl create -f -
+echo "c"
 envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB_PARALLELISM}' < ${CONTAINER_SCRIPTS}/task-manager-deployment.yaml.template | kubectl create -f -
+echo "d"
 kubectl wait --for=condition=complete job/flink-job-cluster --timeout=1h
+echo "f"
 kubectl cp `kubectl get pods | awk '/task-manager/ {print $1}'`:/cache/${OUTPUT_FILE} ${OUTPUT_VOLUME}/${OUTPUT_FILE}
 
 check_result_hash "WordCount" ${OUTPUT_VOLUME}/${OUTPUT_FILE} "${RESULT_HASH}"

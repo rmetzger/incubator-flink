@@ -105,7 +105,7 @@ jobs:
 
 
 - job: e2e_${{parameters.stage_name}}
-  condition: eq(variables['MODE'], 'e2e')
+  #STUPID DEBUGGING condition: eq(variables['MODE'], 'e2e')
   # We are not running this job on a container, but in a VM.
   pool: ${{parameters.e2e_pool_definition}}
   timeoutInMinutes: 240
