@@ -30,6 +30,7 @@ export OUTPUT_VOLUME=${TEST_DATA_DIR}/out
 export OUTPUT_FILE=kubernetes_wc_out
 export FLINK_JOB_PARALLELISM=1
 export FLINK_JOB_ARGUMENTS='"--output", "/cache/kubernetes_wc_out"'
+export NODEPORT
 
 function cleanup {
     kubectl delete job flink-job-cluster
