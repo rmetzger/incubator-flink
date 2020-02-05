@@ -58,7 +58,7 @@ env
 function s3_start {
   echo "Spawning minio for s3 tests with DATA_DIR=$DATA_DIR"
   export MINIO_CONTAINER_ID=$(docker run -d \
-    -P ${DOCKER_NETWORK} --name minio \
+    -P ${DOCKER_NETWORK} --name minio -p 9000:9000 \
     --mount type=bind,source="$DATA_DIR",target=/data \
     -e "MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID" -e "MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY" -e "MINIO_DOMAIN=minio" \
     minio/minio \
@@ -67,7 +67,8 @@ function s3_start {
   while [[ "$(docker inspect -f {{.State.Running}} "$MINIO_CONTAINER_ID")" -ne "true" ]]; do
     sleep 0.1
   done
-  export S3_ENDPOINT="http://$(docker port "$MINIO_CONTAINER_ID" 9000 | sed s'/0\.0\.0\.0/minio/')"
+  #export S3_ENDPOINT="http://$(docker port "$MINIO_CONTAINER_ID" 9000 | sed s'/0\.0\.0\.0/minio/')"
+  export S3_ENDPOINT="http://minio:9000"
   echo "Started minio @ $S3_ENDPOINT"
   on_exit s3_stop
 }
