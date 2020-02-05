@@ -37,8 +37,11 @@ if [ ! -z "$DOCKER_TEST_INFRA_DIR" ] ; then
   DATA_DIR=$DOCKER_TEST_INFRA_DIR
 fi
 
-if [ ! -z "$DOCKER_NETWORK" ] ; then
-  DOCKER_NETWORK="--network $DOCKER_NETWORK"
+_DOCKER_NETWORK=""
+_MINIO_HOST="localhost"
+if [ ! -z "$DOCKER_TEST_NETWORK" ] ; then
+  _DOCKER_NETWORK="--network $DOCKER_TEST_NETWORK"
+  _MINIO_HOST="minio"
 fi
 
 ###################################
@@ -58,9 +61,9 @@ env
 function s3_start {
   echo "Spawning minio for s3 tests with DATA_DIR=$DATA_DIR"
   export MINIO_CONTAINER_ID=$(docker run -d \
-    -P ${DOCKER_NETWORK} --name minio -p 9000:9000 \
+    -P ${_DOCKER_NETWORK} --name minio -p 9000:9000 \
     --mount type=bind,source="$DATA_DIR",target=/data \
-    -e "MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID" -e "MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY" -e "MINIO_DOMAIN=minio" \
+    -e "MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID" -e "MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY" -e "MINIO_DOMAIN=${_MINIO_HOST}" \
     minio/minio \
     server \
     /data)
@@ -68,7 +71,7 @@ function s3_start {
     sleep 0.1
   done
   #export S3_ENDPOINT="http://$(docker port "$MINIO_CONTAINER_ID" 9000 | sed s'/0\.0\.0\.0/minio/')"
-  export S3_ENDPOINT="http://minio:9000"
+  export S3_ENDPOINT="http://${_MINIO_HOST}:9000"
   echo "Started minio @ $S3_ENDPOINT"
   on_exit s3_stop
 }

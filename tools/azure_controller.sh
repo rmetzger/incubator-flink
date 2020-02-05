@@ -203,12 +203,12 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
 
     echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
 
-    echo "===== Set DOCKER_NETWORK ===== "
+    echo "===== Set DOCKER_TEST_NETWORK ===== "
     #
     # For the tests in "run-pre-commit-tests.sh" launching Docker containers, we need to determine the network
     # of the test container, so that all containers run in the same network.
-    DOCKER_NETWORK=`docker network ls --filter name=vsts --format "{{.Name}}"`
-    echo "DOCKER_NETWORK determined as '$DOCKER_NETWORK'"
+    DOCKER_TEST_NETWORK=`docker network ls --filter name=vsts --format "{{.Name}}"`
+    echo "DOCKER_TEST_NETWORK determined as '$DOCKER_TEST_NETWORK'"
 
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
