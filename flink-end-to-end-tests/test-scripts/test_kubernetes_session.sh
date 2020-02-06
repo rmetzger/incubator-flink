@@ -34,6 +34,11 @@ function cleanup {
 
 start_kubernetes
 
+
+echo "some debugging before starting the session"
+docker ps
+kubectl get pods --all-namespaces
+
 cd "$DOCKER_MODULE_DIR"
 # Build a Flink image without any user jars
 ./build.sh --from-local-dist --job-artifacts ${TEST_INFRA_DIR}/test-data/words --image-name ${FLINK_IMAGE_NAME}
@@ -50,9 +55,21 @@ mkdir -p "$(dirname $LOCAL_OUTPUT_PATH)"
     -Dkubernetes.jobmanager.cpu=0.5 \
     -Dkubernetes.taskmanager.cpu=0.5
 
+echo "some debugging after starting the session"
+docker ps
+kubectl get pods --all-namespaces
+sleep 30
+docker ps
+kubectl get pods --all-namespaces
+
+
 "$FLINK_DIR"/bin/flink run -e kubernetes-session \
     -Dkubernetes.cluster-id=${CLUSTER_ID} \
     ${FLINK_DIR}/examples/batch/WordCount.jar ${ARGS}
+
+echo "some debugging after submitting the job"
+docker ps
+kubectl get pods --all-namespaces
 
 kubectl cp `kubectl get pods | awk '/taskmanager/ {print $1}'`:${OUTPUT_PATH} ${LOCAL_OUTPUT_PATH}
 
