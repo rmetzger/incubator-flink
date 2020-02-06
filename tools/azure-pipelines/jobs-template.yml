@@ -31,7 +31,7 @@ jobs:
   steps:
 
   # Preparation
-  - task: CacheBeta@1
+  - task: Cache@2
     inputs:
       key: $(CACHE_KEY)
       restoreKeys: $(CACHE_FALLBACK_KEY)
@@ -113,7 +113,7 @@ jobs:
   workspace:
     clean: all
   steps:
-    - task: CacheBeta@1
+    - task: Cache@2
       inputs:
         key: $(CACHE_KEY)
         restoreKeys: $(CACHE_FALLBACK_KEY)
