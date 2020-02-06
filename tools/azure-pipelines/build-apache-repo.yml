@@ -36,7 +36,7 @@ resources:
   containers:
   # Container with Maven 3.2.5, SSL to have the same environment everywhere.
   - container: flink-build-container
-    image: rmetzger/flink-ci:ubuntu-jdk8-amd64-29edbc9
+    image: rmetzger/flink-ci:ubuntu-jdk8-amd64-2a765ab
 
 
 variables:
