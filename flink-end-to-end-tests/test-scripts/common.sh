@@ -447,16 +447,16 @@ function wait_for_job_state_transition {
 function is_job_submitted {
   JOB_LIST_RESULT=$("$FLINK_DIR"/bin/flink list -a | grep "$1")
   if [[ "$JOB_LIST_RESULT" == "" ]]; then
-      return "false"
+      echo "false"
     else
-      return "true"
+      echo "true"
     fi
 }
 
 function job_is_submitted {
   local TIMEOUT=10
   for i in $(seq 1 ${TIMEOUT}); do
-    local IS_SUBMITTED=is_job_submitted $1
+    local IS_SUBMITTED=`is_job_submitted $1`
 
     if [[ "$IS_SUBMITTED" == "true" ]]; then
       echo "Job ($1) is submitted."
@@ -473,16 +473,16 @@ function job_is_submitted {
 function is_job_running {
   JOB_LIST_RESULT=$("$FLINK_DIR"/bin/flink list -r | grep "$1")
   if [[ "$JOB_LIST_RESULT" == "" ]]; then
-      return "false"
+      echo "false"
     else
-      return "true"
+      echo "true"
     fi
 }
 
 function wait_job_running {
   local TIMEOUT=10
   for i in $(seq 1 ${TIMEOUT}); do
-    local IS_RUNNING=is_job_running $1
+    local IS_RUNNING=`is_job_running $1`
 
     if [[ "$IS_RUNNING" == "true" ]]; then
       echo "Job ($1) is running."
