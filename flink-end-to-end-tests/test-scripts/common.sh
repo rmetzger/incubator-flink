@@ -453,7 +453,7 @@ function is_job_submitted {
     fi
 }
 
-function job_is_submitted {
+function wait_job_submitted {
   local TIMEOUT=10
   for i in $(seq 1 ${TIMEOUT}); do
     local IS_SUBMITTED=`is_job_submitted $1`

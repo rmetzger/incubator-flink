@@ -54,9 +54,9 @@ MAX_RETRY_SECONDS=60
 
 start_time=$(date +%s)
 
-RUNNING=is_job_running ${JOB_ID}
+RUNNING=`is_job_running ${JOB_ID}`
 while [[ "$RUNNING" == "true" ]]; do
-	RUNNING=is_job_running ${JOB_ID}
+	RUNNING=`is_job_running ${JOB_ID}`
 	current_time=$(date +%s)
 	time_diff=$((current_time - start_time))
 	if [ $time_diff -ge $MAX_RETRY_SECONDS ]; then
