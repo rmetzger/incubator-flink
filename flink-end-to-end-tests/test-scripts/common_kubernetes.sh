@@ -51,7 +51,7 @@ function check_kubernetes_status {
 function start_kubernetes_if_not_running {
     if ! check_kubernetes_status; then
         echo "Starting minikube ..."
-        start_command="minikube start"
+        start_command="minikube start --memory='5000mb' --cpus=2"
         # We need sudo permission to set vm-driver to none in linux os.
         [[ "${OS_TYPE}" = "linux" ]] && start_command="sudo CHANGE_MINIKUBE_NONE_USER=true ${start_command} --vm-driver=none"
         ${start_command}
