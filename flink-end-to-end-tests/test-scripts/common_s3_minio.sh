@@ -123,6 +123,7 @@ function s3_setup {
   set_config_key "s3.path-style-access" "true"
   set_config_key "s3.connection.timeout" "5000"
   set_config_key "akka.ask.timeout" "300 s"
+  set_config_key "web.timeout" "300 s"
 }
 
 function s3_setup_with_provider {

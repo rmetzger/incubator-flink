@@ -81,9 +81,9 @@ function start_tmate() {
     tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
 }
 
-start_tmate
-echo "Sleeping a bit"
-sleep 10000000
+#start_tmate
+#echo "Sleeping a bit"
+#sleep 10000000
 
 "$FLINK_DIR"/bin/flink run -e kubernetes-session \
     -Dkubernetes.cluster-id=${CLUSTER_ID} \
