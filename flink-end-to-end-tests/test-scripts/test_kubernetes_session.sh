@@ -62,17 +62,10 @@ sleep 30
 docker ps
 kubectl get pods --all-namespaces
 
-
-kubectl describe ${CLUSTER_ID}
-free -h
-
-"$FLINK_DIR"/bin/flink run -e kubernetes-session \
-    -Dkubernetes.cluster-id=${CLUSTER_ID} \
-    ${FLINK_DIR}/examples/batch/WordCount.jar ${ARGS}
-
-echo "some debugging after submitting the job"
-docker ps
-kubectl get pods --all-namespaces
+kubectl get pods -o json
+kubectl get events -o json
+kubectl get deployments -o json
+kubectl describe pods
 
 #
 # This script will install tmate and launch a remotely accessible SSH session on a machine
@@ -88,12 +81,24 @@ function start_tmate() {
     tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
 }
 
-
-kubectl cp `kubectl get pods | awk '/taskmanager/ {print $1}'`:${OUTPUT_PATH} ${LOCAL_OUTPUT_PATH}
-
 start_tmate
 echo "Sleeping a bit"
 sleep 10000000
+
+"$FLINK_DIR"/bin/flink run -e kubernetes-session \
+    -Dkubernetes.cluster-id=${CLUSTER_ID} \
+    ${FLINK_DIR}/examples/batch/WordCount.jar ${ARGS}
+
+echo "some debugging after submitting the job"
+docker ps
+kubectl get pods --all-namespaces
+
+
+
+
+kubectl cp `kubectl get pods | awk '/taskmanager/ {print $1}'`:${OUTPUT_PATH} ${LOCAL_OUTPUT_PATH}
+
+
 
 check_result_hash "WordCount" "${LOCAL_OUTPUT_PATH}" "${RESULT_HASH}"
 
