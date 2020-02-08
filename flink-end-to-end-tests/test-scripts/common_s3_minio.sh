@@ -70,9 +70,17 @@ function s3_start {
   while [[ "$(docker inspect -f {{.State.Running}} "$MINIO_CONTAINER_ID")" -ne "true" ]]; do
     sleep 0.1
   done
+  docker inspect $MINIO_CONTAINER_ID
+
   _MINIO_HOST=`docker inspect $MINIO_CONTAINER_ID | jq -r ".[].NetworkSettings.Networks.$DOCKER_TEST_NETWORK.IPAddress"`
   #export S3_ENDPOINT="http://$(docker port "$MINIO_CONTAINER_ID" 9000 | sed s'/0\.0\.0\.0/minio/')"
   export S3_ENDPOINT="http://${_MINIO_HOST}:9000"
+  wget $S3_ENDPOINT
+  sleep 5
+  wget $S3_ENDPOINT
+  sleep 5
+  wget $S3_ENDPOINT
+
   echo "Started minio @ $S3_ENDPOINT"
   on_exit s3_stop
 }
