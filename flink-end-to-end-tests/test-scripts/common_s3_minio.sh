@@ -80,6 +80,9 @@ function s3_start {
   wget $S3_ENDPOINT
   sleep 5
   wget $S3_ENDPOINT
+  sleep 30 
+  docker inspect $MINIO_CONTAINER_ID
+
 
   echo "Started minio @ $S3_ENDPOINT"
   on_exit s3_stop
