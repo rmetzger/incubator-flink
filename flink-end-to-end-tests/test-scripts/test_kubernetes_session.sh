@@ -35,10 +35,6 @@ function cleanup {
 start_kubernetes
 
 
-echo "some debugging before starting the session"
-docker ps
-kubectl get pods --all-namespaces
-
 cd "$DOCKER_MODULE_DIR"
 # Build a Flink image without any user jars
 ./build.sh --from-local-dist --job-artifacts ${TEST_INFRA_DIR}/test-data/words --image-name ${FLINK_IMAGE_NAME}
@@ -55,45 +51,10 @@ mkdir -p "$(dirname $LOCAL_OUTPUT_PATH)"
     -Dkubernetes.jobmanager.cpu=0.5 \
     -Dkubernetes.taskmanager.cpu=0.5
 
-echo "some debugging after starting the session"
-docker ps
-kubectl get pods --all-namespaces
-sleep 30
-docker ps
-kubectl get pods --all-namespaces
-
-kubectl get pods -o json
-kubectl get events -o json
-kubectl get deployments -o json
-kubectl describe pods
-
-#
-# This script will install tmate and launch a remotely accessible SSH session on a machine
-# THIS IS DANGEROUS ON A PUBLIC MACHINE.
-#
-function start_tmate() {
-    sudo apt-get update
-    sudo apt-get install -y tmate openssh-client
-    echo -e 'y\n'|ssh-keygen -q -t rsa -N "" -f ~/.ssh/id_rsa
-    tmate -S /tmp/tmate.sock new-session -d
-    tmate -S /tmp/tmate.sock wait tmate-ready
-    tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
-    tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
-}
-
-#start_tmate
-#echo "Sleeping a bit"
-#sleep 10000000
 
 "$FLINK_DIR"/bin/flink run -e kubernetes-session \
     -Dkubernetes.cluster-id=${CLUSTER_ID} \
     ${FLINK_DIR}/examples/batch/WordCount.jar ${ARGS}
-
-echo "some debugging after submitting the job"
-docker ps
-kubectl get pods --all-namespaces
-
-
 
 
 kubectl cp `kubectl get pods | awk '/taskmanager/ {print $1}'`:${OUTPUT_PATH} ${LOCAL_OUTPUT_PATH}

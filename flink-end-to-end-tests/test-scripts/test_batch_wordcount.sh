@@ -19,8 +19,6 @@
 
 source "$(dirname "$0")"/common.sh
 
-set -x
-
 INPUT_TYPE=${1:-file}
 RESULT_HASH="72a690412be8928ba239c2da967328a5"
 S3_PREFIX=temp/test_batch_wordcount-$(uuidgen)
