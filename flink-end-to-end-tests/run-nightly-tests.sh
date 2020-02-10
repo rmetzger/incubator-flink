@@ -94,9 +94,9 @@ if [ -z "$TF_BUILD" ] ; then
 	run_test "Running Kerberized YARN on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh dummy-fs"
 fi
 
-# ################################################################################
-# # High Availability
-# ################################################################################
+################################################################################
+# High Availability
+################################################################################
 
 run_test "Running HA dataset end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_dataset.sh" "skip_check_exceptions"
 
@@ -110,9 +110,9 @@ run_test "Running HA per-job cluster (file, sync) end-to-end test" "$END_TO_END_
 run_test "Running HA per-job cluster (rocks, non-incremental) end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_per_job_cluster_datastream.sh rocks true false" "skip_check_exceptions"
 run_test "Running HA per-job cluster (rocks, incremental) end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_per_job_cluster_datastream.sh rocks true true" "skip_check_exceptions"
 
-# ################################################################################
-# # Kubernetes
-# ################################################################################
+################################################################################
+# Kubernetes
+################################################################################
 
 run_test "Run Kubernetes test" "$END_TO_END_DIR/test-scripts/test_kubernetes_embedded_job.sh"
 run_test "Run kubernetes session test" "$END_TO_END_DIR/test-scripts/test_kubernetes_session.sh"

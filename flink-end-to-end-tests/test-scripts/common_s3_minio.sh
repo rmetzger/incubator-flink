@@ -55,9 +55,6 @@ fi
 #   MINIO_CONTAINER_ID
 #   S3_ENDPOINT
 ###################################
-
-env
-
 function s3_start {
   echo "Spawning minio for s3 tests with DATA_DIR=$DATA_DIR"
   export MINIO_CONTAINER_ID=$(docker run -d \
@@ -70,19 +67,10 @@ function s3_start {
   while [[ "$(docker inspect -f {{.State.Running}} "$MINIO_CONTAINER_ID")" -ne "true" ]]; do
     sleep 0.1
   done
-  docker inspect $MINIO_CONTAINER_ID
 
   #_MINIO_HOST=`docker inspect $MINIO_CONTAINER_ID | jq -r ".[].NetworkSettings.Networks.$DOCKER_TEST_NETWORK.IPAddress"`
   #export S3_ENDPOINT="http://$(docker port "$MINIO_CONTAINER_ID" 9000 | sed s'/0\.0\.0\.0/minio/')"
   export S3_ENDPOINT="http://${_MINIO_HOST}:9000"
-  wget $S3_ENDPOINT
-  sleep 5
-  wget $S3_ENDPOINT
-  sleep 5
-  wget $S3_ENDPOINT
-  sleep 30 
-  docker inspect $MINIO_CONTAINER_ID
-
 
   echo "Started minio @ $S3_ENDPOINT"
   on_exit s3_stop
@@ -133,9 +121,6 @@ function s3_setup {
   # which docker does not properly forward.
   set_config_key "s3.path.style.access" "true"
   set_config_key "s3.path-style-access" "true"
-  set_config_key "s3.connection.timeout" "5000"
-  set_config_key "akka.ask.timeout" "300 s"
-  set_config_key "web.timeout" "300000"
 }
 
 function s3_setup_with_provider {
