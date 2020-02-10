@@ -30,9 +30,6 @@ wait_elasticsearch_working
 
 start_cluster
 
-echo "maven version"
-mvn -version
-
 function test_cleanup {
   shutdown_elasticsearch_cluster index
 }
@@ -47,10 +44,6 @@ JOB_ID=$($FLINK_DIR/bin/flink run -d -p 1 $TEST_ES_JAR \
   --index index \
   --type type | awk '{print $NF}' | tail -n 1)
 
-set -x
-
-echo "Jar tf:"
-jar tf $TEST_ES_JAR
 
 # wait for 10 seconds
 wait_job_submitted ${JOB_ID}
