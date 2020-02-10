@@ -26,21 +26,6 @@ export AWS_CBOR_DISABLE=1
 export AWS_ACCESS_KEY_ID=flinkKinesisTestFakeAccessKeyId
 export AWS_SECRET_KEY=flinkKinesisTestFakeAccessKey
 
-
-
-
-
-
-
-set -x
-
-
-
-
-
-
-
-
 KINESALITE_PORT=4567
 KINESALITE_HOST=localhost
 _DOCKER_NETWORK=
