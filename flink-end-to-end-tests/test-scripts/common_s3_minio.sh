@@ -39,8 +39,8 @@ fi
 
 _DOCKER_NETWORK=""
 _MINIO_HOST="localhost"
-if [ ! -z "$DOCKER_TEST_NETWORK" ] ; then
-  _DOCKER_NETWORK="--network $DOCKER_TEST_NETWORK"
+if [ ! -z "$AGENT_CONTAINERNETWORK" ] ; then
+  _DOCKER_NETWORK="--network $AGENT_CONTAINERNETWORK"
   _MINIO_HOST="minio"
 fi
 
@@ -72,7 +72,7 @@ function s3_start {
   done
   docker inspect $MINIO_CONTAINER_ID
 
-  _MINIO_HOST=`docker inspect $MINIO_CONTAINER_ID | jq -r ".[].NetworkSettings.Networks.$DOCKER_TEST_NETWORK.IPAddress"`
+  #_MINIO_HOST=`docker inspect $MINIO_CONTAINER_ID | jq -r ".[].NetworkSettings.Networks.$DOCKER_TEST_NETWORK.IPAddress"`
   #export S3_ENDPOINT="http://$(docker port "$MINIO_CONTAINER_ID" 9000 | sed s'/0\.0\.0\.0/minio/')"
   export S3_ENDPOINT="http://${_MINIO_HOST}:9000"
   wget $S3_ENDPOINT

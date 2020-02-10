@@ -45,8 +45,8 @@ KINESALITE_PORT=4567
 KINESALITE_HOST=localhost
 _DOCKER_NETWORK=
 # Allow passing a custom network for docker-in-docker scenarios
-if [ ! -z "$DOCKER_TEST_NETWORK" ] ; then
-  _DOCKER_NETWORK="--network $DOCKER_TEST_NETWORK"
+if [ ! -z "$AGENT_CONTAINERNETWORK" ] ; then
+  _DOCKER_NETWORK="--network $AGENT_CONTAINERNETWORK"
   KINESALITE_HOST="flink-test-kinesis"
 fi
 

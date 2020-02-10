@@ -36,8 +36,8 @@ function aws_cli_start() {
   fi
   # allow injecting a custom network
   _DOCKER_NETWORK="host"
-  if [ ! -z "$DOCKER_NETWORK" ] ; then
-    _DOCKER_NETWORK="$DOCKER_NETWORK"
+  if [ ! -z "$AGENT_CONTAINERNETWORK" ] ; then
+    _DOCKER_NETWORK="$AGENT_CONTAINERNETWORK"
   fi
   export AWSCLI_CONTAINER_ID=$(docker run -d \
     --network ${_DOCKER_NETWORK} \
