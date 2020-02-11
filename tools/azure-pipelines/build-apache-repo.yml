@@ -42,8 +42,8 @@ resources:
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-  CACHE_KEY: maven | $(Agent.OS) | **/pom.xml, !**/target/**
-  CACHE_FALLBACK_KEY: maven | $(Agent.OS)
+  CACHE_KEY: AAmaven | $(Agent.OS) | **/pom.xml, !**/target/**
+  CACHE_FALLBACK_KEY: AAmaven | $(Agent.OS)
   CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
 
 stages:
