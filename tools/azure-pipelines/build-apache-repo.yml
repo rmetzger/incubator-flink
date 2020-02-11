@@ -23,26 +23,27 @@
 
 
 
-schedules:
-- cron: "0 0 * * *"
-  displayName: Daily midnight build
-  branches:
-    include:
-    - master
-  always: true # run even if there were no changes to the mentioned branches
+# to be enabled with FLINK-15834
+#schedules:
+#- cron: "0 0 * * *"
+#  displayName: Daily midnight build
+#  branches:
+#    include:
+#    - master
+#  always: true # run even if there were no changes to the mentioned branches
 
 resources:
   containers:
   # Container with Maven 3.2.5, SSL to have the same environment everywhere.
   - container: flink-build-container
-    image: rmetzger/flink-ci:ubuntu-jdk8-amd64-e005e00
+    image: rmetzger/flink-ci:ubuntu-jdk8-amd64-2a765ab
 
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-  CACHE_KEY: maven | $(Agent.OS) | **/pom.xml, !**/target/**
-  CACHE_FALLBACK_KEY: maven | $(Agent.OS)
+  CACHE_KEY: AAmaven | $(Agent.OS) | **/pom.xml, !**/target/**
+  CACHE_FALLBACK_KEY: AAmaven | $(Agent.OS)
   CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
 
 stages:
@@ -57,38 +58,38 @@ stages:
           test_pool_definition:
             name: Default
           e2e_pool_definition:
-            vmImage: 'ubuntu-latest'
+            vmImage: 'ubuntu-16.04'
           environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-
+  # to be enabled with FLINK-15834
   # Special stage for midnight builds:
-  - stage: cron_build_on_azure_os_free_pool
-    displayName: "Cron build on free Azure Resource Pool"
-    dependsOn: [] # depending on an empty array makes the stages run in parallel
-    condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
-    jobs:
-      - template: jobs-template.yml
-        parameters:
-          stage_name: cron_build_default
-          test_pool_definition:
-            vmImage: 'ubuntu-latest'
-          e2e_pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
-      - template: jobs-template.yml
-        parameters:
-          stage_name: cron_build_scala2_12
-          test_pool_definition:
-            vmImage: 'ubuntu-latest'
-          e2e_pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
-      - template: jobs-template.yml
-        parameters:
-          stage_name: cron_build_jdk11
-          test_pool_definition:
-            vmImage: 'ubuntu-latest'
-          e2e_pool_definition:
-            vmImage: 'ubuntu-latest'
-          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
+  # - stage: cron_build_on_azure_os_free_pool
+  #   displayName: "Cron build on free Azure Resource Pool"
+  #   dependsOn: [] # depending on an empty array makes the stages run in parallel
+  #   condition: or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['MODE'], 'nightly'))
+  #   jobs:
+  #     - template: jobs-template.yml
+  #       parameters:
+  #         stage_name: cron_build_default
+  #         test_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         e2e_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+  #     - template: jobs-template.yml
+  #       parameters:
+  #         stage_name: cron_build_scala2_12
+  #         test_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         e2e_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.12 -Phive-1.2.1"
+  #     - template: jobs-template.yml
+  #       parameters:
+  #         stage_name: cron_build_jdk11
+  #         test_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         e2e_pool_definition:
+  #           vmImage: 'ubuntu-latest'
+  #         environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11 -Djdk11"
 
 

@@ -72,10 +72,13 @@ echo "Current stage: \"$STAGE\""
 
 EXIT_CODE=0
 
+#adding -Dmaven.wagon.http.pool=false (see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html)
+# --settings /tmp/az_settings.xml 
+MVN="mvn clean install $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.wagon.http.pool=false -Dmaven.javadoc.skip=true -B -U -DskipTests $PROFILE"
+
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
-    #adding -Dmaven.wagon.http.pool=false (see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html)
-    MVN="mvn clean install --settings /tmp/az_settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.wagon.http.pool=false -Dmaven.javadoc.skip=true -B -DskipTests $PROFILE"
+    # run mvn clean install:
     $MVN
     EXIT_CODE=$?
 
@@ -175,10 +178,33 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
         echo "=============================================================================="
         echo "Python stage found. Re-compiling (this is required on Azure for the python tests to pass)"
         echo "=============================================================================="
-        mvn install -DskipTests -Drat.skip
+        # run mvn install (w/o "clean"):
+        PY_MVN="${MVN// clean/}"
+        PY_MVN="$PY_MVN -Drat.skip=true"
+        ${PY_MVN}
         echo "Done compiling ... "
     fi
+
+    echo "===== Set DOCKER_TEST_INFRA_DIR ===== "
+    #
+    # Some tests in the "run-pre-commit-tests.sh" collection launch Docker containers.
+    # Since the regular build is executed in Docker (on Azure), we'll be launching those 
+    # containers outside of the current container (on the host, alongside the build&test container).
+    # Some of these containers mount a path. Currently, these scripts mount relative to the build container,
+    # thus this path is not available on the host (where the test container is launched).
+    # 
+    # Here, we figure out the path on the host machine, and set it.
+    #
     
+    DOCKER_THIS_ID=$AGENT_CONTAINERID
+
+    # get volume mount source
+    DOCKER_VOLUME_MOUNT_SOURCE=`docker inspect  -f '{{json .Mounts }}' $DOCKER_THIS_ID | jq -r '.[] | .Source | match("(.*_work/[0-9]+)") | .string'`
+    export DOCKER_TEST_INFRA_DIR=${DOCKER_VOLUME_MOUNT_SOURCE}/s/flink-end-to-end-tests/test-scripts/
+
+    echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
+
+
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
 elif [ $STAGE == "$STAGE_CLEANUP" ]; then
