@@ -261,8 +261,6 @@ function wait_dispatcher_running {
 }
 
 function start_cluster {
-  echo "# Configuration appended by common.sh script for e2e tests" >> ${FLINK_DIR}/conf/flink-conf.yaml
-  echo "rest.port: 8081" >> ${FLINK_DIR}/conf/flink-conf.yaml
   "$FLINK_DIR"/bin/start-cluster.sh
   wait_dispatcher_running
 }
