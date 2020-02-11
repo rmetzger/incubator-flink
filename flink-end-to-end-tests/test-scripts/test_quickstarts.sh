@@ -56,6 +56,9 @@ mvn archetype:generate                                   \
     -Dpackage=org.apache.flink.quickstart                \
     -DinteractiveMode=false
 
+echo "what is here"
+find ../
+
 cd "${ARTIFACT_ID}"
 
 # use the Flink Elasticsearch sink example job code in flink-quickstart-test to simulate modifications to contained job
@@ -69,6 +72,10 @@ sed -i -e ''$(($position + 1))'i\
 '${ES_DEPENDENCY}'' pom.xml
 
 sed -i -e "s/org.apache.flink.quickstart.StreamingJob/org.apache.flink.quickstart.$TEST_CLASS_NAME/" pom.xml
+
+echo "what's here"
+find .
+cat pom.xml
 
 mvn clean package -nsu
 
