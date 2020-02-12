@@ -22,6 +22,7 @@
 # FLINK_DIR=<flink dir> flink-end-to-end-tests/test-scripts/test_quickstarts.sh <Type (java or scala)>
 
 set -x
+env
 
 source "$(dirname "$0")"/common.sh
 source "$(dirname "$0")"/elasticsearch-common.sh
