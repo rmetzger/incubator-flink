@@ -24,7 +24,8 @@ echo $MAVEN_OPTS
 mvn -version
 echo "Commit: $(git rev-parse HEAD)"
 
-
+# Set up a custom Maven settings file, configuring an Google-hosted maven central
+# mirror.
 cat << EOF > /tmp/az_settings.xml
 <settings>
   <mirrors>

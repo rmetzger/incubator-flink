@@ -14,10 +14,10 @@
 # limitations under the License.
 
 parameters:
-  test_pool_definition: # where is compiliation and unit test execution happening?
-  e2e_pool_definion: # where is e2e test execution happening?
-  stage_name: # needed to make job names unique if they are included multiple times
-  environment: # used to pass environment variables into the downstream scripts
+  test_pool_definition: # defines the hardware pool for compilation and unit test execution.
+  e2e_pool_definion: # defines the hardware pool for end-to-end test execution
+  stage_name: # defines a unique identifier for all jobs in a stage (in case the jobs are added multiple times to a stage)
+  environment: # defines environment variables for downstream scripts
 
 jobs:
 - job: compile_${{parameters.stage_name}}
@@ -27,16 +27,25 @@ jobs:
   timeoutInMinutes: 240
   cancelTimeoutInMinutes: 1
   workspace:
-    clean: all
-  steps:
+    clean: all # this cleans the entire workspace directory before running a new job
+    # It is necessary because the custom build machines are reused for tests.
+    # See also https://docs.microsoft.com/en-us/azure/devops/pipelines/process/phases?view=azure-devops&tabs=yaml#workspace 
 
-  # Preparation
+  steps:
+  # The cache task is persisting the .m2 directory between builds, so that
+  # we do not have to re-download all dependencies from maven central for 
+  # each build. The hope is that downloading the cache is faster than
+  # all dependencies individually.
+  # In this configuration, we a hash over all committed (not generated) .pom files 
+  # as a key for the build cache (CACHE_KEY). If we have a cache miss on the hash
+  # (usually because a pom file has changed), we'll fall back to a key without
+  # the pom files (CACHE_FALLBACK_KEY).
+  # Offical documentation of the Cache task: https://docs.microsoft.com/en-us/azure/devops/pipelines/caching/?view=azure-devops
   - task: Cache@2
     inputs:
       key: $(CACHE_KEY)
       restoreKeys: $(CACHE_FALLBACK_KEY)
       path: $(MAVEN_CACHE_FOLDER)
-      cacheHitVar: CACHE_RESTORED
     continueOnError: true # continue the build even if the cache fails.
     displayName: Cache Maven local repo
 
@@ -105,7 +114,7 @@ jobs:
 
 
 - job: e2e_${{parameters.stage_name}}
-  #STUPID DEBUGGING condition: eq(variables['MODE'], 'e2e')
+  condition: eq(variables['MODE'], 'e2e')
   # We are not running this job on a container, but in a VM.
   pool: ${{parameters.e2e_pool_definition}}
   timeoutInMinutes: 240
@@ -118,7 +127,6 @@ jobs:
         key: $(CACHE_KEY)
         restoreKeys: $(CACHE_FALLBACK_KEY)
         path: $(MAVEN_CACHE_FOLDER)
-        cacheHitVar: CACHE_RESTORED
       displayName: Cache Maven local repo
     - script: ./tools/travis/setup_maven.sh
     - script: ./tools/azure-pipelines/setup_kubernetes.sh
