@@ -36,7 +36,7 @@ jobs:
   # we do not have to re-download all dependencies from maven central for 
   # each build. The hope is that downloading the cache is faster than
   # all dependencies individually.
-  # In this configuration, we a hash over all committed (not generated) .pom files 
+  # In this configuration, we use a hash over all committed (not generated) .pom files 
   # as a key for the build cache (CACHE_KEY). If we have a cache miss on the hash
   # (usually because a pom file has changed), we'll fall back to a key without
   # the pom files (CACHE_FALLBACK_KEY).
