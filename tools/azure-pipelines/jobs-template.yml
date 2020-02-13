@@ -139,8 +139,11 @@ jobs:
         ln -snf $(CACHE_FLINK_DIR)/flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT $(CACHE_FLINK_DIR)/build-target
         ls -lisah .
         pwd 
+        whoami
+        ls -lisah $(CACHE_FLINK_DIR)/flink-end-to-end-tests/test-scripts/
+        echo $(CACHE_FLINK_DIR)
       displayName: Recreate 'build-target' symlink
-    - script: FLINK_DIR=$(CACHE_FLINK_DIR)/build-target flink-end-to-end-tests/run-pre-commit-tests.sh
+    - script: FLINK_DIR=$(CACHE_FLINK_DIR)/build-target $(CACHE_FLINK_DIR)/flink-end-to-end-tests/run-pre-commit-tests.sh
       displayName: Test - precommit 
 
 - job: e2e_${{parameters.stage_name}}
