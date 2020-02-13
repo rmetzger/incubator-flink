@@ -121,12 +121,13 @@ jobs:
   workspace:
     clean: all
   steps:
-    - task: Cache@2
-      inputs:
-        key: $(CACHE_KEY)
-        restoreKeys: $(CACHE_FALLBACK_KEY)
-        path: $(MAVEN_CACHE_FOLDER)
-      displayName: Cache Maven local repo
+    #- task: Cache@2
+    #  inputs:
+    #    key: $(CACHE_KEY)
+    #    restoreKeys: $(CACHE_FALLBACK_KEY)
+    #    path: $(MAVEN_CACHE_FOLDER)
+    #  displayName: Cache Maven local repo
+    
     # download artifacts
     - task: DownloadPipelineArtifact@2
       inputs:
@@ -136,8 +137,10 @@ jobs:
         ls -lisah $(CACHE_FLINK_DIR)
         ls -lisah .
         ln -snf $(CACHE_FLINK_DIR)/flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT $(CACHE_FLINK_DIR)/build-target
+        ls -lisah .
+        pwd 
       displayName: Recreate 'build-target' symlink
-    - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-pre-commit-tests.sh
+    - script: FLINK_DIR=$(CACHE_FLINK_DIR)/build-target flink-end-to-end-tests/run-pre-commit-tests.sh
       displayName: Test - precommit 
 
 - job: e2e_${{parameters.stage_name}}
