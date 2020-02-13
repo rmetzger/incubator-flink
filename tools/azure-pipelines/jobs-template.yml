@@ -133,9 +133,9 @@ jobs:
         path: $(CACHE_FLINK_DIR)
         artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
     - script: |
-      ls -lisah $(CACHE_FLINK_DIR)
-      ls -lisah .
-      ln -snf $(CACHE_FLINK_DIR)/flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT $(CACHE_FLINK_DIR)/build-target
+        ls -lisah $(CACHE_FLINK_DIR)
+        ls -lisah .
+        ln -snf $(CACHE_FLINK_DIR)/flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT $(CACHE_FLINK_DIR)/build-target
     displayName: Recreate 'build-target' symlink
     - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-pre-commit-tests.sh
       displayName: Test - precommit 
