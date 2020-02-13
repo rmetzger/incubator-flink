@@ -140,6 +140,7 @@ jobs:
         ls -lisah .
         pwd 
         whoami
+        chown -R `whoami` $(CACHE_FLINK_DIR)/flink-end-to-end-tests
         ls -lisah $(CACHE_FLINK_DIR)/flink-end-to-end-tests/test-scripts/
         echo $(CACHE_FLINK_DIR)
       displayName: Recreate 'build-target' symlink
