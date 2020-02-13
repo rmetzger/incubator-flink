@@ -275,22 +275,27 @@ upload_artifacts_s3
 # we are going back to
 cd ../../
 
+
 # only run end-to-end tests in misc because we only have flink-dist here
 case $TEST in
     (misc)
-        if [ $EXIT_CODE == 0 ]; then
-            echo "\n\n==============================================================================\n"
-            echo "Running bash end-to-end tests\n"
-            echo "==============================================================================\n"
+    	# If we are not on Azure (we are on Travis) run precommit tests in misc stage.
+		# On Azure, we run them in a separate job
+		if [ -z "$TF_BUILD" ] ; then
+	        if [ $EXIT_CODE == 0 ]; then
+	            echo "\n\n==============================================================================\n"
+	            echo "Running bash end-to-end tests\n"
+	            echo "==============================================================================\n"
 
-            FLINK_DIR=build-target flink-end-to-end-tests/run-pre-commit-tests.sh
+	            FLINK_DIR=build-target flink-end-to-end-tests/run-pre-commit-tests.sh
 
-            EXIT_CODE=$?
-        else
-            echo "\n==============================================================================\n"
-            echo "Previous build failure detected, skipping bash end-to-end tests.\n"
-            echo "==============================================================================\n"
-        fi
+	            EXIT_CODE=$?
+	        else
+	            echo "\n==============================================================================\n"
+	            echo "Previous build failure detected, skipping bash end-to-end tests.\n"
+	            echo "==============================================================================\n"
+	        fi
+	    fi
         if [ $EXIT_CODE == 0 ]; then
             echo "\n\n==============================================================================\n"
             echo "Running java end-to-end tests\n"
@@ -303,6 +308,7 @@ case $TEST in
         fi
     ;;
 esac
+
 
 # Exit code for Travis build success/failure
 exit $EXIT_CODE

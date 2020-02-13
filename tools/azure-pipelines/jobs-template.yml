@@ -112,6 +112,33 @@ jobs:
     inputs:
       testResultsFormat: 'JUnit'
 
+- job: precommit_${{parameters.stage_name}}
+  dependsOn: compile_${{parameters.stage_name}}
+  # We are not running this job on a container, but in a VM.
+  pool: ${{parameters.e2e_pool_definition}}
+  timeoutInMinutes: 240
+  cancelTimeoutInMinutes: 1
+  workspace:
+    clean: all
+  steps:
+    - task: Cache@2
+      inputs:
+        key: $(CACHE_KEY)
+        restoreKeys: $(CACHE_FALLBACK_KEY)
+        path: $(MAVEN_CACHE_FOLDER)
+      displayName: Cache Maven local repo
+    # download artifacts
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        path: $(CACHE_FLINK_DIR)
+        artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+    - script: |
+      ls -lisah $(CACHE_FLINK_DIR)
+      ls -lisah .
+      ln -snf $(CACHE_FLINK_DIR)/flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT $(CACHE_FLINK_DIR)/build-target
+    displayName: Recreate 'build-target' symlink
+    - script: FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-pre-commit-tests.sh
+      displayName: Test - precommit 
 
 - job: e2e_${{parameters.stage_name}}
   condition: eq(variables['MODE'], 'e2e')
