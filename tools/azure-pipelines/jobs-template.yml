@@ -140,7 +140,9 @@ jobs:
         ls -lisah .
         pwd 
         whoami
-        chmod -R +x $(CACHE_FLINK_DIR)/flink-end-to-end-tests
+        chmod -R 777 $(CACHE_FLINK_DIR)/flink-end-to-end-tests
+        chown -R `whoami` $(CACHE_FLINK_DIR)/flink-end-to-end-tests
+        chmod -R +x $(CACHE_FLINK_DIR)/build-target
         ls -lisah $(CACHE_FLINK_DIR)/flink-end-to-end-tests/test-scripts/
         echo $(CACHE_FLINK_DIR)
       displayName: Recreate 'build-target' symlink
