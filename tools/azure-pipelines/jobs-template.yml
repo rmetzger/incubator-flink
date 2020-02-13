@@ -152,10 +152,10 @@ jobs:
 
         pwd 
         whoami
-        #chmod -R 777 $(CACHE_FLINK_DIR)/flink-end-to-end-tests
-        #chown -R `whoami` $(CACHE_FLINK_DIR)/flink-end-to-end-tests
-        chmod -R +x build-target
-        chmod -R +x flink-end-to-end-tests
+        chmod -R 777 .
+        chown -R `whoami` .
+        #chmod -R +x build-target
+        #chmod -R +x flink-end-to-end-tests
         #ls -lisah $(CACHE_FLINK_DIR)/flink-end-to-end-tests/test-scripts/
         #echo $(CACHE_FLINK_DIR)
       displayName: Recreate 'build-target' symlink
