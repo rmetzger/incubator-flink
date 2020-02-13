@@ -134,19 +134,31 @@ jobs:
         path: $(CACHE_FLINK_DIR)
         artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
     - script: |
+        echo "Merging cache"
+        cp -RT "$CACHE_FLINK_DIR" "."
+            echo "Adjusting timestamps"
+        # adjust timestamps to prevent recompilation
+        find . -type f -name '*.java' | xargs touch
+        find . -type f -name '*.scala' | xargs touch
+        # wait a bit for better odds of different timestamps
+        sleep 5
+        find . -type f -name '*.class' | xargs touch
+        find . -type f -name '*.timestamp' | xargs touch
+        
         ls -lisah $(CACHE_FLINK_DIR)
         ls -lisah .
-        ln -snf $(CACHE_FLINK_DIR)/flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT $(CACHE_FLINK_DIR)/build-target
+        ln -snf flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT build-target
         ls -lisah .
+
         pwd 
         whoami
-        chmod -R 777 $(CACHE_FLINK_DIR)/flink-end-to-end-tests
-        chown -R `whoami` $(CACHE_FLINK_DIR)/flink-end-to-end-tests
-        chmod -R +x $(CACHE_FLINK_DIR)/build-target
-        ls -lisah $(CACHE_FLINK_DIR)/flink-end-to-end-tests/test-scripts/
-        echo $(CACHE_FLINK_DIR)
+        #chmod -R 777 $(CACHE_FLINK_DIR)/flink-end-to-end-tests
+        #chown -R `whoami` $(CACHE_FLINK_DIR)/flink-end-to-end-tests
+        #chmod -R +x $(CACHE_FLINK_DIR)/build-target
+        #ls -lisah $(CACHE_FLINK_DIR)/flink-end-to-end-tests/test-scripts/
+        #echo $(CACHE_FLINK_DIR)
       displayName: Recreate 'build-target' symlink
-    - script: FLINK_DIR=$(CACHE_FLINK_DIR)/build-target $(CACHE_FLINK_DIR)/flink-end-to-end-tests/run-pre-commit-tests.sh
+    - script: FLINK_DIR=build-target ./flink-end-to-end-tests/run-pre-commit-tests.sh
       displayName: Test - precommit 
 
 - job: e2e_${{parameters.stage_name}}
