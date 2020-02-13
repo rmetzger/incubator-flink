@@ -145,9 +145,10 @@ jobs:
         find . -type f -name '*.class' | xargs touch
         find . -type f -name '*.timestamp' | xargs touch
         
+        mvn install -DskipTests -Drat.skip
         ls -lisah $(CACHE_FLINK_DIR)
         ls -lisah .
-        ln -snf flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT build-target
+        #ln -snf flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT build-target
         ls -lisah .
 
         pwd 
