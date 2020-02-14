@@ -121,12 +121,13 @@ jobs:
   workspace:
     clean: all
   steps:
-    #- task: Cache@2
-    #  inputs:
-    #    key: $(CACHE_KEY)
-    #    restoreKeys: $(CACHE_FALLBACK_KEY)
-    #    path: $(MAVEN_CACHE_FOLDER)
-    #  displayName: Cache Maven local repo
+    - script: ./tools/travis/setup_maven.sh
+    - task: Cache@2
+      inputs:
+        key: $(CACHE_KEY)
+        restoreKeys: $(CACHE_FALLBACK_KEY)
+        path: $(MAVEN_CACHE_FOLDER)
+      displayName: Cache Maven local repo
     
     # download artifacts
     - task: DownloadPipelineArtifact@2
