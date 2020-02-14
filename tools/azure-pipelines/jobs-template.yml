@@ -121,7 +121,6 @@ jobs:
   workspace:
     clean: all
   steps:
-    - script: ./tools/travis/setup_maven.sh
     - task: Cache@2
       inputs:
         key: $(CACHE_KEY)
@@ -134,6 +133,7 @@ jobs:
       inputs:
         path: $(CACHE_FLINK_DIR)
         artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+    - script: ./tools/travis/setup_maven.sh
     - script: |
         echo "Merging cache"
         cp -RT "$CACHE_FLINK_DIR" "."
@@ -145,9 +145,10 @@ jobs:
         sleep 5
         find . -type f -name '*.class' | xargs touch
         find . -type f -name '*.timestamp' | xargs touch
-        
-        mvn -version
         env
+        export M2_HOME=/home/vsts/maven_cache/apache-maven-3.2.5/ 
+        export PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH
+        mvn -version
         ls -lisah $(MAVEN_CACHE_FOLDER)
         mvn install -DskipTests -Drat.skip
         ls -lisah $(CACHE_FLINK_DIR)

@@ -36,4 +36,6 @@ if [ -d "${HOME}/.m2/repository/" ]; then
   find ${HOME}/.m2/repository/ -name "*.jar" -exec sh -c 'if ! zip -T {} >/dev/null ; then echo "deleting invalid file: {}"; rm -f {} ; fi' \;
 fi
 
+echo "PATH = $PATH"
+env
 echo "Installed Maven ${MAVEN_VERSION} to ${M2_HOME}"
