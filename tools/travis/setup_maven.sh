@@ -38,4 +38,16 @@ fi
 
 echo "PATH = $PATH"
 env
+cat << EOF > /tmp/az_settings.xml
+<settings>
+  <mirrors>
+    <mirror>
+      <id>google-maven-central</id>
+      <name>GCS Maven Central mirror</name>
+      <url>https://maven-central-eu.storage-download.googleapis.com/maven2/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
 echo "Installed Maven ${MAVEN_VERSION} to ${M2_HOME}"

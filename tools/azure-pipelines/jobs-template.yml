@@ -150,7 +150,7 @@ jobs:
         export PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH
         mvn -version
         ls -lisah $(MAVEN_CACHE_FOLDER)
-        mvn install -DskipTests -Drat.skip
+        mvn install --settings /tmp/az_settings.xml -DskipTests -Drat.skip
         ls -lisah $(CACHE_FLINK_DIR)
         ls -lisah .
         #ln -snf flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT build-target
