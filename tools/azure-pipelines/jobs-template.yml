@@ -116,7 +116,7 @@ jobs:
   dependsOn: compile_${{parameters.stage_name}}
   condition: not(eq(variables['MODE'], 'e2e'))
   pool: ${{parameters.e2e_pool_definition}}
-  container: flink-build-container
+  #container: flink-build-container
   timeoutInMinutes: 240
   cancelTimeoutInMinutes: 1
   workspace:
