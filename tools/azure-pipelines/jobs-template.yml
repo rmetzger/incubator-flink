@@ -88,8 +88,8 @@ jobs:
         module: legacy_scheduler_core
       legacy_scheduler_tests:
         module: legacy_scheduler_tests
-      misc:
-        module: misc
+      #misc:
+      #  module: misc
   steps:
 
   # download artifacts
@@ -112,56 +112,29 @@ jobs:
     inputs:
       testResultsFormat: 'JUnit'
 
-- job: precommit_${{parameters.stage_name}}
+- job: misc_${{parameters.stage_name}}
   dependsOn: compile_${{parameters.stage_name}}
-  # We are not running this job on a container, but in a VM.
+  condition: not(eq(variables['MODE'], 'e2e'))
   pool: ${{parameters.e2e_pool_definition}}
+  container: flink-build-container
   timeoutInMinutes: 240
   cancelTimeoutInMinutes: 1
   workspace:
     clean: all
   steps:
-    #- task: Cache@2
-    #  inputs:
-    #    key: $(CACHE_KEY)
-    #    restoreKeys: $(CACHE_FALLBACK_KEY)
-    #    path: $(MAVEN_CACHE_FOLDER)
-    #  displayName: Cache Maven local repo
-    
-    # download artifacts
-    - task: DownloadPipelineArtifact@2
-      inputs:
-        path: $(CACHE_FLINK_DIR)
-        artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
-    - script: |
-        echo "Merging cache"
-        cp -RT "$CACHE_FLINK_DIR" "."
-            echo "Adjusting timestamps"
-        # adjust timestamps to prevent recompilation
-        find . -type f -name '*.java' | xargs touch
-        find . -type f -name '*.scala' | xargs touch
-        # wait a bit for better odds of different timestamps
-        sleep 5
-        find . -type f -name '*.class' | xargs touch
-        find . -type f -name '*.timestamp' | xargs touch
-        
-        mvn install -DskipTests -Drat.skip
-        ls -lisah $(CACHE_FLINK_DIR)
-        ls -lisah .
-        #ln -snf flink-dist/target/flink-*-SNAPSHOT-bin/flink-*-SNAPSHOT build-target
-        ls -lisah .
 
-        pwd 
-        whoami
-        chmod -R 777 .
-        chown -R `whoami` .
-        #chmod -R +x build-target
-        #chmod -R +x flink-end-to-end-tests
-        #ls -lisah $(CACHE_FLINK_DIR)/flink-end-to-end-tests/test-scripts/
-        #echo $(CACHE_FLINK_DIR)
-      displayName: Recreate 'build-target' symlink
-    - script: FLINK_DIR=build-target ./flink-end-to-end-tests/run-pre-commit-tests.sh
-      displayName: Test - precommit 
+  # download artifacts
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      path: $(CACHE_FLINK_DIR)
+      artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+  # Test
+  - script: STAGE=test ${{parameters.environment}} ./tools/azure_controller.sh misc
+    displayName: Test - misc
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
 
 - job: e2e_${{parameters.stage_name}}
   condition: eq(variables['MODE'], 'e2e')
