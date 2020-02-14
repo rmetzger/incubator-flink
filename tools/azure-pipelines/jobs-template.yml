@@ -137,7 +137,7 @@ jobs:
     - script: |
         echo "Merging cache"
         cp -RT "$CACHE_FLINK_DIR" "."
-            echo "Adjusting timestamps"
+        echo "Adjusting timestamps"
         # adjust timestamps to prevent recompilation
         find . -type f -name '*.java' | xargs touch
         find . -type f -name '*.scala' | xargs touch
@@ -146,6 +146,9 @@ jobs:
         find . -type f -name '*.class' | xargs touch
         find . -type f -name '*.timestamp' | xargs touch
         
+        mvn -version
+        env
+        ls -lisah $(MAVEN_CACHE_FOLDER)
         mvn install -DskipTests -Drat.skip
         ls -lisah $(CACHE_FLINK_DIR)
         ls -lisah .
