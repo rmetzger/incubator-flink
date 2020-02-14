@@ -196,14 +196,20 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     # 
     # Here, we figure out the path on the host machine, and set it.
     #
+
+    env
     
-    DOCKER_THIS_ID=$AGENT_CONTAINERID
+    if [[ $AGENT_CONTAINERID != "" ]]; then
+        DOCKER_THIS_ID=$AGENT_CONTAINERID
 
-    # get volume mount source
-    DOCKER_VOLUME_MOUNT_SOURCE=`docker inspect  -f '{{json .Mounts }}' $DOCKER_THIS_ID | jq -r '.[] | .Source | match("(.*_work/[0-9]+)") | .string'`
-    export DOCKER_TEST_INFRA_DIR=${DOCKER_VOLUME_MOUNT_SOURCE}/s/flink-end-to-end-tests/test-scripts/
+        # get volume mount source
+        DOCKER_VOLUME_MOUNT_SOURCE=`docker inspect  -f '{{json .Mounts }}' $DOCKER_THIS_ID | jq -r '.[] | .Source | match("(.*_work/[0-9]+)") | .string'`
+        export DOCKER_TEST_INFRA_DIR=${DOCKER_VOLUME_MOUNT_SOURCE}/s/flink-end-to-end-tests/test-scripts/
 
-    echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
+        echo "DOCKER_TEST_INFRA_DIR determined as '$DOCKER_TEST_INFRA_DIR'"
+    else
+        echo "This build is not running on Docker"
+    fi
 
 
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
