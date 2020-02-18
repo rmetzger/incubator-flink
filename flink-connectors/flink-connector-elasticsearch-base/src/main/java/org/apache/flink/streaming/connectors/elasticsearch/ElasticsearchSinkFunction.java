@@ -23,6 +23,7 @@ import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.functions.RuntimeContext;
 
 import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 
 import java.io.Serializable;
 
@@ -61,12 +62,12 @@ import java.io.Serializable;
 public interface ElasticsearchSinkFunction<T> extends Serializable, Function {
 
 	/**
-	 * Process the incoming element to produce multiple {@link ActionRequest ActionsRequests}.
+	 * Process the incoming element to produce multiple {@link DocWriteRequest DocWriteRequests}.
 	 * The produced requests should be added to the provided {@link RequestIndexer}.
 	 *
 	 * @param element incoming element to process
 	 * @param ctx     runtime context containing information about the sink instance
-	 * @param indexer request indexer that {@code ActionRequest} should be added to
+	 * @param indexer request indexer that {@code DocWriteRequest}s should be added to
 	 */
 	void process(T element, RuntimeContext ctx, RequestIndexer indexer);
 }

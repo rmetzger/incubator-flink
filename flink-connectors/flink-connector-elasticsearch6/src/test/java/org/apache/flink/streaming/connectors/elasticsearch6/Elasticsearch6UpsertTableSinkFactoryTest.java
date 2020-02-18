@@ -30,7 +30,7 @@ import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.graph.StreamGraph;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkBase;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchUpsertTableSinkBase;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchUpsertTableSinkBase.ElasticsearchUpsertSinkFunction;
@@ -121,7 +121,7 @@ public class Elasticsearch6UpsertTableSinkFactoryTest extends ElasticsearchUpser
 			String keyNullLiteral,
 			SerializationSchema<Row> serializationSchema,
 			XContentType contentType,
-			ActionRequestFailureHandler failureHandler,
+			DocWriteRequestFailureHandler failureHandler,
 			Map<SinkOption, String> sinkOptions) {
 		return new Elasticsearch6UpsertTableSink(
 			isAppendOnly,
@@ -155,7 +155,7 @@ public class Elasticsearch6UpsertTableSinkFactoryTest extends ElasticsearchUpser
 				String keyNullLiteral,
 				SerializationSchema<Row> serializationSchema,
 				XContentType contentType,
-				ActionRequestFailureHandler failureHandler,
+				DocWriteRequestFailureHandler failureHandler,
 				Map<SinkOption, String> sinkOptions) {
 
 			super(

@@ -29,6 +29,7 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.util.InstantiationUtil;
 
 import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -158,7 +159,7 @@ public abstract class ElasticsearchSinkBase<T, C extends AutoCloseable> extends 
 	private final ElasticsearchSinkFunction<T> elasticsearchSinkFunction;
 
 	/** User-provided handler for failed {@link ActionRequest ActionRequests}. */
-	private final ActionRequestFailureHandler failureHandler;
+	private final DocWriteRequestFailureHandler failureHandler;
 
 	/** If true, the producer will wait until all outstanding action requests have been sent to Elasticsearch. */
 	private boolean flushOnCheckpoint = true;
@@ -166,7 +167,7 @@ public abstract class ElasticsearchSinkBase<T, C extends AutoCloseable> extends 
 	/** Provided to the user via the {@link ElasticsearchSinkFunction} to add {@link ActionRequest ActionRequests}. */
 	private transient RequestIndexer requestIndexer;
 
-	/** Provided to the {@link ActionRequestFailureHandler} to allow users to re-index failed requests. */
+	/** Provided to the {@link DocWriteRequestFailureHandler} to allow users to re-index failed requests. */
 	private transient BufferingNoOpRequestIndexer failureRequestIndexer;
 
 	// ------------------------------------------------------------------------
@@ -180,7 +181,7 @@ public abstract class ElasticsearchSinkBase<T, C extends AutoCloseable> extends 
 	 * Number of pending action requests not yet acknowledged by Elasticsearch.
 	 * This value is maintained only if {@link ElasticsearchSinkBase#flushOnCheckpoint} is {@code true}.
 	 *
-	 * <p>This is incremented whenever the user adds (or re-adds through the {@link ActionRequestFailureHandler}) requests
+	 * <p>This is incremented whenever the user adds (or re-adds through the {@link DocWriteRequestFailureHandler}) requests
 	 * to the {@link RequestIndexer}. It is decremented for each completed request of a bulk request, in
 	 * {@link BulkProcessor.Listener#afterBulk(long, BulkRequest, BulkResponse)} and
 	 * {@link BulkProcessor.Listener#afterBulk(long, BulkRequest, Throwable)}.
@@ -196,7 +197,7 @@ public abstract class ElasticsearchSinkBase<T, C extends AutoCloseable> extends 
 	/**
 	 * This is set from inside the {@link BulkProcessor.Listener} if a {@link Throwable} was thrown in callbacks and
 	 * the user considered it should fail the sink via the
-	 * {@link ActionRequestFailureHandler#onFailure(ActionRequest, Throwable, int, RequestIndexer)} method.
+	 * {@link DocWriteRequestFailureHandler#onFailure(ActionRequest, Throwable, int, RequestIndexer)} method.
 	 *
 	 * <p>Errors will be checked and rethrown before processing each input element, and when the sink is closed.
 	 */
@@ -206,7 +207,7 @@ public abstract class ElasticsearchSinkBase<T, C extends AutoCloseable> extends 
 		ElasticsearchApiCallBridge<C> callBridge,
 		Map<String, String> userConfig,
 		ElasticsearchSinkFunction<T> elasticsearchSinkFunction,
-		ActionRequestFailureHandler failureHandler) {
+		DocWriteRequestFailureHandler failureHandler) {
 
 		this.callBridge = checkNotNull(callBridge);
 		this.elasticsearchSinkFunction = checkNotNull(elasticsearchSinkFunction);
@@ -431,7 +432,7 @@ public abstract class ElasticsearchSinkBase<T, C extends AutoCloseable> extends 
 			LOG.error("Failed Elasticsearch bulk request: {}", failure.getMessage(), failure);
 
 			try {
-				for (ActionRequest action : request.requests()) {
+				for (DocWriteRequest action : request.requests()) {
 					failureHandler.onFailure(action, failure, -1, failureRequestIndexer);
 				}
 			} catch (Throwable t) {

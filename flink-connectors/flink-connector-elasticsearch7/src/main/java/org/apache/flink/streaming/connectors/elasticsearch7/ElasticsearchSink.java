@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.connectors.elasticsearch7;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkBase;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunction;
 import org.apache.flink.streaming.connectors.elasticsearch.util.NoOpFailureHandler;
@@ -66,7 +66,7 @@ public class ElasticsearchSink<T> extends ElasticsearchSinkBase<T, RestHighLevel
 		Map<String, String> bulkRequestsConfig,
 		List<HttpHost> httpHosts,
 		ElasticsearchSinkFunction<T> elasticsearchSinkFunction,
-		ActionRequestFailureHandler failureHandler,
+		DocWriteRequestFailureHandler failureHandler,
 		RestClientFactory restClientFactory) {
 
 		super(new Elasticsearch7ApiCallBridge(httpHosts, restClientFactory),  bulkRequestsConfig, elasticsearchSinkFunction, failureHandler);
@@ -84,7 +84,7 @@ public class ElasticsearchSink<T> extends ElasticsearchSinkBase<T, RestHighLevel
 		private final ElasticsearchSinkFunction<T> elasticsearchSinkFunction;
 
 		private Map<String, String> bulkRequestsConfig = new HashMap<>();
-		private ActionRequestFailureHandler failureHandler = new NoOpFailureHandler();
+		private DocWriteRequestFailureHandler failureHandler = new NoOpFailureHandler();
 		private RestClientFactory restClientFactory = restClientBuilder -> {};
 
 		/**
@@ -187,7 +187,7 @@ public class ElasticsearchSink<T> extends ElasticsearchSinkBase<T, RestHighLevel
 		 *
 		 * @param failureHandler This is used to handle failed {@link ActionRequest}.
 		 */
-		public void setFailureHandler(ActionRequestFailureHandler failureHandler) {
+		public void setFailureHandler(DocWriteRequestFailureHandler failureHandler) {
 			this.failureHandler = Preconditions.checkNotNull(failureHandler);
 		}
 

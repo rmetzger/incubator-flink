@@ -19,21 +19,21 @@
 package org.apache.flink.streaming.connectors.elasticsearch.util;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
 
-import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 
 /**
- * Ignores all kinds of failures and drops the affected {@link ActionRequest}.
+ * Ignores all kinds of failures and drops the affected {@link DocWriteRequest}.
  */
 @Internal
-public class IgnoringFailureHandler implements ActionRequestFailureHandler {
+public class IgnoringFailureHandler implements DocWriteRequestFailureHandler {
 
 	private static final long serialVersionUID = 1662846593501L;
 
 	@Override
-	public void onFailure(ActionRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) {
+	public void onFailure(DocWriteRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) {
 		// ignore failure
 	}
 }

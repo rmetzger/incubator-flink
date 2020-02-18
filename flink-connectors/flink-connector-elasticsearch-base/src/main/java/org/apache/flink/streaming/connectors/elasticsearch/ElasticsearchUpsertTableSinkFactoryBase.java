@@ -196,7 +196,7 @@ public abstract class ElasticsearchUpsertTableSinkFactoryBase implements StreamT
 		String keyNullLiteral,
 		SerializationSchema<Row> serializationSchema,
 		XContentType contentType,
-		ActionRequestFailureHandler failureHandler,
+		DocWriteRequestFailureHandler failureHandler,
 		Map<SinkOption, String> sinkOptions);
 
 	// --------------------------------------------------------------------------------------------
@@ -247,7 +247,7 @@ public abstract class ElasticsearchUpsertTableSinkFactoryBase implements StreamT
 		return formatFactory.createSerializationSchema(properties);
 	}
 
-	private ActionRequestFailureHandler getFailureHandler(DescriptorProperties descriptorProperties) {
+	private DocWriteRequestFailureHandler getFailureHandler(DescriptorProperties descriptorProperties) {
 		final String failureHandler = descriptorProperties
 			.getOptionalString(CONNECTOR_FAILURE_HANDLER)
 			.orElse(DEFAULT_FAILURE_HANDLER);
@@ -259,8 +259,8 @@ public abstract class ElasticsearchUpsertTableSinkFactoryBase implements StreamT
 			case CONNECTOR_FAILURE_HANDLER_VALUE_RETRY:
 				return new RetryRejectedExecutionFailureHandler();
 			case CONNECTOR_FAILURE_HANDLER_VALUE_CUSTOM:
-				final Class<? extends ActionRequestFailureHandler> clazz = descriptorProperties
-					.getClass(CONNECTOR_FAILURE_HANDLER_CLASS, ActionRequestFailureHandler.class);
+				final Class<? extends DocWriteRequestFailureHandler> clazz = descriptorProperties
+					.getClass(CONNECTOR_FAILURE_HANDLER_CLASS, DocWriteRequestFailureHandler.class);
 				return InstantiationUtil.instantiate(clazz);
 			default:
 				throw new IllegalArgumentException("Unknown failure handler.");

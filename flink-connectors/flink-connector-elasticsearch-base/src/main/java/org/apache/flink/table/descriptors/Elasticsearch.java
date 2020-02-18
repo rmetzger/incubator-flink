@@ -20,7 +20,7 @@ package org.apache.flink.table.descriptors;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.configuration.MemorySize;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchUpsertTableSinkBase.Host;
 import org.apache.flink.util.Preconditions;
 
@@ -167,9 +167,9 @@ public class Elasticsearch extends ConnectorDescriptor {
 	/**
 	 * Configures a failure handling strategy in case a request to Elasticsearch fails.
 	 *
-	 * <p>This strategy allows for custom failure handling using a {@link ActionRequestFailureHandler}.
+	 * <p>This strategy allows for custom failure handling using a {@link DocWriteRequestFailureHandler}.
 	 */
-	public Elasticsearch failureHandlerCustom(Class<? extends ActionRequestFailureHandler> failureHandlerClass) {
+	public Elasticsearch failureHandlerCustom(Class<? extends DocWriteRequestFailureHandler> failureHandlerClass) {
 		internalProperties.putString(CONNECTOR_FAILURE_HANDLER, ElasticsearchValidator.CONNECTOR_FAILURE_HANDLER_VALUE_CUSTOM);
 		internalProperties.putClass(CONNECTOR_FAILURE_HANDLER_CLASS, failureHandlerClass);
 		return this;

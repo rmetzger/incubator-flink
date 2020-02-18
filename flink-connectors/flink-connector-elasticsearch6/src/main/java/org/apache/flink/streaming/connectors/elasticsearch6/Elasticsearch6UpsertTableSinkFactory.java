@@ -20,7 +20,7 @@ package org.apache.flink.streaming.connectors.elasticsearch6;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.serialization.SerializationSchema;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchUpsertTableSinkBase;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchUpsertTableSinkBase.Host;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchUpsertTableSinkBase.SinkOption;
@@ -58,7 +58,7 @@ public class Elasticsearch6UpsertTableSinkFactory extends ElasticsearchUpsertTab
 			String keyNullLiteral,
 			SerializationSchema<Row> serializationSchema,
 			XContentType contentType,
-			ActionRequestFailureHandler failureHandler,
+			DocWriteRequestFailureHandler failureHandler,
 			Map<SinkOption, String> sinkOptions) {
 
 		return new Elasticsearch6UpsertTableSink(

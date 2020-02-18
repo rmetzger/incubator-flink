@@ -23,13 +23,13 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
 import org.apache.flink.streaming.connectors.elasticsearch7.ElasticsearchSink;
 import org.apache.flink.util.Collector;
 
 import org.apache.http.HttpHost;
-import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Requests;
@@ -89,7 +89,7 @@ public class Elasticsearch7SinkExample {
 		env.execute("Elasticsearch 7.x end to end sink test example");
 	}
 
-	private static class CustomFailureHandler implements ActionRequestFailureHandler {
+	private static class CustomFailureHandler implements DocWriteRequestFailureHandler {
 
 		private static final long serialVersionUID = 942269087742453482L;
 
@@ -100,7 +100,7 @@ public class Elasticsearch7SinkExample {
 		}
 
 		@Override
-		public void onFailure(ActionRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) throws Throwable {
+		public void onFailure(DocWriteRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) throws Throwable {
 			if (action instanceof IndexRequest) {
 				Map<String, Object> json = new HashMap<>();
 				json.put("data", ((IndexRequest) action).source());

@@ -20,7 +20,7 @@ package org.apache.flink.streaming.connectors.elasticsearch;
 
 import org.apache.flink.annotation.PublicEvolving;
 
-import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -33,14 +33,14 @@ import org.elasticsearch.action.update.UpdateRequest;
 public interface RequestIndexer {
 
 	/**
-	 * Add multiple {@link ActionRequest} to the indexer to prepare for sending requests to Elasticsearch.
+	 * Add multiple {@link DocWriteRequest}s to the indexer to prepare for sending requests to Elasticsearch.
 	 *
-	 * @param actionRequests The multiple {@link ActionRequest} to add.
+	 * @param actionRequests The multiple {@link DocWriteRequest}s to add.
 	 * @deprecated use the {@link DeleteRequest}, {@link IndexRequest} or {@link UpdateRequest}
 	 */
 	@Deprecated
-	default void add(ActionRequest... actionRequests) {
-		for (ActionRequest actionRequest : actionRequests) {
+	default void add(DocWriteRequest... actionRequests) {
+		for (DocWriteRequest actionRequest : actionRequests) {
 			if (actionRequest instanceof IndexRequest) {
 				add((IndexRequest) actionRequest);
 			} else if (actionRequest instanceof DeleteRequest) {

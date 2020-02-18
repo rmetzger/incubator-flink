@@ -38,6 +38,7 @@ import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
 import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -82,8 +83,8 @@ public abstract class ElasticsearchUpsertTableSinkBase implements UpsertStreamTa
 	/** Content type describing the serialization schema. */
 	private final XContentType contentType;
 
-	/** Failure handler for failing {@link ActionRequest}s. */
-	private final ActionRequestFailureHandler failureHandler;
+	/** Failure handler for failing {@link DocWriteRequest}s. */
+	private final DocWriteRequestFailureHandler failureHandler;
 
 	/**
 	 * Map of optional configuration parameters for the Elasticsearch sink. The config is
@@ -92,7 +93,7 @@ public abstract class ElasticsearchUpsertTableSinkBase implements UpsertStreamTa
 	private final Map<SinkOption, String> sinkOptions;
 
 	/**
-	 * Version-agnostic creation of {@link ActionRequest}s.
+	 * Version-agnostic creation of {@link DocWriteRequest}s.
 	 */
 	private final RequestFactory requestFactory;
 
@@ -109,7 +110,7 @@ public abstract class ElasticsearchUpsertTableSinkBase implements UpsertStreamTa
 			String keyNullLiteral,
 			SerializationSchema<Row> serializationSchema,
 			XContentType contentType,
-			ActionRequestFailureHandler failureHandler,
+			DocWriteRequestFailureHandler failureHandler,
 			Map<SinkOption, String> sinkOptions,
 			RequestFactory requestFactory) {
 
@@ -285,13 +286,13 @@ public abstract class ElasticsearchUpsertTableSinkBase implements UpsertStreamTa
 		String keyNullLiteral,
 		SerializationSchema<Row> serializationSchema,
 		XContentType contentType,
-		ActionRequestFailureHandler failureHandler,
+		DocWriteRequestFailureHandler failureHandler,
 		Map<SinkOption, String> sinkOptions,
 		RequestFactory requestFactory);
 
 	protected abstract SinkFunction<Tuple2<Boolean, Row>> createSinkFunction(
 		List<Host> hosts,
-		ActionRequestFailureHandler failureHandler,
+		DocWriteRequestFailureHandler failureHandler,
 		Map<SinkOption, String> sinkOptions,
 		ElasticsearchUpsertSinkFunction upsertFunction);
 

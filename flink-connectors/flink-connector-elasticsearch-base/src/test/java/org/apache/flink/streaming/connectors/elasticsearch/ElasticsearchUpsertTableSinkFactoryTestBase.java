@@ -34,7 +34,7 @@ import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.TestLogger;
 
-import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Test;
 
@@ -196,7 +196,7 @@ public abstract class ElasticsearchUpsertTableSinkFactoryTestBase extends TestLo
 		String keyNullLiteral,
 		SerializationSchema<Row> serializationSchema,
 		XContentType contentType,
-		ActionRequestFailureHandler failureHandler,
+		DocWriteRequestFailureHandler failureHandler,
 		Map<SinkOption, String> sinkOptions);
 
 	// --------------------------------------------------------------------------------------------
@@ -206,10 +206,10 @@ public abstract class ElasticsearchUpsertTableSinkFactoryTestBase extends TestLo
 	/**
 	 * Custom failure handler for testing.
 	 */
-	public static class DummyFailureHandler implements ActionRequestFailureHandler {
+	public static class DummyFailureHandler implements DocWriteRequestFailureHandler {
 
 		@Override
-		public void onFailure(ActionRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) {
+		public void onFailure(DocWriteRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) {
 			// do nothing
 		}
 

@@ -24,7 +24,7 @@ import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkBase;
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchUpsertTableSinkBase;
 import org.apache.flink.table.api.TableSchema;
@@ -74,7 +74,7 @@ public class Elasticsearch7UpsertTableSink extends ElasticsearchUpsertTableSinkB
 			String keyNullLiteral,
 			SerializationSchema<Row> serializationSchema,
 			XContentType contentType,
-			ActionRequestFailureHandler failureHandler,
+			DocWriteRequestFailureHandler failureHandler,
 			Map<SinkOption, String> sinkOptions) {
 
 		super(
@@ -103,7 +103,7 @@ public class Elasticsearch7UpsertTableSink extends ElasticsearchUpsertTableSinkB
 		String keyNullLiteral,
 		SerializationSchema<Row> serializationSchema,
 		XContentType contentType,
-		ActionRequestFailureHandler failureHandler,
+		DocWriteRequestFailureHandler failureHandler,
 		Map<SinkOption, String> sinkOptions) {
 
 		super(
@@ -132,7 +132,7 @@ public class Elasticsearch7UpsertTableSink extends ElasticsearchUpsertTableSinkB
 			String keyNullLiteral,
 			SerializationSchema<Row> serializationSchema,
 			XContentType contentType,
-			ActionRequestFailureHandler failureHandler,
+			DocWriteRequestFailureHandler failureHandler,
 			Map<SinkOption, String> sinkOptions,
 			RequestFactory requestFactory) {
 
@@ -152,7 +152,7 @@ public class Elasticsearch7UpsertTableSink extends ElasticsearchUpsertTableSinkB
 	@Override
 	protected SinkFunction<Tuple2<Boolean, Row>> createSinkFunction(
 			List<Host> hosts,
-			ActionRequestFailureHandler failureHandler,
+			DocWriteRequestFailureHandler failureHandler,
 			Map<SinkOption, String> sinkOptions,
 			ElasticsearchUpsertSinkFunction upsertSinkFunction) {
 

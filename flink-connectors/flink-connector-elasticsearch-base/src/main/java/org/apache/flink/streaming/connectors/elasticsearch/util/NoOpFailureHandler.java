@@ -18,21 +18,21 @@
 package org.apache.flink.streaming.connectors.elasticsearch.util;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.streaming.connectors.elasticsearch.ActionRequestFailureHandler;
+import org.apache.flink.streaming.connectors.elasticsearch.DocWriteRequestFailureHandler;
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
 
-import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.DocWriteRequest;
 
 /**
- * An {@link ActionRequestFailureHandler} that simply fails the sink on any failures.
+ * An {@link DocWriteRequestFailureHandler} that simply fails the sink on any failures.
  */
 @Internal
-public class NoOpFailureHandler implements ActionRequestFailureHandler {
+public class NoOpFailureHandler implements DocWriteRequestFailureHandler {
 
 	private static final long serialVersionUID = 737941343410827885L;
 
 	@Override
-	public void onFailure(ActionRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) throws Throwable {
+	public void onFailure(DocWriteRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer) throws Throwable {
 		// simply fail the sink
 		throw failure;
 	}
