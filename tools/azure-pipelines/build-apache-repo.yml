@@ -29,7 +29,7 @@ schedules:
     - flink15834
 #   - master
 #   - release-*
- always: true # run even if there were no changes to the mentioned branches
+  always: true # run even if there were no changes to the mentioned branches
 
 resources:
   containers:
