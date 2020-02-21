@@ -23,9 +23,9 @@
 
 schedules:
 - cron: "0 0 * * *"
- displayName: nightly build
- branches:
-   include:
+  displayName: nightly build
+  branches:
+    include:
     - flink15834
 #   - master
 #   - release-*
