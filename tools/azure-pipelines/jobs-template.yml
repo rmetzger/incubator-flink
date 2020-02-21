@@ -165,7 +165,7 @@ jobs:
         echo "##vso[task.setvariable variable=JAVA_HOME]$(JAVA_HOME_11_X64)"
         echo "##vso[task.setvariable variable=PATH]$(JAVA_HOME_11_X64)/bin;$(PATH)"
       displayName: "Set to jdk11"
-      condition: eq(${{parameters.container}}, 'flink-build-jdk11')
+      condition: eq('${{parameters.container}}', 'flink-build-jdk11')
     - script: ./tools/travis/setup_maven.sh
     - script: ./tools/azure-pipelines/setup_kubernetes.sh
     - script: M2_HOME=/home/vsts/maven_cache/apache-maven-3.2.5/ PATH=/home/vsts/maven_cache/apache-maven-3.2.5/bin:$PATH ${{parameters.environment}} STAGE=compile ./tools/azure_controller.sh compile
