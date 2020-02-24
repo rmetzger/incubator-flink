@@ -147,7 +147,7 @@ jobs:
       displayName: "Set to jdk11"
       condition: eq('${{parameters.container}}', 'flink-build-jdk11')
     - script: ./tools/travis/setup_maven.sh
-    - script: ./tools/azure-pipelines/prepare_precommit.sh
+    - script: ${{parameters.environment}} ./tools/azure-pipelines/prepare_precommit.sh
       displayName: prepare and build Flink
     - script: FLINK_DIR=build-target ./flink-end-to-end-tests/run-pre-commit-tests.sh
       displayName: Test - precommit 
