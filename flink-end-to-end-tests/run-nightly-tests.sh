@@ -58,6 +58,7 @@ function debug() {
 	df -h
 	free -h
 	docker ps
+	jps -v
 	echo "END DEBUG INFO"
 }
 
