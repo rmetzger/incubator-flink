@@ -50,6 +50,7 @@ mkdir -p "$(dirname $LOCAL_OUTPUT_PATH)"
     -Dkubernetes.jobmanager.cpu=0.5 \
     -Dkubernetes.taskmanager.cpu=0.5
 
+set -x
 echo "debugging"
 docker images
 kubectl get pods -o json -n kube-system
@@ -57,7 +58,10 @@ kubectl get pods -o json
 kubectl get events -o json
 kubectl get deployments -o json
 kubectl describe pods
+kubectl describe nodes
+kubectl get nodes -o json
 echo "next"
+
 
 "$FLINK_DIR"/bin/flink run -e kubernetes-session \
     -Dkubernetes.cluster-id=${CLUSTER_ID} \
