@@ -37,10 +37,13 @@ start_kubernetes
 
 mkdir -p $OUTPUT_VOLUME
 
+docker images
+
 cd "$DOCKER_MODULE_DIR"
 ./build.sh --from-local-dist --job-artifacts ${FLINK_DIR}/examples/batch/WordCount.jar --image-name ${FLINK_IMAGE_NAME}
 cd "$END_TO_END_DIR"
 
+docker images
 
 kubectl create -f ${KUBERNETES_MODULE_DIR}/job-cluster-service.yaml
 envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB} ${FLINK_JOB_PARALLELISM} ${FLINK_JOB_ARGUMENTS}' < ${CONTAINER_SCRIPTS}/job-cluster-job.yaml.template | kubectl create -f -
@@ -48,6 +51,8 @@ envsubst '${FLINK_IMAGE_NAME} ${FLINK_JOB_PARALLELISM}' < ${CONTAINER_SCRIPTS}/t
 kubectl wait --for=condition=complete job/flink-job-cluster --timeout=15m
 
 echo "debugging"
+docker images
+kubectl get pods -o json -n kube-system
 kubectl get pods -o json
 kubectl get events -o json
 kubectl get deployments -o json
