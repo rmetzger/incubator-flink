@@ -51,17 +51,17 @@ function check_kubernetes_status {
 function start_kubernetes_if_not_running {
     if ! check_kubernetes_status; then
         echo "Starting minikube ..."
-        minikube start
         # We need sudo permission to set vm-driver to none in linux os.
         if [[ "${OS_TYPE}" = "linux" ]] ; then
-            export CHANGE_MINIKUBE_NONE_USER=true
-            minikube start --vm-driver=none \
+            sudo CHANGE_MINIKUBE_NONE_USER=true minikube start --vm-driver=none \
                 --extra-config=kubelet.image-gc-high-threshold=99 \
                 --extra-config=kubelet.image-gc-low-threshold=98 \
                 --extra-config=kubelet.minimum-container-ttl-duration=120m \
                 --extra-config=kubelet.eviction-hard="memory.available<5Mi,nodefs.available<1Mi,imagefs.available<1Mi" \
                 --extra-config=kubelet.eviction-soft="memory.available<5Mi,nodefs.available<2Mi,imagefs.available<2Mi" \
                 --extra-config=kubelet.eviction-soft-grace-period="memory.available=2h,nodefs.available=2h,imagefs.available=2h"
+        else
+            sudo minikube start
         fi
         # Fix the kubectl context, as it's often stale.
         minikube update-context
