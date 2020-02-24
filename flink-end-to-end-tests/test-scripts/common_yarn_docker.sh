@@ -132,15 +132,22 @@ END
 function copy_and_show_logs {
     echo "currently running containers"
     docker ps
-    echo "Currently running jvms"
+    echo "Currently running JVMs"
     jps -v
     mkdir -p $TEST_DATA_DIR/logs
     echo "Hadoop logs:"
     docker cp master:/var/log/hadoop/ $TEST_DATA_DIR/logs/
+    ls -lisah $TEST_DATA_DIR/logs/
     for f in $TEST_DATA_DIR/logs/*; do
         echo "$f:"
         cat $f
     done
+    echo "cat"
+    cat $TEST_DATA_DIR/logs/*
+    echo "ls there"
+    docker exec master ls -lisah /var/log/hadoop/
+    echo "cat there"
+    docker exec master cat /var/log/hadoop/*
     echo "Docker logs:"
     docker logs master
 
