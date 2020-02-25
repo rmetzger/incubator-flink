@@ -39,6 +39,10 @@ function run_test {
 
     wait_job_running ${JOB_ID}
 
+    echo "catting output"
+    cat ${FLINK_DIR}/log/flink*taskexecutor*log
+    echo "running command: " 
+
     # run the client and query state the first time
     first_result=$(java -jar ${QUERYABLE_STATE_CONSUMER_JAR} \
         --host $(get_queryable_state_server_ip) \
