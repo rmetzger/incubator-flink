@@ -42,6 +42,8 @@ function run_test {
     echo "catting output"
     cat ${FLINK_DIR}/log/flink*taskexecutor*log
     echo "running command: " 
+    ls -lisah ${FLINK_DIR}/log/
+    cat ${FLINK_DIR}/log/*
 
     # run the client and query state the first time
     first_result=$(java -jar ${QUERYABLE_STATE_CONSUMER_JAR} \
