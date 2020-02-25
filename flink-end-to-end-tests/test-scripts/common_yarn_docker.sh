@@ -137,17 +137,17 @@ function copy_and_show_logs {
     mkdir -p $TEST_DATA_DIR/logs
     echo "Hadoop logs:"
     docker cp master:/var/log/hadoop/ $TEST_DATA_DIR/logs/
-    ls -lisah $TEST_DATA_DIR/logs/
-    for f in $TEST_DATA_DIR/logs/*; do
+    ls -lisah $TEST_DATA_DIR/logs/hadoop
+    for f in $TEST_DATA_DIR/logs/hadoop*; do
         echo "$f:"
         cat $f
     done
     echo "cat"
-    cat $TEST_DATA_DIR/logs/*
+    cat $TEST_DATA_DIR/logs/hadoop*
     echo "ls there"
     docker exec master ls -lisah /var/log/hadoop/
     echo "cat there"
-    docker exec master cat /var/log/hadoop/*
+    docker exec master cat /var/log/hadoop/namenode.err
     echo "Docker logs:"
     docker logs master
 
