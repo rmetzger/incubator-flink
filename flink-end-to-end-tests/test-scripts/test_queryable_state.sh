@@ -20,6 +20,8 @@
 source "$(dirname "$0")"/common.sh
 source "$(dirname "$0")"/queryable_state_base.sh
 
+set -x
+
 function run_test {
     link_queryable_state_lib
     start_cluster
