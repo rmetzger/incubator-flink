@@ -38,7 +38,7 @@ function get_queryable_state_proxy_port {
     local port=$(cat ${FLINK_DIR}/log/flink*taskexecutor*log \
         | grep "Started Queryable State Proxy Server" \
         | head -1 \
-        | awk '{split($12, a, "/"); split(a[2], b, ":"); split(b[2], c, "."); print c[1]}')
+        | grep -Eo  "\.*\:([0-9]{4})\.*" | tr -d ":.")
 
     printf "${port} \n"
 }
