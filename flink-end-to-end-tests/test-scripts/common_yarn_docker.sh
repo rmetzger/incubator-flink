@@ -147,7 +147,7 @@ function copy_and_show_logs {
     echo "ls there"
     docker exec master ls -lisah /var/log/hadoop/
     echo "cat there"
-    docker exec master cat /var/log/hadoop/namenode.err
+    docker exec master cat /var/log/hadoop/resourcemanager.err
     echo "Docker logs:"
     docker logs master
 
