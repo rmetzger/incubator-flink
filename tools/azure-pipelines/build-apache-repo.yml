@@ -58,6 +58,7 @@ stages:
             env
             set -x
             ls -lisah $HOME/gem_cache
+            ls -lisah $(home)/gem_cache
             ls -lisah $(Pipeline.Workspace)/gem_cache
             ls -lisah .
         - task: Cache@2
