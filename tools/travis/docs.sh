@@ -17,7 +17,8 @@
 # limitations under the License.
 ################################################################################
 
-CACHE_DIR=$HOME/gem_cache ./docs/build_docs.sh -p &
+export CACHE_DIR=${CACHE_DIR:-"$HOME/gem_cache"}
+./docs/build_docs.sh -p &
 
 for i in `seq 1 30`;
 do
