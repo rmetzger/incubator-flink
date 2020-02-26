@@ -118,8 +118,12 @@ run_test "Run kubernetes session test" "$END_TO_END_DIR/test-scripts/test_kubern
 # Mesos
 ################################################################################
 
-run_test "Run Mesos WordCount test" "$END_TO_END_DIR/test-scripts/test_mesos_wordcount.sh"
-run_test "Run Mesos multiple submission test" "$END_TO_END_DIR/test-scripts/test_mesos_multiple_submissions.sh"
+env
+if [[ $PROFILE == *"include-hadoop"* ]]; then
+	echo "Detected an environment with Hadoop. Running Mesos tests."
+	run_test "Run Mesos WordCount test" "$END_TO_END_DIR/test-scripts/test_mesos_wordcount.sh"
+	run_test "Run Mesos multiple submission test" "$END_TO_END_DIR/test-scripts/test_mesos_multiple_submissions.sh"
+fi
 
 ################################################################################
 # Miscellaneous
