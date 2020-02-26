@@ -26,7 +26,7 @@ schedules:
   displayName: nightly build
   branches:
     include:
-    - flink15834
+#    - flink15834
 #   - master
 #   - release-*
   always: true # run even if there were no changes to the mentioned branches
