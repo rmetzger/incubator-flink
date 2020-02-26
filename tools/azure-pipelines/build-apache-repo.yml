@@ -65,7 +65,7 @@ stages:
           inputs:
             key: gem_cache | docs/Gemfile*
             restoreKeys: gem_cache
-            path: $(Pipeline.Workspace)/gem_cache
+            path: $(home)/gem_cache
           continueOnError: true # continue the build even if the cache fails.
           displayName: Gem Cache
         - task: UseRubyVersion@0
