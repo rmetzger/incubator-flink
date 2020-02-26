@@ -55,11 +55,11 @@ stages:
           vmImage: 'ubuntu-16.04'
         steps:
         - script: |
-          env
-          set -x
-          ls -lisah $HOME/gem_cache
-          ls -lisah $(Pipeline.Workspace)/gem_cache
-          ls -lisah .
+            env
+            set -x
+            ls -lisah $HOME/gem_cache
+            ls -lisah $(Pipeline.Workspace)/gem_cache
+            ls -lisah .
         - task: Cache@2
           inputs:
             key: gem_cache | docs/Gemfile*
@@ -73,7 +73,7 @@ stages:
             addToPath: true
         - script: ./tools/travis/docs.sh
         - script: |
-          set -x
-          ls -lisah $HOME/gem_cache
-          ls -lisah $(Pipeline.Workspace)/gem_cache
-          ls -lisah .
+            set -x
+            ls -lisah $HOME/gem_cache
+            ls -lisah $(Pipeline.Workspace)/gem_cache
+            ls -lisah .
