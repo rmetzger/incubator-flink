@@ -54,11 +54,17 @@ stages:
         pool: 
           vmImage: 'ubuntu-16.04'
         steps:
+        - script: |
+          env
+          set -x
+          ls -lisah $HOME/gem_cache
+          ls -lisah $(Pipeline.Workspace)/gem_cache
+          ls -lisah .
         - task: Cache@2
           inputs:
             key: gem_cache | docs/Gemfile*
             restoreKeys: gem_cache
-            path: $HOME/gem_cache
+            path: $(Pipeline.Workspace)/gem_cache
           continueOnError: true # continue the build even if the cache fails.
           displayName: Gem Cache
         - task: UseRubyVersion@0
@@ -66,3 +72,8 @@ stages:
             versionSpec: '= 2.4'
             addToPath: true
         - script: ./tools/travis/docs.sh
+        - script: |
+          set -x
+          ls -lisah $HOME/gem_cache
+          ls -lisah $(Pipeline.Workspace)/gem_cache
+          ls -lisah .
