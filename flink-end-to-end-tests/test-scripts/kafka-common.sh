@@ -166,6 +166,8 @@ function start_confluent_schema_registry {
 
   if ! get_and_verify_schema_subjects_exist; then
       echo "Could not start confluent schema registry"
+      echo "Printing Kafka logs:"
+      cat $KAFKA_DIR/logs/*
       return 1
   fi
 }
