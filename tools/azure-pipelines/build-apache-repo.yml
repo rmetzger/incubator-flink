@@ -26,7 +26,7 @@ schedules:
   displayName: nightly build
   branches:
     include:
-    - FLINK-16292
+    - FLINK-16292-fix-e2e
   always: true # run even if there were no changes to the mentioned branches
 
 resources:
