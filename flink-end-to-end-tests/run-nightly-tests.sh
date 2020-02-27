@@ -43,6 +43,9 @@ echo "Java and Maven version"
 java -version
 mvn -version
 
+echo "Free disk space"
+df -h
+
 echo "Running with profile '$PROFILE'"
 
 # Template for adding a test:
@@ -96,6 +99,9 @@ run_test "Resuming Externalized Checkpoint after terminal failure (rocks, increm
 
 run_test "RocksDB Memory Management end-to-end test" "$END_TO_END_DIR/test-scripts/test_rocksdb_state_memory_control.sh"
 
+echo "Free disk space"
+df -h
+
 ################################################################################
 # Docker
 ################################################################################
@@ -104,6 +110,8 @@ run_test "Running Kerberized YARN on Docker test (default input)" "$END_TO_END_D
 run_test "Running Kerberized YARN on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh dummy-fs"
 run_test "Wordcount on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_docker_embedded_job.sh dummy-fs"
 
+echo "Free disk space"
+df -h
 ################################################################################
 # High Availability
 ################################################################################
@@ -120,6 +128,8 @@ run_test "Running HA per-job cluster (file, sync) end-to-end test" "$END_TO_END_
 run_test "Running HA per-job cluster (rocks, non-incremental) end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_per_job_cluster_datastream.sh rocks true false" "skip_check_exceptions"
 run_test "Running HA per-job cluster (rocks, incremental) end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_per_job_cluster_datastream.sh rocks true true" "skip_check_exceptions"
 
+echo "Free disk space"
+df -h
 ################################################################################
 # Kubernetes
 ################################################################################
@@ -127,6 +137,8 @@ run_test "Running HA per-job cluster (rocks, incremental) end-to-end test" "$END
 run_test "Run Kubernetes test" "$END_TO_END_DIR/test-scripts/test_kubernetes_embedded_job.sh"
 run_test "Run kubernetes session test" "$END_TO_END_DIR/test-scripts/test_kubernetes_session.sh"
 
+echo "Free disk space"
+df -h
 ################################################################################
 # Mesos
 ################################################################################
@@ -136,6 +148,8 @@ if [[ $PROFILE == *"include-hadoop"* ]]; then
 	run_test "Run Mesos multiple submission test" "$END_TO_END_DIR/test-scripts/test_mesos_multiple_submissions.sh"
 fi
 
+echo "Free disk space"
+df -h
 ################################################################################
 # Miscellaneous
 ################################################################################
@@ -144,6 +158,9 @@ run_test "Flink CLI end-to-end test" "$END_TO_END_DIR/test-scripts/test_cli.sh"
 
 run_test "Queryable state (rocksdb) end-to-end test" "$END_TO_END_DIR/test-scripts/test_queryable_state.sh rocksdb"
 run_test "Queryable state (rocksdb) with TM restart end-to-end test" "$END_TO_END_DIR/test-scripts/test_queryable_state_restart_tm.sh" "skip_check_exceptions"
+
+echo "Free disk space"
+df -h
 
 run_test "DataSet allround end-to-end test" "$END_TO_END_DIR/test-scripts/test_batch_allround.sh"
 run_test "Batch SQL end-to-end test" "$END_TO_END_DIR/test-scripts/test_batch_sql.sh"
@@ -155,7 +172,8 @@ fi
 run_test "Streaming File Sink end-to-end test" "$END_TO_END_DIR/test-scripts/test_streaming_file_sink.sh" "skip_check_exceptions"
 run_test "Streaming File Sink s3 end-to-end test" "$END_TO_END_DIR/test-scripts/test_streaming_file_sink.sh s3" "skip_check_exceptions"
 run_test "Stateful stream job upgrade end-to-end test" "$END_TO_END_DIR/test-scripts/test_stateful_stream_job_upgrade.sh 2 4"
-
+echo "Free disk space"
+df -h
 run_test "Elasticsearch (v5.1.2) sink end-to-end test" "$END_TO_END_DIR/test-scripts/test_streaming_elasticsearch.sh 5 https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.1.2.tar.gz"
 run_test "Elasticsearch (v6.3.1) sink end-to-end test" "$END_TO_END_DIR/test-scripts/test_streaming_elasticsearch.sh 6 https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.3.1.tar.gz"
 
@@ -166,7 +184,8 @@ run_test "Walkthrough Table Java nightly end-to-end test" "$END_TO_END_DIR/test-
 run_test "Walkthrough Table Scala nightly end-to-end test" "$END_TO_END_DIR/test-scripts/test_table_walkthroughs.sh scala"
 run_test "Walkthrough DataStream Java nightly end-to-end test" "$END_TO_END_DIR/test-scripts/test_datastream_walkthroughs.sh java"
 run_test "Walkthrough DataStream Scala nightly end-to-end test" "$END_TO_END_DIR/test-scripts/test_datastream_walkthroughs.sh scala"
-
+echo "Free disk space"
+df -h
 run_test "Test PubSub connector with Docker based Google PubSub Emulator" "$END_TO_END_DIR/test-scripts/test_streaming_gcp_pubsub.sh"
 
 if [[ ${PROFILE} != *"jdk11"* ]]; then
@@ -175,9 +194,14 @@ fi
 
 run_test "State TTL Heap backend end-to-end test" "$END_TO_END_DIR/test-scripts/test_stream_state_ttl.sh file" "skip_check_exceptions"
 run_test "State TTL RocksDb backend end-to-end test" "$END_TO_END_DIR/test-scripts/test_stream_state_ttl.sh rocks" "skip_check_exceptions"
-
-#run_test "SQL Client end-to-end test (Old planner)" "$END_TO_END_DIR/test-scripts/test_sql_client.sh old"
-#run_test "SQL Client end-to-end test (Blink planner)" "$END_TO_END_DIR/test-scripts/test_sql_client.sh blink"
+echo "Free disk space"
+df -h
+echo "pruning images"
+docker system prune -a -f
+echo "Free disk space"
+df -h
+run_test "SQL Client end-to-end test (Old planner)" "$END_TO_END_DIR/test-scripts/test_sql_client.sh old"
+run_test "SQL Client end-to-end test (Blink planner)" "$END_TO_END_DIR/test-scripts/test_sql_client.sh blink"
 
 run_test "TPC-H end-to-end test (Blink planner)" "$END_TO_END_DIR/test-scripts/test_tpch.sh"
 run_test "TPC-DS end-to-end test (Blink planner)" "$END_TO_END_DIR/test-scripts/test_tpcds.sh"
@@ -189,7 +213,8 @@ run_test "ConnectedComponents iterations with high parallelism end-to-end test" 
 run_test "Dependency shading of table modules test" "$END_TO_END_DIR/test-scripts/test_table_shaded_dependencies.sh"
 
 run_test "Shaded Hadoop S3A with credentials provider end-to-end test" "$END_TO_END_DIR/test-scripts/test_batch_wordcount.sh hadoop_with_provider"
-
+echo "Free disk space"
+df -h
 ################################################################################
 # Sticky Scheduling
 ################################################################################
@@ -200,7 +225,8 @@ run_test "Local recovery and sticky scheduling end-to-end test" "$END_TO_END_DIR
 run_test "Local recovery and sticky scheduling end-to-end test" "$END_TO_END_DIR/test-scripts/test_local_recovery_and_scheduling.sh 4 10 rocks true false" "skip_check_exceptions"
 run_test "Local recovery and sticky scheduling end-to-end test" "$END_TO_END_DIR/test-scripts/test_local_recovery_and_scheduling.sh 4 10 rocks false true" "skip_check_exceptions"
 run_test "Local recovery and sticky scheduling end-to-end test" "$END_TO_END_DIR/test-scripts/test_local_recovery_and_scheduling.sh 4 10 rocks true true" "skip_check_exceptions"
-
+echo "Free disk space"
+df -h
 printf "\n[PASS] All bash e2e-tests passed\n"
 
 printf "\n\n==============================================================================\n"
