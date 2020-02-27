@@ -52,6 +52,10 @@ mvn -version
 # those checks are disabled, one should take care that a proper checks are performed in the tests itself that ensure that the test finished
 # in an expected state.
 
+printf "\n\n==============================================================================\n"
+printf "Running bash end-to-end tests\n"
+printf "==============================================================================\n"
+
 ################################################################################
 # Checkpointing tests
 ################################################################################
@@ -89,17 +93,17 @@ run_test "Resuming Externalized Checkpoint after terminal failure (rocks, increm
 
 run_test "RocksDB Memory Management end-to-end test" "$END_TO_END_DIR/test-scripts/test_rocksdb_state_memory_control.sh"
 
-# ################################################################################
-# # Docker
-# ################################################################################
+################################################################################
+# Docker
+################################################################################
 
 run_test "Running Kerberized YARN on Docker test (default input)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh"
 run_test "Running Kerberized YARN on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_yarn_kerberos_docker.sh dummy-fs"
 run_test "Wordcount on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_docker_embedded_job.sh dummy-fs"
 
-# ################################################################################
-# # High Availability
-# ################################################################################
+################################################################################
+# High Availability
+################################################################################
 
 run_test "Running HA dataset end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_dataset.sh" "skip_check_exceptions"
 
@@ -113,16 +117,16 @@ run_test "Running HA per-job cluster (file, sync) end-to-end test" "$END_TO_END_
 run_test "Running HA per-job cluster (rocks, non-incremental) end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_per_job_cluster_datastream.sh rocks true false" "skip_check_exceptions"
 run_test "Running HA per-job cluster (rocks, incremental) end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_per_job_cluster_datastream.sh rocks true true" "skip_check_exceptions"
 
-# ################################################################################
-# # Kubernetes
-# ################################################################################
+################################################################################
+# Kubernetes
+################################################################################
 
 run_test "Run Kubernetes test" "$END_TO_END_DIR/test-scripts/test_kubernetes_embedded_job.sh"
 run_test "Run kubernetes session test" "$END_TO_END_DIR/test-scripts/test_kubernetes_session.sh"
 
-# ################################################################################
-# # Mesos
-# ################################################################################
+################################################################################
+# Mesos
+################################################################################
 
 if [[ $PROFILE == *"include-hadoop"* ]]; then
 	echo "Detected an environment with Hadoop. Running Mesos tests."
@@ -130,9 +134,9 @@ if [[ $PROFILE == *"include-hadoop"* ]]; then
 	run_test "Run Mesos multiple submission test" "$END_TO_END_DIR/test-scripts/test_mesos_multiple_submissions.sh"
 fi
 
-# ################################################################################
-# # Miscellaneous
-# ################################################################################
+################################################################################
+# Miscellaneous
+################################################################################
 
 run_test "Flink CLI end-to-end test" "$END_TO_END_DIR/test-scripts/test_cli.sh"
 
@@ -199,7 +203,6 @@ printf "\n\n====================================================================
 printf "Running Java end-to-end tests\n"
 printf "==============================================================================\n"
 
-set -x
 HERE="`dirname \"$0\"`"				# relative
 HERE="`( cd \"${HERE}\" && pwd -P)`" 	# absolutized and normalized
 if [ -z "${HERE}" ] ; then
@@ -219,6 +222,5 @@ e2e_modules="${e2e_modules},$(find flink-walkthroughs -mindepth 2 -maxdepth 2 -n
 
 PROFILE="$PROFILE -Pe2e-travis1 -Pe2e-travis2 -Pe2e-travis3 -Pe2e-travis4 -Pe2e-travis5 -Pe2e-travis6"
 mvn ${MVN_COMMON_OPTIONS} ${MVN_LOGGING_OPTIONS} ${PROFILE} verify -pl ${e2e_modules} -DdistDir=$(readlink -e build-target)
-
 
 exit 0
