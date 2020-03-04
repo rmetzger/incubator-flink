@@ -44,13 +44,13 @@ jobs:
   # (usually because a pom file has changed), we'll fall back to a key without
   # the pom files (CACHE_FALLBACK_KEY).
   # Offical documentation of the Cache task: https://docs.microsoft.com/en-us/azure/devops/pipelines/caching/?view=azure-devops
-  # - task: Cache@2
-  #   inputs:
-  #     key: $(CACHE_KEY)
-  #     restoreKeys: $(CACHE_FALLBACK_KEY)
-  #     path: $(MAVEN_CACHE_FOLDER)
-  #   continueOnError: true # continue the build even if the cache fails.
-  #   displayName: Cache Maven local repo
+  - task: Cache@2
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+    continueOnError: true # continue the build even if the cache fails.
+    displayName: Cache Maven local repo
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
       echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
@@ -67,64 +67,66 @@ jobs:
       path: $(CACHE_FLINK_DIR)
       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
-# - job: test_${{parameters.stage_name}}
-#   dependsOn: compile_${{parameters.stage_name}}
-#   condition: and(succeeded(), not(eq(variables['MODE'], 'e2e')))
-#   pool: ${{parameters.test_pool_definition}}
-#   container: ${{parameters.container}}
-#   timeoutInMinutes: 240
-#   cancelTimeoutInMinutes: 1
-#   workspace:
-#     clean: all
-#   strategy:
-#     matrix:
-#       core:
-#         module: misc
-#       python:
-#         module: misc
-#       libraries:
-#         module: misc
-#       blink_planner:
-#         module: misc
-#       connectors:
-#         module: misc
-#       kafka_gelly:
-#         module: misc
-#       tests:
-#         module: misc
-#       legacy_scheduler_core:
-#         module: misc
-#       legacy_scheduler_tests:
-#         module: misc
-#       misc:
-#         module: misc
-#   steps:
+- job: test_${{parameters.stage_name}}
+  dependsOn: compile_${{parameters.stage_name}}
+  condition: and(succeeded(), not(eq(variables['MODE'], 'e2e')))
+  pool: ${{parameters.test_pool_definition}}
+  container: ${{parameters.container}}
+  timeoutInMinutes: 240
+  cancelTimeoutInMinutes: 1
+  workspace:
+    clean: all
+  strategy:
+    matrix:
+      core:
+        module: misc
+      python:
+        module: misc
+      libraries:
+        module: misc
+      blink_planner:
+        module: misc
+      connectors:
+        module: misc
+      kafka_gelly:
+        module: misc
+      tests:
+        module: misc
+      legacy_scheduler_core:
+        module: misc
+      legacy_scheduler_tests:
+        module: misc
+      misc:
+        module: misc
+  steps:
 
-#   # download artifacts
-#   - task: DownloadPipelineArtifact@2
-#     inputs:
-#       path: $(CACHE_FLINK_DIR)
-#       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+  # download artifacts
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      path: $(CACHE_FLINK_DIR)
+      artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
-#   # only for the python stage (which runs a full mvn install), download the cache
-#   - task: Cache@2
-#     condition: eq(variables['module'], 'python')
-#     inputs:
-#       key: $(CACHE_KEY)
-#       restoreKeys: $(CACHE_FALLBACK_KEY)
-#       path: $(MAVEN_CACHE_FOLDER)
-#     continueOnError: true # continue the build even if the cache fails.
-#     displayName: Cache Maven local repo
-#   - script: |
-#       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
-#       echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
-#     displayName: "Set to jdk11"
-#     condition: eq('${{parameters.jdk}}', 'jdk11')  
-#   # Test
-#   - script: STAGE=test ${{parameters.environment}} ./tools/azure_controller.sh $(module)
-#     displayName: Test - $(module)
+  # only for the python stage (which runs a full mvn install), download the cache
+  - task: Cache@2
+    condition: eq(variables['module'], 'python')
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+    continueOnError: true # continue the build even if the cache fails.
+    displayName: Cache Maven local repo
+  - script: |
+      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
+      echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
+    displayName: "Set to jdk11"
+    condition: eq('${{parameters.jdk}}', 'jdk11')  
+  - script: mkdir -p ~/.m2/ ; cp ./tools/azure-pipelines/google-mirror-settings.xml ~/.m2/settings.xml ; cat ~/.m2/settings.xml
+    displayName: Setup Google mvn mirrror
+  # Test
+  - script: STAGE=test ${{parameters.environment}} ./tools/azure_controller.sh $(module)
+    displayName: Test - $(module)
 
-#   - task: PublishTestResults@2
-#     inputs:
-#       testResultsFormat: 'JUnit'
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
 
