@@ -79,15 +79,15 @@ jobs:
   strategy:
     matrix:
       core:
-        module: misc
+        module: libraries
       python:
-        module: misc
+        module: libraries
       libraries:
-        module: misc
+        module: libraries
       blink_planner:
-        module: misc
+        module: libraries
       connectors:
-        module: misc
+        module: libraries
       kafka_gelly:
         module: misc
       tests:
