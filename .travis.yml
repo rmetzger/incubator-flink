@@ -33,7 +33,12 @@ cache:
 before_cache:
   - rm -rf $HOME/.m2/repository/org/apache/flink/
 
-install: true
+install: 
+  - env
+  - ls -lisah ~
+  - ls -lisah ~/.m2
+  - cat ~/.m2/settings.xml
+  - exit 1
 
 language: java
 
