@@ -184,7 +184,7 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
         echo "Done compiling ... "
     fi
 
-
+    set -x
     TEST="$STAGE" "./tools/travis_watchdog.sh" 300
     EXIT_CODE=$?
 elif [ $STAGE == "$STAGE_CLEANUP" ]; then
