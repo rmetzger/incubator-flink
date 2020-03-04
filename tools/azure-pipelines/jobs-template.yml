@@ -44,13 +44,13 @@ jobs:
   # (usually because a pom file has changed), we'll fall back to a key without
   # the pom files (CACHE_FALLBACK_KEY).
   # Offical documentation of the Cache task: https://docs.microsoft.com/en-us/azure/devops/pipelines/caching/?view=azure-devops
-  - task: Cache@2
-    inputs:
-      key: $(CACHE_KEY)
-      restoreKeys: $(CACHE_FALLBACK_KEY)
-      path: $(MAVEN_CACHE_FOLDER)
-    continueOnError: true # continue the build even if the cache fails.
-    displayName: Cache Maven local repo
+  # - task: Cache@2
+  #   inputs:
+  #     key: $(CACHE_KEY)
+  #     restoreKeys: $(CACHE_FALLBACK_KEY)
+  #     path: $(MAVEN_CACHE_FOLDER)
+  #   continueOnError: true # continue the build even if the cache fails.
+  #   displayName: Cache Maven local repo
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
       echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
