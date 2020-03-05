@@ -184,6 +184,10 @@ collect_coredumps() {
 		echo "Copying $file to artifacts"
 		cp $file $ARTIFACTS_DIR/
 	done
+
+	echo "current = $(pwd)"
+	echo "show all files"
+	find $HERE/../ > $ARTIFACTS_DIR/all-files
 }
 
 # locate YARN logs and put them into artifacts directory
