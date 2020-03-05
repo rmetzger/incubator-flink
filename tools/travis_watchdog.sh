@@ -180,7 +180,7 @@ print_stacktraces () {
 
 collect_coredumps() {
 	echo "Searching for .dump and .dumpstream in $($HERE/../)"
-	for file in `find $HERE/../ -type f -name '*.dump' -o -name '*.dumpstream'`; do
+	for file in `find $HERE/../ -type f -name '*.dump' -o -name '*.dumpstream' -o -name 'hs*.log' -o -name 'core'`; do
 		echo "Copying $file to artifacts"
 		cp $file $ARTIFACTS_DIR/
 	done
