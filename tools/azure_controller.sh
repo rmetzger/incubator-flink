@@ -24,8 +24,6 @@ echo $MAVEN_OPTS
 mvn -version
 echo "Commit: $(git rev-parse HEAD)"
 
-
-
 HERE="`dirname \"$0\"`"             # relative
 HERE="`( cd \"$HERE\" && pwd )`"    # absolutized and normalized
 if [ -z "$HERE" ] ; then
@@ -53,6 +51,8 @@ print_system_info() {
 
 print_system_info
 
+# enable core dumps
+sudo ulimit -c unlimited
 
 STAGE=$1
 echo "Current stage: \"$STAGE\""
