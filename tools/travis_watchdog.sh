@@ -152,7 +152,7 @@ upload_artifacts_s3() {
 		cp $ARTIFACTS_FILE $ARTIFACT_DIR/
 
 		echo "##vso[task.setvariable variable=ARTIFACT_DIR]$ARTIFACT_DIR"
-		echo "##vso[task.setvariable variable=ARTIFACT_NAME]$(echo $MODULE | tr -dc '[:alnum:]\n\r')"
+		echo "##vso[task.setvariable variable=ARTIFACT_NAME]$(echo $MODULE | tr -dc '[:alnum:]\n\r')-$(date +%s%N)"
 	fi
 
 	# upload to https://transfer.sh
