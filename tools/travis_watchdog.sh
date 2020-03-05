@@ -75,7 +75,7 @@ MVN_TEST_OPTIONS="-Dflink.tests.with-openssl"
 e2e_modules=$(find flink-end-to-end-tests -mindepth 2 -maxdepth 5 -name 'pom.xml' -printf '%h\n' | sort -u | tr '\n' ',')
 
 MVN_COMPILE="mvn $MVN_COMMON_OPTIONS $MVN_COMPILE_OPTIONS $PROFILE $MVN_COMPILE_MODULES install"
-MVN_TEST="mvn $MVN_COMMON_OPTIONS $MVN_TEST_OPTIONS $PROFILE $MVN_TEST_MODULES verify"
+MVN_TEST="mvn -X $MVN_COMMON_OPTIONS $MVN_TEST_OPTIONS $PROFILE $MVN_TEST_MODULES verify"
 # don't move the e2e-pre-commit profile activation into the misc entry in .travis.yml, since it breaks caching
 MVN_E2E="mvn $MVN_COMMON_OPTIONS $MVN_TEST_OPTIONS $PROFILE -Pe2e-pre-commit -pl ${e2e_modules},flink-dist verify"
 
