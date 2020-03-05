@@ -125,6 +125,13 @@ jobs:
   # Test
   - script: STAGE=test ${{parameters.environment}} ./tools/azure_controller.sh $(module)
     displayName: Test - $(module)
+  # upload debug artifacts
+  - task: PublishPipelineArtifact@1
+    condition: and(succeededOrFailed(), not(eq('$(ARTIFACT_DIR)', '')))
+    displayName: Upload Logs
+    inputs:
+      path: $(ARTIFACT_DIR)
+      artifact: logs-${{parameters.stage_name}}-$(ARTIFACT_NAME)
 
   - task: PublishTestResults@2
     inputs:

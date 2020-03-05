@@ -144,6 +144,17 @@ upload_artifacts_s3() {
 		artifacts upload --bucket $UPLOAD_BUCKET --key $UPLOAD_ACCESS_KEY --secret $UPLOAD_SECRET_KEY --target-paths $UPLOAD_TARGET_PATH $ARTIFACTS_FILE
 	fi
 
+
+	# On Azure, publish ARTIFACTS_FILE as a build artifact
+	if [ ! -z "$TF_BUILD" ] ; then
+		ARTIFACT_DIR="$(pwd)/artifact-dir"
+		mkdir $ARTIFACT_DIR
+		cp $ARTIFACTS_FILE $ARTIFACT_DIR/
+
+		echo "##vso[task.setvariable variable=ARTIFACT_DIR]$ARTIFACT_DIR"
+		echo "##vso[task.setvariable variable=ARTIFACT_NAME]$(echo $MODULE | tr -dc '[:alnum:]\n\r')"
+	fi
+
 	# upload to https://transfer.sh
 	echo "Uploading to transfer.sh"
 	curl --retry ${TRANSFER_UPLOAD_MAX_RETRIES} --retry-delay ${TRANSFER_UPLOAD_RETRY_DELAY} --upload-file $ARTIFACTS_FILE --max-time 60 https://transfer.sh
