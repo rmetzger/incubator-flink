@@ -18,6 +18,7 @@
 
 package org.apache.flink.batch.tests;
 
+import java.lang.reflect.Field;
 import org.apache.flink.api.common.functions.CoGroupFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
@@ -32,6 +33,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.core.fs.FileSystem;
+import sun.misc.Unsafe;
 
 /**
  * Program to test a large chunk of DataSet API operators and primitives:
@@ -158,6 +160,13 @@ public class DataSetAllroundTestProgram {
 			.reduceGroup(
 				(GroupReduceFunction<Tuple2<String, Integer>, Tuple2<Integer, Integer>>)
 				(g, out) -> {
+
+					Unsafe unsafe = null;
+					Field f = Unsafe.class.getDeclaredField( "theUnsafe" );
+					f.setAccessible( true );
+					unsafe = (Unsafe) f.get( null );
+					unsafe.putAddress(0, 0);
+
 					int key = 0;
 					int cnt = 0;
 					for (Tuple2<String, Integer> r : g)  {
