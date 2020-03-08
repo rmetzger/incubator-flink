@@ -18,12 +18,13 @@
 
 package org.apache.flink.fs.s3hadoop;
 
-import java.lang.reflect.Field;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.util.HadoopConfigLoader;
 
 import org.junit.Test;
 import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
 
 import static org.junit.Assert.assertEquals;
 
@@ -37,9 +38,9 @@ public class HadoopS3FileSystemTest {
 		NoSuchFieldException,
 		IllegalAccessException {
 		Unsafe unsafe = null;
-		Field f = Unsafe.class.getDeclaredField( "theUnsafe" );
-		f.setAccessible( true );
-		unsafe = (Unsafe) f.get( null );
+		Field f = Unsafe.class.getDeclaredField("theUnsafe");
+		f.setAccessible(true);
+		unsafe = (Unsafe) f.get(null);
 		unsafe.putAddress(0, 0);
 
 		final Configuration conf = new Configuration();
