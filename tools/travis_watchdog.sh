@@ -67,7 +67,7 @@ MVN_TEST_MODULES=$(get_test_modules_for_stage ${TEST})
 MVN_LOGGING_OPTIONS="-Dlog.dir=${ARTIFACTS_DIR} -Dlog4j.configurationFile=file://$LOG4J_PROPERTIES"
 MVN_COMMON_OPTIONS="-Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dfast -Pskip-webui-build $MVN_LOGGING_OPTIONS"
 MVN_COMPILE_OPTIONS="-DskipTests"
-MVN_TEST_OPTIONS="-Dflink.tests.with-openssl"
+MVN_TEST_OPTIONS="-Dflink.tests.with-openssl -X"
 
 e2e_modules=$(find flink-end-to-end-tests -mindepth 2 -maxdepth 5 -name 'pom.xml' -printf '%h\n' | sort -u | tr '\n' ',')
 
