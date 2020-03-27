@@ -30,7 +30,7 @@ MVN_GLOBAL_OPTIONS+="-Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simp
 # suppress snapshot updates
 MVN_GLOBAL_OPTIONS+="--no-snapshot-updates "
 # enable non-interactive batch mode
-MVN_GLOBAL_OPTIONS+="-B "
+MVN_GLOBAL_OPTIONS+="-B -X "
 # globally control the build profile details
 MVN_GLOBAL_OPTIONS+="$PROFILE "
 
