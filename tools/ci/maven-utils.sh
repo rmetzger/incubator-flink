@@ -22,7 +22,9 @@ MAVEN_VERSIONED_DIR=${MAVEN_CACHE_DIR}/apache-maven-${MAVEN_VERSION}
 
 export MVN_GLOBAL_OPTIONS=""
 # see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html
-MVN_GLOBAL_OPTIONS+="-Dmaven.wagon.http.pool=false "
+#-Dmaven.wagon.http.pool=false
+# see https://developercommunity.visualstudio.com/content/problem/357696/maven-project-build-failing-with-connection-reset.html
+MVN_GLOBAL_OPTIONS+="-Dhttp.keepAlive=false "
 # use google mirror everywhere
 MVN_GLOBAL_OPTIONS+="--settings $CI_DIR/google-mirror-settings.xml "
 # logging 
