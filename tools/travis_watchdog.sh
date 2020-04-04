@@ -97,6 +97,11 @@ if [ ! -z "$TF_BUILD" ] ; then
 	ARTIFACTS_FILE=${BUILD_BUILDNUMBER}.tar.gz
 fi
 
+# enable coredumps
+ulimit -c unlimited
+JVM_CRASH_REPORTS_LOCATION="${ARTIFACTS_DIR}/jvm-crash-reports"
+export JAVA_TOOL_OPTIONS="-XX:ErrorFile=$JVM_CRASH_REPORTS_LOCATION -XX:HeapDumpPath=$JVM_CRASH_REPORTS_LOCATION -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$JVM_CRASH_REPORTS_LOCATION"
+
 if [ $TEST == $STAGE_PYTHON ]; then
 	CMD=$PYTHON_TEST
 	CMD_PID=$PYTHON_PID
