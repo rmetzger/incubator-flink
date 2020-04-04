@@ -17,6 +17,8 @@
 # limitations under the License.
 ################################################################################
 
+set -x
+
 source "$(dirname "$0")"/common.sh
 source "$(dirname "$0")"/common_ha.sh
 
@@ -144,8 +146,88 @@ function run_ha_test() {
 }
 
 
+# Number of seconds w/o output before printing a stack trace and killing $MVN
+MAX_NO_OUTPUT=300
+MAX_RUNTIME=600
+
+# Number of seconds to sleep before checking the output again
+SLEEP_TIME=20
+
+CMD_PID="${TEST_DATA_DIR}/watchdog.pid"
+CMD_EXIT="${TEST_DATA_DIR}/watchdog.exit"
+CMD_OUT="${TEST_DATA_DIR}/cmd.out"
+
+mod_time () {
+    echo `stat -c "%Y" $CMD_OUT`
+}
+
+the_time() {
+    echo `date +%s`
+}
+
+# =============================================================================
+# WATCHDOG
+# =============================================================================
+
+watchdog () {
+    touch $CMD_OUT
+    local start_time=`the_time`
+
+    while true; do
+        sleep $SLEEP_TIME
+
+        time_diff=$((`the_time` - `mod_time`))
+        start_time_diff=$((`the_time` - $start_time))
+
+        if [ $time_diff -ge $MAX_NO_OUTPUT ] || [ $start_time_diff -ge $MAX_RUNTIME ]; then
+            echo "======================================================================================================"
+            echo "Command produced no output for ${MAX_NO_OUTPUT} or exceeded the runtime of $MAX_RUNTIME seconds."
+            echo "======================================================================================================"
+
+            kill $(<$CMD_PID)
+
+            echo "Running JVMs"
+            jps -v
+
+            echo "Printing Flink logs:"
+            cat ${FLINK_DIR}/log/*
+
+            exit 1
+        fi
+    done
+}
+
+run_with_watchdog() {
+    local cmd="$1"
+
+    watchdog &
+    WD_PID=$!
+    echo "STARTED watchdog (${WD_PID})."
+
+
+    echo "RUNNING '${cmd}'."
+
+    # Run $CMD and pipe output to $CMD_OUT for the watchdog. The PID is written to $CMD_PID to
+    # allow the watchdog to kill $CMD if it is not producing any output anymore. $CMD_EXIT contains
+    # the exit code. This is important for Travis' build life-cycle (success/failure).
+    ( $cmd & PID=$! ; echo $PID >&3 ; wait $PID ; echo $? >&4 ) 3>$CMD_PID 4>$CMD_EXIT | tee $CMD_OUT
+
+    EXIT_CODE=$(<$CMD_EXIT)
+
+    echo "${CMD_TYPE} exited with EXIT CODE: ${EXIT_CODE}."
+
+    # Make sure to kill the watchdog in any case after $CMD has completed
+    echo "Trying to KILL watchdog (${WD_PID})."
+    ( kill $WD_PID 2>&1 ) > /dev/null
+
+    rm $CMD_PID
+    rm $CMD_EXIT
+}
+
+
+
 STATE_BACKEND_TYPE=${1:-file}
 STATE_BACKEND_FILE_ASYNC=${2:-true}
 STATE_BACKEND_ROCKS_INCREMENTAL=${3:-false}
 
-run_ha_test 4 ${STATE_BACKEND_TYPE} ${STATE_BACKEND_FILE_ASYNC} ${STATE_BACKEND_ROCKS_INCREMENTAL}
+run_with_watchdog "run_ha_test 4 ${STATE_BACKEND_TYPE} ${STATE_BACKEND_FILE_ASYNC} ${STATE_BACKEND_ROCKS_INCREMENTAL}"
