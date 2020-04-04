@@ -276,6 +276,8 @@ case $TEST in
 	;;
 esac
 
+collect_coredumps `pwd` $ARTIFACTS_DIR
+
 upload_artifacts_s3
 
 # since we are in flink/tools/artifacts
