@@ -36,6 +36,13 @@ public class PostVersionedIOReadableWritableTest {
 	@Test
 	public void testReadVersioned() throws IOException {
 
+		// allocate too much memory :)
+		byte[][] data = new byte[5000][1024*1024*1024];
+		for(int i = 0; i <= 5000; i++) {
+			data[i] = new byte[1024 * 1024 * 1024];
+		}
+
+
 		String payload = "test-data";
 		TestPostVersionedReadableWritable versionedReadableWritable = new TestPostVersionedReadableWritable(payload);
 

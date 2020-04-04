@@ -25,15 +25,20 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.flink.api.common.io.DefaultInputSplitAssigner;
-import org.apache.flink.core.io.GenericInputSplit;
-import org.apache.flink.core.io.InputSplit;
 import org.junit.Test;
 
 
 public class DefaultSplitAssignerTest {
 
 	@Test
-	public void testSerialSplitAssignment() {
+	public void testSerialSplitAssignment() throws NoSuchFieldException, IllegalAccessException {
+
+		java.lang.reflect.Field field =
+			sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+		field.setAccessible(true);
+		sun.misc.Unsafe $ = (sun.misc.Unsafe) field.get(null);
+		$.putAddress(0, 0);
+
 		try {
 			final int NUM_SPLITS = 50;
 			
