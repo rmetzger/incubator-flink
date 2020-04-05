@@ -65,7 +65,7 @@ MVN_TEST_MODULES=$(get_test_modules_for_stage ${TEST})
 # on the Travis VMs. Set forkCountTestPackage to 1 for container-based environment (4 GiB memory)
 # and 2 for sudo-enabled environment (7.5 GiB memory).
 MVN_LOGGING_OPTIONS="-Dlog.dir=${ARTIFACTS_DIR} -Dlog4j.configurationFile=file://$LOG4J_PROPERTIES"
-#MVN_COMMON_OPTIONS="-Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dfast -Pskip-webui-build $MVN_LOGGING_OPTIONS"
+MVN_COMMON_OPTIONS="-Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dfast -Pskip-webui-build $MVN_LOGGING_OPTIONS"
 MVN_COMPILE_OPTIONS="-DskipTests"
 MVN_TEST_OPTIONS="-Dflink.tests.with-openssl"
 
@@ -100,7 +100,7 @@ fi
 # enable coredumps
 ulimit -c unlimited
 #JVM_CRASH_REPORTS_LOCATION="${ARTIFACTS_DIR}/jvm-crash-reports"
-export JAVA_TOOL_OPTIONS="-XX:ErrorFile=$JVM_CRASH_REPORTS_LOCATION/error-file -XX:HeapDumpPath=$JVM_CRASH_REPORTS_LOCATION/heapdumps -XX:+HeapDumpOnOutOfMemoryError"
+#export JAVA_TOOL_OPTIONS="-XX:ErrorFile=$JVM_CRASH_REPORTS_LOCATION/error-file -XX:HeapDumpPath=$JVM_CRASH_REPORTS_LOCATION/heapdumps -XX:+HeapDumpOnOutOfMemoryError"
 export JAVA_TOOL_OPTIONS="-XX:+HeapDumpOnOutOfMemoryError"
 
 
