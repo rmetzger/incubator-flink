@@ -99,8 +99,10 @@ fi
 
 # enable coredumps
 ulimit -c unlimited
-JVM_CRASH_REPORTS_LOCATION="${ARTIFACTS_DIR}/jvm-crash-reports"
+#JVM_CRASH_REPORTS_LOCATION="${ARTIFACTS_DIR}/jvm-crash-reports"
 export JAVA_TOOL_OPTIONS="-XX:ErrorFile=$JVM_CRASH_REPORTS_LOCATION/error-file -XX:HeapDumpPath=$JVM_CRASH_REPORTS_LOCATION/heapdumps -XX:+HeapDumpOnOutOfMemoryError"
+export JAVA_TOOL_OPTIONS="-XX:+HeapDumpOnOutOfMemoryError"
+
 
 if [ $TEST == $STAGE_PYTHON ]; then
 	CMD=$PYTHON_TEST
