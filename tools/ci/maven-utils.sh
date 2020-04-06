@@ -76,4 +76,6 @@ function collect_coredumps {
 		echo "Moving '$file' to target directory ('$TARGET_DIR')"
 		mv $file $TARGET_DIR/
 	done
+	echo "DEBUG"
+	find $SEARCHDIR
 }
