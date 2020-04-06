@@ -77,6 +77,5 @@ function collect_coredumps {
 		mv $file $TARGET_DIR/
 	done
 	echo "DEBUG"
-	find $SEARCHDIR
-	find /tmp
+	find /
 }
