@@ -78,4 +78,5 @@ function collect_coredumps {
 	done
 	echo "DEBUG"
 	find $SEARCHDIR
+	find /tmp
 }
