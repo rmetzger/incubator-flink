@@ -244,7 +244,7 @@ function install_py_env() {
 # Install tox.
 # In some situations,you need to run the script with "sudo". e.g. sudo ./lint-python.sh
 function install_tox() {
-    source ${CONDA_HOME}/bin/activate
+    source $CONDA_HOME/bin/activate
     if [ -f "$TOX_PATH" ]; then
         $PIP_PATH uninstall tox -y -q 2>&1 >/dev/null
         if [ $? -ne 0 ]; then
@@ -271,7 +271,7 @@ function install_tox() {
 # Install flake8.
 # In some situations,you need to run the script with "sudo". e.g. sudo ./lint-python.sh
 function install_flake8() {
-    source ${CONDA_HOME}/bin/activate
+    source $CONDA_HOME/bin/activate
     if [ -f "$FLAKE8_PATH" ]; then
         $PIP_PATH uninstall flake8 -y -q 2>&1 >/dev/null
         if [ $? -ne 0 ]; then
@@ -295,7 +295,7 @@ function install_flake8() {
 # Install sphinx.
 # In some situations,you need to run the script with "sudo". e.g. sudo ./lint-python.sh
 function install_sphinx() {
-    source ${CONDA_HOME}/bin/activate
+    source $CONDA_HOME/bin/activate
     if [ -f "$SPHINX_PATH" ]; then
         $PIP_PATH uninstall Sphinx -y -q 2>&1 >/dev/null
         if [ $? -ne 0 ]; then
@@ -610,7 +610,6 @@ CURRENT_DIR="$(cd "$( dirname "$0" )" && pwd)"
 
 # FLINK_PYTHON_DIR is "flink/flink-python"
 FLINK_PYTHON_DIR=$(dirname "$CURRENT_DIR")
-pushd "$FLINK_PYTHON_DIR" &> /dev/null
 
 # conda home path
 CONDA_HOME=$CURRENT_DIR/.conda
@@ -761,6 +760,7 @@ fi
 # install environment
 install_environment
 
+pushd "$FLINK_PYTHON_DIR" &> /dev/null
 # exec all selected checks
 if [ $skip_checks -eq 0 ]; then
     check_stage
