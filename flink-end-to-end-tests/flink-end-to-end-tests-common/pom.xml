@@ -29,6 +29,17 @@ under the License.
 
 	<artifactId>flink-end-to-end-tests-common</artifactId>
 
+	<!-- Converge okhttp dependency to 3.7.0 -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.squareup.okhttp3</groupId>
+				<artifactId>okhttp</artifactId>
+				<version>3.7.0</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
@@ -38,7 +49,6 @@ under the License.
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp</artifactId>
-			<version>3.7.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
