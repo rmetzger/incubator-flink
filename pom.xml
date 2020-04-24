@@ -324,6 +324,10 @@ under the License.
 						<groupId>javax.servlet</groupId>
 						<artifactId>servlet-api</artifactId>
 					</exclusion>
+					<exclusion>
+						<groupId>com.google.guava</groupId>
+						<artifactId>guava</artifactId>
+					</exclusion>
 				</exclusions>
 			</dependency>
 
@@ -343,6 +347,10 @@ under the License.
 					<exclusion>
 						<groupId>javax.servlet</groupId>
 						<artifactId>servlet-api</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>com.google.guava</groupId>
+						<artifactId>guava</artifactId>
 					</exclusion>
 				</exclusions>
 			</dependency>
