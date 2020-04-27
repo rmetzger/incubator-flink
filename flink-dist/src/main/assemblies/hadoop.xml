@@ -33,9 +33,9 @@ under the License.
 			<outputDirectory>lib/</outputDirectory>
 			<useTransitiveDependencies>true</useTransitiveDependencies>
 			<scope>provided</scope>
-			<includes>
-				<include>org.apache.flink:flink-shaded-hadoop-2-uber</include>
-			</includes>
+			<!--<includes>
+				<include>org.apache.hadoop:flink-shaded-hadoop-2-uber</include>
+			</includes> -->
 		</dependencySet>
 	</dependencySets>
 </assembly>
