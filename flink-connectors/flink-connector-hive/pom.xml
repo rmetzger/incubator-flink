@@ -41,6 +41,41 @@ under the License.
 		<derby.version>10.10.2.0</derby.version>
 	</properties>
 
+	<dependencyManagement>
+		<dependencies><dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-common</artifactId>
+			<version>${hivemetastore.hadoop.version}</version>
+
+		</dependency>
+
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-hdfs</artifactId>
+				<version>${hivemetastore.hadoop.version}</version>
+
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-mapreduce-client-core</artifactId>
+				<version>${hivemetastore.hadoop.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-yarn-common</artifactId>
+				<version>${hivemetastore.hadoop.version}</version>
+
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-yarn-client</artifactId>
+				<version>${hivemetastore.hadoop.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<dependencies>
 
 		<!-- core dependencies -->
