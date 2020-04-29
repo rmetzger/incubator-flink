@@ -177,7 +177,7 @@ public class YarnFileStageTestS3ITCase extends TestLogger {
 	@RetryOnFailure(times = 3)
 	public void testRecursiveUploadForYarnS3n() throws Exception {
 		// skip test on Hadoop 3: https://issues.apache.org/jira/browse/HADOOP-14738
-		Assume.assumeTrue("This test is skipped for Hadoop versions above 3", VersionUtil.compareVersions(System.getProperty("hadoop.version"), "3.0.0") <= 0 );
+		Assume.assumeTrue("This test is skipped for Hadoop versions above 3", VersionUtil.compareVersions(System.getProperty("hadoop.version"), "3.0.0") <= 0);
 
 		try {
 			Class.forName("org.apache.hadoop.fs.s3native.NativeS3FileSystem");
