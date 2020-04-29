@@ -91,13 +91,6 @@ under the License.
 			<artifactId>hadoop-hdfs</artifactId>
 			<scope>provided</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-hdfs-client</artifactId>
-			<version>${hadoop.version}</version>
-			<scope>provided</scope>
-		</dependency>
 		
 		<!-- test dependencies -->
 		<dependency>
@@ -109,6 +102,22 @@ under the License.
 		</dependency>
 
 	</dependencies>
+
+	<profiles>
+		<profile>
+			<!-- This profile adds dependencies needed to execute the tests
+			with Hadoop 3 -->
+			<id>hadoop3-tests</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-hdfs-client</artifactId>
+					<version>${hadoop.version}</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
 
 	<build>
 		<plugins>
