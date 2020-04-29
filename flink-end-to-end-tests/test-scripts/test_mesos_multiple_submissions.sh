@@ -40,6 +40,8 @@ mkdir -p "${TEST_DATA_DIR}"
 # To ensure the old slots are being reused.
 set_config_key "mesos.resourcemanager.tasks.cpus" "${MESOS_AGENT_CPU}"
 
+set_hadoop_classpath
+
 start_flink_cluster_with_mesos
 
 JOB1_ID=$(submit_job ${FIRST_OUTPUT_LOCATION})
