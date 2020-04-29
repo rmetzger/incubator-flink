@@ -31,7 +31,7 @@ under the License.
 
 	<packaging>pom</packaging>
 
-	<artifactId>flink-end-to-end-tests_${scala.binary.version}</artifactId>
+	<artifactId>flink-end-to-end-tests</artifactId>
 	<name>flink-end-to-end-tests</name>
 
 	<properties>
