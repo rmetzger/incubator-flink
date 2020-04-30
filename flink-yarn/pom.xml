@@ -249,6 +249,7 @@ under the License.
 						</goals>
 						<configuration>
 							<outputFile>${project.build.directory}/yarn.classpath</outputFile>
+							<excludeGroupIds>org.apache.flink</excludeGroupIds>
 						</configuration>
 					</execution>
 				</executions>
