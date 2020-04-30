@@ -48,7 +48,7 @@ function start_flink_cluster_with_mesos() {
     build_image
 
     # we need to export the MVN_REPO location so that mesos can access the files referenced in HADOOP_CLASSPATH
-    export MVN_REPO=`mvn help:evaluate -Dexpression=settings.localRepository | grep -v '\['`
+    export MVN_REPO=`mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout`
 
     # start mesos cluster
     docker-compose -f $END_TO_END_DIR/test-scripts/docker-mesos-cluster/docker-compose.yml up -d
