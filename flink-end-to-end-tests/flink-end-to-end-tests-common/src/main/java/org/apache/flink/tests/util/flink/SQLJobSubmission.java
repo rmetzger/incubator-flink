@@ -18,6 +18,8 @@
 
 package org.apache.flink.tests.util.flink;
 
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.flink.util.Preconditions;
 
 import java.nio.file.Path;
@@ -87,6 +89,11 @@ public class SQLJobSubmission {
 
 		public SQLJobSubmissionBuilder addJar(Path jarFile) {
 			this.jars.add(jarFile.toAbsolutePath().toString());
+			return this;
+		}
+
+		public SQLJobSubmissionBuilder addJars(List<Path> jarFiles) {
+			this.jars.addAll(jarFiles.stream().map(path -> path.toAbsolutePath().toString()).collect(Collectors.toList()));
 			return this;
 		}
 
