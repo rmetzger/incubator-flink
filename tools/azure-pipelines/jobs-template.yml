@@ -86,22 +86,22 @@ jobs:
     matrix:
       core:
         module: core
-      python:
-        module: python
+#      python:
+#        module: python
       libraries:
         module: libraries
-      blink_planner:
-        module: blink_planner
+#      blink_planner:
+#        module: blink_planner
       connectors:
         module: connectors
       kafka_gelly:
         module: kafka/gelly
       tests:
         module: tests
-      legacy_scheduler_core:
-        module: legacy_scheduler_core
-      legacy_scheduler_tests:
-        module: legacy_scheduler_tests
+      # legacy_scheduler_core:
+      #   module: legacy_scheduler_core
+      # legacy_scheduler_tests:
+      #   module: legacy_scheduler_tests
       misc:
         module: misc
   steps:
