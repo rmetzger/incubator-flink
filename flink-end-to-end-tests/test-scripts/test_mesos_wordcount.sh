@@ -19,6 +19,8 @@
 
 set -o pipefail
 
+set -x
+
 source "$(dirname "$0")"/common.sh
 source "$(dirname "$0")"/common_mesos_docker.sh
 
