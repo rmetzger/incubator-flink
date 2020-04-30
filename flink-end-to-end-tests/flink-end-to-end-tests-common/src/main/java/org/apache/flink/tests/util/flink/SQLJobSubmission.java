@@ -18,14 +18,13 @@
 
 package org.apache.flink.tests.util.flink;
 
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.flink.util.Preconditions;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Programmatic definition of a SQL job-submission.

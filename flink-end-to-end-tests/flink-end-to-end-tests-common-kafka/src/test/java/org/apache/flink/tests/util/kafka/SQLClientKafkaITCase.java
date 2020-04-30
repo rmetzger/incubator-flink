@@ -18,9 +18,6 @@
 
 package org.apache.flink.tests.util.kafka;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.flink.tests.util.CommandLineWrapper;
 import org.apache.flink.tests.util.TestUtils;
 import org.apache.flink.tests.util.cache.DownloadCache;
 import org.apache.flink.tests.util.categories.Hadoop;
@@ -55,9 +52,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
@@ -124,7 +123,6 @@ public class SQLClientKafkaITCase extends TestLogger {
 		apacheAvroJars.add(downloadCache.getOrDownload("https://repo1.maven.org/maven2/org/codehaus/jackson/jackson-core-asl/1.9.13/jackson-core-asl-1.9.13.jar", tmpPath));
 		apacheAvroJars.add(downloadCache.getOrDownload("https://repo1.maven.org/maven2/org/codehaus/jackson/jackson-mapper-asl/1.9.13/jackson-mapper-asl-1.9.13.jar", tmpPath));
 	}
-
 
 	@Test
 	public void testKafka() throws Exception {
