@@ -383,14 +383,6 @@ under the License.
 				</executions>
 				<configuration>
 					<artifactItems>
-						<!--<artifactItem>
-							<groupId>org.apache.flink</groupId>
-							<artifactId>flink-shaded-hadoop-2-uber</artifactId>
-							<version>${hadoop.version}-${flink.shaded.version}</version>
-							<type>jar</type>
-							<overWrite>true</overWrite>
-							<outputDirectory>${project.build.directory}/shaded-hadoop</outputDirectory>
-						</artifactItem> -->
 						<artifactItem>
 							<groupId>org.apache.flink</groupId>
 							<artifactId>flink-examples-batch_${scala.binary.version}</artifactId>
