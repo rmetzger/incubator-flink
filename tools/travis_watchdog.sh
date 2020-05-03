@@ -150,9 +150,10 @@ upload_artifacts_s3() {
 		ARTIFACT_DIR="$(pwd)/artifact-dir"
 		mkdir $ARTIFACT_DIR
 		cp $ARTIFACTS_FILE $ARTIFACT_DIR/
-		
+		NEW_UUID=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
 		echo "##vso[task.setvariable variable=ARTIFACT_DIR]$ARTIFACT_DIR"
-		echo "##vso[task.setvariable variable=ARTIFACT_NAME]$(echo $MODULE | tr -dc '[:alnum:]\n\r')"
+		echo "##vso[task.setvariable variable=ARTIFACT_NAME]$(echo $MODULE | tr -dc '[:alnum:]\n\r')-$NEW_UUID"
 	fi
 
 	# upload to https://transfer.sh

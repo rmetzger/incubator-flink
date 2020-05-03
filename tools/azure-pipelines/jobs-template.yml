@@ -88,14 +88,14 @@ jobs:
         module: misc
 #      python:
 #        module: python
-#      libraries:
-#        module: misc
+      libraries:
+        module: misc
 #      blink_planner:
 #        module: blink_planner
-#      connectors:
-#        module: misc
-#      kafka_gelly:
-#        module: misc
+      connectors:
+        module: misc
+      kafka_gelly:
+        module: misc
 #      tests:
 #        module: misc
       # legacy_scheduler_core:
