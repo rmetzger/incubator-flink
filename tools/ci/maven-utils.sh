@@ -90,7 +90,7 @@ set_mirror_config
 
 export MVN_GLOBAL_OPTIONS=""
 # see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html
-MVN_GLOBAL_OPTIONS+="-Dmaven.wagon.http.pool=false "
+# MVN_GLOBAL_OPTIONS+="-Dmaven.wagon.http.pool=false "
 # use google mirror everywhere
 MVN_GLOBAL_OPTIONS+="--settings $MAVEN_MIRROR_CONFIG_FILE "
 # logging 
