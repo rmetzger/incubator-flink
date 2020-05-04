@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Programmatic definition of a SQL job-submission.
@@ -87,6 +88,11 @@ public class SQLJobSubmission {
 
 		public SQLJobSubmissionBuilder addJar(Path jarFile) {
 			this.jars.add(jarFile.toAbsolutePath().toString());
+			return this;
+		}
+
+		public SQLJobSubmissionBuilder addJars(List<Path> jarFiles) {
+			this.jars.addAll(jarFiles.stream().map(path -> path.toAbsolutePath().toString()).collect(Collectors.toList()));
 			return this;
 		}
 
