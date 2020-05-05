@@ -49,7 +49,7 @@ resources:
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-  CACHE_KEY: maven | $(Agent.OS) | **/pom.xml, !**/target/**
+  CACHE_KEY: maven | "$(JAVA_HOME)" | **/pom.xml, !**/target/**
   CACHE_FALLBACK_KEY: maven | $(Agent.OS)
   CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
   SECRET_S3_BUCKET: $[variables.IT_CASE_S3_BUCKET]

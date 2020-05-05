@@ -40,6 +40,12 @@ jobs:
     target: host
     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
     displayName: Free up disk space
+  # Setting the JDK version must happen before the Cache task, as it depends on the JDK version
+  - script: |
+      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
+      echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
+    displayName: "Set to jdk11"
+    condition: eq('${{parameters.jdk}}', 'jdk11')
   # The cache task is persisting the .m2 directory between builds, so that
   # we do not have to re-download all dependencies from maven central for 
   # each build. The hope is that downloading the cache is faster than
@@ -58,11 +64,6 @@ jobs:
     # do not use cache on the "Default" queue
     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
     displayName: Cache Maven local repo
-  - script: |
-      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
-      echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
-    displayName: "Set to jdk11"
-    condition: eq('${{parameters.jdk}}', 'jdk11')
   # Compile
   - script: STAGE=compile ${{parameters.environment}} ./tools/azure_controller.sh compile
     displayName: Build
@@ -116,7 +117,11 @@ jobs:
     inputs:
       path: $(CACHE_FLINK_DIR)
       artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
-
+  - script: |
+      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
+      echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
+    displayName: "Set to jdk11"
+    condition: eq('${{parameters.jdk}}', 'jdk11')
   - task: Cache@2
     inputs:
       key: $(CACHE_KEY)
@@ -125,11 +130,6 @@ jobs:
     continueOnError: true # continue the build even if the cache fails.
     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
     displayName: Cache Maven local repo
-  - script: |
-      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
-      echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
-    displayName: "Set to jdk11"
-    condition: eq('${{parameters.jdk}}', 'jdk11')  
   - script: sudo sysctl -w kernel.core_pattern=core.%p
     displayName: Set coredump pattern
   # Test
@@ -161,6 +161,11 @@ jobs:
   workspace:
     clean: all
   steps:
+    - script: |
+        echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
+        echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
+      displayName: "Set to jdk11"
+      condition: eq('${{parameters.jdk}}', 'jdk11')
     - task: Cache@2
       inputs:
         key: $(CACHE_KEY)
@@ -168,11 +173,6 @@ jobs:
         path: $(MAVEN_CACHE_FOLDER)
       displayName: Cache Maven local repo
       continueOnError: true
-    - script: |
-        echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
-        echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
-      displayName: "Set to jdk11"
-      condition: eq('${{parameters.jdk}}', 'jdk11')
     - script: |
         source ./tools/ci/maven-utils.sh
         setup_maven
