@@ -205,7 +205,7 @@ public abstract class YarnTestBase extends TestLogger {
 	 * @return a classpath suitable for running all YARN-launched JVMs
 	 */
 	private static String getYarnClasspath() {
-		final String start = "../flink-yarn";
+		final String start = "../flink-yarn-tests";
 		try {
 			File classPathFile = findFile(start, (dir, name) -> name.equals("yarn.classpath"));
 			return FileUtils.readFileToString(classPathFile); // potential NPE is supposed to be fatal
