@@ -149,6 +149,11 @@ public abstract class RichAsyncFunction<IN, OUT> extends AbstractRichFunction im
 		}
 
 		@Override
+		public void registerUserCodeClassLoaderReleaseHook(Runnable releaseHook) {
+			runtimeContext.registerUserCodeClassLoaderReleaseHook(releaseHook);
+		}
+
+		@Override
 		public Set<ExternalResourceInfo> getExternalResourceInfos(String resourceName) {
 			return runtimeContext.getExternalResourceInfos(resourceName);
 		}

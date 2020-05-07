@@ -27,7 +27,6 @@ import org.apache.flink.runtime.accumulators.AccumulatorRegistry;
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager;
 import org.apache.flink.runtime.checkpoint.CheckpointMetrics;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
-import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.externalresource.ExternalResourceInfoProvider;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;
@@ -44,6 +43,7 @@ import org.apache.flink.runtime.state.TaskStateManager;
 import org.apache.flink.runtime.state.internal.InternalKvState;
 import org.apache.flink.runtime.taskexecutor.GlobalAggregateManager;
 import org.apache.flink.runtime.taskmanager.TaskManagerRuntimeInfo;
+import org.apache.flink.util.UserCodeClassLoader;
 
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -149,7 +149,7 @@ public interface Environment {
 	/**
 	 * Returns the user code class loader
 	 */
-	LibraryCacheManager.UserCodeClassLoader getUserClassLoader();
+	UserCodeClassLoader getUserClassLoader();
 
 	Map<String, Future<Path>> getDistributedCacheEntries();
 

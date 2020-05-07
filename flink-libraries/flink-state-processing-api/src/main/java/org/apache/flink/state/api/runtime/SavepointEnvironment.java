@@ -32,7 +32,6 @@ import org.apache.flink.runtime.checkpoint.CheckpointMetrics;
 import org.apache.flink.runtime.checkpoint.PrioritizedOperatorSubtaskState;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.execution.Environment;
-import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.externalresource.ExternalResourceInfoProvider;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;
@@ -57,6 +56,7 @@ import org.apache.flink.runtime.taskmanager.TaskManagerRuntimeInfo;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
+import org.apache.flink.util.UserCodeClassLoader;
 
 import java.util.Collections;
 import java.util.Map;
@@ -94,7 +94,7 @@ public class SavepointEnvironment implements Environment {
 
 	private final AccumulatorRegistry accumulatorRegistry;
 
-	private final LibraryCacheManager.UserCodeClassLoader userCodeClassLoader;
+	private final UserCodeClassLoader userCodeClassLoader;
 
 	private SavepointEnvironment(RuntimeContext ctx, Configuration configuration, int maxParallelism, int indexOfSubtask, PrioritizedOperatorSubtaskState prioritizedOperatorSubtaskState) {
 		this.jobID = new JobID();
@@ -182,7 +182,7 @@ public class SavepointEnvironment implements Environment {
 	}
 
 	@Override
-	public LibraryCacheManager.UserCodeClassLoader getUserClassLoader() {
+	public UserCodeClassLoader getUserClassLoader() {
 		return userCodeClassLoader;
 	}
 
@@ -323,7 +323,7 @@ public class SavepointEnvironment implements Environment {
 		}
 	}
 
-	private static final class UserCodeClassLoaderRuntimeContextAdapter implements LibraryCacheManager.UserCodeClassLoader {
+	private static final class UserCodeClassLoaderRuntimeContextAdapter implements UserCodeClassLoader {
 
 		private final RuntimeContext runtimeContext;
 
@@ -338,7 +338,7 @@ public class SavepointEnvironment implements Environment {
 
 		@Override
 		public void registerReleaseHook(Runnable releaseHook) {
-			throw new UnsupportedOperationException("Not yet supported");
+			runtimeContext.registerUserCodeClassLoaderReleaseHook(releaseHook);
 		}
 
 		private static UserCodeClassLoaderRuntimeContextAdapter from(RuntimeContext runtimeContext) {

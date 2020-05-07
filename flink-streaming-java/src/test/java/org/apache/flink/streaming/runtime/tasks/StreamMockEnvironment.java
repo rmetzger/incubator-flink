@@ -30,8 +30,6 @@ import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
 import org.apache.flink.runtime.checkpoint.CheckpointMetrics;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.execution.Environment;
-import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
-import org.apache.flink.runtime.execution.librarycache.TestingUserCodeClassLoader;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.externalresource.ExternalResourceInfoProvider;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;
@@ -60,6 +58,8 @@ import org.apache.flink.runtime.taskmanager.NoOpTaskOperatorEventGateway;
 import org.apache.flink.runtime.taskmanager.TaskManagerRuntimeInfo;
 import org.apache.flink.runtime.util.TestingTaskManagerRuntimeInfo;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TestingUserCodeClassLoader;
+import org.apache.flink.util.UserCodeClassLoader;
 
 import javax.annotation.Nullable;
 
@@ -113,7 +113,7 @@ public class StreamMockEnvironment implements Environment {
 
 	private final GlobalAggregateManager aggregateManager;
 
-	private final LibraryCacheManager.UserCodeClassLoader userCodeClassLoader = TestingUserCodeClassLoader.newBuilder().build();
+	private final UserCodeClassLoader userCodeClassLoader = TestingUserCodeClassLoader.newBuilder().build();
 
 	@Nullable
 	private Consumer<Throwable> externalExceptionHandler;
@@ -258,7 +258,7 @@ public class StreamMockEnvironment implements Environment {
 	}
 
 	@Override
-	public LibraryCacheManager.UserCodeClassLoader getUserClassLoader() {
+	public UserCodeClassLoader getUserClassLoader() {
 		return userCodeClassLoader;
 	}
 
