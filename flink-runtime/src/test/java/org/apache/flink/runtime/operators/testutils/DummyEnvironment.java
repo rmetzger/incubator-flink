@@ -157,7 +157,7 @@ public class DummyEnvironment implements Environment {
 	}
 
 	@Override
-	public UserCodeClassLoader getUserClassLoader() {
+	public UserCodeClassLoader getUserCodeClassLoader() {
 		if (userClassLoader == null) {
 			return TestingUserCodeClassLoader.newBuilder().build();
 		} else {
