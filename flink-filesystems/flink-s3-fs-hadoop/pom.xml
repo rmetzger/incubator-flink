@@ -32,7 +32,7 @@ under the License.
 
 	<packaging>jar</packaging>
 
-	<!-- Override the flink-parent dependencyManagement defintion for hadoop-common to ensure
+	<!-- Override the flink-parent dependencyManagement definition for hadoop-common to ensure
 		${fs.hadoopshaded.version} is used for this file system -->
 	<dependencyManagement>
 		<dependencies>
