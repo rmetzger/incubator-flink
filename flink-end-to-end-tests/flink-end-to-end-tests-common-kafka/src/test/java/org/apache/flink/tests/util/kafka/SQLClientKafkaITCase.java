@@ -20,7 +20,6 @@ package org.apache.flink.tests.util.kafka;
 
 import org.apache.flink.tests.util.TestUtils;
 import org.apache.flink.tests.util.cache.DownloadCache;
-import org.apache.flink.tests.util.categories.Hadoop;
 import org.apache.flink.tests.util.categories.TravisGroup1;
 import org.apache.flink.tests.util.flink.ClusterController;
 import org.apache.flink.tests.util.flink.FlinkResource;
