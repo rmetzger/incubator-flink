@@ -20,6 +20,7 @@ package org.apache.flink.runtime.jobmaster;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
@@ -121,7 +122,7 @@ public class JobManagerRunnerImpl implements LeaderContender, OnCompletionAction
 		checkArgument(jobGraph.getNumberOfVertices() > 0, "The given job is empty");
 
 		// libraries and class loader first
-		final ClassLoader userCodeLoader;
+		final LibraryCacheManager.UserCodeClassLoader userCodeLoader;
 		try {
 			userCodeLoader = classLoaderLease.getOrResolveClassLoader(
 				jobGraph.getUserJarBlobKeys(),

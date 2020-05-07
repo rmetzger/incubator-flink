@@ -277,7 +277,7 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 	private long taskCancellationTimeout;
 
 	/** This class loader should be set as the context class loader for threads that may dynamically load user code. */
-	private ClassLoader userCodeClassLoader;
+	private LibraryCacheManager.UserCodeClassLoader userCodeClassLoader;
 
 	/**
 	 * <p><b>IMPORTANT:</b> This constructor may not start any work that would need to
@@ -607,7 +607,7 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 			LOG.info("Loading JAR files for task {}.", this);
 
 			userCodeClassLoader = createUserCodeClassloader();
-			final ExecutionConfig executionConfig = serializedExecutionConfig.deserializeValue(userCodeClassLoader);
+			final ExecutionConfig executionConfig = serializedExecutionConfig.deserializeValue(userCodeClassLoader.asClassLoader());
 
 			if (executionConfig.getTaskCancellationInterval() >= 0) {
 				// override task cancellation interval from Flink config if set in ExecutionConfig
@@ -693,10 +693,10 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 			// Make sure the user code classloader is accessible thread-locally.
 			// We are setting the correct context class loader before instantiating the invokable
 			// so that it is available to the invokable during its entire lifetime.
-			executingThread.setContextClassLoader(userCodeClassLoader);
+			executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
 
 			// now load and instantiate the task's invokable code
-			invokable = loadAndInstantiateInvokable(userCodeClassLoader, nameOfInvokableClass, env);
+			invokable = loadAndInstantiateInvokable(userCodeClassLoader.asClassLoader(), nameOfInvokableClass, env);
 
 			// ----------------------------------------------------------------
 			//  actual task core work
@@ -715,7 +715,7 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 			taskManagerActions.updateTaskExecutionState(new TaskExecutionState(jobId, executionId, ExecutionState.RUNNING));
 
 			// make sure the user code classloader is accessible thread-locally
-			executingThread.setContextClassLoader(userCodeClassLoader);
+			executingThread.setContextClassLoader(userCodeClassLoader.asClassLoader());
 
 			// run the invokable
 			invokable.invoke();
@@ -922,11 +922,11 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 		}
 	}
 
-	private ClassLoader createUserCodeClassloader() throws Exception {
+	private LibraryCacheManager.UserCodeClassLoader createUserCodeClassloader() throws Exception {
 		long startDownloadTime = System.currentTimeMillis();
 
 		// triggers the download of all missing jar files from the job manager
-		final ClassLoader userCodeClassLoader = classLoaderHandle.getOrResolveClassLoader(requiredJarFiles, requiredClasspaths);
+		final LibraryCacheManager.UserCodeClassLoader userCodeClassLoader = classLoaderHandle.getOrResolveClassLoader(requiredJarFiles, requiredClasspaths);
 
 		LOG.debug("Getting user code class loader for task {} at library cache manager took {} milliseconds",
 				executionId, System.currentTimeMillis() - startDownloadTime);

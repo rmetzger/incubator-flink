@@ -38,8 +38,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -220,7 +222,7 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 			this.isReleased = false;
 		}
 
-		private ClassLoader getOrResolveClassLoader(Collection<PermanentBlobKey> libraries, Collection<URL> classPaths) throws IOException {
+		private LibraryCacheManager.UserCodeClassLoader getOrResolveClassLoader(Collection<PermanentBlobKey> libraries, Collection<URL> classPaths) throws IOException {
 			synchronized (lockObject) {
 				verifyIsNotReleased();
 
@@ -230,7 +232,7 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 					resolvedClassLoader.verifyClassLoader(libraries, classPaths);
 				}
 
-				return resolvedClassLoader.getClassLoader();
+				return resolvedClassLoader;
 			}
 		}
 
@@ -317,7 +319,7 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		}
 
 		@Override
-		public ClassLoader getOrResolveClassLoader(Collection<PermanentBlobKey> requiredJarFiles, Collection<URL> requiredClasspaths) throws IOException {
+		public LibraryCacheManager.UserCodeClassLoader getOrResolveClassLoader(Collection<PermanentBlobKey> requiredJarFiles, Collection<URL> requiredClasspaths) throws IOException {
 			verifyIsNotClosed();
 			return libraryCacheEntry.getOrResolveClassLoader(
 				requiredJarFiles,
@@ -344,7 +346,7 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		}
 	}
 
-	private static final class ResolvedClassLoader {
+	private static final class ResolvedClassLoader implements LibraryCacheManager.UserCodeClassLoader {
 		private final URLClassLoader classLoader;
 
 		/**
@@ -363,6 +365,8 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		 */
 		private final Set<String> classPaths;
 
+		private final Collection<Runnable> releaseHooks;
+
 		private ResolvedClassLoader(URLClassLoader classLoader, Collection<PermanentBlobKey> requiredLibraries, Collection<URL> requiredClassPaths) {
 			this.classLoader = classLoader;
 
@@ -374,10 +378,18 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 				classPaths.add(url.toString());
 			}
 			this.libraries = new HashSet<>(requiredLibraries);
+
+			this.releaseHooks = Collections.newSetFromMap(new IdentityHashMap<>());
 		}
 
-		private URLClassLoader getClassLoader() {
+		@Override
+		public ClassLoader asClassLoader() {
 			return classLoader;
+		}
+
+		@Override
+		public void registerReleaseHook(Runnable releaseHook) {
+			releaseHooks.add(releaseHook);
 		}
 
 		private void verifyClassLoader(Collection<PermanentBlobKey> requiredLibraries, Collection<URL> requiredClassPaths) {
@@ -413,6 +425,16 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		 * and the cached libraries are deleted immediately.
 		 */
 		private void releaseClassLoader() {
+			for (Runnable releaseHook : releaseHooks) {
+				try {
+					releaseHook.run();
+				} catch (Throwable t) {
+					LOG.debug("Failed to run release hook for user code class loader.", t);
+				}
+			}
+
+			releaseHooks.clear();
+
 			try {
 				classLoader.close();
 			} catch (IOException e) {
