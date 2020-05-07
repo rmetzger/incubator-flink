@@ -28,6 +28,7 @@ import org.apache.flink.runtime.broadcast.BroadcastVariableManager;
 import org.apache.flink.runtime.checkpoint.CheckpointMetrics;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.execution.Environment;
+import org.apache.flink.runtime.execution.librarycache.LibraryCacheManager;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.externalresource.ExternalResourceInfoProvider;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;
@@ -111,7 +112,7 @@ public class MockEnvironment implements Environment, AutoCloseable {
 
 	private final int bufferSize;
 
-	private final ClassLoader userCodeClassLoader;
+	private final LibraryCacheManager.UserCodeClassLoader userCodeClassLoader;
 
 	private final TaskEventDispatcher taskEventDispatcher = new TaskEventDispatcher();
 
@@ -141,7 +142,7 @@ public class MockEnvironment implements Environment, AutoCloseable {
 			int maxParallelism,
 			int parallelism,
 			int subtaskIndex,
-			ClassLoader userCodeClassLoader,
+			LibraryCacheManager.UserCodeClassLoader userCodeClassLoader,
 			TaskMetricGroup taskMetricGroup,
 			TaskManagerRuntimeInfo taskManagerRuntimeInfo,
 			MemoryManager memManager,
@@ -268,7 +269,7 @@ public class MockEnvironment implements Environment, AutoCloseable {
 	}
 
 	@Override
-	public ClassLoader getUserClassLoader() {
+	public LibraryCacheManager.UserCodeClassLoader getUserClassLoader() {
 		return userCodeClassLoader;
 	}
 

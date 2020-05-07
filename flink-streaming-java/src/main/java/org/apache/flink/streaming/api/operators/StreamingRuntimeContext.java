@@ -94,7 +94,7 @@ public class StreamingRuntimeContext extends AbstractRuntimeUDFContext {
 			@Nullable KeyedStateStore keyedStateStore,
 			ExternalResourceInfoProvider externalResourceInfoProvider) {
 		super(checkNotNull(env).getTaskInfo(),
-				env.getUserClassLoader(),
+				env.getUserClassLoader().asClassLoader(),
 				env.getExecutionConfig(),
 				accumulators,
 				env.getDistributedCacheEntries(),
