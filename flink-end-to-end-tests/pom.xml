@@ -45,7 +45,6 @@ under the License.
 		<e2e.include.org.apache.flink.tests.util.categories.TravisGroup5>false</e2e.include.org.apache.flink.tests.util.categories.TravisGroup5>
 		<e2e.include.org.apache.flink.tests.util.categories.TravisGroup6>false</e2e.include.org.apache.flink.tests.util.categories.TravisGroup6>
 		<e2e.include.org.apache.flink.tests.util.categories.PreCommit>false</e2e.include.org.apache.flink.tests.util.categories.PreCommit>
-		<e2e.exclude.org.apache.flink.tests.util.categories.Hadoop>true</e2e.exclude.org.apache.flink.tests.util.categories.Hadoop>
 		<e2e.exclude.org.apache.flink.testutils.junit.FailsOnJava11>false</e2e.exclude.org.apache.flink.testutils.junit.FailsOnJava11>
 	</properties>
 
@@ -149,12 +148,6 @@ under the License.
 			<id>e2e-pre-commit</id>
 			<properties>
 				<e2e.include.org.apache.flink.tests.util.categories.PreCommit>true</e2e.include.org.apache.flink.tests.util.categories.PreCommit>
-			</properties>
-		</profile>
-		<profile>
-			<id>e2e-hadoop</id>
-			<properties>
-				<e2e.exclude.org.apache.flink.tests.util.categories.Hadoop>false</e2e.exclude.org.apache.flink.tests.util.categories.Hadoop>
 			</properties>
 		</profile>
 		<profile>
