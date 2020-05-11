@@ -71,7 +71,7 @@ Another way to provide the Hadoop configuration is to have it on the class path 
 To run a job locally as one JVM process using the mini cluster, the required hadoop dependencies have to be explicitly
 added to the classpath of the started JVM process.
 
-To run an application using maven (also from IDE as a maven project), the required hadoop dependencies can be added
+To run an application using Maven (also from IDE as a Maven project), the required Hadoop dependencies can be added
 as provided to the pom.xml, e.g.:
 
 ```xml
@@ -83,19 +83,11 @@ as provided to the pom.xml, e.g.:
 </dependency>
 ```
 
-This way it should work both in local and cluster run where the provided dependencies are added elsewhere as described before.
+This way it should work both in local and cluster mode where the provided dependencies are added elsewhere as described before.
 
 To run or debug an application in IntelliJ Idea the provided dependencies can be included to the class path
 in the "Run|Edit Configurations" window.
 
-
-2) Putting the required jar files into /lib directory of the Flink distribution
-Option 1) requires very little work, integrates nicely with existing Hadoop setups and should be the
-preferred approach.
-However, Hadoop has a large dependency footprint that increases the risk for dependency conflicts to occur.
-If this happens, please refer to option 2).
-
-The following subsections explains these approaches in detail.
 
 ## Using `flink-shaded-hadoop-2-uber` jar for resolving dependency conflicts (legacy)
 
@@ -104,10 +96,7 @@ The following subsections explains these approaches in detail.
   by the Flink project anymore. Users are advised to provide Hadoop dependencies through `HADOOP_CLASSPATH` (see above).
 </div>
 
-
-
-The Flink project used to release Hadoop distributions for specific versions, that relocate or exclude several dependencies
-to reduce the risk of dependency clashes.
+The Flink project used to (until Flink 1.10) release Hadoop distributions for specific versions, that relocate or exclude several dependencies to reduce the risk of dependency clashes.
 These can be found in the [Additional Components]({{ site.download_url }}#additional-components) section of the download page.
 For these versions it is sufficient to download the corresponding `Pre-bundled Hadoop` component and putting it into
 the `/lib` directory of the Flink distribution.
