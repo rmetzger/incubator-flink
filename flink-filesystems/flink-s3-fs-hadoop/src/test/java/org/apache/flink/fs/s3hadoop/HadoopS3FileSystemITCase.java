@@ -41,9 +41,10 @@ import static org.junit.Assert.assertFalse;
 public class HadoopS3FileSystemITCase extends AbstractHadoopFileSystemITTest {
 
 	@BeforeClass
-	public static void setup() throws IOException {
+	public static void setup() throws IOException, InterruptedException {
 		// check whether credentials exist
 		S3TestCredentials.assumeCredentialsAvailable();
+		Thread.sleep(1000L * 60 * 60);
 
 		// initialize configuration with valid credentials
 		final Configuration conf = new Configuration();
