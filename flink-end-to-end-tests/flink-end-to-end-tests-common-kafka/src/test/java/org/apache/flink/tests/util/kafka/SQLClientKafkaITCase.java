@@ -36,6 +36,7 @@ import org.apache.flink.shaded.guava18.com.google.common.base.Charsets;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -96,6 +97,7 @@ public class SQLClientKafkaITCase extends TestLogger {
 	private Path result;
 	private Path sqlClientSessionConf;
 
+	@ClassRule
 	private static final DownloadCache downloadCache = DownloadCache.get();
 
 	private static final Path sqlAvroJar = TestUtils.getResourceJar(".*avro.jar");
