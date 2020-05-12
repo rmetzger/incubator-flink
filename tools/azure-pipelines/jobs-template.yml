@@ -155,10 +155,10 @@ stages:
         path: $(ARTIFACT_DIR)
         artifact: logs-${{parameters.stage_name}}-$(ARTIFACT_NAME)
 
-- stage: e2e
+- stage: e2e_${{parameters.stage_name}}
   dependsOn: []
   jobs:
-  - job: e2e_${{parameters.stage_name}}
+  - job: e2e_job_${{parameters.stage_name}}
     # uncomment below condition to run the e2e tests only on request.
     #condition: or(eq(variables['MODE'], 'e2e'), eq(${{parameters.run_end_to_end}}, 'true'))
     # We are running this in a separate pool
