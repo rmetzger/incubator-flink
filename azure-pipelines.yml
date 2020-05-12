@@ -57,7 +57,7 @@ variables:
   SECRET_S3_SECRET_KEY: $[variables.IT_CASE_S3_SECRET_KEY]
 
 
-jobs:
+stages:
   - template: tools/azure-pipelines/jobs-template.yml
     parameters: # see template file for a definition of the parameters.
       stage_name: ci_build
