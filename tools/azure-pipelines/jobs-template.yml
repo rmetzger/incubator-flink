@@ -24,6 +24,7 @@ parameters:
 
 stages:
 - stage: compile_${{parameters.stage_name}}
+  dependsOn: []
   jobs:
   - job: compile_job_${{parameters.stage_name}}
     condition: not(eq(variables['MODE'], 'e2e'))
