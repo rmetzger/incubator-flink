@@ -156,6 +156,7 @@ stages:
         artifact: logs-${{parameters.stage_name}}-$(ARTIFACT_NAME)
 
 - stage: e2e
+  dependsOn: []
   jobs:
   - job: e2e_${{parameters.stage_name}}
     # uncomment below condition to run the e2e tests only on request.
