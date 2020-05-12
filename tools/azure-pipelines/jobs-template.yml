@@ -76,9 +76,9 @@ stages:
         artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
 - stage: test_${{parameters.stage_name}}
+  dependsOn: compile_${{parameters.stage_name}}
   jobs:
   - job: test_job_${{parameters.stage_name}}
-    dependsOn: compile_${{parameters.stage_name}}
     condition: and(succeeded(), not(eq(variables['MODE'], 'e2e')))
     pool: ${{parameters.test_pool_definition}}
     container: ${{parameters.container}}
