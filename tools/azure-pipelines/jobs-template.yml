@@ -24,6 +24,7 @@ parameters:
 
 stages:
 - stage: compile_${{parameters.stage_name}}
+  jobs:
   - job: compile_job_${{parameters.stage_name}}
     condition: not(eq(variables['MODE'], 'e2e'))
     pool: ${{parameters.test_pool_definition}}
@@ -75,6 +76,7 @@ stages:
         artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
 
 - stage: test_${{parameters.stage_name}}
+  jobs:
   - job: test_job_${{parameters.stage_name}}
     dependsOn: compile_${{parameters.stage_name}}
     condition: and(succeeded(), not(eq(variables['MODE'], 'e2e')))
@@ -154,6 +156,7 @@ stages:
         artifact: logs-${{parameters.stage_name}}-$(ARTIFACT_NAME)
 
 - stage: e2e
+  jobs:
   - job: e2e_${{parameters.stage_name}}
     # uncomment below condition to run the e2e tests only on request.
     #condition: or(eq(variables['MODE'], 'e2e'), eq(${{parameters.run_end_to_end}}, 'true'))
