@@ -79,6 +79,11 @@ printf "\n\n====================================================================
 printf "Running bash end-to-end tests\n"
 printf "==============================================================================\n"
 
+run_test "Wordcount on Docker test (custom fs plugin)" "$END_TO_END_DIR/test-scripts/test_docker_embedded_job.sh dummy-fs"
+run_test "Running Flink over NAT end-to-end test" "$END_TO_END_DIR/test-scripts/test_nat.sh" "skip_check_exceptions"
+run_test "Run Kubernetes test" "$END_TO_END_DIR/test-scripts/test_kubernetes_embedded_job.sh"
+run_test "Run kubernetes session test" "$END_TO_END_DIR/test-scripts/test_kubernetes_session.sh"
+
 ################################################################################
 # Checkpointing tests
 ################################################################################
