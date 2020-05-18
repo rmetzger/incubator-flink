@@ -64,14 +64,16 @@ jobs:
     displayName: "Set to jdk11"
     condition: eq('${{parameters.jdk}}', 'jdk11')
   # Compile
-  - script: STAGE=compile ${{parameters.environment}} ./tools/azure-pipelines/azure_controller.sh compile
+  - script: |
+      ${{parameters.environment}} ./tools/ci/compile.sh
+      ./tools/azure-pipelines/create_build_artifact.sh
     displayName: Build
 
   # upload artifacts for next stage
   - task: PublishPipelineArtifact@1
     inputs:
       path: $(CACHE_FLINK_DIR)
-      artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+      artifact: FlinkCompileArtifact-${{parameters.stage_name}}
 
 - job: test_${{parameters.stage_name}}
   dependsOn: compile_${{parameters.stage_name}}
@@ -107,11 +109,11 @@ jobs:
     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
     displayName: Free up disk space
 
-  # download artifacts
+  # download artifact from compile stage
   - task: DownloadPipelineArtifact@2
     inputs:
       path: $(CACHE_FLINK_DIR)
-      artifact: FlinkCompileCacheDir-${{parameters.stage_name}}
+      artifact: FlinkCompileArtifact-${{parameters.stage_name}}
 
   - task: Cache@2
     inputs:
@@ -121,13 +123,16 @@ jobs:
     continueOnError: true # continue the build even if the cache fails.
     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
     displayName: Cache Maven local repo
+
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
       echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
     displayName: "Set to jdk11"
     condition: eq('${{parameters.jdk}}', 'jdk11')  
+
   - script: sudo sysctl -w kernel.core_pattern=core.%p
     displayName: Set coredump pattern
+
   # Test
   - script: STAGE=test ${{parameters.environment}} ./tools/azure-pipelines/azure_controller.sh $(module)
     displayName: Test - $(module)
@@ -139,6 +144,7 @@ jobs:
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
+
   # upload debug artifacts
   - task: PublishPipelineArtifact@1
     condition: and(succeededOrFailed(), not(eq('$(ARTIFACT_DIR)', '')))

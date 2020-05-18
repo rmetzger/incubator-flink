@@ -17,6 +17,11 @@
 # limitations under the License.
 ################################################################################
 
+#
+# This file contains all Azure Pipelines specific tooling for invoking the 
+# general CI tooling.
+#
+
 HERE="`dirname \"$0\"`"             # relative
 HERE="`( cd \"$HERE\" && pwd )`"    # absolutized and normalized
 if [ -z "$HERE" ] ; then
@@ -29,38 +34,8 @@ source "${CI_DIR}/stage.sh"
 source "${CI_DIR}/shade.sh"
 source "${CI_DIR}/maven-utils.sh"
 
-echo $M2_HOME
-echo $PATH
-echo $MAVEN_OPTS
-
-run_mvn -version
-echo "Commit: $(git rev-parse HEAD)"
-
-print_system_info() {
-    echo "CPU information"
-    lscpu
-
-    echo "Memory information"
-    cat /proc/meminfo
-
-    echo "Disk information"
-    df -hH
-
-    echo "Running build as"
-    whoami
-}
-
-print_system_info
-
-
-STAGE=$1
-echo "Current stage: \"$STAGE\""
-
 EXIT_CODE=0
 
-# Set up a custom Maven settings file, configuring an Google-hosted maven central
-# mirror. We use a different mirror because the official maven central mirrors
-# often lead to connection timeouts (probably due to rate-limiting)
 
 MVN="run_mvn clean install $MAVEN_OPTS -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -U -DskipTests"
 
@@ -103,7 +78,7 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
     fi
 
     if [ $EXIT_CODE == 0 ]; then
-        echo "Creating cache build directory $CACHE_FLINK_DIR"
+        echo "Creating cache build directory $FLINK_ARTIFACT_DIR"
     
         cp -r . "$CACHE_FLINK_DIR"
 

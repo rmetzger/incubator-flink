@@ -17,6 +17,10 @@
 # limitations under the License.
 ################################################################################
 
+#
+# This file contains generic control over the CI system.
+#
+
 HERE="`dirname \"$0\"`"				# relative
 HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
 if [ -z "$HERE" ] ; then
@@ -27,6 +31,41 @@ fi
 
 source "${HERE}/stage.sh"
 source "${HERE}/maven-utils.sh"
+source "${HERE}/watchdog.sh"
+
+# =============================================================================
+# Step 0: Check & print environment information
+# =============================================================================
+
+echo "Printing environment information"
+
+echo $M2_HOME
+echo $PATH
+echo $MAVEN_OPTS
+
+run_mvn -version
+echo "Commit: $(git rev-parse HEAD)"
+
+print_system_info() {
+    echo "CPU information"
+    lscpu
+
+    echo "Memory information"
+    cat /proc/meminfo
+
+    echo "Disk information"
+    df -hH
+
+    echo "Running build as"
+    whoami
+}
+
+print_system_info
+
+STAGE=$1
+echo "Current stage: \"$STAGE\""
+
+
 
 ARTIFACTS_DIR="${HERE}/artifacts"
 
@@ -35,7 +74,7 @@ mkdir -p $ARTIFACTS_DIR || { echo "FAILURE: cannot create log directory '${ARTIF
 echo "Build for commit ${TRAVIS_COMMIT} of ${TRAVIS_REPO_SLUG} [build ID: ${TRAVIS_BUILD_ID}, job number: $TRAVIS_JOB_NUMBER]." | tee "${ARTIFACTS_DIR}/build_info"
 
 # =============================================================================
-# CONFIG
+# Step 1: Configure & run Maven with watchdog
 # =============================================================================
 
 # Number of seconds w/o output before printing a stack trace and killing $MVN
@@ -80,7 +119,7 @@ MVN_PID="${ARTIFACTS_DIR}/watchdog.mvn.pid"
 MVN_EXIT="${ARTIFACTS_DIR}/watchdog.mvn.exit"
 MVN_OUT="${ARTIFACTS_DIR}/mvn.out"
 
-TRACE_OUT="${ARTIFACTS_DIR}/jps-traces.out"
+CALLBACK_ON_TIMEOUT="print_stacktraces | tee ${ARTIFACTS_DIR}/jps-traces.out"
 
 # E.g. travis-artifacts/apache/flink/1595/1595.1
 UPLOAD_TARGET_PATH="travis-artifacts/${TRAVIS_REPO_SLUG}/${TRAVIS_BUILD_NUMBER}/"
@@ -161,6 +200,20 @@ upload_artifacts_s3() {
 	curl --retry ${TRANSFER_UPLOAD_MAX_RETRIES} --retry-delay ${TRANSFER_UPLOAD_RETRY_DELAY} --upload-file $ARTIFACTS_FILE --max-time 60 https://transfer.sh
 }
 
+
+# locate YARN logs and put them into artifacts directory
+put_yarn_logs_to_artifacts() {
+	# Make sure to be in project root
+	cd $HERE/../
+	for file in `find ./flink-yarn-tests/target -type f -name '*.log'`; do
+		TARGET_FILE=`echo "$file" | grep -Eo "container_[0-9_]+/(.*).log"`
+		TARGET_DIR=`dirname	 "$TARGET_FILE"`
+		mkdir -p "$ARTIFACTS_DIR/yarn-tests/$TARGET_DIR"
+		cp $file "$ARTIFACTS_DIR/yarn-tests/$TARGET_FILE"
+	done
+}
+
+
 print_stacktraces () {
 	echo "=============================================================================="
 	echo "The following Java processes are running (JPS)"
@@ -179,88 +232,13 @@ print_stacktraces () {
 	done
 }
 
-# locate YARN logs and put them into artifacts directory
-put_yarn_logs_to_artifacts() {
-	# Make sure to be in project root
-	cd $HERE/../
-	for file in `find ./flink-yarn-tests/target -type f -name '*.log'`; do
-		TARGET_FILE=`echo "$file" | grep -Eo "container_[0-9_]+/(.*).log"`
-		TARGET_DIR=`dirname	 "$TARGET_FILE"`
-		mkdir -p "$ARTIFACTS_DIR/yarn-tests/$TARGET_DIR"
-		cp $file "$ARTIFACTS_DIR/yarn-tests/$TARGET_FILE"
-	done
-}
-
-mod_time () {
-	if [[ `uname` == 'Darwin' ]]; then
-		eval $(stat -s $CMD_OUT)
-		echo $st_mtime
-	else
-		echo `stat -c "%Y" $CMD_OUT`
-	fi
-}
-
-the_time() {
-	echo `date +%s`
-}
-
-# =============================================================================
-# WATCHDOG
-# =============================================================================
-
-watchdog () {
-	touch $CMD_OUT
-
-	while true; do
-		sleep $SLEEP_TIME
-
-		time_diff=$((`the_time` - `mod_time`))
-
-		if [ $time_diff -ge $MAX_NO_OUTPUT ]; then
-			echo "=============================================================================="
-			echo "Maven produced no output for ${MAX_NO_OUTPUT} seconds."
-			echo "=============================================================================="
-
-			print_stacktraces | tee $TRACE_OUT
-
-			# Kill $CMD and all descendants
-			pkill -P $(<$CMD_PID)
-
-			exit 1
-		fi
-	done
-}
-
-run_with_watchdog() {
-	local cmd="$1"
-
-	watchdog &
-	WD_PID=$!
-	echo "STARTED watchdog (${WD_PID})."
-
-	# Make sure to be in project root
-	cd "$HERE/../"
-
-	echo "RUNNING '${cmd}'."
-
-	# Run $CMD and pipe output to $CMD_OUT for the watchdog. The PID is written to $CMD_PID to
-	# allow the watchdog to kill $CMD if it is not producing any output anymore. $CMD_EXIT contains
-	# the exit code. This is important for Travis' build life-cycle (success/failure).
-	( $cmd & PID=$! ; echo $PID >&3 ; wait $PID ; echo $? >&4 ) 3>$CMD_PID 4>$CMD_EXIT | tee $CMD_OUT
-
-	EXIT_CODE=$(<$CMD_EXIT)
-
-	echo "${CMD_TYPE} exited with EXIT CODE: ${EXIT_CODE}."
-
-	# Make sure to kill the watchdog in any case after $CMD has completed
-	echo "Trying to KILL watchdog (${WD_PID})."
-	( kill $WD_PID 2>&1 ) > /dev/null
-
-	rm $CMD_PID
-	rm $CMD_EXIT
-}
-
 run_with_watchdog "$CMD"
+
+EXIT_CODE=$?
+
+# =============================================================================
+# Step 2: Run test?
+# =============================================================================
 
 # Run tests if compilation was successful
 if [ $CMD_TYPE == "MVN" ]; then
@@ -273,7 +251,10 @@ if [ $CMD_TYPE == "MVN" ]; then
 	fi
 fi
 
-# Post
+# =============================================================================
+# Step 3: Upload logs
+# =============================================================================
+
 
 # only misc builds flink-dist and flink-yarn-tests
 case $TEST in
