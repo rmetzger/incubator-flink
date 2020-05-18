@@ -17,8 +17,6 @@
 # limitations under the License.
 ################################################################################
 
-
-
 echo "Creating build artifact dir $FLINK_ARTIFACT_DIR"
 
 cp -r . "$FLINK_ARTIFACT_DIR"

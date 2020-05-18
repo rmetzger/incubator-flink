@@ -67,12 +67,12 @@ jobs:
   - script: |
       ${{parameters.environment}} ./tools/ci/compile.sh
       ./tools/azure-pipelines/create_build_artifact.sh
-    displayName: Build
+    displayName: Compile
 
   # upload artifacts for next stage
   - task: PublishPipelineArtifact@1
     inputs:
-      path: $(CACHE_FLINK_DIR)
+      path: $(FLINK_ARTIFACT_DIR)
       artifact: FlinkCompileArtifact-${{parameters.stage_name}}
 
 - job: test_${{parameters.stage_name}}
@@ -112,7 +112,7 @@ jobs:
   # download artifact from compile stage
   - task: DownloadPipelineArtifact@2
     inputs:
-      path: $(CACHE_FLINK_DIR)
+      path: $(FLINK_ARTIFACT_DIR)
       artifact: FlinkCompileArtifact-${{parameters.stage_name}}
 
   - task: Cache@2
@@ -134,7 +134,9 @@ jobs:
     displayName: Set coredump pattern
 
   # Test
-  - script: STAGE=test ${{parameters.environment}} ./tools/azure-pipelines/azure_controller.sh $(module)
+  - script: |
+      ./tools/azure-pipelines/unpack_build_artifact.sh
+      STAGE=test ${{parameters.environment}} ./tools/azure-pipelines/azure_controller.sh $(module)
     displayName: Test - $(module)
     env:
       IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)
