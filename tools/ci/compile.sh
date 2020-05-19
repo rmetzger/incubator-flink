@@ -33,11 +33,14 @@ source "${CI_DIR}/stage.sh"
 source "${CI_DIR}/shade.sh"
 source "${CI_DIR}/maven-utils.sh"
 
-EXIT_CODE=0
+echo "Maven version:"
+run_mvn -version
 
 echo "=============================================================================="
 echo "Compiling Flink"
 echo "=============================================================================="
+
+EXIT_CODE=0
 
 run_mvn clean install $MAVEN_OPTS -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 \
     -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -U -DskipTests

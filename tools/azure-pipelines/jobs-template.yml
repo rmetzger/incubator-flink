@@ -65,7 +65,7 @@ jobs:
     condition: eq('${{parameters.jdk}}', 'jdk11')
   # Compile
   - script: |
-      ${{parameters.environment}} ./tools/ci/compile.sh
+      # ${{parameters.environment}} ./tools/ci/compile.sh
       ./tools/azure-pipelines/create_build_artifact.sh
     displayName: Compile
 
@@ -135,6 +135,8 @@ jobs:
 
   # Test
   - script: |
+      set -x
+      env
       ./tools/azure-pipelines/unpack_build_artifact.sh
       echo "##vso[task.setvariable variable=DEBUG_FILES]$(Agent.TempDirectory)/debug_files"
       mkdir -p $DEBUG_FILES || { echo "FAILURE: cannot create log directory '${DEBUG_FILES}'." ; exit 1; }
@@ -189,11 +191,8 @@ jobs:
     - script: ./tools/azure-pipelines/free_disk_space.sh
       displayName: Free up disk space
     - script: sudo apt-get install -y bc
-    - script: ${{parameters.environment}} STAGE=compile ./tools/azure-pipelines/azure_controller.sh compile
+    - script: ${{parameters.environment}} ./tools/ci/compile.sh
       displayName: Build Flink
-    # TODO remove pre-commit tests script by adding the tests to the nightly script
-#    - script: FLINK_DIR=build-target ./flink-end-to-end-tests/run-pre-commit-tests.sh
-#      displayName: Test - precommit 
     - script: ${{parameters.environment}} FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
       displayName: Run e2e tests
       env:
