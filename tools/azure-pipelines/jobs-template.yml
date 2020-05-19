@@ -144,7 +144,12 @@ jobs:
       echo "##vso[task.setvariable variable=DEBUG_FILES_NAME]$(echo $(module) | tr -dc '[:alnum:]\n\r')-$(date +%s)"
       mkdir -p $DEBUG_FILES || { echo "FAILURE: cannot create log directory '${DEBUG_FILES}'." ; exit 1; }
 
-      ${{parameters.environment}} ./tools/ci/test_controller.sh $(module)      
+      ${{parameters.environment}} ./tools/ci/test_controller.sh $(module)
+
+      echo "Compressing debug files"
+      tar -zcvf $DEBUG_FILES_NAME.tgz -C $DEBUG_FILES .
+      # clean directory
+      find $DEBUG_FILES -type f -not -name '*.tgz' -delete
     displayName: Test - $(module)
     env:
       IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)

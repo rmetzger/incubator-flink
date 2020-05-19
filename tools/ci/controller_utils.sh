@@ -31,49 +31,8 @@ print_system_info() {
     whoami
 }
 
-upload_artifacts_s3() {
-	echo "PRODUCED build artifacts."
-
-	ls $ARTIFACTS_DIR
-
-	echo "COMPRESSING build artifacts."
-
-	cd $ARTIFACTS_DIR
-	dmesg > container.log
-	tar -zcvf $ARTIFACTS_FILE *
-
-	# Upload to secured S3
-	if [ -n "$UPLOAD_BUCKET" ] && [ -n "$UPLOAD_ACCESS_KEY" ] && [ -n "$UPLOAD_SECRET_KEY" ]; then
-
-		# Install artifacts tool
-		curl -sL https://raw.githubusercontent.com/travis-ci/artifacts/master/install | bash
-
-		PATH=$HOME/bin/artifacts:$HOME/bin:$PATH
-
-		echo "UPLOADING build artifacts."
-
-		# Upload everything in $ARTIFACTS_DIR. Use relative path, otherwise the upload tool
-		# re-creates the whole directory structure from root.
-		artifacts upload --bucket $UPLOAD_BUCKET --key $UPLOAD_ACCESS_KEY --secret $UPLOAD_SECRET_KEY --target-paths $UPLOAD_TARGET_PATH $ARTIFACTS_FILE
-	fi
-
-	# On Azure, publish ARTIFACTS_FILE as a build artifact
-	if [ ! -z "$TF_BUILD" ] ; then
-		TIMESTAMP=`date +%s` # append timestamp to name to allow multiple uploads for the same module
-		ARTIFACT_DIR="$(pwd)/artifact-dir"
-		mkdir $ARTIFACT_DIR
-		cp $ARTIFACTS_FILE $ARTIFACT_DIR/
-		
-		echo "##vso[task.setvariable variable=ARTIFACT_DIR]$ARTIFACT_DIR"
-		echo "##vso[task.setvariable variable=ARTIFACT_NAME]$(echo $MODULE | tr -dc '[:alnum:]\n\r')-$TIMESTAMP"
-	fi
-}
-
-
 # locate YARN logs and put them into artifacts directory
 put_yarn_logs_to_artifacts() {
-	# Make sure to be in project root
-	cd $HERE/../
 	for file in `find ./flink-yarn-tests/target -type f -name '*.log'`; do
 		TARGET_FILE=`echo "$file" | grep -Eo "container_[0-9_]+/(.*).log"`
 		TARGET_DIR=`dirname	 "$TARGET_FILE"`
@@ -81,7 +40,6 @@ put_yarn_logs_to_artifacts() {
 		cp $file "$DEBUG_FILES/yarn-tests/$TARGET_FILE"
 	done
 }
-
 
 print_stacktraces () {
 	echo "=============================================================================="
@@ -100,4 +58,3 @@ print_stacktraces () {
 		jstack $pid
 	done
 }
-

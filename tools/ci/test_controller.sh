@@ -116,6 +116,8 @@ fi
 # Step 3: Put extra logs into $DEBUG_FILES
 # =============================================================================
 
+echo "dir"
+pwd
 # only misc builds flink-yarn-tests
 case $TEST in
 	(misc)
