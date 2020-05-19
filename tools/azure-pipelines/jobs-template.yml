@@ -139,7 +139,8 @@ jobs:
       set -x
       env
       ./tools/azure-pipelines/unpack_build_artifact.sh
-      echo "##vso[task.setvariable variable=DEBUG_FILES]$AGENT_TEMPDIRECTORY/debug_files"
+      export DEBUG_FILES="$AGENT_TEMPDIRECTORY/debug_files"
+      echo "##vso[task.setvariable variable=DEBUG_FILES]$DEBUG_FILES"
       mkdir -p $DEBUG_FILES || { echo "FAILURE: cannot create log directory '${DEBUG_FILES}'." ; exit 1; }
       ${{parameters.environment}} ./tools/ci/test_controller.sh $(module)
       echo "##vso[task.setvariable variable=DEBUG_FILES_NAME]$(echo $(module) | tr -dc '[:alnum:]\n\r')-$(date +%s)"
