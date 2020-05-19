@@ -62,7 +62,7 @@ watchdog () {
 
 		if [ $time_diff -ge $MAX_NO_OUTPUT ]; then
 			echo "=============================================================================="
-			echo "Prodcess produced no output for ${MAX_NO_OUTPUT} seconds."
+			echo "Process produced no output for ${MAX_NO_OUTPUT} seconds."
 			echo "=============================================================================="
 
 			# run timeout callback
@@ -90,7 +90,7 @@ assume_available () {
 
 
 # entrypoint
-run_with_watchdog() {
+function run_with_watchdog() {
 	local cmd="$1"
 
 	# check preconditions
