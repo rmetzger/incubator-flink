@@ -18,15 +18,13 @@
 ################################################################################
 
 #
-# This file contains generic control over the CI system.
+# This file contains generic control over the test execution.
 #
 
-HERE="`dirname \"$0\"`"				# relative
-HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
+HERE="`dirname \"$0\"`"             # relative
+HERE="`( cd \"$HERE\" && pwd )`"    # absolutized and normalized
 if [ -z "$HERE" ] ; then
-	# error; for some reason, the path is not accessible
-	# to the script (e.g. permissions re-evaled after suid)
-	exit 1  # fail
+	exit 1
 fi
 
 source "${HERE}/stage.sh"
