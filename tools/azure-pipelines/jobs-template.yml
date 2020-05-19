@@ -66,6 +66,7 @@ jobs:
   # Compile
   - script: |
       # ${{parameters.environment}} ./tools/ci/compile.sh
+      mkdir build-target
       ./tools/azure-pipelines/create_build_artifact.sh
     displayName: Compile
 
