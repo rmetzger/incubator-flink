@@ -52,7 +52,7 @@ if [ $EXIT_CODE == 0 ]; then
     echo "Checking scala suffixes"
     echo "=============================================================================="
 
-#    ${CI_DIR}/verify_scala_suffixes.sh "${PROFILE}"
+    ${CI_DIR}/verify_scala_suffixes.sh "${PROFILE}"
     EXIT_CODE=$?
 else
     echo "=============================================================================="

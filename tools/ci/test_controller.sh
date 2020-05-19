@@ -33,7 +33,7 @@ source "${HERE}/stage.sh"
 source "${HERE}/maven-utils.sh"
 source "${HERE}/controller_utils.sh"
 source "${HERE}/watchdog.sh"
-
+TEST=$1
 
 # =============================================================================
 # Step 0: Check & print environment information & configure env
@@ -63,6 +63,10 @@ if [ -d "$DEBUG_FILES" ] ; then
 	exit 1
 fi
 
+if [ -z "$TEST" ] ; then
+	echo "ERROR: Environment variable 'TEST' is not set but expected by test_controller.sh"
+	exit 1
+fi
 # =============================================================================
 # Step 1: Compile Flink (again)
 # =============================================================================
