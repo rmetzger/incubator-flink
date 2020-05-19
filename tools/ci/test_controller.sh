@@ -39,19 +39,6 @@ TEST=$1
 # Step 0: Check & print environment information & configure env
 # =============================================================================
 
-echo "Printing environment information"
-
-echo "PATH=$PATH"
-run_mvn -version
-echo "Commit: $(git rev-parse HEAD)"
-print_system_info
-
-# enable coredumps for this process
-ulimit -c unlimited
-
-# configure JVMs to produce heap dumps
-export JAVA_TOOL_OPTIONS="-XX:+HeapDumpOnOutOfMemoryError"
-
 # check preconditions
 if [ -z "$DEBUG_FILES" ] ; then
 	echo "ERROR: Environment variable 'DEBUG_FILES' is not set but expected by test_controller.sh"
@@ -67,6 +54,23 @@ if [ -z "$TEST" ] ; then
 	echo "ERROR: Environment variable 'TEST' is not set but expected by test_controller.sh"
 	exit 1
 fi
+
+echo "Printing environment information"
+
+echo "PATH=$PATH"
+run_mvn -version
+echo "Commit: $(git rev-parse HEAD)"
+print_system_info
+
+# enable coredumps for this process
+ulimit -c unlimited
+
+# configure JVMs to produce heap dumps
+export JAVA_TOOL_OPTIONS="-XX:+HeapDumpOnOutOfMemoryError"
+
+# some tests provide additional logs if they find this variable
+export IS_CI=true
+
 # =============================================================================
 # Step 1: Compile Flink (again)
 # =============================================================================
@@ -76,14 +80,13 @@ WATCHDOG_CALLBACK_ON_TIMEOUT="print_stacktraces | tee ${DEBUG_FILES}/jps-traces.
 LOG4J_PROPERTIES=${HERE}/log4j-ci.properties
 MVN_LOGGING_OPTIONS="-Dlog.dir=${DEBUG_FILES} -Dlog4j.configurationFile=file://$LOG4J_PROPERTIES"
 # Maven command to run. We set the forkCount manually, because otherwise Maven sees too many cores
-# on the Travis VMs. Set forkCountTestPackage to 1 for container-based environment (4 GiB memory)
+# on some CI environments. Set forkCountTestPackage to 1 for container-based environment (4 GiB memory)
 # and 2 for sudo-enabled environment (7.5 GiB memory).
 MVN_COMMON_OPTIONS="-Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dfast -Pskip-webui-build $MVN_LOGGING_OPTIONS"
 MVN_COMPILE_OPTIONS="-DskipTests"
 MVN_COMPILE_MODULES=$(get_compile_modules_for_stage ${TEST})
-MVN_COMPILE="run_mvn $MVN_COMMON_OPTIONS $MVN_COMPILE_OPTIONS $PROFILE $MVN_COMPILE_MODULES install"
 
-run_with_watchdog "$MVN_COMPILE"
+run_with_watchdog "run_mvn $MVN_COMMON_OPTIONS $MVN_COMPILE_OPTIONS $PROFILE $MVN_COMPILE_MODULES install"
 EXIT_CODE=$?
 
 if [ $EXIT_CODE != 0 ]; then
@@ -95,24 +98,23 @@ fi
 
 
 # =============================================================================
-# Step 2: Run test?
+# Step 2: Run tests
 # =============================================================================
 
 if [ $TEST == $STAGE_PYTHON ]; then
 	run_with_watchdog "./flink-python/dev/lint-python.sh"
 	EXIT_CODE=$?
 else
-	MVN_TEST_MODULES=$(get_test_modules_for_stage ${TEST})
 	MVN_TEST_OPTIONS="-Dflink.tests.with-openssl"
-	MVN_TEST="run_mvn $MVN_COMMON_OPTIONS $MVN_TEST_OPTIONS $PROFILE $MVN_TEST_MODULES verify"
-	run_with_watchdog "$MVN_TEST"
+	MVN_TEST_MODULES=$(get_test_modules_for_stage ${TEST})
+
+	run_with_watchdog "run_mvn $MVN_COMMON_OPTIONS $MVN_TEST_OPTIONS $PROFILE $MVN_TEST_MODULES verify"
 	EXIT_CODE=$?
 fi
 
 # =============================================================================
 # Step 3: Put extra logs into $DEBUG_FILES
 # =============================================================================
-
 
 # only misc builds flink-yarn-tests
 case $TEST in
