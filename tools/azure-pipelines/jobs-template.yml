@@ -66,6 +66,10 @@ jobs:
   # Compile
   - script: |
       ${{parameters.environment}} ./tools/ci/compile.sh
+      EXIT_CODE=$?
+      if [ EXIT_CODE != 0 ]; then
+        exit $EXIT_CODE
+      fi
       ./tools/azure-pipelines/create_build_artifact.sh
     displayName: Compile
 
@@ -139,18 +143,21 @@ jobs:
       env
       ./tools/azure-pipelines/unpack_build_artifact.sh
       export DEBUG_FILES="$AGENT_TEMPDIRECTORY/debug_files"
-      export DEBUG_FILES_NAME="debug-$(echo $(module) | tr -dc '[:alnum:]\n\r')-$(date +%s).tgz"
+      export DEBUG_FILES_NAME="$(echo $(module) | tr -dc '[:alnum:]\n\r')-$(date +%s)"
       echo "##vso[task.setvariable variable=DEBUG_FILES]$DEBUG_FILES"
       echo "##vso[task.setvariable variable=DEBUG_FILES_NAME]$DEBUG_FILES_NAME"
       mkdir -p $DEBUG_FILES || { echo "FAILURE: cannot create log directory '${DEBUG_FILES}'." ; exit 1; }
 
       ${{parameters.environment}} ./tools/ci/test_controller.sh $(module)
-
+      EXIT_CODE=$?
       echo "Compressing debug files"
-      tar -zcvf $DEBUG_FILES_NAME -C $DEBUG_FILES .
+      tar -zcvf $DEBUG_FILES/$DEBUG_FILES_NAME.tgz -C $DEBUG_FILES .
       ls -lisah $DEBUG_FILES
       # clean directory
       find $DEBUG_FILES -type f -not -name '*.tgz' -delete
+      ls -lisah $DEBUG_FILES
+
+      exit $EXIT_CODE
     displayName: Test - $(module)
     env:
       IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)
