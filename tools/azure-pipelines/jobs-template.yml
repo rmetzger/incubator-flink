@@ -67,7 +67,7 @@ jobs:
   - script: |
       ${{parameters.environment}} ./tools/ci/compile.sh
       EXIT_CODE=$?
-      if [ EXIT_CODE != 0 ]; then
+      if [ $EXIT_CODE != 0 ]; then
         exit $EXIT_CODE
       fi
       ./tools/azure-pipelines/create_build_artifact.sh
