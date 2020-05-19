@@ -112,7 +112,7 @@ run_with_watchdog() {
 
 	EXIT_CODE=$(<$CMD_EXIT)
 
-	echo "${CMD_TYPE} exited with EXIT CODE: ${EXIT_CODE}."
+	echo "Process exited with EXIT CODE: ${EXIT_CODE}."
 
 	# Make sure to kill the watchdog in any case after $CMD has completed
 	echo "Trying to KILL watchdog (${WD_PID})."
@@ -121,7 +121,7 @@ run_with_watchdog() {
 	rm $CMD_PID
 	rm $CMD_EXIT
 
-	exit $EXIT_CODE
+	return $EXIT_CODE
 }
 
 
