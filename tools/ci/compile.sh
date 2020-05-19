@@ -35,9 +35,9 @@ source "${CI_DIR}/maven-utils.sh"
 
 EXIT_CODE=0
 
-echo "\n\n==============================================================================\n"
-echo "Compiling Flink\n"
-echo "==============================================================================\n"
+echo "=============================================================================="
+echo "Compiling Flink"
+echo "=============================================================================="
 
 run_mvn clean install $MAVEN_OPTS -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 \
     -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -U -DskipTests
@@ -45,16 +45,16 @@ run_mvn clean install $MAVEN_OPTS -Dflink.convergence.phase=install -Pcheck-conv
 EXIT_CODE=$?
 
 if [ $EXIT_CODE == 0 ]; then
-    echo "\n\n==============================================================================\n"
-    echo "Checking scala suffixes\n"
-    echo "==============================================================================\n"
+    echo "=============================================================================="
+    echo "Checking scala suffixes"
+    echo "=============================================================================="
 
     ${CI_DIR}/verify_scala_suffixes.sh "${PROFILE}"
     EXIT_CODE=$?
 else
-    echo "\n==============================================================================\n"
-    echo "Previous build failure detected, skipping scala-suffixes check.\n"
-    echo "==============================================================================\n"
+    echo "=============================================================================="
+    echo "Previous build failure detected, skipping scala-suffixes check."
+    echo "=============================================================================="
 fi
 
 if [ $EXIT_CODE == 0 ]; then
