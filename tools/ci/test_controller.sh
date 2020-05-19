@@ -58,7 +58,7 @@ if [ -z "$DEBUG_FILES" ] ; then
 	exit 1
 fi
 
-if [ -d "$DEBUG_FILES" ] ; then
+if [ ! -d "$DEBUG_FILES" ] ; then
 	echo "ERROR: Environment variable DEBUG_FILES=$DEBUG_FILES points to a directory that does not exist"
 	exit 1
 fi

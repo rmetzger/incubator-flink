@@ -65,6 +65,7 @@ jobs:
     condition: eq('${{parameters.jdk}}', 'jdk11')
   # Compile
   - script: |
+      env
       ${{parameters.environment}} ./tools/ci/compile.sh
       ./tools/azure-pipelines/create_build_artifact.sh
     displayName: Compile
