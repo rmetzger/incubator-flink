@@ -136,7 +136,10 @@ jobs:
   # Test
   - script: |
       ./tools/azure-pipelines/unpack_build_artifact.sh
-      STAGE=test ${{parameters.environment}} ./tools/azure-pipelines/azure_controller.sh $(module)
+      echo "##vso[task.setvariable variable=DEBUG_FILES]$(Agent.TempDirectory)/debug_files"
+      mkdir -p $DEBUG_FILES || { echo "FAILURE: cannot create log directory '${DEBUG_FILES}'." ; exit 1; }
+      STAGE=test ${{parameters.environment}} ./tools/ci/test_controller.sh $(module)
+      echo "TODO: compress logs"
     displayName: Test - $(module)
     env:
       IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)

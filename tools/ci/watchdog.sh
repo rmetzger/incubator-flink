@@ -22,9 +22,19 @@
 # not producing any output for n seconds.
 #
 
+# Number of seconds w/o output before printing a stack trace and killing the watched process
+MAX_NO_OUTPUT=${MAX_NO_OUTPUT:-900}
+
+# Number of seconds to sleep before checking the output again
+SLEEP_TIME=${SLEEP_TIME:-20}
+
+CMD_OUT=${CMD_OUT:-"/tmp/watchdog.out"}
+CMD_PID=${CMD_PID:-"/tmp/watchdog.pid"}
+CMD_EXIT=${CMD_EXIT:-"/tmp/watchdog.exit"}
+
 
 # ============================================= #
-# Utility function								#
+# Utility functions								#
 # ============================================= #
 
 mod_time () {
@@ -56,7 +66,7 @@ watchdog () {
 			echo "=============================================================================="
 
 			# run timeout callback
-			$CALLBACK_ON_TIMEOUT
+			$WATCHDOG_CALLBACK_ON_TIMEOUT
 
 			# Kill $CMD and all descendants
 			pkill -P $(<$CMD_PID)
@@ -78,17 +88,16 @@ assume_available () {
 # main function									#
 # ============================================= #
 
-# check preconditions
-assume_available CMD_OUT # used for writing the process output (to check for activity)
-assume_available CMD_PID # location of file to write process id to
-assume_available CMD_EXIT # location of file to writ exit code to
-assume_available MAX_NO_OUTPUT # number of seconds until the process gets killed
-assume_available SLEEP_TIME # number of seconds between checks
-assume_available CALLBACK_ON_TIMEOUT # bash function to call on timeout
 
 # entrypoint
 run_with_watchdog() {
 	local cmd="$1"
+
+	# check preconditions
+	assume_available CMD_OUT # used for writing the process output (to check for activity)
+	assume_available CMD_PID # location of file to write process id to
+	assume_available CMD_EXIT # location of file to writ exit code to
+	assume_available WATCHDOG_CALLBACK_ON_TIMEOUT # bash function to call on timeout
 
 	watchdog &
 	WD_PID=$!
