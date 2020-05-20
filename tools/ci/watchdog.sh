@@ -67,7 +67,7 @@ watchdog () {
 			echo "Killing process from tree"
 			echo "=============================================================================="
 			echo "Printing process tree"
-			sudo pstree -a -p
+			sudo /usr/bin/pstree -a -p
 
 			echo "Killing process with pid=$(<$CMD_PID) and all descendants"
 			pkill -P $(<$CMD_PID) # kill descendants
