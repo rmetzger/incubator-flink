@@ -38,12 +38,7 @@ CMD_EXIT=${CMD_EXIT:-"/tmp/watchdog.exit"}
 # ============================================= #
 
 mod_time () {
-	if [[ `uname` == 'Darwin' ]]; then
-		eval $(stat -s $CMD_OUT)
-		echo $st_mtime
-	else
-		echo `stat -c "%Y" $CMD_OUT`
-	fi
+	echo `stat -c "%Y" $CMD_OUT`
 }
 
 the_time() {
@@ -68,8 +63,15 @@ watchdog () {
 			# run timeout callback
 			$WATCHDOG_CALLBACK_ON_TIMEOUT
 
-			# Kill $CMD and all descendants
-			pkill -P $(<$CMD_PID)
+			echo "=============================================================================="
+			echo "Killing process from tree"
+			echo "=============================================================================="
+			echo "Printing process tree"
+			sudo pstree -a -p
+
+			echo "Killing process with pid=$(<$CMD_PID) and all descendants"
+			pkill -P $(<$CMD_PID) # kill descendants
+			kill $(<$CMD_PID) # kill process itself
 
 			exit 1
 		fi
