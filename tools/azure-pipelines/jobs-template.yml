@@ -154,7 +154,7 @@ jobs:
       tar -zcvf $DEBUG_FILES/$DEBUG_FILES_NAME.tgz -C $DEBUG_FILES .
       ls -lisah $DEBUG_FILES
       # clean directory
-      find $DEBUG_FILES -type f -not -name '*.tgz' -delete
+      find $DEBUG_FILES -not -name '*.tgz' -delete
       ls -lisah $DEBUG_FILES
 
       exit $EXIT_CODE
