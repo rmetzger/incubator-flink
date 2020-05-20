@@ -35,6 +35,13 @@ jobs:
     # See also https://docs.microsoft.com/en-us/azure/devops/pipelines/process/phases?view=azure-devops&tabs=yaml#workspace 
 
   steps:
+  - script: |
+      sudo pstree -a -p
+      sudo /usr/bin/pstree -a -p
+
+      pstree -a -p
+      /usr/bin/pstree -a -p
+      
   # if on Azure, free up disk space
   - script: ./tools/azure-pipelines/free_disk_space.sh
     target: host
@@ -59,18 +66,19 @@ jobs:
     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
     displayName: Cache Maven local repo
   - script: |
-      sudo pstree -a -p
-      sudo /usr/bin/pstree -a -p
-
-      pstree -a -p
-      /usr/bin/pstree -a -p
-
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
       echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
     displayName: "Set to jdk11"
     condition: eq('${{parameters.jdk}}', 'jdk11')
   # Compile
   - script: |
+
+      sudo pstree -a -p
+      sudo /usr/bin/pstree -a -p
+
+      pstree -a -p
+      /usr/bin/pstree -a -p
+
       ${{parameters.environment}} ./tools/ci/compile.sh
       EXIT_CODE=$?
       if [ $EXIT_CODE != 0 ]; then
