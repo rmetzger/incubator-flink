@@ -37,9 +37,13 @@ jobs:
 
   steps:
   - script: |
+      sudo apt-get install -y psmisc
       pwd
       whoami
       ps aux
+      pstree
+      pstree -a
+      pstree -p
       sudo pstree -a -p
       sudo /usr/bin/pstree -a -p
 
