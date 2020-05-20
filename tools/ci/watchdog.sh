@@ -63,12 +63,6 @@ watchdog () {
 			# run timeout callback
 			$WATCHDOG_CALLBACK_ON_TIMEOUT
 
-			echo "=============================================================================="
-			echo "Killing process from tree"
-			echo "=============================================================================="
-			echo "Printing process tree"
-			sudo /usr/bin/pstree -a -p
-
 			echo "Killing process with pid=$(<$CMD_PID) and all descendants"
 			pkill -P $(<$CMD_PID) # kill descendants
 			kill $(<$CMD_PID) # kill process itself

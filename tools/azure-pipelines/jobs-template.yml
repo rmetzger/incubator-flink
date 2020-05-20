@@ -36,223 +36,199 @@ jobs:
     # See also https://docs.microsoft.com/en-us/azure/devops/pipelines/process/phases?view=azure-devops&tabs=yaml#workspace 
 
   steps:
-  - script: |
-      sudo apt-get install -y psmisc
-      pwd
-      whoami
-      ps aux
-      pstree
-      pstree -a
-      pstree -p
-      sudo pstree -a -p
-      sudo /usr/bin/pstree -a -p
-
-      pstree -a -p
-      /usr/bin/pstree -a -p
-  - script: |
-      pwd
-      whoami
-      ps aux
-      sudo pstree -a -p
-      sudo /usr/bin/pstree -a -p
-
-      pstree -a -p
-      /usr/bin/pstree -a -p
+  # if on Azure, free up disk space
+  - script: ./tools/azure-pipelines/free_disk_space.sh
     target: host
+    condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
+    displayName: Free up disk space
+  # The cache task is persisting the .m2 directory between builds, so that
+  # we do not have to re-download all dependencies from maven central for 
+  # each build. The hope is that downloading the cache is faster than
+  # all dependencies individually.
+  # In this configuration, we use a hash over all committed (not generated) .pom files 
+  # as a key for the build cache (CACHE_KEY). If we have a cache miss on the hash
+  # (usually because a pom file has changed), we'll fall back to a key without
+  # the pom files (CACHE_FALLBACK_KEY).
+  # Offical documentation of the Cache task: https://docs.microsoft.com/en-us/azure/devops/pipelines/caching/?view=azure-devops
+  - task: Cache@2
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+    continueOnError: true # continue the build even if the cache fails.
+    # do not use cache on the "Default" queue
+    condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
+    displayName: Cache Maven local repo
+  - script: |
+      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
+      echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
+    displayName: "Set to jdk11"
+    condition: eq('${{parameters.jdk}}', 'jdk11')
+  # Compile
+  - script: |
 
-#   # if on Azure, free up disk space
-#   - script: ./tools/azure-pipelines/free_disk_space.sh
-#     target: host
-#     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
-#     displayName: Free up disk space
-#   # The cache task is persisting the .m2 directory between builds, so that
-#   # we do not have to re-download all dependencies from maven central for 
-#   # each build. The hope is that downloading the cache is faster than
-#   # all dependencies individually.
-#   # In this configuration, we use a hash over all committed (not generated) .pom files 
-#   # as a key for the build cache (CACHE_KEY). If we have a cache miss on the hash
-#   # (usually because a pom file has changed), we'll fall back to a key without
-#   # the pom files (CACHE_FALLBACK_KEY).
-#   # Offical documentation of the Cache task: https://docs.microsoft.com/en-us/azure/devops/pipelines/caching/?view=azure-devops
-#   - task: Cache@2
-#     inputs:
-#       key: $(CACHE_KEY)
-#       restoreKeys: $(CACHE_FALLBACK_KEY)
-#       path: $(MAVEN_CACHE_FOLDER)
-#     continueOnError: true # continue the build even if the cache fails.
-#     # do not use cache on the "Default" queue
-#     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
-#     displayName: Cache Maven local repo
-#   - script: |
-#       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
-#       echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
-#     displayName: "Set to jdk11"
-#     condition: eq('${{parameters.jdk}}', 'jdk11')
-#   # Compile
-#   - script: |
+      sudo pstree -a -p
+      sudo /usr/bin/pstree -a -p
 
-#       sudo pstree -a -p
-#       sudo /usr/bin/pstree -a -p
+      pstree -a -p
+      /usr/bin/pstree -a -p
 
-#       pstree -a -p
-#       /usr/bin/pstree -a -p
+      ${{parameters.environment}} ./tools/ci/compile.sh
+      EXIT_CODE=$?
+      if [ $EXIT_CODE != 0 ]; then
+        exit $EXIT_CODE
+      fi
+      ./tools/azure-pipelines/create_build_artifact.sh
+    displayName: Compile
 
-#       ${{parameters.environment}} ./tools/ci/compile.sh
-#       EXIT_CODE=$?
-#       if [ $EXIT_CODE != 0 ]; then
-#         exit $EXIT_CODE
-#       fi
-#       ./tools/azure-pipelines/create_build_artifact.sh
-#     displayName: Compile
+  # upload artifacts for next stage
+  - task: PublishPipelineArtifact@1
+    inputs:
+      path: $(FLINK_ARTIFACT_DIR)
+      artifact: FlinkCompileArtifact-${{parameters.stage_name}}
 
-#   # upload artifacts for next stage
-#   - task: PublishPipelineArtifact@1
-#     inputs:
-#       path: $(FLINK_ARTIFACT_DIR)
-#       artifact: FlinkCompileArtifact-${{parameters.stage_name}}
+- job: test_${{parameters.stage_name}}
+  dependsOn: compile_${{parameters.stage_name}}
+  condition: and(succeeded(), not(eq(variables['MODE'], 'e2e')))
+  pool: ${{parameters.test_pool_definition}}
+  container: ${{parameters.container}}
+  timeoutInMinutes: 240
+  cancelTimeoutInMinutes: 1
+  workspace:
+    clean: all
+  strategy:
+    matrix:
+      core:
+        module: core
+      python:
+        module: python
+      libraries:
+        module: libraries
+      blink_planner:
+        module: blink_planner
+      connectors:
+        module: connectors
+      kafka_gelly:
+        module: kafka/gelly
+      tests:
+        module: tests
+      misc:
+        module: misc
+  steps:
+  # if on Azure, free up disk space
+  - script: ./tools/azure-pipelines/free_disk_space.sh
+    target: host
+    condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
+    displayName: Free up disk space
 
-# - job: test_${{parameters.stage_name}}
-#   dependsOn: compile_${{parameters.stage_name}}
-#   condition: and(succeeded(), not(eq(variables['MODE'], 'e2e')))
-#   pool: ${{parameters.test_pool_definition}}
-#   container: ${{parameters.container}}
-#   timeoutInMinutes: 240
-#   cancelTimeoutInMinutes: 1
-#   workspace:
-#     clean: all
-#   strategy:
-#     matrix:
-#       core:
-#         module: core
-#       python:
-#         module: python
-#       libraries:
-#         module: libraries
-#       blink_planner:
-#         module: blink_planner
-#       connectors:
-#         module: connectors
-#       kafka_gelly:
-#         module: kafka/gelly
-#       tests:
-#         module: tests
-#       misc:
-#         module: misc
-#   steps:
-#   # if on Azure, free up disk space
-#   - script: ./tools/azure-pipelines/free_disk_space.sh
-#     target: host
-#     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
-#     displayName: Free up disk space
+  # download artifact from compile stage
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      path: $(FLINK_ARTIFACT_DIR)
+      artifact: FlinkCompileArtifact-${{parameters.stage_name}}
 
-#   # download artifact from compile stage
-#   - task: DownloadPipelineArtifact@2
-#     inputs:
-#       path: $(FLINK_ARTIFACT_DIR)
-#       artifact: FlinkCompileArtifact-${{parameters.stage_name}}
+  - task: Cache@2
+    inputs:
+      key: $(CACHE_KEY)
+      restoreKeys: $(CACHE_FALLBACK_KEY)
+      path: $(MAVEN_CACHE_FOLDER)
+    continueOnError: true # continue the build even if the cache fails.
+    condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
+    displayName: Cache Maven local repo
 
-#   - task: Cache@2
-#     inputs:
-#       key: $(CACHE_KEY)
-#       restoreKeys: $(CACHE_FALLBACK_KEY)
-#       path: $(MAVEN_CACHE_FOLDER)
-#     continueOnError: true # continue the build even if the cache fails.
-#     condition: not(eq('${{parameters.test_pool_definition.name}}', 'Default'))
-#     displayName: Cache Maven local repo
+  - script: |
+      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
+      echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
+    displayName: "Set to jdk11"
+    condition: eq('${{parameters.jdk}}', 'jdk11')  
 
-#   - script: |
-#       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
-#       echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
-#     displayName: "Set to jdk11"
-#     condition: eq('${{parameters.jdk}}', 'jdk11')  
+  - script: sudo sysctl -w kernel.core_pattern=core.%p
+    displayName: Set coredump pattern
 
-#   - script: sudo sysctl -w kernel.core_pattern=core.%p
-#     displayName: Set coredump pattern
+  # Test
+  - script: |
+      set -x
+      env
+      ./tools/azure-pipelines/unpack_build_artifact.sh
+      export DEBUG_FILES="$AGENT_TEMPDIRECTORY/debug_files"
+      export DEBUG_FILES_NAME="$(echo $(module) | tr -dc '[:alnum:]\n\r')-$(date +%s)"
+      echo "##vso[task.setvariable variable=DEBUG_FILES]$DEBUG_FILES"
+      echo "##vso[task.setvariable variable=DEBUG_FILES_NAME]$DEBUG_FILES_NAME"
+      mkdir -p $DEBUG_FILES || { echo "FAILURE: cannot create log directory '${DEBUG_FILES}'." ; exit 1; }
 
-#   # Test
-#   - script: |
-#       set -x
-#       env
-#       ./tools/azure-pipelines/unpack_build_artifact.sh
-#       export DEBUG_FILES="$AGENT_TEMPDIRECTORY/debug_files"
-#       export DEBUG_FILES_NAME="$(echo $(module) | tr -dc '[:alnum:]\n\r')-$(date +%s)"
-#       echo "##vso[task.setvariable variable=DEBUG_FILES]$DEBUG_FILES"
-#       echo "##vso[task.setvariable variable=DEBUG_FILES_NAME]$DEBUG_FILES_NAME"
-#       mkdir -p $DEBUG_FILES || { echo "FAILURE: cannot create log directory '${DEBUG_FILES}'." ; exit 1; }
+      ${{parameters.environment}} ./tools/ci/test_controller.sh $(module)
+      EXIT_CODE=$?
+      echo "Compressing debug files"
+      tar -zcvf $DEBUG_FILES/$DEBUG_FILES_NAME.tgz -C $DEBUG_FILES .
+      ls -lisah $DEBUG_FILES
+      # clean directory
+      find $DEBUG_FILES -not -name '*.tgz' -delete
+      ls -lisah $DEBUG_FILES
 
-#       ${{parameters.environment}} ./tools/ci/test_controller.sh $(module)
-#       EXIT_CODE=$?
-#       echo "Compressing debug files"
-#       tar -zcvf $DEBUG_FILES/$DEBUG_FILES_NAME.tgz -C $DEBUG_FILES .
-#       ls -lisah $DEBUG_FILES
-#       # clean directory
-#       find $DEBUG_FILES -not -name '*.tgz' -delete
-#       ls -lisah $DEBUG_FILES
+      exit $EXIT_CODE
+    displayName: Test - $(module)
+    env:
+      IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)
+      IT_CASE_S3_ACCESS_KEY: $(SECRET_S3_ACCESS_KEY)
+      IT_CASE_S3_SECRET_KEY: $(SECRET_S3_SECRET_KEY)
 
-#       exit $EXIT_CODE
-#     displayName: Test - $(module)
-#     env:
-#       IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)
-#       IT_CASE_S3_ACCESS_KEY: $(SECRET_S3_ACCESS_KEY)
-#       IT_CASE_S3_SECRET_KEY: $(SECRET_S3_SECRET_KEY)
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
 
-#   - task: PublishTestResults@2
-#     inputs:
-#       testResultsFormat: 'JUnit'
+  # upload debug artifacts
+  - task: PublishPipelineArtifact@1
+    condition: and(succeededOrFailed(), not(eq('$(DEBUG_FILES)', '')))
+    displayName: Upload Logs
+    inputs:
+      path: $(DEBUG_FILES)
+      artifact: logs-${{parameters.stage_name}}-$(DEBUG_FILES_NAME)
 
-#   # upload debug artifacts
-#   - task: PublishPipelineArtifact@1
-#     condition: and(succeededOrFailed(), not(eq('$(DEBUG_FILES)', '')))
-#     displayName: Upload Logs
-#     inputs:
-#       path: $(DEBUG_FILES)
-#       artifact: logs-${{parameters.stage_name}}-$(DEBUG_FILES_NAME)
-
-# - job: e2e_${{parameters.stage_name}}
-#   # uncomment below condition to run the e2e tests only on request.
-#   #condition: or(eq(variables['MODE'], 'e2e'), eq(${{parameters.run_end_to_end}}, 'true'))
-#   # We are running this in a separate pool
-#   pool: ${{parameters.e2e_pool_definition}}
-#   timeoutInMinutes: 240
-#   cancelTimeoutInMinutes: 1
-#   workspace:
-#     clean: all
-#   steps:
-#     - task: Cache@2
-#       inputs:
-#         key: $(CACHE_KEY)
-#         restoreKeys: $(CACHE_FALLBACK_KEY)
-#         path: $(MAVEN_CACHE_FOLDER)
-#       displayName: Cache Maven local repo
-#       continueOnError: true
-#     - script: |
-#         echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
-#         echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
-#       displayName: "Set to jdk11"
-#       condition: eq('${{parameters.jdk}}', 'jdk11')
-#     - script: |
-#         source ./tools/ci/maven-utils.sh
-#         setup_maven
-#       displayName: Setup Maven 3.2.5
-#     - script: ./tools/azure-pipelines/setup_docker.sh
-#       displayName: Setup Docker
-#     - script: ./tools/azure-pipelines/free_disk_space.sh
-#       displayName: Free up disk space
-#     - script: sudo apt-get install -y bc
-#     - script: ${{parameters.environment}} ./tools/ci/compile.sh
-#       displayName: Build Flink
-#     - script: ${{parameters.environment}} FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
-#       displayName: Run e2e tests
-#       env:
-#         IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)
-#         IT_CASE_S3_ACCESS_KEY: $(SECRET_S3_ACCESS_KEY)
-#         IT_CASE_S3_SECRET_KEY: $(SECRET_S3_SECRET_KEY)
-#       # upload debug artifacts
-#     - task: PublishPipelineArtifact@1
-#       condition: and(succeededOrFailed(), not(eq(variables['ARTIFACT_DIR'], '')))
-#       displayName: Upload Logs
-#       inputs:
-#         path: $(ARTIFACT_DIR)
-#         artifact: logs-${{parameters.stage_name}}-e2e
+- job: e2e_${{parameters.stage_name}}
+  # uncomment below condition to run the e2e tests only on request.
+  #condition: or(eq(variables['MODE'], 'e2e'), eq(${{parameters.run_end_to_end}}, 'true'))
+  # We are running this in a separate pool
+  pool: ${{parameters.e2e_pool_definition}}
+  timeoutInMinutes: 240
+  cancelTimeoutInMinutes: 1
+  workspace:
+    clean: all
+  steps:
+    - task: Cache@2
+      inputs:
+        key: $(CACHE_KEY)
+        restoreKeys: $(CACHE_FALLBACK_KEY)
+        path: $(MAVEN_CACHE_FOLDER)
+      displayName: Cache Maven local repo
+      continueOnError: true
+    - script: |
+        echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_11_X64"
+        echo "##vso[task.setvariable variable=PATH]$JAVA_HOME_11_X64/bin:$PATH"
+      displayName: "Set to jdk11"
+      condition: eq('${{parameters.jdk}}', 'jdk11')
+    - script: |
+        source ./tools/ci/maven-utils.sh
+        setup_maven
+      displayName: Setup Maven 3.2.5
+    - script: ./tools/azure-pipelines/setup_docker.sh
+      displayName: Setup Docker
+    - script: ./tools/azure-pipelines/free_disk_space.sh
+      displayName: Free up disk space
+    - script: sudo apt-get install -y bc
+    - script: ${{parameters.environment}} ./tools/ci/compile.sh
+      displayName: Build Flink
+    - script: ${{parameters.environment}} FLINK_DIR=`pwd`/build-target flink-end-to-end-tests/run-nightly-tests.sh
+      displayName: Run e2e tests
+      env:
+        IT_CASE_S3_BUCKET: $(SECRET_S3_BUCKET)
+        IT_CASE_S3_ACCESS_KEY: $(SECRET_S3_ACCESS_KEY)
+        IT_CASE_S3_SECRET_KEY: $(SECRET_S3_SECRET_KEY)
+      # upload debug artifacts
+    - task: PublishPipelineArtifact@1
+      condition: and(succeededOrFailed(), not(eq(variables['ARTIFACT_DIR'], '')))
+      displayName: Upload Logs
+      inputs:
+        path: $(ARTIFACT_DIR)
+        artifact: logs-${{parameters.stage_name}}-e2e
         
 

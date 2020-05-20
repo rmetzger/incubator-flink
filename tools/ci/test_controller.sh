@@ -102,22 +102,18 @@ fi
 if [ $TEST == $STAGE_PYTHON ]; then
 	run_with_watchdog "./flink-python/dev/lint-python.sh"
 	EXIT_CODE=$?
-	echo "EXIT_CODE = $EXIT_CODE"
 else
 	MVN_TEST_OPTIONS="-Dflink.tests.with-openssl"
 	MVN_TEST_MODULES=$(get_test_modules_for_stage ${TEST})
 
 	run_with_watchdog "run_mvn $MVN_COMMON_OPTIONS $MVN_TEST_OPTIONS $PROFILE $MVN_TEST_MODULES verify"
 	EXIT_CODE=$?
-	echo "EXIT_CODE = $EXIT_CODE"
 fi
 
 # =============================================================================
 # Step 3: Put extra logs into $DEBUG_FILES
 # =============================================================================
 
-echo "dir"
-pwd
 # only misc builds flink-yarn-tests
 case $TEST in
 	(misc)
@@ -126,8 +122,6 @@ case $TEST in
 esac
 
 collect_coredumps `pwd` $DEBUG_FILES
-
-echo "EXIT_CODE = $EXIT_CODE"
 
 # Exit code for CI build success/failure
 exit $EXIT_CODE

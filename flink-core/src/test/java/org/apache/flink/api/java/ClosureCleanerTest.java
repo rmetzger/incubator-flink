@@ -196,11 +196,7 @@ public class ClosureCleanerTest {
 	}
 
 	@Test
-	public void testRealOuterStaticClassInnerStaticClassInnerAnonymousOrLocalClass() throws
-		InterruptedException {
-		// TEST WATCHDOG
-		Thread.sleep(25 * 1000 * 60);
-
+	public void testRealOuterStaticClassInnerStaticClassInnerAnonymousOrLocalClass() {
 		MapFunction<Integer, Integer> nestedMap = new OuterMapCreator().getMap();
 
 		MapFunction<Integer, Integer> wrappedMap = new WrapperMapFunction(nestedMap);

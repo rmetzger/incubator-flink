@@ -57,5 +57,4 @@ print_stacktraces () {
 
 		jstack $pid
 	done
-
 }

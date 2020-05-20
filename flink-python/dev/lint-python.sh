@@ -366,9 +366,6 @@ function install_environment() {
         print_function "STEP" "install python environment... [SUCCESS]"
     fi
 
-    echo "TESTING WATCHDOG"
-    sleep 500000
-
     # step-4 install tox
     if [ $STEP -lt 4 ] && [ `need_install_component "tox"` = true ]; then
         print_function "STEP" "installing tox..."
