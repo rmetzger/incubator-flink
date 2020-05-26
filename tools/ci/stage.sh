@@ -159,8 +159,8 @@ function get_compile_modules_for_stage() {
             echo ""
         ;;
         (${STAGE_PYTHON})
-            # compile everything. The Python tests expect a full Flink distribution.
-            echo ""
+            # Python needs a flink-dist
+            echo "-pl flink-dist -am"
         ;;
     esac
 }
