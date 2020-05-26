@@ -160,7 +160,7 @@ function get_compile_modules_for_stage() {
         ;;
         (${STAGE_PYTHON})
             # compile everything for PyFlink.
-            echo ""
+            echo "-pl flink-python -am"
         ;;
     esac
 }
