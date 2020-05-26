@@ -46,9 +46,10 @@ print_stacktraces () {
 	echo "The following Java processes are running (JPS)"
 	echo "=============================================================================="
 
-	jps
+	JAVA_PROCESSES=`jps`
+	echo $JAVA_PROCESSES
 
-	local pids=( $(jps | awk '{print $1}') )
+	local pids=( $(echo $JAVA_PROCESSES | awk '{print $1}') )
 
 	for pid in "${pids[@]}"; do
 		echo "=============================================================================="
@@ -58,3 +59,4 @@ print_stacktraces () {
 		jstack $pid
 	done
 }
+

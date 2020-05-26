@@ -17,7 +17,7 @@
 # limitations under the License.
 ################################################################################
 
-function debug_files_prepare {
+function prepare_debug_files {
 	MODULE=$1
 	export DEBUG_FILES_OUTPUT_DIR="$AGENT_TEMPDIRECTORY/debug_files/"
 	export DEBUG_FILES_NAME="$(echo $MODULE | tr -dc '[:alnum:]\n\r')-$(date +%s)"
@@ -26,7 +26,7 @@ function debug_files_prepare {
 	mkdir -p $DEBUG_FILES_OUTPUT_DIR || { echo "FAILURE: cannot create log directory '${DEBUG_FILES_OUTPUT_DIR}'." ; exit 1; }
 }
 
-function debug_files_compress {
+function compress_debug_files {
 	echo "Compressing debug files"
 	tar -zcvf /tmp/$DEBUG_FILES_NAME.tgz -C $DEBUG_FILES_OUTPUT_DIR .
 	# clean directory

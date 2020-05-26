@@ -140,11 +140,11 @@ jobs:
   # Test
   - script: |
       source ./tools/azure-pipelines/debug_files_utils.sh
-      debug_files_prepare $(module)
+      prepare_debug_files $(module)
       
       ${{parameters.environment}} ./tools/ci/test_controller.sh $(module) ; TEST_EXIT_CODE=$?
     
-      debug_files_compress
+      compress_debug_files
       exit $TEST_EXIT_CODE
     displayName: Test - $(module)
     env:
