@@ -30,6 +30,6 @@ function debug_files_compress {
 	echo "Compressing debug files"
 	tar -zcvf /tmp/$DEBUG_FILES_NAME.tgz -C $DEBUG_FILES_OUTPUT_DIR .
 	# clean directory
-	find $DEBUG_FILES_OUTPUT_DIR -delete
+	rm -rf $DEBUG_FILES_OUTPUT_DIR ; mkdir -p $DEBUG_FILES_OUTPUT_DIR
 	mv /tmp/$DEBUG_FILES_NAME.tgz $DEBUG_FILES_OUTPUT_DIR
 }
