@@ -175,4 +175,4 @@ on_exit kill_test_watchdog
     run_ha_test 4 ${STATE_BACKEND_TYPE} ${STATE_BACKEND_FILE_ASYNC} ${STATE_BACKEND_ROCKS_INCREMENTAL}
 )
 
-cat $FLINK_DIR/log/*
+# cat $FLINK_DIR/log/*
