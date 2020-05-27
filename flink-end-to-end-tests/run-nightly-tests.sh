@@ -82,10 +82,10 @@ printf "========================================================================
 
 # ~ 10 minutes per test. we have 360 minutes per machine (-30m for compiling) == 33 runs.
 
-#for i in $(seq 1 33); do 
+for i in $(seq 1 33); do 
 	echo "Running test i = $i" 
 	run_test "Running HA per-job cluster (file, async) end-to-end test" "$END_TO_END_DIR/test-scripts/test_ha_per_job_cluster_datastream.sh file true false 3.4" "skip_check_exceptions" || exit $?
-#done
+done
 
 
 exit 0
