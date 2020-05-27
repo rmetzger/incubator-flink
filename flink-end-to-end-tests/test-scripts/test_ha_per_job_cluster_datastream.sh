@@ -107,6 +107,9 @@ function run_ha_test() {
     # add job jar to cluster classpath
     cp ${TEST_PROGRAM_JAR} ${FLINK_LIB_DIR}
 
+    # Enable debug logging
+    sed -i -e 's/rootLogger.level = .*/rootLogger.level = DEBUG/' "$FLINK_DIR/conf/log4j.properties"
+
     # start the cluster on HA mode
     create_ha_config
 
@@ -172,4 +175,4 @@ on_exit kill_test_watchdog
     run_ha_test 4 ${STATE_BACKEND_TYPE} ${STATE_BACKEND_FILE_ASYNC} ${STATE_BACKEND_ROCKS_INCREMENTAL}
 )
 
-
+cat $FLINK_DIR/log/*
