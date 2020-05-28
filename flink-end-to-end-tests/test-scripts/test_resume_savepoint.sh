@@ -66,7 +66,7 @@ run_resume_savepoint_test() {
   set_config_key "metrics.fetcher.update-interval" "2000"
 
   setup_flink_slf4j_metric_reporter
-
+sleep 600000
   start_cluster
 
   CHECKPOINT_DIR="file://$TEST_DATA_DIR/savepoint-e2e-test-chckpt-dir"
