@@ -68,7 +68,6 @@ run_resume_savepoint_test() {
   setup_flink_slf4j_metric_reporter
 
   start_cluster
-  sleep 5000000
 
   CHECKPOINT_DIR="file://$TEST_DATA_DIR/savepoint-e2e-test-chckpt-dir"
 
