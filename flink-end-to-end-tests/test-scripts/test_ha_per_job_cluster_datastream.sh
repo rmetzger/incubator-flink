@@ -169,6 +169,14 @@ on_exit kill_test_watchdog
     echo "Test (pid: $cmdpid) did not finish after $TEST_TIMEOUT_SECONDS seconds."
     echo "Printing Flink logs and killing it:"
     cat ${FLINK_DIR}/log/* 
+    echo "JPS:"
+    jps -v
+    echo "PSTREE"
+    pstree
+    echo "DMESG"
+    dmesg
+    netstat -s
+
     kill "$cmdpid") & watchdog_pid=$!
     echo $watchdog_pid > $TEST_DATA_DIR/job_watchdog.pid
     

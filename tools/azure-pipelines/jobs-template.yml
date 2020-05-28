@@ -33,6 +33,14 @@ jobs:
   workspace:
     clean: all
   steps:
+    - script: |
+        echo "JPS:"
+        jps -v
+        echo "PSTREE"
+        pstree
+        echo "DMESG"
+        dmesg
+        netstat -s
     - task: Cache@2
       inputs:
         key: $(CACHE_KEY)
