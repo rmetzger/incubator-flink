@@ -125,12 +125,15 @@ function kill_single {
     kill -9 ${PID}
 
     echo "Killed JM @ ${PID}"
+    jps -v
 }
 
 # ha prefix to differentiate from the one in common.sh
 function ha_tm_watchdog() {
     local JOB_ID=$1
     local EXPECTED_TMS=$2
+
+    echo "JOB_ID = $1 ; EXPECTED_TMS = $2"
 
     # the number of already seen successful checkpoints
     local SUCCESSFUL_CHCKP=0
@@ -141,6 +144,8 @@ function ha_tm_watchdog() {
         # and kill a TM only if the previous one already had some
 
         local CHECKPOINTS=`curl -s "http://localhost:8081/jobs/${JOB_ID}/checkpoints" | cut -d ":" -f 6 | sed 's/,.*//'`
+
+        echo "CHECKPOINTS = $CHECKPOINTS ; SUCCESSFUL_CHCKP = $SUCCESSFUL_CHCKP"
 
         if [[ ${CHECKPOINTS} =~ '^[0-9]+$' ]] || [[ ${CHECKPOINTS} == "" ]]; then
 
@@ -159,7 +164,9 @@ function ha_tm_watchdog() {
             local MISSING_TMS=$((EXPECTED_TMS-RUNNING_TMS))
             if [ ${MISSING_TMS} -eq 0 ]; then
                 # start a new TM only if we have exactly the expected number
+                echo "Starting new TM: "
                 "$FLINK_DIR"/bin/taskmanager.sh start > /dev/null
+                jps -v
             fi
 
             # kill an existing one
@@ -168,6 +175,9 @@ function ha_tm_watchdog() {
             kill -9 ${PID}
 
             echo "Killed TM @ ${PID}"
+            jps -v
+
+            echo "RUNNING_TMS = $RUNNING_TMS ; MISSING_TMS = $MISSING_TMS"
 
             SUCCESSFUL_CHCKP=${CHECKPOINTS}
         fi
