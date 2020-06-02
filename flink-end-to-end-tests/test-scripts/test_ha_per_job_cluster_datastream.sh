@@ -117,6 +117,9 @@ function run_ha_test() {
     # jm killing loop
     set_config_key "env.pid.dir" "${TEST_DATA_DIR}"
 
+    set_config_key "akka.ask.timeout" "2 min"
+    set_config_key "taskmanager.registration.timeout" "9 min"
+
     start_local_zk
 
     echo "Running on HA mode: parallelism=${PARALLELISM}, backend=${BACKEND}, asyncSnapshots=${ASYNC}, and incremSnapshots=${INCREM}."
