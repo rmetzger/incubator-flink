@@ -128,3 +128,8 @@ run_resume_savepoint_test() {
 }
 
 run_test_with_timeout 900 run_resume_savepoint_test
+
+# Hint: Wehn debugging this job, it will contain a lot of metrics-related logs
+# remove them using this command: cat <logfile> | grep -v "localhost\.jobmanager\." | grep -v "slf4j.Slf4jReporter" | grep -v "\-\-\-\-\-\-\-\-\-\-\-\-\-" | grep -v "==========" | sed '/^[[:space:]]*$/d'> no_metrics
+
+
