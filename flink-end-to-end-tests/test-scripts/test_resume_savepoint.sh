@@ -58,6 +58,9 @@ run_resume_savepoint_test() {
     NUM_SLOTS=$NEW_DOP
   fi
 
+  # Enable debug logging
+  sed -i -e 's/rootLogger.level = .*/rootLogger.level = DEBUG/' "$FLINK_DIR/conf/log4j.properties"
+
   set_config_key "taskmanager.numberOfTaskSlots" "${NUM_SLOTS}"
 
   if [ $STATE_BACKEND_ROCKS_TIMER_SERVICE_TYPE == 'heap' ]; then
