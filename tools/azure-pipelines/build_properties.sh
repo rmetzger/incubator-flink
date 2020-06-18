@@ -23,14 +23,22 @@ function is_docs_only_pullrequest() {
 	if [[ ! $BUILD_SOURCEBRANCHNAME == ci_* ]] ; then
 		return 1
 	fi
-	# TODO: here we need to replace "origin/master" with something else (pointing us as the base branch)
-	# check if it is docs only:
-	CHANGES=`git --no-pager diff origin/master HEAD --name-only`
+	PR_ID=`echo "$BUILD_SOURCEBRANCHNAME" | cut -f2 -d_`
+	if ! [[ "$PR_ID" =~ ^[0-9]+$ ]] ; then
+		echo "ERROR: Extracted PR_ID is not a number, but this: '$PR_ID'"
+	 	return 1
+	fi
+	# check if it is docs only pull request:
+	CHANGES=`curl --silent "https://api.github.com/repos/apache/flink/pulls/$PR_ID/files" | jq -r ".[].filename"`
 	echo "This build contains the following changed files:"
-	echo $CHANGES
-	if [[ $(echo $CHANGES | grep -v "docs/") == "" ]] ; then
-		return 0
-	else
+	echo "$CHANGES"
+
+	if [[ $CHANGES == "" ]] ; then 
 		return 1
 	fi
+
+	if [[ $(echo $CHANGES | grep -v "docs/") == "" ]] ; then
+		return 0
+	fi
+	return 1
 }

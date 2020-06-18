@@ -178,11 +178,12 @@ jobs:
     # Skip e2e test execution if this is a documentation only pull request (master / release builds will still be checked regularly)
     - script: |
         source ./tools/azure-pipelines/build_properties.sh
-        is_docs_only_change
+        is_docs_only_pullrequest
         if [[ "$?" == 0 ]] ; then
           echo "##[debug]This is a documentation-only change. Skipping e2e execution."
           echo "##vso[task.complete result=Succeeded;]DONE"
         fi
+      displayName: Check if Docs only PR
     - task: Cache@2
       inputs:
         key: $(CACHE_KEY)
