@@ -29,6 +29,7 @@ import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
@@ -209,6 +210,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
+			ClientUtils.waitUntilJobInitializationFinished(client, jobId);
 
 			StatefulCounter.getProgressLatch().await();
 
@@ -253,6 +255,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
+			ClientUtils.waitUntilJobInitializationFinished(client, jobId);
 
 			// Await state is restored
 			StatefulCounter.getRestoreLatch().await();
@@ -337,6 +340,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(graph).get();
+			ClientUtils.waitUntilJobInitializationFinished(client, graph.getJobID());
 
 			client.triggerSavepoint(graph.getJobID(), null).get();
 
@@ -452,6 +456,7 @@ public class SavepointITCase extends TestLogger {
 			JobGraph originalJobGraph = env.getStreamGraph().getJobGraph();
 
 			JobID jobID = client.submitJob(originalJobGraph).get();
+			ClientUtils.waitUntilJobInitializationFinished(client, originalJobGraph.getJobID());
 
 			// wait for the Tasks to be ready
 			assertTrue(StatefulCounter.getProgressLatch().await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
@@ -501,6 +506,8 @@ public class SavepointITCase extends TestLogger {
 
 			// Submit the job
 			client.submitJob(modifiedJobGraph).get();
+			ClientUtils.waitUntilJobInitializationFinished(client, modifiedJobGraph.getJobID());
+
 			// Await state is restored
 			assertTrue(StatefulCounter.getRestoreLatch().await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
 
@@ -695,6 +702,7 @@ public class SavepointITCase extends TestLogger {
 		String savepointPath = null;
 		try {
 			client.submitJob(jobGraph).get();
+			ClientUtils.waitUntilJobInitializationFinished(client, jobGraph.getJobID());
 			for (OneShotLatch latch : iterTestSnapshotWait) {
 				latch.await();
 			}
@@ -709,6 +717,7 @@ public class SavepointITCase extends TestLogger {
 			jobGraph.setSavepointRestoreSettings(SavepointRestoreSettings.forPath(savepointPath));
 
 			client.submitJob(jobGraph).get();
+			ClientUtils.waitUntilJobInitializationFinished(client, jobGraph.getJobID());
 			for (OneShotLatch latch : iterTestRestoreWait) {
 				latch.await();
 			}

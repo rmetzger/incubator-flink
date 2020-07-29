@@ -132,6 +132,7 @@ public class TaskExecutorITCase extends TestLogger {
 	private CompletableFuture<JobResult> submitJobAndWaitUntilRunning(JobGraph jobGraph) throws Exception {
 		miniCluster.submitJob(jobGraph).get();
 
+		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> miniCluster.getJobStatus(jobGraph.getJobID()).get());
 		final CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobGraph.getJobID());
 
 		assertThat(jobResultFuture.isDone(), is(false));

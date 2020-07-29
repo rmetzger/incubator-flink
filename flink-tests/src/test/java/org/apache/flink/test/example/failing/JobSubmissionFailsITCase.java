@@ -19,6 +19,7 @@
 
 package org.apache.flink.test.example.failing;
 
+import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MemorySize;
@@ -133,6 +134,7 @@ public class JobSubmissionFailsITCase extends TestLogger {
 		try {
 			if (detached) {
 				client.submitJob(jobGraph).get();
+				ClientUtils.waitUntilJobInitializationFinished(client, jobGraph.getJobID());
 			} else {
 				submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
 			}

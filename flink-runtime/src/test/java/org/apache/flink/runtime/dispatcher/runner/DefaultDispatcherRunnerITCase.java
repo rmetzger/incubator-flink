@@ -48,6 +48,7 @@ import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.TestingRpcServiceResource;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
+import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.runtime.testutils.TestingJobGraphStore;
 import org.apache.flink.runtime.util.BlobServerResource;
 import org.apache.flink.runtime.util.LeaderConnectionInfo;
@@ -134,14 +135,13 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			final UUID firstLeaderSessionId = UUID.randomUUID();
 
 			final DispatcherGateway firstDispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
-
 			firstDispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
+			CommonTestUtils.waitUntilJobManagerIsInitialized(() -> firstDispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get());
 
 			dispatcherLeaderElectionService.notLeader();
-
 			final UUID secondLeaderSessionId = UUID.randomUUID();
-			final DispatcherGateway secondDispatcherGateway = electLeaderAndRetrieveGateway(secondLeaderSessionId);
 
+			final DispatcherGateway secondDispatcherGateway = electLeaderAndRetrieveGateway(secondLeaderSessionId);
 			final Collection<JobID> jobIds = secondDispatcherGateway.listJobs(TIMEOUT).get();
 
 			assertThat(jobIds, contains(jobGraph.getJobID()));

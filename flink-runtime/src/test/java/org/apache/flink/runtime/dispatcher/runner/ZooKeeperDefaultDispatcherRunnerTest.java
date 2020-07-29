@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.dispatcher.runner;
 
+import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
@@ -166,21 +167,28 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 				defaultDispatcherRunnerFactory)) {
 
 				// initial run
-				DispatcherGateway dispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
+				final DispatcherGateway dispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
 
 				LOG.info("Initial job submission {}.", jobGraph.getJobID());
 				dispatcherGateway.submitJob(jobGraph, TESTING_TIMEOUT).get();
+
+				// wait until job is running
+				CommonTestUtils.waitUntilCondition(() ->
+					dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TESTING_TIMEOUT).get() == JobStatus.RUNNING, Deadline.fromNow(VERIFICATION_TIMEOUT), 20L);
 
 				dispatcherLeaderElectionService.notLeader();
 
 				// recovering submitted jobs
 				LOG.info("Re-grant leadership first time.");
-				dispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
+				DispatcherGateway nextDispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
 
 				LOG.info("Cancel recovered job {}.", jobGraph.getJobID());
 				// cancellation of the job should remove everything
-				final CompletableFuture<JobResult> jobResultFuture = dispatcherGateway.requestJobResult(jobGraph.getJobID(), TESTING_TIMEOUT);
-				dispatcherGateway.cancelJob(jobGraph.getJobID(), TESTING_TIMEOUT).get();
+
+				nextDispatcherGateway.cancelJob(jobGraph.getJobID(), TESTING_TIMEOUT).get();
+				LOG.info("Cancellation successful");
+				// TODO this future was created before the cancellation. Intentionally?
+				final CompletableFuture<JobResult> jobResultFuture = nextDispatcherGateway.requestJobResult(jobGraph.getJobID(), TESTING_TIMEOUT);
 
 				// a successful cancellation should eventually remove all job information
 				final JobResult jobResult = jobResultFuture.get();

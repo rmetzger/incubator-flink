@@ -20,6 +20,7 @@ package org.apache.flink.client.deployment.executors;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.dag.Pipeline;
+import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.deployment.ClusterClientFactory;
 import org.apache.flink.client.deployment.ClusterClientJobClientAdapter;
 import org.apache.flink.client.deployment.ClusterDescriptor;
@@ -64,6 +65,10 @@ public class AbstractSessionClusterExecutor<ClusterID, ClientFactory extends Clu
 			ClusterClient<ClusterID> clusterClient = clusterClientProvider.getClusterClient();
 			return clusterClient
 					.submitJob(jobGraph)
+					.thenApplyAsync(jobId -> {
+						ClientUtils.waitUntilJobInitializationFinished(clusterClient, jobId);
+						return jobId;
+					})
 					.thenApplyAsync(jobID -> (JobClient) new ClusterClientJobClientAdapter<>(
 							clusterClientProvider,
 							jobID))

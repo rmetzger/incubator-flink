@@ -122,6 +122,13 @@ public class EmbeddedExecutor implements PipelineExecutor {
 				timeout);
 
 		return jobSubmissionFuture
+				.thenApplyAsync(jobId -> {
+					org.apache.flink.client.ClientUtils.waitUntilJobInitializationFinished(
+						() -> dispatcherGateway.requestJobStatus(jobId, timeout).get(),
+						() -> dispatcherGateway.requestJobResult(jobId, timeout).get()
+					);
+					return jobId;
+				})
 				.thenApplyAsync(jobID -> jobClientCreator.getJobClient(actualJobId));
 	}
 
