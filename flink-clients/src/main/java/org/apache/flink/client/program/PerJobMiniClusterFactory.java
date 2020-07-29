@@ -88,6 +88,13 @@ public final class PerJobMiniClusterFactory {
 
 		return miniCluster
 			.submitJob(jobGraph)
+			.thenApplyAsync(submissionResult -> {
+				org.apache.flink.client.ClientUtils.waitUntilJobInitializationFinished(
+					() -> miniCluster.getJobStatus(submissionResult.getJobID()).get(),
+					() -> miniCluster.requestJobResult(submissionResult.getJobID()).get()
+				);
+				return submissionResult;
+			})
 			.thenApply(result -> new PerJobMiniClusterJobClient(result.getJobID(), miniCluster))
 			.whenComplete((ignored, throwable) -> {
 				if (throwable != null) {

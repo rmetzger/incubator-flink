@@ -18,15 +18,25 @@
 
 package org.apache.flink.client;
 
+import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.JobStatus;
+import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.client.program.ContextEnvironment;
 import org.apache.flink.client.program.PackagedProgram;
 import org.apache.flink.client.program.ProgramInvocationException;
 import org.apache.flink.client.program.StreamContextEnvironment;
+import org.apache.flink.client.program.rest.retry.ExponentialWaitStrategy;
+import org.apache.flink.client.program.rest.retry.WaitStrategy;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.core.execution.PipelineExecutorServiceLoader;
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders;
+import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.runtime.jobmaster.JobResult;
+import org.apache.flink.util.ExceptionUtils;
+import org.apache.flink.util.SerializedThrowable;
+import org.apache.flink.util.function.SupplierWithException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +44,9 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
 import static org.apache.flink.util.FlinkUserCodeClassLoader.NOOP_EXCEPTION_HANDLER;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -109,6 +122,37 @@ public enum ClientUtils {
 			}
 		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
+		}
+	}
+
+	/**
+	 * This method blocks until the job status is not INITIALIZING anymore.
+	 * If the job is FAILED, it throws an CompletionException with the failure cause.
+	 * @param jobStatusSupplier supplier returning the job status.
+	 */
+	public static void waitUntilJobInitializationFinished(
+		SupplierWithException<JobStatus, Exception> jobStatusSupplier,
+		SupplierWithException<JobResult, Exception> jobResultSupplier
+		) throws CompletionException {
+		LOG.debug("Wait until job initialization is finished");
+		WaitStrategy waitStrategy = new ExponentialWaitStrategy(50, 2000);
+		try {
+			JobStatus status = jobStatusSupplier.get();
+			long attempt = 0;
+			while (status == JobStatus.INITIALIZING) {
+				Thread.sleep(waitStrategy.sleepTime(attempt++));
+				status = jobStatusSupplier.get();
+			}
+			if (status == JobStatus.FAILED) {
+				JobResult result = jobResultSupplier.get();
+				Optional<SerializedThrowable> throwable = result.getSerializedThrowable();
+				if (throwable.isPresent()) {
+					throw throwable.get();
+				}
+			}
+		} catch (Exception e) {
+			ExceptionUtils.checkInterrupted(e);
+			throw new CompletionException("Error while waiting until Job initialization has finished", e);
 		}
 	}
 }

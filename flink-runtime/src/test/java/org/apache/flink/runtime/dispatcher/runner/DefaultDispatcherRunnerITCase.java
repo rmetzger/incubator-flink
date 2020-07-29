@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.dispatcher.runner;
 
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.dispatcher.Dispatcher;
@@ -64,6 +65,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.contains;
@@ -128,22 +130,34 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 		}
 	}
 
+	public void waitUntilJobStatus(JobStatus targetStatus, JobID jobId, DispatcherGateway gateway) throws
+		ExecutionException,
+		InterruptedException {
+		JobStatus status;
+		do {
+			CompletableFuture<JobStatus> statusFuture = gateway.requestJobStatus(
+				jobId,
+				TIMEOUT);
+			status = statusFuture.get();
+			Thread.sleep(50);
+		} while (status != targetStatus);
+	}
+
 	@Test
 	public void leaderChange_afterJobSubmission_recoversSubmittedJob() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
 			final UUID firstLeaderSessionId = UUID.randomUUID();
 
 			final DispatcherGateway firstDispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
-
 			firstDispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
+			waitUntilJobStatus(JobStatus.RUNNING, jobGraph.getJobID(), firstDispatcherGateway);
 
 			dispatcherLeaderElectionService.notLeader();
 
 			final UUID secondLeaderSessionId = UUID.randomUUID();
+
 			final DispatcherGateway secondDispatcherGateway = electLeaderAndRetrieveGateway(secondLeaderSessionId);
-
 			final Collection<JobID> jobIds = secondDispatcherGateway.listJobs(TIMEOUT).get();
-
 			assertThat(jobIds, contains(jobGraph.getJobID()));
 		}
 	}
@@ -231,4 +245,5 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			rpcServiceResource.getTestingRpcService(),
 			partialDispatcherServices);
 	}
+
 }

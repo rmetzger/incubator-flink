@@ -117,7 +117,7 @@ public class PerJobMiniClusterFactoryTest extends TestLogger {
 		JobGraph jobGraph = new JobGraph();
 
 		assertThrows(
-			"Failed to submit job.",
+			"Could not instantiate JobManager",
 			ExecutionException.class,
 			() -> perJobMiniClusterFactory.submitJob(jobGraph).get());
 

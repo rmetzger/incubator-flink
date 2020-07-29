@@ -36,6 +36,7 @@ import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.runtime.util.LeaderRetrievalUtils;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.function.FunctionUtils;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -103,6 +104,9 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 
 		submissionFuture.get();
 
+		CommonTestUtils.waitUntilJobManagerIsInitialized(
+			FunctionUtils.uncheckedSupplier(() -> miniCluster.getJobStatus(jobId).get()));
+
 		CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
 
 		highAvailabilityServices.revokeDispatcherLeadership().get();
@@ -134,6 +138,9 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 		final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
 
 		submissionFuture.get();
+
+		CommonTestUtils.waitUntilJobManagerIsInitialized(
+			FunctionUtils.uncheckedSupplier(() -> miniCluster.getJobStatus(jobId).get()));
 
 		CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
 

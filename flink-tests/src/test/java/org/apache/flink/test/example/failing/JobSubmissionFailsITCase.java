@@ -136,6 +136,7 @@ public class JobSubmissionFailsITCase extends TestLogger {
 			} else {
 				submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
 			}
+			// TODO shall we change the semantics of a detached submission? Submission errors are not reported anymore?
 			fail("Job submission should have thrown an exception.");
 		} catch (Exception e) {
 			if (!failurePredicate.test(e)) {

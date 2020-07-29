@@ -37,6 +37,7 @@ import org.apache.flink.runtime.minicluster.TestingMiniCluster;
 import org.apache.flink.runtime.minicluster.TestingMiniClusterConfiguration;
 import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.function.FunctionUtils;
 import org.apache.flink.util.function.SupplierWithException;
 
 import org.junit.After;
@@ -132,6 +133,7 @@ public class TaskExecutorITCase extends TestLogger {
 	private CompletableFuture<JobResult> submitJobAndWaitUntilRunning(JobGraph jobGraph) throws Exception {
 		miniCluster.submitJob(jobGraph).get();
 
+		CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> miniCluster.getJobStatus(jobGraph.getJobID()).get()));
 		final CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobGraph.getJobID());
 
 		assertThat(jobResultFuture.isDone(), is(false));
