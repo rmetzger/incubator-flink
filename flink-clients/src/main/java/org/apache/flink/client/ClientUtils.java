@@ -18,9 +18,7 @@
 
 package org.apache.flink.client;
 
-import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobStatus;
-import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.client.program.ContextEnvironment;
 import org.apache.flink.client.program.PackagedProgram;
 import org.apache.flink.client.program.ProgramInvocationException;
@@ -32,7 +30,6 @@ import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.core.execution.PipelineExecutorServiceLoader;
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders;
-import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.SerializedThrowable;
@@ -46,7 +43,6 @@ import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 
 import static org.apache.flink.util.FlinkUserCodeClassLoader.NOOP_EXCEPTION_HANDLER;
 import static org.apache.flink.util.Preconditions.checkNotNull;
