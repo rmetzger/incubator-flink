@@ -19,6 +19,7 @@
 
 package org.apache.flink.test.example.failing;
 
+import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MemorySize;
@@ -124,21 +125,21 @@ public class JobSubmissionFailsITCase extends TestLogger {
 	@Test
 	public void testMissingJarBlob() throws Exception {
 		final JobGraph jobGraph = getJobGraphWithMissingBlobKey();
-		runJobSubmissionTest(jobGraph, e -> ExceptionUtils.findThrowable(e, IOException.class).isPresent());
+		runJobSubmissionTest(jobGraph, e -> ExceptionUtils.findThrowableSerializedAware(e, IOException.class, ClassLoader.getSystemClassLoader()).isPresent());
 	}
 
-	private void runJobSubmissionTest(JobGraph jobGraph, Predicate<Exception> failurePredicate) throws Exception {
+	private void runJobSubmissionTest(JobGraph jobGraph, Predicate<Throwable> failurePredicate) throws Exception {
 		ClusterClient<?> client = MINI_CLUSTER_RESOURCE.getClusterClient();
 
 		try {
 			if (detached) {
 				client.submitJob(jobGraph).get();
+				ClientUtils.waitUntilJobInitializationFinished(() -> client.getJobStatus(jobGraph.getJobID()).get(), () -> client.requestJobResult(jobGraph.getJobID()).get());
 			} else {
 				submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
 			}
-			// TODO shall we change the semantics of a detached submission? Submission errors are not reported anymore?
 			fail("Job submission should have thrown an exception.");
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			if (!failurePredicate.test(e)) {
 				throw e;
 			}
