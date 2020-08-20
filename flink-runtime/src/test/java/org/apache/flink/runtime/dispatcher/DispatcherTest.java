@@ -76,7 +76,6 @@ import org.apache.flink.runtime.util.TestingFatalErrorHandlerResource;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.TestLogger;
-import org.apache.flink.util.function.FunctionUtils;
 import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.hamcrest.Matchers;

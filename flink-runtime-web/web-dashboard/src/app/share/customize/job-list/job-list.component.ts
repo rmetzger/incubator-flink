@@ -67,7 +67,7 @@ export class JobListComponent implements OnInit, OnDestroy {
 
   navigateToJob(job: JobsItemInterface) {
     if (job.state === 'INITIALIZING') {
-      this.nzMessageService.info('The Job is Initializing');
+      this.nzMessageService.info('Job detail page is not available while it is in state INITIALIZING.');
     } else {
       this.router.navigate(['job', job.jid]).then();
     }

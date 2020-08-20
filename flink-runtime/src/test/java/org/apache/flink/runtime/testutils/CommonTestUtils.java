@@ -21,7 +21,6 @@ package org.apache.flink.runtime.testutils;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.util.FileUtils;
-import org.apache.flink.util.function.FunctionUtils;
 import org.apache.flink.util.function.SupplierWithException;
 
 import java.io.BufferedInputStream;
@@ -36,7 +35,6 @@ import java.lang.management.RuntimeMXBean;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 /**
  * This class contains auxiliary methods for unit tests.
