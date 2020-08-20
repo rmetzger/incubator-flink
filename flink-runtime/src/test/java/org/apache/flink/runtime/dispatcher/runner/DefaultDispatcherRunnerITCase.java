@@ -49,6 +49,7 @@ import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.TestingRpcServiceResource;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
+import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.runtime.testutils.TestingJobGraphStore;
 import org.apache.flink.runtime.util.BlobServerResource;
 import org.apache.flink.runtime.util.LeaderConnectionInfo;
@@ -130,19 +131,6 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 		}
 	}
 
-	public void waitUntilJobStatus(JobStatus targetStatus, JobID jobId, DispatcherGateway gateway) throws
-		ExecutionException,
-		InterruptedException {
-		JobStatus status;
-		do {
-			CompletableFuture<JobStatus> statusFuture = gateway.requestJobStatus(
-				jobId,
-				TIMEOUT);
-			status = statusFuture.get();
-			Thread.sleep(50);
-		} while (status != targetStatus);
-	}
-
 	@Test
 	public void leaderChange_afterJobSubmission_recoversSubmittedJob() throws Exception {
 		try (final DispatcherRunner dispatcherRunner = createDispatcherRunner()) {
@@ -150,7 +138,7 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 
 			final DispatcherGateway firstDispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
 			firstDispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
-			waitUntilJobStatus(JobStatus.RUNNING, jobGraph.getJobID(), firstDispatcherGateway);
+			CommonTestUtils.waitUntilJobManagerIsInitialized(() -> firstDispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get());
 
 			dispatcherLeaderElectionService.notLeader();
 

@@ -104,8 +104,7 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 
 		submissionFuture.get();
 
-		CommonTestUtils.waitUntilJobManagerIsInitialized(
-			FunctionUtils.uncheckedSupplier(() -> miniCluster.getJobStatus(jobId).get()));
+		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> miniCluster.getJobStatus(jobId).get());
 
 		CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
 
@@ -139,8 +138,7 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 
 		submissionFuture.get();
 
-		CommonTestUtils.waitUntilJobManagerIsInitialized(
-			FunctionUtils.uncheckedSupplier(() -> miniCluster.getJobStatus(jobId).get()));
+		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> miniCluster.getJobStatus(jobId).get());
 
 		CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
 

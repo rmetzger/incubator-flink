@@ -80,7 +80,7 @@ public class DispatcherJobTest extends TestLogger {
 		Assert.assertThat(dispatcherJob.requestJobDetails(TIMEOUT).get().getStatus(), is(JobStatus.FAILED));
 		Assert.assertThat(dispatcherJob.getResultFuture().isDone(), is(true));
 		ArchivedExecutionGraph aeg = dispatcherJob.getResultFuture().get();
-		Assert.assertThat(aeg.getFailureInfo().getException().deserializeError(ClassLoader.getSystemClassLoader()),	is(exception));
+		Assert.assertThat(aeg.getFailureInfo().getException().deserializeError(ClassLoader.getSystemClassLoader()), is(exception));
 
 		Assert.assertTrue(dispatcherJob.closeAsync().isDone() && !dispatcherJob.closeAsync().isCompletedExceptionally());
 	}

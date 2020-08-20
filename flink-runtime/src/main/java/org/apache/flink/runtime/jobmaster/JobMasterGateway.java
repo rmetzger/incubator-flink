@@ -65,12 +65,12 @@ public interface JobMasterGateway extends
 	JobMasterOperatorEventGateway {
 
 	/**
-	 * Requests the current job status.
+	 * Cancels the currently executed job.
 	 *
-	 * @param timeout for the rpc call
-	 * @return Future containing the current job status
+	 * @param timeout of this operation
+	 * @return Future acknowledge of the operation
 	 */
-	CompletableFuture<JobStatus> requestJobStatus(@RpcTimeout Time timeout);
+	CompletableFuture<Acknowledge> cancel(@RpcTimeout Time timeout);
 
 	/**
 	 * Updates the task execution state for a given task.
@@ -198,20 +198,20 @@ public interface JobMasterGateway extends
 	void heartbeatFromResourceManager(final ResourceID resourceID);
 
 	/**
-	 * Cancels the currently executed job.
-	 *
-	 * @param timeout of this operation
-	 * @return Future acknowledge of the operation
-	 */
-	CompletableFuture<Acknowledge> cancel(@RpcTimeout Time timeout);
-
-	/**
 	 * Request the details of the executed job.
 	 *
 	 * @param timeout for the rpc call
 	 * @return Future details of the executed job
 	 */
 	CompletableFuture<JobDetails> requestJobDetails(@RpcTimeout Time timeout);
+
+	/**
+	 * Requests the current job status.
+	 *
+	 * @param timeout for the rpc call
+	 * @return Future containing the current job status
+	 */
+	CompletableFuture<JobStatus> requestJobStatus(@RpcTimeout Time timeout);
 
 	/**
 	 * Requests the {@link ArchivedExecutionGraph} of the executed job.

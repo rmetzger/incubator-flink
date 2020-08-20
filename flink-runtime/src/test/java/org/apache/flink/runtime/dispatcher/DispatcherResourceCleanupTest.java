@@ -278,8 +278,7 @@ public class DispatcherResourceCleanupTest extends TestLogger {
 	/**
 	 * Tests that the uploaded blobs are being cleaned up in case of a job submission failure.
 	 */
-//	@Test(timeout = 5000)
-	@Test
+	@Test(timeout = 5000)
 	public void testBlobServerCleanupWhenJobSubmissionFails() throws Exception {
 		startDispatcher(new FailingJobManagerRunnerFactory(new FlinkException("Test exception")));
 		dispatcherGateway.submitJob(jobGraph, timeout).get();

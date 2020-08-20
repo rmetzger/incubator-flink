@@ -368,8 +368,7 @@ public class DispatcherTest extends TestLogger {
 		Assert.assertEquals(JobStatus.INITIALIZING, jobStatusFuture.get());
 
 		// ensure correct JobDetails
-		MultipleJobsDetails multiDetails = dispatcherGateway.requestMultipleJobDetails(
-			TIMEOUT).get();
+		MultipleJobsDetails multiDetails = dispatcherGateway.requestMultipleJobDetails(TIMEOUT).get();
 		Assert.assertEquals(1, multiDetails.getJobs().size());
 		Assert.assertEquals(blockingJobGraph.getJobID(), multiDetails.getJobs().iterator().next().getJobId());
 
@@ -476,7 +475,7 @@ public class DispatcherTest extends TestLogger {
 
 		// job submission needs to return within a reasonable timeframe
 		Assert.assertEquals(Acknowledge.get(), ackFuture.get(1, TimeUnit.SECONDS));
-log.debug("submission finished");
+
 		// wait till job is running
 		JobStatus status;
 		do {
@@ -484,7 +483,6 @@ log.debug("submission finished");
 				blockingJobGraph.getJobID(),
 				TIMEOUT);
 			status = statusFuture.get();
-			log.info("status = " + status);
 			Thread.sleep(50);
 			Assert.assertThat(
 				status,
@@ -495,7 +493,6 @@ log.debug("submission finished");
 		ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
 		Assert.assertNotNull(execGraph.getFailureInfo());
 		Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
-		log.info("test finished");
 	}
 
 	/**
@@ -592,7 +589,6 @@ log.debug("submission finished");
 
 		assertThat(jobStatusFuture.isDone(), is(false));
 
-		log.debug("status not done");
 		// Make sure that the jobstatus request is blocking after it has left the INITIALIZING status
 		boolean timeoutSeen = false;
 		while (!timeoutSeen) {
@@ -755,7 +751,7 @@ log.debug("submission finished");
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
 
-		CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get()));
+		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get());
 
 		assertThat(dispatcher.getNumberJobs(TIMEOUT).get(), Matchers.is(1));
 
@@ -775,7 +771,7 @@ log.debug("submission finished");
 		DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
-		CommonTestUtils.waitUntilJobManagerIsInitialized(FunctionUtils.uncheckedSupplier(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get()));
+		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get());
 
 		final CompletableFuture<JobResult> jobResultFuture = dispatcherGateway.requestJobResult(jobGraph.getJobID(), TIMEOUT);
 
@@ -813,7 +809,6 @@ log.debug("submission finished");
 			.setJobGraphWriter(testingJobGraphStore)
 			.build();
 		dispatcher.start();
-		dispatcher.waitUntilStarted();
 
 		// we need to elect a jobmaster leader to be able to cancel the job on the JobMaster.
 		jobMasterLeaderElectionService.isLeader(UUID.randomUUID()).get();

@@ -21,6 +21,7 @@ package org.apache.flink.runtime.testutils;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.util.FileUtils;
+import org.apache.flink.util.function.FunctionUtils;
 import org.apache.flink.util.function.SupplierWithException;
 
 import java.io.BufferedInputStream;
@@ -134,16 +135,15 @@ public class CommonTestUtils {
 		}
 	}
 
-	public static void waitUntilJobManagerIsInitialized(Supplier<JobStatus> jobStatusSupplier) throws
+	public static void waitUntilJobManagerIsInitialized(SupplierWithException<JobStatus, Exception> jobStatusSupplier) throws
 		Exception {
 		waitUntilJobManagerIsInitialized(jobStatusSupplier, Deadline.fromNow(Duration.of(1,
 			ChronoUnit.MINUTES)));
 	}
 
-	public static void waitUntilJobManagerIsInitialized(Supplier<JobStatus> jobStatusSupplier, Deadline timeout) throws
+	public static void waitUntilJobManagerIsInitialized(SupplierWithException<JobStatus, Exception> jobStatusSupplier, Deadline timeout) throws
 		Exception {
-		CommonTestUtils.waitUntilCondition(() ->
-			jobStatusSupplier.get() != JobStatus.INITIALIZING, timeout, 20L);
+		CommonTestUtils.waitUntilCondition(() -> jobStatusSupplier.get() != JobStatus.INITIALIZING, timeout, 20L);
 	}
 
 	/**

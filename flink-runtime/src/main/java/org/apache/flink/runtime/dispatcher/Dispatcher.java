@@ -805,7 +805,6 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		return optionalCollection.stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
 
-
 	@Nonnull
 	private <T> List<CompletableFuture<Optional<T>>> queryJobMastersForInformation(Function<DispatcherJob, CompletableFuture<T>> queryFunction) {
 
