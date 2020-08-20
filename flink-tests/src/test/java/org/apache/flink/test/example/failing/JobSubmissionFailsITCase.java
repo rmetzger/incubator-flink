@@ -125,10 +125,10 @@ public class JobSubmissionFailsITCase extends TestLogger {
 	@Test
 	public void testMissingJarBlob() throws Exception {
 		final JobGraph jobGraph = getJobGraphWithMissingBlobKey();
-		runJobSubmissionTest(jobGraph, e -> ExceptionUtils.findThrowableSerializedAware(e, IOException.class, ClassLoader.getSystemClassLoader()).isPresent());
+		runJobSubmissionTest(jobGraph, e -> ExceptionUtils.findThrowable(e, IOException.class).isPresent());
 	}
 
-	private void runJobSubmissionTest(JobGraph jobGraph, Predicate<Throwable> failurePredicate) throws Exception {
+	private void runJobSubmissionTest(JobGraph jobGraph, Predicate<Exception> failurePredicate) throws Exception {
 		ClusterClient<?> client = MINI_CLUSTER_RESOURCE.getClusterClient();
 
 		try {
@@ -139,7 +139,7 @@ public class JobSubmissionFailsITCase extends TestLogger {
 				submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
 			}
 			fail("Job submission should have thrown an exception.");
-		} catch (Throwable e) {
+		} catch (Exception e) {
 			if (!failurePredicate.test(e)) {
 				throw e;
 			}

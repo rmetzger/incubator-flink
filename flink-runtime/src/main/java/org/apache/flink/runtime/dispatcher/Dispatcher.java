@@ -805,16 +805,12 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		return optionalCollection.stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 	}
 
-	private int getNumberOfJobsRunning() {
-		return runningJobs.size();
-	}
 
 	@Nonnull
 	private <T> List<CompletableFuture<Optional<T>>> queryJobMastersForInformation(Function<DispatcherJob, CompletableFuture<T>> queryFunction) {
-		final int numberJobsRunning = getNumberOfJobsRunning();
 
 		ArrayList<CompletableFuture<Optional<T>>> optionalJobInformation = new ArrayList<>(
-			numberJobsRunning);
+			runningJobs.size());
 
 		for (DispatcherJob job : runningJobs.values()) {
 			final CompletableFuture<Optional<T>> queryResult = queryFunction.apply(job)
@@ -851,7 +847,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private void registerDispatcherMetrics(MetricGroup jobManagerMetricGroup) {
 		jobManagerMetricGroup.gauge(MetricNames.NUM_RUNNING_JOBS,
-			this::getNumberOfJobsRunning);
+			() -> (long) runningJobs.size());
 	}
 
 	public CompletableFuture<Void> onRemovedJobGraph(JobID jobId) {

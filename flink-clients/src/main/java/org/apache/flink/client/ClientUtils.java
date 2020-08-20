@@ -143,7 +143,7 @@ public enum ClientUtils {
 				JobResult result = jobResultSupplier.get();
 				Optional<SerializedThrowable> throwable = result.getSerializedThrowable();
 				if (throwable.isPresent()) {
-					throw throwable.get();
+					throw new CompletionException(throwable.get().deserializeError(Thread.currentThread().getContextClassLoader()));
 				}
 			}
 		} catch (Exception e) {

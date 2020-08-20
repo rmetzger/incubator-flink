@@ -29,6 +29,7 @@ import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
@@ -337,6 +338,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(graph).get();
+			ClientUtils.waitUntilJobInitializationFinished(() -> client.getJobStatus(graph.getJobID()).get(), () -> client.requestJobResult(graph.getJobID()).get());
 
 			client.triggerSavepoint(graph.getJobID(), null).get();
 
