@@ -18,7 +18,9 @@
 
 package org.apache.flink.client;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
+import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.client.program.ContextEnvironment;
 import org.apache.flink.client.program.PackagedProgram;
 import org.apache.flink.client.program.ProgramInvocationException;
@@ -150,5 +152,9 @@ public enum ClientUtils {
 			ExceptionUtils.checkInterrupted(e);
 			throw new CompletionException("Error while waiting until Job initialization has finished", e);
 		}
+	}
+
+	public static <T> void waitUntilJobInitializationFinished(ClusterClient<T> client, JobID id) {
+		waitUntilJobInitializationFinished(() -> client.getJobStatus(id).get(), () -> client.requestJobResult(id).get());
 	}
 }

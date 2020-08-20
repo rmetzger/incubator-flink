@@ -66,10 +66,7 @@ public class AbstractSessionClusterExecutor<ClusterID, ClientFactory extends Clu
 			return clusterClient
 					.submitJob(jobGraph)
 					.thenApplyAsync(jobId -> {
-						ClientUtils.waitUntilJobInitializationFinished(
-							() -> clusterClient.getJobStatus(jobId).get(),
-							() -> clusterClient.requestJobResult(jobId).get()
-						);
+						ClientUtils.waitUntilJobInitializationFinished(clusterClient, jobId);
 						return jobId;
 					})
 					.thenApplyAsync(jobID -> (JobClient) new ClusterClientJobClientAdapter<>(
