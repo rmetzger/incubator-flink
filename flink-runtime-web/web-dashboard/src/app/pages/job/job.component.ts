@@ -18,8 +18,8 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Subject } from 'rxjs';
-import { flatMap, takeUntil } from 'rxjs/operators';
+import { EMPTY, Subject } from 'rxjs';
+import { catchError, flatMap, takeUntil } from 'rxjs/operators';
 import { JobService, StatusService } from 'services';
 
 @Component({
@@ -31,6 +31,7 @@ import { JobService, StatusService } from 'services';
 export class JobComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   isLoading = true;
+  isError = false;
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -43,18 +44,22 @@ export class JobComponent implements OnInit, OnDestroy {
     this.statusService.refresh$
       .pipe(
         takeUntil(this.destroy$),
-        flatMap(() => this.jobService.loadJob(this.activatedRoute.snapshot.params.jid))
+        flatMap(() =>
+          this.jobService.loadJob(this.activatedRoute.snapshot.params.jid).pipe(
+            catchError(() => {
+              this.isError = true;
+              this.isLoading = false;
+              this.cdr.markForCheck();
+              return EMPTY;
+            })
+          )
+        )
       )
-      .subscribe(
-        () => {
-          this.isLoading = false;
-          this.cdr.markForCheck();
-        },
-        () => {
-          this.isLoading = false;
-          this.cdr.markForCheck();
-        }
-      );
+      .subscribe(() => {
+        this.isLoading = false;
+        this.isError = false;
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnDestroy() {

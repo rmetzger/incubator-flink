@@ -31,6 +31,7 @@ export const COLOR_MAP = {
   IN_PROGRESS: '#faad14',
   SCHEDULED: '#722ed1',
   COMPLETED: '#1890ff',
-  RESTARTING: '#13c2c2'
+  RESTARTING: '#13c2c2',
+  INITIALIZING: '#fa541c'
 };
 export const LONG_MIN_VALUE = -9223372036854776000;
