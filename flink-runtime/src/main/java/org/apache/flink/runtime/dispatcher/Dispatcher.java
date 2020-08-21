@@ -323,8 +323,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private CompletableFuture<Acknowledge> internalSubmitJob(JobGraph jobGraph) {
 		log.info("Submitting job {} ({}).", jobGraph.getJobID(), jobGraph.getName());
 
-		final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJobManager(jobGraph.getJobID(), jobGraph, jg -> {
-			persistAndRunJob(jg); return null; })
+		final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJobManager(jobGraph.getJobID(), jobGraph, this::persistAndRunJob)
 			.thenApply(ignored -> Acknowledge.get());
 
 		return persistAndRunFuture.handleAsync((acknowledge, throwable) -> {
@@ -342,9 +341,10 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		}, getRpcService().getExecutor());
 	}
 
-	private void persistAndRunJob(JobGraph jobGraph) throws Exception {
+	private Void persistAndRunJob(JobGraph jobGraph) throws Exception {
 		jobGraphWriter.putJobGraph(jobGraph);
 		runJob(jobGraph, false);
+		return null;
 	}
 
 	private void runJob(JobGraph jobGraph, boolean isRecovery) {

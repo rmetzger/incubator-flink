@@ -142,6 +142,8 @@ public enum ClientUtils {
 				status = jobStatusSupplier.get();
 			}
 			if (status == JobStatus.FAILED) {
+				// note: we can not distinguish between initialization failures and failures once
+				// execution has started. Execution errors are potentially reported here.
 				JobResult result = jobResultSupplier.get();
 				Optional<SerializedThrowable> throwable = result.getSerializedThrowable();
 				if (throwable.isPresent()) {

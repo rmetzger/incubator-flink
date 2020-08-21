@@ -110,7 +110,16 @@ public final class DispatcherJob implements AutoCloseableAsync {
 							"Cancellation during initialization has been requested for job {}. Initialization completed, cancelling job.",
 							jobId);
 
-						jobManagerRunner.getJobMasterGateway().thenCompose(gw -> gw.cancel(RpcUtils.INF_TIMEOUT));
+						// cancel job
+						jobManagerRunner
+							.getJobMasterGateway()
+							.thenCompose(gw -> gw.cancel(RpcUtils.INF_TIMEOUT))
+							.whenComplete((ignored, cancelThrowable) -> {
+							if (cancelThrowable != null) {
+								log.warn("Cancellation of job {} failed", jobId, cancelThrowable);
+							}
+						});
+
 						// cancellation will eventually complete the jobResultFuture
 						jobResultFuture.whenComplete((archivedExecutionGraph, resultThrowable) -> {
 							synchronized (lock) {
