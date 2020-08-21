@@ -32,7 +32,6 @@ import org.apache.flink.runtime.checkpoint.Checkpoints;
 import org.apache.flink.runtime.checkpoint.StandaloneCheckpointRecoveryFactory;
 import org.apache.flink.runtime.checkpoint.metadata.CheckpointMetadata;
 import org.apache.flink.runtime.client.JobSubmissionException;
-import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ErrorInfo;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
@@ -88,8 +87,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -129,8 +126,6 @@ import static org.junit.Assert.fail;
  * Test for the {@link Dispatcher} component.
  */
 public class DispatcherTest extends TestLogger {
-
-	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	private static RpcService rpcService;
 
@@ -363,7 +358,6 @@ public class DispatcherTest extends TestLogger {
 
 		// ensure INITIALIZING status from status
 		CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT);
-		FutureUtils.assertNoException(jobStatusFuture);
 		Assert.assertEquals(JobStatus.INITIALIZING, jobStatusFuture.get());
 
 		// ensure correct JobDetails
@@ -375,13 +369,7 @@ public class DispatcherTest extends TestLogger {
 		blockingJobVertex.unblock();
 
 		// wait till job is running
-		JobStatus status;
-		do {
-			status = dispatcherGateway.requestJobStatus(
-				blockingJobGraph.getJobID(),
-				TIMEOUT).get();
-			Thread.sleep(50);
-		} while(status != JobStatus.RUNNING);
+		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get());
 
 		dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT).get();
 	}
@@ -399,27 +387,19 @@ public class DispatcherTest extends TestLogger {
 
 		dispatcherGateway.submitJob(blockingJobGraph, TIMEOUT).get();
 
-		// ensure INITIALIZING status from status
+		// ensure INITIALIZING status
 		CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT);
-		FutureUtils.assertNoException(jobStatusFuture);
 		Assert.assertEquals(JobStatus.INITIALIZING, jobStatusFuture.get());
-		log.info("initializing");
 
 		// this call is supposed to fail
 		boolean exceptionSeen = false;
 		try {
-			CompletableFuture<String> savepointFuture = dispatcherGateway.triggerSavepoint(
-				blockingJobGraph.getJobID(),
-				"file:///tmp/savepoint",
-				false,
-				TIMEOUT);
-			savepointFuture.get();
+			dispatcherGateway.triggerSavepoint(blockingJobGraph.getJobID(), "file:///tmp/savepoint", false, TIMEOUT).get();
 		} catch (ExecutionException t) {
 			Assert.assertTrue(t.getCause() instanceof UnavailableDispatcherOperationException);
 			exceptionSeen = true;
 		}
 		Assert.assertTrue(exceptionSeen);
-		log.info("exception seen");
 
 		// submission has succeeded, let the initialization finish.
 		blockingJobVertex.unblock();
@@ -440,19 +420,14 @@ public class DispatcherTest extends TestLogger {
 
 		Assert.assertThat(dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
-		log.info("submission done. is initing");
 		// submission has succeeded, now cancel the job
-		CompletableFuture<Acknowledge> cancallationFuture = dispatcherGateway.cancelJob(
-			blockingJobGraph.getJobID(),
-			TIMEOUT);
-
+		CompletableFuture<Acknowledge> cancellationFuture = dispatcherGateway.cancelJob(blockingJobGraph.getJobID(), TIMEOUT);
 		Assert.assertThat(dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.CANCELLING));
-
-		Assert.assertThat(cancallationFuture.isDone(), is(false));
+		Assert.assertThat(cancellationFuture.isDone(), is(false));
 		// unblock
 		blockingJobVertex.unblock();
 		// wait until cancelled
-		cancallationFuture.get();
+		cancellationFuture.get();
 		Assert.assertThat(dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.CANCELED));
 	}
 
@@ -468,24 +443,15 @@ public class DispatcherTest extends TestLogger {
 		failingInitializationJobVertex.setInvokableClass(NoOpInvokable.class);
 		JobGraph blockingJobGraph = new JobGraph(TEST_JOB_ID, "failingTestJob", failingInitializationJobVertex);
 
-		CompletableFuture<Acknowledge> ackFuture = dispatcherGateway.submitJob(
-			blockingJobGraph,
-			TIMEOUT);
+		dispatcherGateway.submitJob(blockingJobGraph, TIMEOUT).get();
 
-		// job submission needs to return within a reasonable timeframe
-		Assert.assertEquals(Acknowledge.get(), ackFuture.get(1, TimeUnit.SECONDS));
-
-		// wait till job is running
+		// wait till job has failed
 		JobStatus status;
 		do {
-			CompletableFuture<JobStatus> statusFuture = dispatcherGateway.requestJobStatus(
-				blockingJobGraph.getJobID(),
-				TIMEOUT);
+			CompletableFuture<JobStatus> statusFuture = dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT);
 			status = statusFuture.get();
 			Thread.sleep(50);
-			Assert.assertThat(
-				status,
-				either(is(JobStatus.INITIALIZING)).or(is(JobStatus.FAILED)));
+			Assert.assertThat(status, either(is(JobStatus.INITIALIZING)).or(is(JobStatus.FAILED)));
 		} while (status != JobStatus.FAILED);
 
 		// get failure cause

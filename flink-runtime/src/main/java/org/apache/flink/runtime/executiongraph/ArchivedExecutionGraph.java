@@ -354,8 +354,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	}
 
 	/**
-	 * Create ArchivedExecutionGraph from failed JobGraph.
-	 * Note: Some elements in the ArchivedExecutionGraph will be filled on a best-effort basis
+	 * Create an ArchivedExecutionGraph from an initializing job.
 	 */
 	public static ArchivedExecutionGraph createFromInitializingJob(
 		JobID jobId,

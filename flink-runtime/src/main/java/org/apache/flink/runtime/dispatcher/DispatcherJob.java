@@ -48,7 +48,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class DispatcherJob implements AutoCloseableAsync {
 
-	private final Logger log = LoggerFactory.getLogger(getClass());
+	private final Logger log = LoggerFactory.getLogger(DispatcherJob.class);
 
 	private final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
 	private final CompletableFuture<ArchivedExecutionGraph> jobResultFuture;
@@ -106,9 +106,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
 
 					if (jobStatus == JobStatus.CANCELLING) {
-						log.info(
-							"Cancellation during initialization has been requested for job {}. Initialization completed, cancelling job.",
-							jobId);
+						log.info("Cancellation during initialization has been requested for job {}. Initialization completed, cancelling job.", jobId);
 
 						// cancel job
 						jobManagerRunner
@@ -179,8 +177,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	public CompletableFuture<Acknowledge> cancel(Time timeout) {
 		synchronized (lock) {
 			if (isRunning()) {
-				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.cancel(
-					timeout));
+				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.cancel(timeout));
 			} else {
 				log.info("Cancellation during initialization requested for job {}. Job will be cancelled once JobManager has been initialized.", jobId);
 				jobStatus = JobStatus.CANCELLING;
@@ -192,8 +189,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	public CompletableFuture<JobStatus> requestJobStatus(Time timeout) {
 		synchronized (lock) {
 			if (isRunning()) {
-				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJobStatus(
-					timeout));
+				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJobStatus(timeout));
 			} else {
 				return CompletableFuture.completedFuture(jobStatus);
 			}
@@ -203,8 +199,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	public CompletableFuture<ArchivedExecutionGraph> requestJob(Time timeout) {
 		synchronized (lock) {
 			if (isRunning()) {
-				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(
-					timeout));
+				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(timeout));
 			} else {
 				return CompletableFuture.supplyAsync(() -> ArchivedExecutionGraph.createFromInitializingJob(jobId, jobName, null, jobStatus, initializationTimestamp));
 			}

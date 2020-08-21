@@ -21,7 +21,7 @@ package org.apache.flink.runtime.dispatcher;
 import org.apache.flink.util.FlinkException;
 
 /**
- * TODO.
+ * Exception indicating that a Dispatcher operation is temporarily unavailable.
  */
 public class UnavailableDispatcherOperationException extends FlinkException {
 	public UnavailableDispatcherOperationException(String message) {

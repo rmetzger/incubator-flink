@@ -527,11 +527,11 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	public CompletableFuture<ArchivedExecutionGraph> requestJob(JobID jobId, Time timeout) {
 		Function<Throwable, ArchivedExecutionGraph> checkArchiveOnException = throwable ->  {
 			// check whether it is a completed job
-			final ArchivedExecutionGraph serializableExecutionGraph = archivedExecutionGraphStore.get(jobId);
-			if (serializableExecutionGraph == null) {
+			final ArchivedExecutionGraph archivedExecutionGraph = archivedExecutionGraphStore.get(jobId);
+			if (archivedExecutionGraph == null) {
 				throw new CompletionException(ExceptionUtils.stripCompletionException(throwable));
 			} else {
-				return serializableExecutionGraph;
+				return archivedExecutionGraph;
 			}
 		};
 		Optional<DispatcherJob> maybeJob = getDispatcherJob(jobId);
@@ -633,6 +633,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 
 	private void registerJobManagerRunnerTerminationFuture(JobID jobId, CompletableFuture<Void> jobManagerRunnerTerminationFuture) {
 		Preconditions.checkState(!jobManagerTerminationFutures.containsKey(jobId));
+
 		jobManagerTerminationFutures.put(jobId, jobManagerRunnerTerminationFuture);
 
 		// clean up the pending termination future

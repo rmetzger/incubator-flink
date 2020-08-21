@@ -139,11 +139,11 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			CommonTestUtils.waitUntilJobManagerIsInitialized(() -> firstDispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT).get());
 
 			dispatcherLeaderElectionService.notLeader();
-
 			final UUID secondLeaderSessionId = UUID.randomUUID();
 
 			final DispatcherGateway secondDispatcherGateway = electLeaderAndRetrieveGateway(secondLeaderSessionId);
 			final Collection<JobID> jobIds = secondDispatcherGateway.listJobs(TIMEOUT).get();
+
 			assertThat(jobIds, contains(jobGraph.getJobID()));
 		}
 	}
@@ -231,5 +231,4 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			rpcServiceResource.getTestingRpcService(),
 			partialDispatcherServices);
 	}
-
 }
