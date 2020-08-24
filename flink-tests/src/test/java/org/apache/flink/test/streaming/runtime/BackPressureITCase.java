@@ -119,7 +119,10 @@ public class BackPressureITCase extends TestLogger {
 		final JobVertex mapJobVertex = vertices.get(1);
 
 		testingMiniCluster.submitJob(jobGraph).get();
-		ClientUtils.waitUntilJobInitializationFinished(() -> testingMiniCluster.getJobStatus(TEST_JOB_ID).get(), () -> testingMiniCluster.requestJobResult(TEST_JOB_ID).get());
+		ClientUtils.waitUntilJobInitializationFinished(TEST_JOB_ID,
+			() -> testingMiniCluster.getJobStatus(TEST_JOB_ID).get(),
+			() -> testingMiniCluster.requestJobResult(TEST_JOB_ID).get(),
+			ClassLoader.getSystemClassLoader());
 
 		assertJobVertexSubtasksAreBackPressured(mapJobVertex);
 		assertJobVertexSubtasksAreBackPressured(sourceJobVertex);

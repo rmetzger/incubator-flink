@@ -354,13 +354,14 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 	}
 
 	/**
-	 * Create an ArchivedExecutionGraph from an initializing job.
+	 * Create a sparse ArchivedExecutionGraph for a job while it is still initializing.
+	 * Most fields will be empty, only job status and error-related fields are set.
 	 */
 	public static ArchivedExecutionGraph createFromInitializingJob(
 		JobID jobId,
 		String jobName,
+		JobStatus jobStatus,
 		@Nullable Throwable throwable,
-		JobStatus finalJobStatus,
 		long initializationTimestamp) {
 
 		long failureTime = System.currentTimeMillis();
@@ -370,13 +371,13 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		StringifiedAccumulatorResult[] archivedUserAccumulators = new StringifiedAccumulatorResult[]{};
 
 		final long[] timestamps = new long[JobStatus.values().length];
-		timestamps[JobStatus.CREATED.ordinal()] = initializationTimestamp;
 		timestamps[JobStatus.INITIALIZING.ordinal()] = initializationTimestamp;
 
 		String jsonPlan = "{}";
 
 		ErrorInfo failureInfo = null;
 		if (throwable != null) {
+			Preconditions.checkState(jobStatus == JobStatus.FAILED);
 			failureInfo = new ErrorInfo(throwable, failureTime);
 			timestamps[JobStatus.FAILED.ordinal()] = failureTime;
 		}
@@ -387,7 +388,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 			archivedTasks,
 			archivedVerticesInCreationOrder,
 			timestamps,
-			finalJobStatus,
+			jobStatus,
 			failureInfo,
 			jsonPlan,
 			archivedUserAccumulators,

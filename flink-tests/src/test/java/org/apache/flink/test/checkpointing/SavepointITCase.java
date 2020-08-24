@@ -210,7 +210,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(client, jobId);
+			ClientUtils.waitUntilJobInitializationFinished(jobId, client, ClassLoader.getSystemClassLoader());
 
 			StatefulCounter.getProgressLatch().await();
 
@@ -255,7 +255,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(client, jobId);
+			ClientUtils.waitUntilJobInitializationFinished(jobId, client, ClassLoader.getSystemClassLoader());
 
 			// Await state is restored
 			StatefulCounter.getRestoreLatch().await();
@@ -340,7 +340,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(graph).get();
-			ClientUtils.waitUntilJobInitializationFinished(client, graph.getJobID());
+			ClientUtils.waitUntilJobInitializationFinished(graph.getJobID(), client, ClassLoader.getSystemClassLoader());
 
 			client.triggerSavepoint(graph.getJobID(), null).get();
 
@@ -456,7 +456,7 @@ public class SavepointITCase extends TestLogger {
 			JobGraph originalJobGraph = env.getStreamGraph().getJobGraph();
 
 			JobID jobID = client.submitJob(originalJobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(client, originalJobGraph.getJobID());
+			ClientUtils.waitUntilJobInitializationFinished(jobID, client, ClassLoader.getSystemClassLoader());
 
 			// wait for the Tasks to be ready
 			assertTrue(StatefulCounter.getProgressLatch().await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
@@ -506,7 +506,7 @@ public class SavepointITCase extends TestLogger {
 
 			// Submit the job
 			client.submitJob(modifiedJobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(client, modifiedJobGraph.getJobID());
+			ClientUtils.waitUntilJobInitializationFinished(modifiedJobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
 
 			// Await state is restored
 			assertTrue(StatefulCounter.getRestoreLatch().await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
@@ -702,7 +702,7 @@ public class SavepointITCase extends TestLogger {
 		String savepointPath = null;
 		try {
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(client, jobGraph.getJobID());
+			ClientUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
 			for (OneShotLatch latch : iterTestSnapshotWait) {
 				latch.await();
 			}
@@ -717,7 +717,7 @@ public class SavepointITCase extends TestLogger {
 			jobGraph.setSavepointRestoreSettings(SavepointRestoreSettings.forPath(savepointPath));
 
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(client, jobGraph.getJobID());
+			ClientUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
 			for (OneShotLatch latch : iterTestRestoreWait) {
 				latch.await();
 			}

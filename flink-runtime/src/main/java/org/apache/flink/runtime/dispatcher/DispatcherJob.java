@@ -35,16 +35,13 @@ import org.apache.flink.util.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Abstraction used by the {@link Dispatcher} to manage JobManagers, in
- * particular during initialization.
- * While a job is initializing, the JobMasterGateway is not available. A small subset
- * of the methods of the JobMasterGateway necessary during initialization are provided
- * by this class (job details, cancel).
+ * Abstraction used by the {@link Dispatcher} to manage jobs.
  */
 public final class DispatcherJob implements AutoCloseableAsync {
 
@@ -52,6 +49,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 
 	private final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
 	private final CompletableFuture<ArchivedExecutionGraph> jobResultFuture;
+	private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
 
 	private final long initializationTimestamp;
 	private final JobID jobId;
@@ -62,84 +60,69 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	// internal field to track job status during initialization. Is not updated anymore after
 	// job is initialized, cancelled or failed.
 	@GuardedBy("lock")
-	private JobStatus jobStatus = JobStatus.INITIALIZING;
+	private DispatcherJobStatus jobStatus = DispatcherJobStatus.INITIALIZING;
 
-	private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
+	private enum DispatcherJobStatus {
+		// We are waiting for the JobManagerRunner to be initialized
+		INITIALIZING(JobStatus.INITIALIZING),
+		// JobManagerRunner is initialized
+		JOB_MANAGER_RUNNER_INITIALIZED(null),
+		// waiting for cancellation. We stay in this status until the job result future completed,
+		// then we consider the JobManager to be initialized.
+		CANCELLING(JobStatus.CANCELLING);
 
-	private enum SubmissionType {
-		INITIAL, RECOVERY
+		@Nullable
+		private final JobStatus jobStatus;
+
+		DispatcherJobStatus(JobStatus jobStatus) {
+			this.jobStatus = jobStatus;
+		}
+
+		public JobStatus asJobStatus() {
+			if (jobStatus == null) {
+				throw new IllegalStateException("This state is not defined as a 'JobStatus'");
+			}
+			return jobStatus;
+		}
 	}
 
-	static DispatcherJob createForSubmission(
+	static DispatcherJob createFor(
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
 		JobID jobId,
 		String jobName,
-		long initializationTimestamp) {
-		return new DispatcherJob(jobManagerRunnerFuture, jobId, jobName, initializationTimestamp, SubmissionType.INITIAL);
-	}
-
-	static DispatcherJob createForRecovery(
-		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
-		JobID jobId,
-		String jobName,
-		long initializationTimestamp) {
-		return new DispatcherJob(jobManagerRunnerFuture, jobId, jobName, initializationTimestamp, SubmissionType.RECOVERY);
+		Dispatcher.ExecutionType executionType) {
+		return new DispatcherJob(jobManagerRunnerFuture, jobId, jobName, executionType);
 	}
 
 	private DispatcherJob(
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
 		JobID jobId,
 		String jobName,
-		long initializationTimestamp,
-		SubmissionType submissionType) {
+		Dispatcher.ExecutionType executionType) {
 		this.jobManagerRunnerFuture = jobManagerRunnerFuture;
 		this.jobId = jobId;
 		this.jobName = jobName;
-		this.initializationTimestamp = initializationTimestamp;
+		this.initializationTimestamp = System.currentTimeMillis();
 		this.jobResultFuture = new CompletableFuture<>();
 
 		FutureUtils.assertNoException(this.jobManagerRunnerFuture.handle((jobManagerRunner, throwable) -> {
 			// JM has been initialized, or the initialization failed
 			synchronized (lock) {
+				if (jobStatus != DispatcherJobStatus.CANCELLING) {
+					jobStatus = DispatcherJobStatus.JOB_MANAGER_RUNNER_INITIALIZED;
+				}
 				if (throwable == null) {
 					// Forward result future
 					FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
-
-					if (jobStatus == JobStatus.CANCELLING) {
-						log.info("Cancellation during initialization has been requested for job {}. Initialization completed, cancelling job.", jobId);
-
-						// cancel job
-						jobManagerRunner
-							.getJobMasterGateway()
-							.thenCompose(gw -> gw.cancel(RpcUtils.INF_TIMEOUT))
-							.whenComplete((ignored, cancelThrowable) -> {
-							if (cancelThrowable != null) {
-								log.warn("Cancellation of job {} failed", jobId, cancelThrowable);
-							}
-						});
-
-						// cancellation will eventually complete the jobResultFuture
-						jobResultFuture.whenComplete((archivedExecutionGraph, resultThrowable) -> {
-							synchronized (lock) {
-								if (resultThrowable == null) {
-									jobStatus = archivedExecutionGraph.getState();
-								} else {
-									jobStatus = JobStatus.FAILED;
-								}
-							}
-						});
-					} else {
-						jobStatus = JobStatus.RUNNING; // this status should never be exposed from the DispatcherJob. Only used internally for tracking running state
-					}
 				} else { // failure during initialization
-					if (submissionType == SubmissionType.RECOVERY) {
+					if (executionType == Dispatcher.ExecutionType.RECOVERY) {
 						jobResultFuture.completeExceptionally(throwable);
 					} else {
 						jobResultFuture.complete(ArchivedExecutionGraph.createFromInitializingJob(
 							jobId,
 							jobName,
-							throwable,
 							JobStatus.FAILED,
+							throwable,
 							initializationTimestamp));
 					}
 				}
@@ -153,90 +136,123 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	}
 
 	public CompletableFuture<JobDetails> requestJobDetails(Time timeout) {
-		synchronized (lock) {
-			if (isRunning()) {
-				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJobDetails(
-					timeout));
-			} else {
-				int[] tasksPerState = new int[ExecutionState.values().length];
-				return CompletableFuture.completedFuture(new JobDetails(
+		return requestJobStatus(timeout).thenApply(status -> {
+			int[] tasksPerState = new int[ExecutionState.values().length];
+			synchronized (lock) {
+				return new JobDetails(
 					jobId,
 					jobName,
 					initializationTimestamp,
 					0,
 					0,
-					jobStatus,
+					status,
 					0,
 					tasksPerState,
-					0));
+					0);
 			}
-		}
+		});
 	}
 
+	/**
+	 * Cancel job.
+	 * A cancellation will be scheduled if the initialization is not completed.
+	 * The returned future will complete exceptionally if the JobManagerRunner initialization failed.
+	 */
 	public CompletableFuture<Acknowledge> cancel(Time timeout) {
 		synchronized (lock) {
-			if (isRunning()) {
+			if (isInitialized()) {
 				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.cancel(timeout));
 			} else {
 				log.info("Cancellation during initialization requested for job {}. Job will be cancelled once JobManager has been initialized.", jobId);
-				jobStatus = JobStatus.CANCELLING;
+
+				// cancel job
+				jobManagerRunnerFuture
+					.thenCompose(JobManagerRunner::getJobMasterGateway)
+					.thenCompose(jobMasterGateway -> jobMasterGateway.cancel(RpcUtils.INF_TIMEOUT))
+					.whenComplete((ignored, cancelThrowable) -> {
+						if (cancelThrowable != null) {
+							log.warn("Cancellation of job {} failed", jobId, cancelThrowable);
+						}
+					});
+				jobStatus = DispatcherJobStatus.CANCELLING;
+				jobResultFuture.whenComplete(((archivedExecutionGraph, throwable) -> {
+					if (archivedExecutionGraph != null) {
+						jobStatus = DispatcherJobStatus.JOB_MANAGER_RUNNER_INITIALIZED;
+					}
+				}));
 				return jobResultFuture.thenApply(ignored -> Acknowledge.get());
 			}
 		}
 	}
 
 	public CompletableFuture<JobStatus> requestJobStatus(Time timeout) {
-		synchronized (lock) {
-			if (isRunning()) {
-				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJobStatus(timeout));
-			} else {
-				return CompletableFuture.completedFuture(jobStatus);
-			}
-		}
+		return requestJob(timeout).thenApply(ArchivedExecutionGraph::getState);
 	}
 
+	/**
+	 * Returns a future completing to the ArchivedExecutionGraph of the job.
+	 */
 	public CompletableFuture<ArchivedExecutionGraph> requestJob(Time timeout) {
 		synchronized (lock) {
-			if (isRunning()) {
-				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(timeout));
+			if (isInitialized()) {
+				if (jobResultFuture.isDone()) { // job is not running anymore
+					return jobResultFuture;
+				}
+				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(
+					timeout));
 			} else {
-				return CompletableFuture.supplyAsync(() -> ArchivedExecutionGraph.createFromInitializingJob(jobId, jobName, null, jobStatus, initializationTimestamp));
+				synchronized (lock) {
+					Preconditions.checkState(this.jobStatus == DispatcherJobStatus.INITIALIZING || jobStatus == DispatcherJobStatus.CANCELLING);
+					return CompletableFuture.completedFuture(
+						ArchivedExecutionGraph.createFromInitializingJob(
+							jobId,
+							jobName,
+							jobStatus.asJobStatus(),
+							null,
+							initializationTimestamp));
+				}
 			}
 		}
 	}
 
-	public boolean isRunning() {
+	/**
+	 * The job is initialized once the JobManager runner has been initialized.
+	 * It is also initialized if the runner initialization failed, or of it has been
+	 * canceled (and the cancellation is complete).
+	 */
+	public boolean isInitialized() {
 		synchronized (lock) {
-			return jobStatus == JobStatus.RUNNING;
+			return jobStatus == DispatcherJobStatus.JOB_MANAGER_RUNNER_INITIALIZED;
 		}
 	}
 
+	/**
+	 * Returns the {@link JobMasterGateway} from the JobManagerRunner.
+	 * This method will fail with an {@link IllegalStateException} if the job is initialized.
+	 * The returned future will complete exceptionally if the JobManagerRunner initialization failed.
+	 * @return the {@link JobMasterGateway}.
+	 */
 	public CompletableFuture<JobMasterGateway> getJobMasterGateway() {
 		Preconditions.checkState(
-			isRunning(),
+			isInitialized(),
 			"JobMaster Gateway is not available during initialization");
-		try {
-			return jobManagerRunnerFuture.thenCompose(JobManagerRunner::getJobMasterGateway);
-		} catch (Throwable e) {
-			throw new IllegalStateException("JobMaster gateway is not available", e);
-		}
+		return jobManagerRunnerFuture.thenCompose(JobManagerRunner::getJobMasterGateway);
 	}
 
 	@Override
 	public CompletableFuture<Void> closeAsync() {
-		jobManagerRunnerFuture.handle((runner, throwable) -> {
+		FutureUtils.assertNoException(jobManagerRunnerFuture.handle((runner, throwable) -> {
 			if (throwable == null) {
 				// init was successful: close jobManager runner.
 				CompletableFuture<Void> jobManagerRunnerClose = jobManagerRunnerFuture.thenCompose(
 					AutoCloseableAsync::closeAsync);
 				FutureUtils.forward(jobManagerRunnerClose, terminationFuture);
 			} else {
-				// initialization has failed. Termination complete.
-				terminationFuture.complete(null);
+				// initialization has failed: forward failure.
+				terminationFuture.completeExceptionally(throwable);
 			}
 			return null;
-		});
+		}));
 		return terminationFuture;
 	}
-
 }

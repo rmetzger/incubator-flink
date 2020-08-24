@@ -53,7 +53,6 @@ import org.apache.flink.runtime.leaderelection.TestingLeaderElectionService;
 import org.apache.flink.runtime.leaderretrieval.SettableLeaderRetrievalService;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
-import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.messages.webmonitor.MultipleJobsDetails;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.resourcemanager.utils.TestingResourceManagerGateway;
@@ -431,7 +430,7 @@ public class DispatcherTest extends TestLogger {
 		Assert.assertThat(dispatcherGateway.requestJobStatus(blockingJobGraph.getJobID(), TIMEOUT).get(), is(JobStatus.CANCELED));
 	}
 
-	@Test(timeout = 5_000L)
+	@Test
 	public void testErrorDuringInitialization() throws Exception {
 		dispatcher = createAndStartDispatcher(heartbeatServices, haServices, new ExpectedJobIdJobManagerRunnerFactory(TEST_JOB_ID, createdJobManagerRunnerLatch));
 		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
@@ -458,6 +457,8 @@ public class DispatcherTest extends TestLogger {
 		ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
 		Assert.assertNotNull(execGraph.getFailureInfo());
 		Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
+
+		closeDispatcherAfterInitializationError();
 	}
 
 	/**
@@ -599,6 +600,7 @@ public class DispatcherTest extends TestLogger {
 		assertThat(ExceptionUtils.findThrowableWithMessage(error, testException.getMessage()).isPresent(), is(true));
 
 		fatalErrorHandler.clearError();
+		closeDispatcherAfterInitializationError();
 	}
 
 	/**
@@ -610,16 +612,10 @@ public class DispatcherTest extends TestLogger {
 	@Test
 	public void testBlockingJobManagerRunner() throws Exception {
 		final OneShotLatch jobManagerRunnerCreationLatch = new OneShotLatch();
-		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
-			.setRequestJobDetailsSupplier(() -> {
-				JobDetails jobDetails = new JobDetails(jobGraph.getJobID(), "", 0, 0, 0, JobStatus.RUNNING, 0,
-					new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0}, 0);
-				return CompletableFuture.completedFuture(jobDetails);
-			}).build();
 		dispatcher = createAndStartDispatcher(
 			heartbeatServices,
 			haServices,
-			new BlockingJobManagerRunnerFactory(jobManagerRunnerCreationLatch::await, mockRunningJobMasterGateway));
+			new BlockingJobManagerRunnerFactory(jobManagerRunnerCreationLatch::await, getMockedRunningJobMasterGateway()));
 		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
@@ -647,12 +643,7 @@ public class DispatcherTest extends TestLogger {
 	public void testFailingJobManagerRunnerCleanup() throws Exception {
 		final FlinkException testException = new FlinkException("Test exception.");
 		final ArrayBlockingQueue<Optional<Exception>> queue = new ArrayBlockingQueue<>(2);
-		TestingJobMasterGateway mockRunningJobMasterGateway = new TestingJobMasterGatewayBuilder()
-			.setRequestJobDetailsSupplier(() -> {
-				JobDetails jobDetails = new JobDetails(jobGraph.getJobID(), "", 0, 0, 0, JobStatus.RUNNING, 0,
-					new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0}, 0);
-				return CompletableFuture.completedFuture(jobDetails);
-			}).build();
+
 		dispatcher = createAndStartDispatcher(
 			heartbeatServices,
 			haServices,
@@ -663,7 +654,7 @@ public class DispatcherTest extends TestLogger {
 				if (exception != null) {
 					throw exception;
 				}
-			}, mockRunningJobMasterGateway));
+			}, getMockedRunningJobMasterGateway()));
 
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
@@ -910,5 +901,25 @@ public class DispatcherTest extends TestLogger {
 		public void initializeOnMaster(ClassLoader loader) {
 			throw new IllegalStateException("Artificial test failure");
 		}
+	}
+
+	private TestingJobMasterGateway getMockedRunningJobMasterGateway() {
+		return new TestingJobMasterGatewayBuilder()
+			.setRequestJobSupplier(() -> CompletableFuture.completedFuture(ArchivedExecutionGraph.createFromInitializingJob(jobGraph.getJobID(),
+				jobGraph.getName(),
+				JobStatus.RUNNING,
+				null,
+				1337))
+			).build();
+	}
+
+	/**
+	 * The termination future of DispatcherJob forwards exceptions from the JobManager initialization.
+	 * Tests that fail during initialization can use this method to validate the correct behavior of the dispatcher shutdown process.
+	 */
+	private void closeDispatcherAfterInitializationError() {
+		org.apache.flink.core.testutils.CommonTestUtils.assertThrows("Could not instantiate JobManager", ExecutionException.class, () ->
+			dispatcher.closeAsync().get());
+		dispatcher = null;
 	}
 }

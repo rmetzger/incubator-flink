@@ -134,7 +134,7 @@ public class JobSubmissionFailsITCase extends TestLogger {
 		try {
 			if (detached) {
 				client.submitJob(jobGraph).get();
-				ClientUtils.waitUntilJobInitializationFinished(client, jobGraph.getJobID());
+				ClientUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
 			} else {
 				submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
 			}

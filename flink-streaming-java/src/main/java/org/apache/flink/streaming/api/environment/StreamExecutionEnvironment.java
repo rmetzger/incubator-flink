@@ -1809,7 +1809,7 @@ public class StreamExecutionEnvironment {
 
 		CompletableFuture<JobClient> jobClientFuture = executorFactory
 			.getExecutor(configuration)
-			.execute(streamGraph, configuration);
+			.execute(streamGraph, configuration, userClassloader);
 
 		try {
 			JobClient jobClient = jobClientFuture.get();

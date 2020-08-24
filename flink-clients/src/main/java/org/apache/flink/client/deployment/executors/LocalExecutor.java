@@ -65,7 +65,7 @@ public class LocalExecutor implements PipelineExecutor {
 	}
 
 	@Override
-	public CompletableFuture<JobClient> execute(Pipeline pipeline, Configuration configuration) throws Exception {
+	public CompletableFuture<JobClient> execute(Pipeline pipeline, Configuration configuration, ClassLoader userCodeClassloader) throws Exception {
 		checkNotNull(pipeline);
 		checkNotNull(configuration);
 

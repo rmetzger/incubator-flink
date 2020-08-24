@@ -30,6 +30,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.PipelineExecutor;
 import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.util.function.FunctionUtils;
 
 import javax.annotation.Nonnull;
 
@@ -54,7 +55,7 @@ public class AbstractSessionClusterExecutor<ClusterID, ClientFactory extends Clu
 	}
 
 	@Override
-	public CompletableFuture<JobClient> execute(@Nonnull final Pipeline pipeline, @Nonnull final Configuration configuration) throws Exception {
+	public CompletableFuture<JobClient> execute(@Nonnull final Pipeline pipeline, @Nonnull final Configuration configuration, @Nonnull final ClassLoader userCodeClassloader) throws Exception {
 		final JobGraph jobGraph = PipelineExecutorUtils.getJobGraph(pipeline, configuration);
 
 		try (final ClusterDescriptor<ClusterID> clusterDescriptor = clusterClientFactory.createClusterDescriptor(configuration)) {
@@ -65,10 +66,10 @@ public class AbstractSessionClusterExecutor<ClusterID, ClientFactory extends Clu
 			ClusterClient<ClusterID> clusterClient = clusterClientProvider.getClusterClient();
 			return clusterClient
 					.submitJob(jobGraph)
-					.thenApplyAsync(jobId -> {
-						ClientUtils.waitUntilJobInitializationFinished(clusterClient, jobId);
+					.thenApplyAsync(FunctionUtils.uncheckedFunction(jobId -> {
+						ClientUtils.waitUntilJobInitializationFinished(jobId, clusterClient, userCodeClassloader);
 						return jobId;
-					})
+					}))
 					.thenApplyAsync(jobID -> (JobClient) new ClusterClientJobClientAdapter<>(
 							clusterClientProvider,
 							jobID))

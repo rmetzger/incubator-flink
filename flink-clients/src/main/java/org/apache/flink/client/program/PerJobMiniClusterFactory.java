@@ -38,6 +38,7 @@ import org.apache.flink.runtime.operators.coordination.CoordinationRequestGatewa
 import org.apache.flink.runtime.operators.coordination.CoordinationResponse;
 import org.apache.flink.util.MathUtils;
 import org.apache.flink.util.SerializedValue;
+import org.apache.flink.util.function.FunctionUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,13 +89,13 @@ public final class PerJobMiniClusterFactory {
 
 		return miniCluster
 			.submitJob(jobGraph)
-			.thenApplyAsync(submissionResult -> {
-				org.apache.flink.client.ClientUtils.waitUntilJobInitializationFinished(
+			.thenApplyAsync(FunctionUtils.uncheckedFunction(submissionResult -> {
+				org.apache.flink.client.ClientUtils.waitUntilJobInitializationFinished(submissionResult.getJobID(),
 					() -> miniCluster.getJobStatus(submissionResult.getJobID()).get(),
-					() -> miniCluster.requestJobResult(submissionResult.getJobID()).get()
-				);
+					() -> miniCluster.requestJobResult(submissionResult.getJobID()).get(),
+					Thread.currentThread().getContextClassLoader());
 				return submissionResult;
-			})
+			}))
 			.thenApply(result -> new PerJobMiniClusterJobClient(result.getJobID(), miniCluster))
 			.whenComplete((ignored, throwable) -> {
 				if (throwable != null) {

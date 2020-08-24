@@ -31,6 +31,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.core.execution.PipelineExecutorServiceLoader;
+import org.apache.flink.runtime.client.JobInitializationException;
 import org.apache.flink.runtime.execution.librarycache.FlinkUserCodeClassLoaders;
 import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.util.ExceptionUtils;
@@ -44,7 +45,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletionException;
 
 import static org.apache.flink.util.FlinkUserCodeClassLoader.NOOP_EXCEPTION_HANDLER;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -129,9 +129,10 @@ public enum ClientUtils {
 	 * @param jobStatusSupplier supplier returning the job status.
 	 */
 	public static void waitUntilJobInitializationFinished(
-		SupplierWithException<JobStatus, Exception> jobStatusSupplier,
-		SupplierWithException<JobResult, Exception> jobResultSupplier
-		) throws CompletionException {
+			JobID jobID,
+			SupplierWithException<JobStatus, Exception> jobStatusSupplier,
+			SupplierWithException<JobResult, Exception> jobResultSupplier,
+			ClassLoader userCodeClassloader) throws JobInitializationException {
 		LOG.debug("Wait until job initialization is finished");
 		WaitStrategy waitStrategy = new ExponentialWaitStrategy(50, 2000);
 		try {
@@ -147,16 +148,17 @@ public enum ClientUtils {
 				JobResult result = jobResultSupplier.get();
 				Optional<SerializedThrowable> throwable = result.getSerializedThrowable();
 				if (throwable.isPresent()) {
-					throw new CompletionException(throwable.get().deserializeError(Thread.currentThread().getContextClassLoader()));
+					throw throwable.get().deserializeError(userCodeClassloader);
 				}
 			}
-		} catch (Exception e) {
-			ExceptionUtils.checkInterrupted(e);
-			throw new CompletionException("Error while waiting until Job initialization has finished", e);
+		} catch (Throwable throwable) {
+			ExceptionUtils.checkInterrupted(throwable);
+			throw new JobInitializationException(jobID, "Job switched to FAILED status while initializing", throwable);
 		}
 	}
 
-	public static <T> void waitUntilJobInitializationFinished(ClusterClient<T> client, JobID id) {
-		waitUntilJobInitializationFinished(() -> client.getJobStatus(id).get(), () -> client.requestJobResult(id).get());
+	public static <T> void waitUntilJobInitializationFinished(JobID id, ClusterClient<T> client, ClassLoader userCodeClassloader) throws
+		JobInitializationException {
+		waitUntilJobInitializationFinished(id, () -> client.getJobStatus(id).get(), () -> client.requestJobResult(id).get(), userCodeClassloader);
 	}
 }
