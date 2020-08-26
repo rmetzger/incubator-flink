@@ -129,10 +129,11 @@ public enum ClientUtils {
 	 * @param jobStatusSupplier supplier returning the job status.
 	 */
 	public static void waitUntilJobInitializationFinished(
-			JobID jobID,
-			SupplierWithException<JobStatus, Exception> jobStatusSupplier,
-			SupplierWithException<JobResult, Exception> jobResultSupplier,
-			ClassLoader userCodeClassloader) throws JobInitializationException {
+				JobID jobID,
+				SupplierWithException<JobStatus, Exception> jobStatusSupplier,
+				SupplierWithException<JobResult, Exception> jobResultSupplier,
+				ClassLoader userCodeClassloader)
+			throws JobInitializationException {
 		LOG.debug("Wait until job initialization is finished");
 		WaitStrategy waitStrategy = new ExponentialWaitStrategy(50, 2000);
 		try {
@@ -143,17 +144,21 @@ public enum ClientUtils {
 				status = jobStatusSupplier.get();
 			}
 			if (status == JobStatus.FAILED) {
-				// note: we can not distinguish between initialization failures and failures once
-				// execution has started. Execution errors are potentially reported here.
 				JobResult result = jobResultSupplier.get();
 				Optional<SerializedThrowable> throwable = result.getSerializedThrowable();
 				if (throwable.isPresent()) {
-					throw throwable.get().deserializeError(userCodeClassloader);
+					Throwable t = throwable.get().deserializeError(userCodeClassloader);
+					t = ExceptionUtils.stripCompletionException(t);
+					if (t instanceof JobInitializationException) {
+						throw t;
+					}
 				}
 			}
+		} catch (JobInitializationException initializationException) {
+			throw initializationException;
 		} catch (Throwable throwable) {
 			ExceptionUtils.checkInterrupted(throwable);
-			throw new JobInitializationException(jobID, "Job switched to FAILED status while initializing", throwable);
+			throw new JobInitializationException(jobID, "Error while waiting for job to be initialized", throwable);
 		}
 	}
 

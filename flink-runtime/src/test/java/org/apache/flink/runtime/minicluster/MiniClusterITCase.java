@@ -628,32 +628,39 @@ public class MiniClusterITCase extends TestLogger {
 				.setConfiguration(getDefaultConfiguration())
 				.build();
 
-		try (final MiniCluster miniCluster = new MiniCluster(cfg)) {
-			miniCluster.start();
+		final MiniCluster miniCluster = new MiniCluster(cfg);
+		miniCluster.start();
 
-			final JobVertex failingJobVertex = new JobVertex("FailingInFinalization") {
+		final JobVertex failingJobVertex = new JobVertex("FailingInFinalization") {
 
-				@Override
-				public void initializeOnMaster(ClassLoader loader) {
-					throw new OutOfMemoryError("Java heap space");
-				}
-			};
-			failingJobVertex.setInvokableClass(NoOpInvokable.class);
-			failingJobVertex.setParallelism(parallelism);
+			@Override
+			public void initializeOnMaster(ClassLoader loader) {
+				throw new OutOfMemoryError("Java heap space");
+			}
+		};
+		failingJobVertex.setInvokableClass(NoOpInvokable.class);
+		failingJobVertex.setParallelism(parallelism);
 
-			final JobGraph jobGraph = new JobGraph("JobGraphWithFailingJobVertex", failingJobVertex);
+		final JobGraph jobGraph = new JobGraph("JobGraphWithFailingJobVertex", failingJobVertex);
 
-			final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
+		final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
 
-			final CompletableFuture<JobResult> jobResultFuture = submissionFuture.thenCompose(
-					(JobSubmissionResult ignored) -> miniCluster.requestJobResult(jobGraph.getJobID()));
+		final CompletableFuture<JobResult> jobResultFuture = submissionFuture.thenCompose(
+				(JobSubmissionResult ignored) -> miniCluster.requestJobResult(jobGraph.getJobID()));
 
-			try {
-				jobResultFuture.get();
-			} catch (ExecutionException e) {
-				assertTrue(findThrowable(e, OutOfMemoryError.class).isPresent());
-				assertThat(findThrowable(e, OutOfMemoryError.class).map(OutOfMemoryError::getMessage).get(),
-						startsWith("Java heap space. A heap space-related out-of-memory error has occurred."));
+		try {
+			jobResultFuture.get();
+		} catch (ExecutionException e) {
+			assertTrue(findThrowable(e, OutOfMemoryError.class).isPresent());
+			assertThat(findThrowable(e, OutOfMemoryError.class).map(OutOfMemoryError::getMessage).get(),
+					startsWith("Java heap space. A heap space-related out-of-memory error has occurred."));
+		}
+		// the close will throw the initialization exception again: filter it out
+		try {
+			miniCluster.closeAsync().get();
+		} catch (Throwable t) {
+			if (!findThrowable(t, OutOfMemoryError.class).isPresent()) {
+				throw t;
 			}
 		}
 	}

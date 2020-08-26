@@ -212,7 +212,10 @@ public class DispatcherTest extends TestLogger {
 		return dispatcher;
 	}
 
-	private class TestingDispatcherBuilder {
+	/**
+	 * Builder for the TestingDispatcher.
+	 */
+	public class TestingDispatcherBuilder {
 
 		private DispatcherBootstrap dispatcherBootstrap = new DefaultDispatcherBootstrap(Collections.emptyList());
 
@@ -892,7 +895,10 @@ public class DispatcherTest extends TestLogger {
 		}
 	}
 
-	private static class FailingInitializationJobVertex extends JobVertex {
+	/**
+	 * JobVertex that fails during initialization.
+	 */
+	public static class FailingInitializationJobVertex extends JobVertex {
 		public FailingInitializationJobVertex(String name) {
 			super(name);
 		}

@@ -201,16 +201,14 @@ public final class DispatcherJob implements AutoCloseableAsync {
 				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(
 					timeout));
 			} else {
-				synchronized (lock) {
-					Preconditions.checkState(this.jobStatus == DispatcherJobStatus.INITIALIZING || jobStatus == DispatcherJobStatus.CANCELLING);
-					return CompletableFuture.completedFuture(
-						ArchivedExecutionGraph.createFromInitializingJob(
-							jobId,
-							jobName,
-							jobStatus.asJobStatus(),
-							null,
-							initializationTimestamp));
-				}
+				Preconditions.checkState(this.jobStatus == DispatcherJobStatus.INITIALIZING || jobStatus == DispatcherJobStatus.CANCELLING);
+				return CompletableFuture.completedFuture(
+					ArchivedExecutionGraph.createFromInitializingJob(
+						jobId,
+						jobName,
+						jobStatus.asJobStatus(),
+						null,
+						initializationTimestamp));
 			}
 		}
 	}

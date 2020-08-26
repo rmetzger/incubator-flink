@@ -251,6 +251,13 @@ public class DispatcherJobTest extends TestLogger {
 			resultFuture::get);
 	}
 
+	@Test(expected = IllegalStateException.class)
+	public void testUnavailableJobMasterGateway() {
+		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
+		dispatcherJob.getJobMasterGateway();
+	}
+
 	private TestContext createTestContext(Dispatcher.ExecutionType type) {
 		final JobVertex testVertex = new JobVertex("testVertex");
 		testVertex.setInvokableClass(NoOpInvokable.class);
