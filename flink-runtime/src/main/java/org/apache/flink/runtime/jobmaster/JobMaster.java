@@ -763,7 +763,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 			SerializedValue<CoordinationRequest> serializedRequest,
 			Time timeout) {
 		try {
-			CoordinationRequest request = serializedRequest.deserializeValue(userCodeLoader);
+			CoordinationRequest request = serializedRequest.deserializeValue(userCodeLoader.asClassLoader());
 			return schedulerNG.deliverCoordinationRequestToCoordinator(operatorId, request);
 		} catch (Exception e) {
 			return FutureUtils.completedExceptionally(e);
