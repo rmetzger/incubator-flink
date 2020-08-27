@@ -218,6 +218,9 @@ public class FlinkKinesisProducer<OUT> extends RichSinkFunction<OUT> implements 
 		KinesisProducerConfiguration producerConfig = KinesisConfigUtil.getValidatedProducerConfiguration(configProps);
 
 		producer = getKinesisProducer(producerConfig);
+		getRuntimeContext().registerUserCodeClassLoaderReleaseHook(() -> {
+			AwsSdkMetrics.unregisterMetricAdminMbean();
+		});
 
 		final MetricGroup kinesisMectricGroup = getRuntimeContext().getMetricGroup().addGroup(KINESIS_PRODUCER_METRIC_GROUP);
 		this.backpressureCycles = kinesisMectricGroup.counter(METRIC_BACKPRESSURE_CYCLES);

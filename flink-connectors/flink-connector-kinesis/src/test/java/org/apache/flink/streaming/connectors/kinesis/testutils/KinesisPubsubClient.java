@@ -117,8 +117,10 @@ public class KinesisPubsubClient {
 	}
 
 	private static AmazonKinesis createClientWithCredentials(Properties props) throws AmazonClientException {
+		//KinesisProducerConfiguration producerConfig = KinesisConfigUtil.getValidatedProducerConfiguration(props);
 		AWSCredentialsProvider credentialsProvider = new EnvironmentVariableCredentialsProvider();
 		return AmazonKinesisClientBuilder.standard()
+			//.withCredentials(producerConfig.getCredentialsProvider())
 			.withCredentials(credentialsProvider)
 			.withEndpointConfiguration(
 				new AwsClientBuilder.EndpointConfiguration(
