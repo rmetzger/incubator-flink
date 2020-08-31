@@ -32,6 +32,7 @@ import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.runtime.checkpoint.Checkpoints;
 import org.apache.flink.runtime.checkpoint.StandaloneCheckpointRecoveryFactory;
 import org.apache.flink.runtime.checkpoint.metadata.CheckpointMetadata;
+import org.apache.flink.runtime.client.JobInitializationException;
 import org.apache.flink.runtime.client.JobSubmissionException;
 import org.apache.flink.runtime.clusterframework.ApplicationStatus;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
@@ -355,12 +356,12 @@ public class DispatcherTest extends TestLogger {
 		dispatcherGateway.submitJob(blockingJobGraph.f0, TIMEOUT).get();
 
 		// ensure INITIALIZING status from status
-		Assert.assertThat(dispatcherGateway.requestJobStatus(jobID, TIMEOUT).get(), is(JobStatus.INITIALIZING));
+		assertThat(dispatcherGateway.requestJobStatus(jobID, TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		// ensure correct JobDetails
 		MultipleJobsDetails multiDetails = dispatcherGateway.requestMultipleJobDetails(TIMEOUT).get();
-		Assert.assertEquals(1, multiDetails.getJobs().size());
-		Assert.assertEquals(jobID, multiDetails.getJobs().iterator().next().getJobId());
+		assertEquals(1, multiDetails.getJobs().size());
+		assertEquals(jobID, multiDetails.getJobs().iterator().next().getJobId());
 
 		// submission has succeeded, let the initialization finish.
 		blockingJobGraph.f1.unblock();
@@ -381,7 +382,7 @@ public class DispatcherTest extends TestLogger {
 
 		dispatcherGateway.submitJob(blockingJobGraph.f0, TIMEOUT).get();
 
-		Assert.assertThat(dispatcherGateway.requestJobStatus(jid, TIMEOUT).get(), is(JobStatus.INITIALIZING));
+		assertThat(dispatcherGateway.requestJobStatus(jid, TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		// this call is supposed to fail
 		try {
@@ -411,17 +412,17 @@ public class DispatcherTest extends TestLogger {
 
 		dispatcherGateway.submitJob(blockingJobGraph.f0, TIMEOUT).get();
 
-		Assert.assertThat(dispatcherGateway.requestJobStatus(jobID, TIMEOUT).get(), is(JobStatus.INITIALIZING));
+		assertThat(dispatcherGateway.requestJobStatus(jobID, TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		// submission has succeeded, now cancel the job
 		CompletableFuture<Acknowledge> cancellationFuture = dispatcherGateway.cancelJob(jobID, TIMEOUT);
-		Assert.assertThat(dispatcherGateway.requestJobStatus(jobID, TIMEOUT).get(), is(JobStatus.CANCELLING));
-		Assert.assertThat(cancellationFuture.isDone(), is(false));
+		assertThat(dispatcherGateway.requestJobStatus(jobID, TIMEOUT).get(), is(JobStatus.CANCELLING));
+		assertThat(cancellationFuture.isDone(), is(false));
 		// unblock
 		blockingJobGraph.f1.unblock();
 		// wait until cancelled
 		cancellationFuture.get();
-		Assert.assertThat(dispatcherGateway.requestJobResult(jobID, TIMEOUT).get().getApplicationStatus(), is(ApplicationStatus.CANCELED));
+		assertThat(dispatcherGateway.requestJobResult(jobID, TIMEOUT).get().getApplicationStatus(), is(ApplicationStatus.CANCELED));
 	}
 
 	@Test
@@ -444,7 +445,10 @@ public class DispatcherTest extends TestLogger {
 		// get failure cause
 		ArchivedExecutionGraph execGraph = dispatcherGateway.requestJob(jobGraph.getJobID(), TIMEOUT).get();
 		Assert.assertNotNull(execGraph.getFailureInfo());
-		Assert.assertTrue(execGraph.getFailureInfo().getExceptionAsString().contains("Artificial test failure"));
+		Throwable throwable = execGraph.getFailureInfo().getException().deserializeError(ClassLoader.getSystemClassLoader());
+
+		// ensure correct exception type
+		assertTrue(throwable instanceof JobInitializationException);
 	}
 
 	/**

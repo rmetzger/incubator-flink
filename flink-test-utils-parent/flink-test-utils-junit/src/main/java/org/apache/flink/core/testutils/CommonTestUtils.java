@@ -177,6 +177,7 @@ public class CommonTestUtils {
 			Object result = code.call();
 			Assert.fail("Previous method call should have failed but it returned: " + result);
 		} catch (Exception e) {
+			e.printStackTrace();
 			assertThat(e, instanceOf(expected));
 			assertThat(e.getMessage(), containsString(msg));
 		}

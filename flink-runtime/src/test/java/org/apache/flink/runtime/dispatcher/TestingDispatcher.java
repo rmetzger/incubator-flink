@@ -31,11 +31,11 @@ import java.util.function.Function;
 /**
  * {@link Dispatcher} implementation used for testing purposes.
  */
-public class TestingDispatcher extends Dispatcher {
+class TestingDispatcher extends Dispatcher {
 
 	private final CompletableFuture<Void> startFuture;
 
-	public TestingDispatcher(
+	TestingDispatcher(
 			RpcService rpcService,
 			DispatcherId fencingToken,
 			DispatcherBootstrap dispatcherBootstrap,
@@ -61,7 +61,7 @@ public class TestingDispatcher extends Dispatcher {
 		startFuture.complete(null);
 	}
 
-	public void completeJobExecution(ArchivedExecutionGraph archivedExecutionGraph) {
+	void completeJobExecution(ArchivedExecutionGraph archivedExecutionGraph) {
 		runAsync(
 			() -> jobReachedGloballyTerminalState(archivedExecutionGraph));
 	}
