@@ -29,7 +29,6 @@ import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
@@ -54,6 +53,7 @@ import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.graph.StreamGraph;
 import org.apache.flink.test.util.MiniClusterWithClientResource;
+import org.apache.flink.test.util.TestUtils;
 import org.apache.flink.testutils.EntropyInjectingTestFileSystem;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.ExceptionUtils;
@@ -210,7 +210,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(jobId, client, ClassLoader.getSystemClassLoader());
+			TestUtils.waitUntilJobInitializationFinished(jobId, cluster, ClassLoader.getSystemClassLoader());
 
 			StatefulCounter.getProgressLatch().await();
 
@@ -255,7 +255,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(jobId, client, ClassLoader.getSystemClassLoader());
+			TestUtils.waitUntilJobInitializationFinished(jobId, cluster, ClassLoader.getSystemClassLoader());
 
 			// Await state is restored
 			StatefulCounter.getRestoreLatch().await();
@@ -340,7 +340,7 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(graph).get();
-			ClientUtils.waitUntilJobInitializationFinished(graph.getJobID(), client, ClassLoader.getSystemClassLoader());
+			TestUtils.waitUntilJobInitializationFinished(graph.getJobID(), cluster, ClassLoader.getSystemClassLoader());
 
 			client.triggerSavepoint(graph.getJobID(), null).get();
 
@@ -456,7 +456,7 @@ public class SavepointITCase extends TestLogger {
 			JobGraph originalJobGraph = env.getStreamGraph().getJobGraph();
 
 			JobID jobID = client.submitJob(originalJobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(jobID, client, ClassLoader.getSystemClassLoader());
+			TestUtils.waitUntilJobInitializationFinished(jobID, cluster, ClassLoader.getSystemClassLoader());
 
 			// wait for the Tasks to be ready
 			assertTrue(StatefulCounter.getProgressLatch().await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
@@ -506,7 +506,7 @@ public class SavepointITCase extends TestLogger {
 
 			// Submit the job
 			client.submitJob(modifiedJobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(modifiedJobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
+			TestUtils.waitUntilJobInitializationFinished(modifiedJobGraph.getJobID(), cluster, ClassLoader.getSystemClassLoader());
 
 			// Await state is restored
 			assertTrue(StatefulCounter.getRestoreLatch().await(deadline.timeLeft().toMillis(), TimeUnit.MILLISECONDS));
@@ -702,7 +702,7 @@ public class SavepointITCase extends TestLogger {
 		String savepointPath = null;
 		try {
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
+			TestUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), cluster, ClassLoader.getSystemClassLoader());
 			for (OneShotLatch latch : iterTestSnapshotWait) {
 				latch.await();
 			}
@@ -717,7 +717,7 @@ public class SavepointITCase extends TestLogger {
 			jobGraph.setSavepointRestoreSettings(SavepointRestoreSettings.forPath(savepointPath));
 
 			client.submitJob(jobGraph).get();
-			ClientUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
+			TestUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), cluster, ClassLoader.getSystemClassLoader());
 			for (OneShotLatch latch : iterTestRestoreWait) {
 				latch.await();
 			}

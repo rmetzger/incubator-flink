@@ -30,6 +30,7 @@ import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.util.AutoCloseableAsync;
+import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
 
 import org.slf4j.Logger;
@@ -118,11 +119,12 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					if (executionType == Dispatcher.ExecutionType.RECOVERY) {
 						jobResultFuture.completeExceptionally(throwable);
 					} else {
+						Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
 						jobResultFuture.complete(ArchivedExecutionGraph.createFromInitializingJob(
 							jobId,
 							jobName,
 							JobStatus.FAILED,
-							throwable,
+							strippedThrowable,
 							initializationTimestamp));
 					}
 				}
@@ -166,21 +168,23 @@ public final class DispatcherJob implements AutoCloseableAsync {
 				log.info("Cancellation during initialization requested for job {}. Job will be cancelled once JobManager has been initialized.", jobId);
 
 				// cancel job
-				jobManagerRunnerFuture
+				CompletableFuture<Acknowledge> cancelFuture = jobManagerRunnerFuture
 					.thenCompose(JobManagerRunner::getJobMasterGateway)
-					.thenCompose(jobMasterGateway -> jobMasterGateway.cancel(RpcUtils.INF_TIMEOUT))
-					.whenComplete((ignored, cancelThrowable) -> {
-						if (cancelThrowable != null) {
-							log.warn("Cancellation of job {} failed", jobId, cancelThrowable);
-						}
-					});
+					.thenCompose(jobMasterGateway -> jobMasterGateway.cancel(RpcUtils.INF_TIMEOUT));
+				cancelFuture.whenComplete((ignored, cancelThrowable) -> {
+					if (cancelThrowable != null) {
+						log.warn("Cancellation of job {} failed", jobId, cancelThrowable);
+					}
+				});
 				jobStatus = DispatcherJobStatus.CANCELLING;
 				jobResultFuture.whenComplete(((archivedExecutionGraph, throwable) -> {
-					if (archivedExecutionGraph != null) {
-						jobStatus = DispatcherJobStatus.JOB_MANAGER_RUNNER_INITIALIZED;
+					synchronized (lock) {
+						if (archivedExecutionGraph != null) {
+							jobStatus = DispatcherJobStatus.JOB_MANAGER_RUNNER_INITIALIZED;
+						}
 					}
 				}));
-				return jobResultFuture.thenApply(ignored -> Acknowledge.get());
+				return cancelFuture;
 			}
 		}
 	}
@@ -226,9 +230,9 @@ public final class DispatcherJob implements AutoCloseableAsync {
 
 	/**
 	 * Returns the {@link JobMasterGateway} from the JobManagerRunner.
-	 * This method will fail with an {@link IllegalStateException} if the job is initialized.
-	 * The returned future will complete exceptionally if the JobManagerRunner initialization failed.
-	 * @return the {@link JobMasterGateway}.
+	 *
+	 * @return the {@link JobMasterGateway}. The future will complete exceptionally if the JobManagerRunner initialization failed.
+	 * @throws IllegalStateException is thrown if the job is not initialized
 	 */
 	public CompletableFuture<JobMasterGateway> getJobMasterGateway() {
 		Preconditions.checkState(
@@ -246,8 +250,8 @@ public final class DispatcherJob implements AutoCloseableAsync {
 					AutoCloseableAsync::closeAsync);
 				FutureUtils.forward(jobManagerRunnerClose, terminationFuture);
 			} else {
-				// initialization has failed: forward failure.
-				terminationFuture.completeExceptionally(throwable);
+				// initialization has failed: complete termination.
+				terminationFuture.complete(null);
 			}
 			return null;
 		}));

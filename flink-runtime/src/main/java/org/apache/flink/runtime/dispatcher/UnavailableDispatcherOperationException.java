@@ -18,12 +18,12 @@
 
 package org.apache.flink.runtime.dispatcher;
 
-import org.apache.flink.util.FlinkException;
-
 /**
  * Exception indicating that a Dispatcher operation is temporarily unavailable.
  */
-public class UnavailableDispatcherOperationException extends FlinkException {
+public class UnavailableDispatcherOperationException extends DispatcherException {
+	private static final long serialVersionUID = -45499335133622792L;
+
 	public UnavailableDispatcherOperationException(String message) {
 		super(message);
 	}

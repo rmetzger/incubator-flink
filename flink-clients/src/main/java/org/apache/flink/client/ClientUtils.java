@@ -20,7 +20,6 @@ package org.apache.flink.client;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
-import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.client.program.ContextEnvironment;
 import org.apache.flink.client.program.PackagedProgram;
 import org.apache.flink.client.program.ProgramInvocationException;
@@ -148,7 +147,6 @@ public enum ClientUtils {
 				Optional<SerializedThrowable> throwable = result.getSerializedThrowable();
 				if (throwable.isPresent()) {
 					Throwable t = throwable.get().deserializeError(userCodeClassloader);
-					t = ExceptionUtils.stripCompletionException(t);
 					if (t instanceof JobInitializationException) {
 						throw t;
 					}
@@ -160,10 +158,5 @@ public enum ClientUtils {
 			ExceptionUtils.checkInterrupted(throwable);
 			throw new JobInitializationException(jobID, "Error while waiting for job to be initialized", throwable);
 		}
-	}
-
-	public static <T> void waitUntilJobInitializationFinished(JobID id, ClusterClient<T> client, ClassLoader userCodeClassloader) throws
-		JobInitializationException {
-		waitUntilJobInitializationFinished(id, () -> client.getJobStatus(id).get(), () -> client.requestJobResult(id).get(), userCodeClassloader);
 	}
 }

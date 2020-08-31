@@ -78,7 +78,7 @@ public class LocalExecutor implements PipelineExecutor {
 
 		final JobGraph jobGraph = getJobGraph(pipeline, effectiveConfig);
 
-		return PerJobMiniClusterFactory.createWithFactory(effectiveConfig, miniClusterFactory).submitJob(jobGraph);
+		return PerJobMiniClusterFactory.createWithFactory(effectiveConfig, miniClusterFactory).submitJob(jobGraph, userCodeClassloader);
 	}
 
 	private JobGraph getJobGraph(Pipeline pipeline, Configuration configuration) throws MalformedURLException {

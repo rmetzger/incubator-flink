@@ -19,7 +19,6 @@
 
 package org.apache.flink.test.example.failing;
 
-import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MemorySize;
@@ -30,6 +29,7 @@ import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.test.util.MiniClusterWithClientResource;
+import org.apache.flink.test.util.TestUtils;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.TestLogger;
 
@@ -134,7 +134,7 @@ public class JobSubmissionFailsITCase extends TestLogger {
 		try {
 			if (detached) {
 				client.submitJob(jobGraph).get();
-				ClientUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), client, ClassLoader.getSystemClassLoader());
+				TestUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), MINI_CLUSTER_RESOURCE, ClassLoader.getSystemClassLoader());
 			} else {
 				submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
 			}

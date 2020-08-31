@@ -364,7 +364,6 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		@Nullable Throwable throwable,
 		long initializationTimestamp) {
 
-		long failureTime = System.currentTimeMillis();
 		Map<JobVertexID, ArchivedExecutionJobVertex> archivedTasks = Collections.emptyMap();
 		List<ArchivedExecutionJobVertex> archivedVerticesInCreationOrder = Collections.emptyList();
 		final Map<String, SerializedValue<OptionalFailure<Object>>> serializedUserAccumulators = Collections.emptyMap();
@@ -378,6 +377,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
 		ErrorInfo failureInfo = null;
 		if (throwable != null) {
 			Preconditions.checkState(jobStatus == JobStatus.FAILED);
+			long failureTime = System.currentTimeMillis();
 			failureInfo = new ErrorInfo(throwable, failureTime);
 			timestamps[JobStatus.FAILED.ordinal()] = failureTime;
 		}

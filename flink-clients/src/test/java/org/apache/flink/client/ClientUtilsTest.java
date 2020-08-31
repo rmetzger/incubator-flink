@@ -71,7 +71,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Test for the ClientUtils.
@@ -183,10 +182,6 @@ public class ClientUtilsTest extends TestLogger {
 				ClassLoader.getSystemClassLoader());
 			return null;
 		});
-		CommonTestUtils.assertThrows("Could not instantiate JobManager", ExecutionException.class, () -> {
-			dispatcher.closeAsync().get();
-			return null;
-		});
 	}
 
 	@Test
@@ -211,12 +206,11 @@ public class ClientUtilsTest extends TestLogger {
 		dispatcher.completeJobExecution(
 			ArchivedExecutionGraph.createFromInitializingJob(TEST_JOB_ID, "test", JobStatus.FAILED, new RuntimeException("yolo"), 1337));
 		// ensure it is failed
-		org.apache.flink.runtime.testutils.CommonTestUtils.waitUntilCondition(() -> {
-			JobStatus status = dispatcherGateway.requestJobStatus(
+		org.apache.flink.runtime.testutils.CommonTestUtils.waitUntilCondition(() ->
+			dispatcherGateway.requestJobStatus(
 				jobGraph.getJobID(),
-				TIMEOUT).get();
-			return status == JobStatus.FAILED;
-		}, Deadline.fromNow(
+				TIMEOUT).get() == JobStatus.FAILED,
+			Deadline.fromNow(
 			Duration.ofSeconds(10L)), 20L);
 
 		// this is the main test: ensure that this call does not throw an exception:

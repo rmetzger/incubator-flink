@@ -329,7 +329,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	private CompletableFuture<Acknowledge> internalSubmitJob(JobGraph jobGraph) {
 		log.info("Submitting job {} ({}).", jobGraph.getJobID(), jobGraph.getName());
 
-		final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJobManager(jobGraph.getJobID(), jobGraph,
+		final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJob(jobGraph.getJobID(), jobGraph,
 			this::persistAndRunJob)
 			.thenApply(ignored -> Acknowledge.get());
 
@@ -458,7 +458,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	public CompletableFuture<ClusterOverview> requestClusterOverview(Time timeout) {
 		CompletableFuture<ResourceOverview> taskManagerOverviewFuture = runResourceManagerCommand(resourceManagerGateway -> resourceManagerGateway.requestResourceOverview(timeout));
 
-		final List<CompletableFuture<Optional<JobStatus>>> optionalJobInformation = queryJobMastersForInformation(dj -> dj.requestJobStatus(timeout));
+		final List<CompletableFuture<Optional<JobStatus>>> optionalJobInformation = queryJobMastersForInformation(dispatcherJob -> dispatcherJob.requestJobStatus(timeout));
 
 		CompletableFuture<Collection<Optional<JobStatus>>> allOptionalJobsFuture = FutureUtils.combineAll(optionalJobInformation);
 
@@ -809,16 +809,13 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		return optionalJobInformation;
 	}
 
-	private CompletableFuture<Void> waitForTerminatingJobManager(JobID jobId, JobGraph jobGraph, ThrowingConsumer<JobGraph, ?> action) {
+	private CompletableFuture<Void> waitForTerminatingJob(JobID jobId, JobGraph jobGraph, ThrowingConsumer<JobGraph, ?> action) {
 		final CompletableFuture<Void> jobManagerTerminationFuture = getJobTerminationFuture(jobId)
 			.exceptionally((Throwable throwable) -> {
-				if (!ExceptionUtils.findThrowable(throwable, JobInitializationException.class).isPresent()) {
-					throw new CompletionException(
-						new DispatcherException(
-							String.format("Termination of previous JobManager for job %s failed. Cannot submit job under the same job id.", jobId),
-							throwable));
-				}
-				return null;
+				throw new CompletionException(
+					new DispatcherException(
+						String.format("Termination of previous JobManager for job %s failed. Cannot submit job under the same job id.", jobId),
+						throwable));
 			});
 
 		return jobManagerTerminationFuture.thenAcceptAsync(

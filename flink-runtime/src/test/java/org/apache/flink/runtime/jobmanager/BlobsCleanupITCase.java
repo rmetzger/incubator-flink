@@ -37,7 +37,6 @@ import org.apache.flink.runtime.minicluster.MiniCluster;
 import org.apache.flink.runtime.testtasks.BlockingNoOpInvokable;
 import org.apache.flink.runtime.testtasks.FailingBlockingInvokable;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
-import org.apache.flink.runtime.testutils.CommonTestUtils;
 import org.apache.flink.runtime.testutils.MiniClusterResource;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.util.ExceptionUtils;
@@ -57,7 +56,6 @@ import java.io.FilenameFilter;
 import java.net.InetSocketAddress;
 import java.nio.file.NoSuchFileException;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -188,18 +186,14 @@ public class BlobsCleanupITCase extends TestLogger {
 		final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
 		final JobSubmissionResult jobSubmissionResult = submissionFuture.get();
 
-		// wait until job is submitted
-		CommonTestUtils.waitUntilCondition(() -> miniCluster.getJobStatus(jobGraph.getJobID()).get() != JobStatus.INITIALIZING,
-			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 20L);
-
 		if (testCase == TestCase.JOB_SUBMISSION_FAILS) {
-			// check job status
-			assertThat(miniCluster.getJobStatus(jid).get(), is(JobStatus.FAILED));
-
-			// Check if exception is forwarded
+			// Wait for submission to fail & check if exception is forwarded
 			Optional<SerializedThrowable> exception = miniCluster.requestJobResult(jid).get().getSerializedThrowable();
 			assertTrue(exception.isPresent());
 			assertTrue(ExceptionUtils.findThrowableSerializedAware(exception.get(), NoSuchFileException.class, getClass().getClassLoader()).isPresent());
+
+			// check job status
+			assertThat(miniCluster.getJobStatus(jid).get(), is(JobStatus.FAILED));
 		} else {
 			assertThat(jobSubmissionResult.getJobID(), is(jid));
 

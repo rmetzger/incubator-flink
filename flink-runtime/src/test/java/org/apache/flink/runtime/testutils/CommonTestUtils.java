@@ -141,7 +141,7 @@ public class CommonTestUtils {
 
 	public static void waitUntilJobManagerIsInitialized(SupplierWithException<JobStatus, Exception> jobStatusSupplier, Deadline timeout) throws
 		Exception {
-		CommonTestUtils.waitUntilCondition(() -> jobStatusSupplier.get() != JobStatus.INITIALIZING, timeout, 20L);
+		waitUntilCondition(() -> jobStatusSupplier.get() != JobStatus.INITIALIZING, timeout, 20L);
 	}
 
 	/**

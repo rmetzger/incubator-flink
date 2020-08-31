@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.dispatcher.runner;
 
-import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
@@ -171,10 +170,6 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 
 				LOG.info("Initial job submission {}.", jobGraph.getJobID());
 				dispatcherGateway.submitJob(jobGraph, TESTING_TIMEOUT).get();
-
-				// wait until job is running
-				CommonTestUtils.waitUntilCondition(() ->
-					dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TESTING_TIMEOUT).get() == JobStatus.RUNNING, Deadline.fromNow(VERIFICATION_TIMEOUT), 20L);
 
 				dispatcherLeaderElectionService.notLeader();
 
