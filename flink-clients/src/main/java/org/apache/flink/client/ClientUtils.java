@@ -18,7 +18,6 @@
 
 package org.apache.flink.client;
 
-import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.client.program.ContextEnvironment;
 import org.apache.flink.client.program.PackagedProgram;
@@ -124,11 +123,11 @@ public enum ClientUtils {
 
 	/**
 	 * This method blocks until the job status is not INITIALIZING anymore.
-	 * If the job is FAILED, it throws an CompletionException with the failure cause.
 	 * @param jobStatusSupplier supplier returning the job status.
+	 * @param jobResultSupplier supplier returning the job result. This will only be called if the job reaches the FAILED state.
+	 * @throws JobInitializationException If the initialization failed or RuntimeException if
 	 */
 	public static void waitUntilJobInitializationFinished(
-				JobID jobID,
 				SupplierWithException<JobStatus, Exception> jobStatusSupplier,
 				SupplierWithException<JobResult, Exception> jobResultSupplier,
 				ClassLoader userCodeClassloader)
@@ -156,7 +155,7 @@ public enum ClientUtils {
 			throw initializationException;
 		} catch (Throwable throwable) {
 			ExceptionUtils.checkInterrupted(throwable);
-			throw new JobInitializationException(jobID, "Error while waiting for job to be initialized", throwable);
+			throw new RuntimeException("Error while waiting for job to be initialized", throwable);
 		}
 	}
 }

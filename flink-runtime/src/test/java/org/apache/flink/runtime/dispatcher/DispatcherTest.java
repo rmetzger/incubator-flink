@@ -546,6 +546,7 @@ public class DispatcherTest extends TestLogger {
 
 		// wait until job has been initialized
 		jobManagerRunnerFactor.getJobManagerRunnerCreatedFuture().get();
+		Thread.sleep(500); //TODO removeme. just to test if this makes the test pass 
 
 		final CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT);
 

@@ -49,7 +49,7 @@ public class ClientUtilsTest extends TestLogger {
 			JobStatus.FAILED).iterator();
 
 		CommonTestUtils.assertThrows("Something is wrong", JobInitializationException.class, () -> {
-			ClientUtils.waitUntilJobInitializationFinished(jobID,
+			ClientUtils.waitUntilJobInitializationFinished(
 				statusSequenceIterator::next, () -> {
 					SerializedThrowable throwable = new SerializedThrowable(new JobInitializationException(
 						jobID,
@@ -72,7 +72,7 @@ public class ClientUtilsTest extends TestLogger {
 			JobStatus.INITIALIZING,
 			JobStatus.FAILED).iterator();
 		JobID jobID = new JobID();
-		ClientUtils.waitUntilJobInitializationFinished(jobID,
+		ClientUtils.waitUntilJobInitializationFinished(
 			statusSequenceIterator::next, () -> {
 				SerializedThrowable throwable = new SerializedThrowable(new RuntimeException("Err"));
 				return new JobResult.Builder().jobId(jobID).serializedThrowable(throwable).netRuntime(1).build();

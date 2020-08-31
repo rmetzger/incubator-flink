@@ -293,11 +293,6 @@ public class DispatcherResourceCleanupTest extends TestLogger {
 
 		assertThat(ExceptionUtils.findThrowable(archivedExecution.getFailureInfo().getException().deserializeError(this.getClass().getClassLoader()), JobExecutionException.class).isPresent(), is(true));
 		assertThatHABlobsHaveBeenRemoved();
-
-		// ensure failure is forwarded
-		org.apache.flink.core.testutils.CommonTestUtils.assertThrows("Could not instantiate JobManager", ExecutionException.class, () ->
-			dispatcher.closeAsync().get());
-		dispatcher = null;
 	}
 
 	@Test

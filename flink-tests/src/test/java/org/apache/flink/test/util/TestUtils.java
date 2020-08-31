@@ -68,6 +68,6 @@ public class TestUtils {
 	public static void waitUntilJobInitializationFinished(JobID id, MiniClusterWithClientResource miniCluster, ClassLoader userCodeClassloader) throws
 		JobInitializationException {
 		ClusterClient<?> clusterClient = miniCluster.getClusterClient();
-		ClientUtils.waitUntilJobInitializationFinished(id, () -> clusterClient.getJobStatus(id).get(), () -> clusterClient.requestJobResult(id).get(), userCodeClassloader);
+		ClientUtils.waitUntilJobInitializationFinished(() -> clusterClient.getJobStatus(id).get(), () -> clusterClient.requestJobResult(id).get(), userCodeClassloader);
 	}
 }
