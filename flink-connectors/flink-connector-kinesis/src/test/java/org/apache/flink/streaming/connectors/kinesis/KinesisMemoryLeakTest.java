@@ -2,6 +2,7 @@ package org.apache.flink.streaming.connectors.kinesis;
 
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.minicluster.MiniCluster;
@@ -31,18 +32,26 @@ import java.util.Properties;
  *  AWS_ACCESS_KEY_ID=x AWS_SECRET_ACCESS_KEY=x aws --no-verify-ssl --endpoint-url https://localhost:4567/ kinesis create-stream --stream-name=kinesis_stream_name --shard-count=1
  *
  *  JVM config:
- *  -ea -Xmx500m -XX:+UseG1GC -XX:MaxMetaspaceSize=47843540
+ *  -ea -Xmx500m -XX:+UseG1GC -XX:MaxMetaspaceSize=47843540 -XX:+ExitOnOutOfMemoryError
  *
  *  Notes:
- *  - Runs at least 162 seconds with discarding sink
+ *  - Runs at least 440 seconds with discarding sink (manually cancelled)
  *  - Fails after ~40 seconds with Kinesis Producer (OutOfMemoryError: Metaspace)
+ *
+ *  - fails after 4 submissions (10 seconds) (with unload thingy)
+ *  - fails after 10 submissions (xx seconds) (without unload thingy)
  */
 public class KinesisMemoryLeakTest extends TestLogger {
 
+	private final static Configuration conf = new Configuration();
+	static {
+		conf.setBoolean("classloader.check-leaked-classloader", false);
+	}
 	private static final MiniCluster MINI_CLUSTER = new MiniCluster(
 		new MiniClusterConfiguration.Builder()
 			.setNumTaskManagers(1)
 			.setNumSlotsPerTaskManager(2)
+			.setConfiguration(conf)
 			.build());
 	@Test
 	public void triggerMemoryLeak() throws Exception {
@@ -103,6 +112,7 @@ public class KinesisMemoryLeakTest extends TestLogger {
 		kinesis.setDefaultPartition("0");
 
 		source.addSink(kinesis); // new DiscardingSink<>()
+		//source.addSink(new DiscardingSink<>());
 
 		JobGraph jg = see.getStreamGraph().getJobGraph();
 

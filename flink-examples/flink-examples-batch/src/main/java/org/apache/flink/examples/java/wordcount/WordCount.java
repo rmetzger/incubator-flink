@@ -60,6 +60,7 @@ public class WordCount {
 		// make parameters available in the web interface
 		env.getConfig().setGlobalJobParameters(params);
 
+
 		// get input data
 		DataSet<String> text = null;
 		if (params.has("input")) {
