@@ -86,5 +86,4 @@ public class TestingJobManagerRunnerFactory implements JobManagerRunnerFactory {
 	public TestingJobManagerRunner takeCreatedJobManagerRunner() throws InterruptedException {
 		return createdJobManagerRunner.take();
 	}
-
 }

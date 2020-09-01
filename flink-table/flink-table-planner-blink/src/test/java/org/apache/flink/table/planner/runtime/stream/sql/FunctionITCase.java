@@ -869,7 +869,6 @@ public class FunctionITCase extends StreamingTestBase {
 		tEnv().executeSql("CREATE TABLE SinkTable(s ROW<s STRING, sa ARRAY<STRING> NOT NULL>) WITH ('connector' = 'COLLECTION')");
 
 		tEnv().createTemporarySystemFunction("RowTableFunction", RowTableFunction.class);
-
 		tEnv().executeSql(
 			"INSERT INTO SinkTable " +
 			"SELECT RowTableFunction('test')");

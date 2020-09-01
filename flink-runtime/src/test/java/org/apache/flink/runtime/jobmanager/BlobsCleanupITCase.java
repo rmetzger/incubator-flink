@@ -183,8 +183,7 @@ public class BlobsCleanupITCase extends TestLogger {
 			jobGraph.addUserJarBlobKey(new PermanentBlobKey());
 		}
 
-		final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
-		final JobSubmissionResult jobSubmissionResult = submissionFuture.get();
+		final JobSubmissionResult jobSubmissionResult = miniCluster.submitJob(jobGraph).get();
 
 		if (testCase == TestCase.JOB_SUBMISSION_FAILS) {
 			// Wait for submission to fail & check if exception is forwarded

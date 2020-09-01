@@ -29,20 +29,15 @@ import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
 import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.test.util.MiniClusterWithClientResource;
-import org.apache.flink.test.util.TestUtils;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.TestLogger;
 
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import javax.annotation.Nonnull;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.function.Predicate;
 
 import static org.apache.flink.test.util.TestUtils.submitJobAndWaitForResult;
@@ -51,7 +46,6 @@ import static org.junit.Assert.fail;
 /**
  * Tests for failing job submissions.
  */
-@RunWith(Parameterized.class)
 public class JobSubmissionFailsITCase extends TestLogger {
 
 	private static final int NUM_TM = 2;
@@ -81,19 +75,6 @@ public class JobSubmissionFailsITCase extends TestLogger {
 		return new JobGraph("Working testing job", jobVertex);
 	}
 
-	// --------------------------------------------------------------------------------------------
-
-	private final boolean detached;
-
-	public JobSubmissionFailsITCase(boolean detached) {
-		this.detached = detached;
-	}
-
-	@Parameterized.Parameters(name = "Detached mode = {0}")
-	public static Collection<Boolean[]> executionModes(){
-		return Arrays.asList(new Boolean[]{false},
-				new Boolean[]{true});
-	}
 
 	// --------------------------------------------------------------------------------------------
 
@@ -132,12 +113,7 @@ public class JobSubmissionFailsITCase extends TestLogger {
 		ClusterClient<?> client = MINI_CLUSTER_RESOURCE.getClusterClient();
 
 		try {
-			if (detached) {
-				client.submitJob(jobGraph).get();
-				TestUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), MINI_CLUSTER_RESOURCE, ClassLoader.getSystemClassLoader());
-			} else {
-				submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
-			}
+			submitJobAndWaitForResult(client, jobGraph, getClass().getClassLoader());
 			fail("Job submission should have thrown an exception.");
 		} catch (Exception e) {
 			if (!failurePredicate.test(e)) {

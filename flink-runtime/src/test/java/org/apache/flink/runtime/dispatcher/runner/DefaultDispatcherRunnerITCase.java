@@ -134,12 +134,14 @@ public class DefaultDispatcherRunnerITCase extends TestLogger {
 			final UUID firstLeaderSessionId = UUID.randomUUID();
 
 			final DispatcherGateway firstDispatcherGateway = electLeaderAndRetrieveGateway(firstLeaderSessionId);
+
 			firstDispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
 
 			dispatcherLeaderElectionService.notLeader();
-			final UUID secondLeaderSessionId = UUID.randomUUID();
 
+			final UUID secondLeaderSessionId = UUID.randomUUID();
 			final DispatcherGateway secondDispatcherGateway = electLeaderAndRetrieveGateway(secondLeaderSessionId);
+
 			final Collection<JobID> jobIds = secondDispatcherGateway.listJobs(TIMEOUT).get();
 
 			assertThat(jobIds, contains(jobGraph.getJobID()));

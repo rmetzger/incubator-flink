@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Testing implementation of the {@link JobManagerRunner}.
  */
-public final class TestingJobManagerRunner implements JobManagerRunner {
+public class TestingJobManagerRunner implements JobManagerRunner {
 
 	private final JobID jobId;
 

@@ -671,7 +671,6 @@ public class DispatcherTest extends TestLogger {
 			.build();
 
 		dispatcher.start();
-		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 
 		final DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
@@ -689,7 +688,6 @@ public class DispatcherTest extends TestLogger {
 	@Test
 	public void testJobSuspensionWhenDispatcherIsTerminated() throws Exception {
 		dispatcher = createAndStartDispatcher(heartbeatServices, haServices, new ExpectedJobIdJobManagerRunnerFactory(TEST_JOB_ID, createdJobManagerRunnerLatch));
-		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 
 		DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 

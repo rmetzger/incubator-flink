@@ -210,7 +210,6 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
-			TestUtils.waitUntilJobInitializationFinished(jobId, cluster, ClassLoader.getSystemClassLoader());
 
 			StatefulCounter.getProgressLatch().await();
 
@@ -255,7 +254,6 @@ public class SavepointITCase extends TestLogger {
 
 		try {
 			client.submitJob(jobGraph).get();
-			TestUtils.waitUntilJobInitializationFinished(jobId, cluster, ClassLoader.getSystemClassLoader());
 
 			// Await state is restored
 			StatefulCounter.getRestoreLatch().await();
@@ -702,7 +700,6 @@ public class SavepointITCase extends TestLogger {
 		String savepointPath = null;
 		try {
 			client.submitJob(jobGraph).get();
-			TestUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), cluster, ClassLoader.getSystemClassLoader());
 			for (OneShotLatch latch : iterTestSnapshotWait) {
 				latch.await();
 			}
@@ -717,7 +714,6 @@ public class SavepointITCase extends TestLogger {
 			jobGraph.setSavepointRestoreSettings(SavepointRestoreSettings.forPath(savepointPath));
 
 			client.submitJob(jobGraph).get();
-			TestUtils.waitUntilJobInitializationFinished(jobGraph.getJobID(), cluster, ClassLoader.getSystemClassLoader());
 			for (OneShotLatch latch : iterTestRestoreWait) {
 				latch.await();
 			}

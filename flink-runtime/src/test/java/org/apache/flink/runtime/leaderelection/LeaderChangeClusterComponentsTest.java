@@ -137,6 +137,7 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 
 		CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
 
+		// need to wait until init is finished, so that the leadership revocation is possible
 		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> miniCluster.getJobStatus(jobId).get());
 
 		highAvailabilityServices.revokeJobMasterLeadership(jobId).get();

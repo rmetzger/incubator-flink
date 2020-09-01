@@ -137,10 +137,10 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 
 		final CuratorFramework client = ZooKeeperUtils.startCuratorFramework(configuration);
 		try (final TestingHighAvailabilityServices highAvailabilityServices = new TestingHighAvailabilityServicesBuilder()
-				.setRunningJobsRegistry(new ZooKeeperRunningJobsRegistry(client, configuration))
-				.setDispatcherLeaderElectionService(dispatcherLeaderElectionService)
-				.setJobMasterLeaderRetrieverFunction(jobId -> ZooKeeperUtils.createLeaderRetrievalService(client, configuration))
-				.build()) {
+			.setRunningJobsRegistry(new ZooKeeperRunningJobsRegistry(client, configuration))
+			.setDispatcherLeaderElectionService(dispatcherLeaderElectionService)
+			.setJobMasterLeaderRetrieverFunction(jobId -> ZooKeeperUtils.createLeaderRetrievalService(client, configuration))
+			.build()) {
 
 			final PartialDispatcherServices partialDispatcherServices = new PartialDispatcherServices(
 				configuration,
@@ -166,7 +166,7 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 				defaultDispatcherRunnerFactory)) {
 
 				// initial run
-				final DispatcherGateway dispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
+				DispatcherGateway dispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
 
 				LOG.info("Initial job submission {}.", jobGraph.getJobID());
 				dispatcherGateway.submitJob(jobGraph, TESTING_TIMEOUT).get();
@@ -175,15 +175,12 @@ public class ZooKeeperDefaultDispatcherRunnerTest extends TestLogger {
 
 				// recovering submitted jobs
 				LOG.info("Re-grant leadership first time.");
-				DispatcherGateway nextDispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
+				dispatcherGateway = grantLeadership(dispatcherLeaderElectionService);
 
 				LOG.info("Cancel recovered job {}.", jobGraph.getJobID());
 				// cancellation of the job should remove everything
-
-				nextDispatcherGateway.cancelJob(jobGraph.getJobID(), TESTING_TIMEOUT).get();
-				LOG.info("Cancellation successful");
-				// TODO this future was created before the cancellation. Intentionally?
-				final CompletableFuture<JobResult> jobResultFuture = nextDispatcherGateway.requestJobResult(jobGraph.getJobID(), TESTING_TIMEOUT);
+				final CompletableFuture<JobResult> jobResultFuture = dispatcherGateway.requestJobResult(jobGraph.getJobID(), TESTING_TIMEOUT);
+				dispatcherGateway.cancelJob(jobGraph.getJobID(), TESTING_TIMEOUT).get();
 
 				// a successful cancellation should eventually remove all job information
 				final JobResult jobResult = jobResultFuture.get();
