@@ -46,7 +46,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class DispatcherJob implements AutoCloseableAsync {
 
-	private static final Logger log = LoggerFactory.getLogger(DispatcherJob.class);
+	private final Logger log = LoggerFactory.getLogger(DispatcherJob.class);
 
 	private final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
 	private final CompletableFuture<DispatcherJobResult> jobResultFuture;

@@ -299,8 +299,6 @@ public class DispatcherTest extends TestLogger {
 	@Test
 	public void testJobSubmission() throws Exception {
 		dispatcher = createAndStartDispatcher(heartbeatServices, haServices, new ExpectedJobIdJobManagerRunnerFactory(TEST_JOB_ID, createdJobManagerRunnerLatch));
-		// grant leadership to job master so that we can call dispatcherGateway.requestJobStatus().
-		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 		DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
@@ -355,7 +353,7 @@ public class DispatcherTest extends TestLogger {
 
 		dispatcherGateway.submitJob(blockingJobGraph.f0, TIMEOUT).get();
 
-		// ensure INITIALIZING status from status
+		// ensure INITIALIZING status
 		assertThat(dispatcherGateway.requestJobStatus(jobID, TIMEOUT).get(), is(JobStatus.INITIALIZING));
 
 		// ensure correct JobDetails
@@ -387,9 +385,9 @@ public class DispatcherTest extends TestLogger {
 		// this call is supposed to fail
 		try {
 			dispatcherGateway.triggerSavepoint(jid, "file:///tmp/savepoint", false, TIMEOUT).get();
-			Assert.fail("Previous statement should have failed");
+			fail("Previous statement should have failed");
 		} catch (ExecutionException t) {
-			Assert.assertTrue(t.getCause() instanceof UnavailableDispatcherOperationException);
+			assertTrue(t.getCause() instanceof UnavailableDispatcherOperationException);
 		}
 
 		// submission has succeeded, let the initialization finish.
@@ -400,7 +398,7 @@ public class DispatcherTest extends TestLogger {
 			Deadline.fromNow(Duration.of(10, ChronoUnit.SECONDS)), 5L);
 	}
 
-	@Test(timeout = 5_000L)
+	@Test
 	public void testCancellationDuringInitialization() throws Exception {
 		dispatcher = createAndStartDispatcher(heartbeatServices, haServices, new ExpectedJobIdJobManagerRunnerFactory(TEST_JOB_ID, createdJobManagerRunnerLatch));
 		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
@@ -428,12 +426,10 @@ public class DispatcherTest extends TestLogger {
 	@Test
 	public void testErrorDuringInitialization() throws Exception {
 		dispatcher = createAndStartDispatcher(heartbeatServices, haServices, new ExpectedJobIdJobManagerRunnerFactory(TEST_JOB_ID, createdJobManagerRunnerLatch));
-		jobMasterLeaderElectionService.isLeader(UUID.randomUUID());
 		DispatcherGateway dispatcherGateway = dispatcher.getSelfGateway(DispatcherGateway.class);
 
 		// create a job graph that fails during initialization
-		final FailingInitializationJobVertex failingInitializationJobVertex = new FailingInitializationJobVertex(
-			"testVertex");
+		final FailingInitializationJobVertex failingInitializationJobVertex = new FailingInitializationJobVertex("testVertex");
 		failingInitializationJobVertex.setInvokableClass(NoOpInvokable.class);
 		JobGraph blockingJobGraph = new JobGraph(TEST_JOB_ID, "failingTestJob", failingInitializationJobVertex);
 
@@ -544,9 +540,8 @@ public class DispatcherTest extends TestLogger {
 
 		dispatcherGateway.submitJob(jobGraph, TIMEOUT).get();
 
-		// wait until job has been initialized
-		jobManagerRunnerFactor.getJobManagerRunnerCreatedFuture().get();
-		Thread.sleep(500); //TODO removeme. just to test if this makes the test pass
+		// wait until job has been initialized: approximated by the time when the leaderelection finished
+		jobMasterLeaderElectionService.getStartFuture().get();
 
 		final CompletableFuture<JobStatus> jobStatusFuture = dispatcherGateway.requestJobStatus(jobGraph.getJobID(), TIMEOUT);
 
@@ -559,7 +554,6 @@ public class DispatcherTest extends TestLogger {
 			// ignored
 		}
 
-		// Make the master leader --> job will switch to running
 		jobMasterLeaderElectionService.isLeader(UUID.randomUUID()).get();
 
 		assertThat(jobStatusFuture.get(), notNullValue());
@@ -820,8 +814,6 @@ public class DispatcherTest extends TestLogger {
 
 		private final CountDownLatch createdJobManagerRunnerLatch;
 
-		private final CompletableFuture<Acknowledge> jobManagerRunnerCreatedFuture = new CompletableFuture<>();
-
 		private ExpectedJobIdJobManagerRunnerFactory(JobID expectedJobId, CountDownLatch createdJobManagerRunnerLatch) {
 			this.expectedJobId = expectedJobId;
 			this.createdJobManagerRunnerLatch = createdJobManagerRunnerLatch;
@@ -851,13 +843,7 @@ public class DispatcherTest extends TestLogger {
 				jobManagerJobMetricGroupFactory,
 				fatalErrorHandler);
 
-			jobManagerRunnerCreatedFuture.complete(Acknowledge.get());
-
 			return jobManagerRunner;
-		}
-
-		public CompletableFuture<Acknowledge> getJobManagerRunnerCreatedFuture() {
-			return jobManagerRunnerCreatedFuture;
 		}
 	}
 

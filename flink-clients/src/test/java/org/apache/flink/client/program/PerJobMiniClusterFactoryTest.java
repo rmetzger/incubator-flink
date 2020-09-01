@@ -22,7 +22,6 @@ import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.execution.JobClient;
-import org.apache.flink.core.testutils.CommonTestUtils;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
@@ -121,9 +120,6 @@ public class PerJobMiniClusterFactoryTest extends TestLogger {
 			"Could not instantiate JobManager",
 			ExecutionException.class,
 			() -> perJobMiniClusterFactory.submitJob(jobGraph, ClassLoader.getSystemClassLoader()).get());
-
-		CommonTestUtils.assertThrows("Could not instantiate JobManager", ExecutionException.class, () -> miniCluster.closeAsync().get());
-		miniCluster = null;
 	}
 
 	@Test

@@ -318,8 +318,7 @@ public class DispatcherJobTest extends TestLogger {
 		}
 	}
 
-	private void assertJobStatus(DispatcherJob dispatcherJob, JobStatus expectedStatus) throws
-		Exception {
+	private void assertJobStatus(DispatcherJob dispatcherJob, JobStatus expectedStatus) throws Exception {
 		Assert.assertThat(dispatcherJob.requestJobDetails(TIMEOUT).get().getStatus(), is(expectedStatus));
 		Assert.assertThat(dispatcherJob.requestJob(TIMEOUT).get().getState(), is(expectedStatus));
 		Assert.assertThat(dispatcherJob.requestJobStatus(TIMEOUT).get(), is(expectedStatus));

@@ -150,4 +150,5 @@ public class ClientUtilsTest extends TestLogger {
 				InstantiationUtil.<PermanentBlobKey>deserializeObject(actual.blobKey, ClientUtilsTest.class.getClassLoader()));
 		}
 	}
+
 }

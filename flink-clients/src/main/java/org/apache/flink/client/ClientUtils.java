@@ -125,7 +125,7 @@ public enum ClientUtils {
 	 * This method blocks until the job status is not INITIALIZING anymore.
 	 * @param jobStatusSupplier supplier returning the job status.
 	 * @param jobResultSupplier supplier returning the job result. This will only be called if the job reaches the FAILED state.
-	 * @throws JobInitializationException If the initialization failed or RuntimeException if
+	 * @throws JobInitializationException If the initialization failed or RuntimeException if this method has an internal error.
 	 */
 	public static void waitUntilJobInitializationFinished(
 				SupplierWithException<JobStatus, Exception> jobStatusSupplier,

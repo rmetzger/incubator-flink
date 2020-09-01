@@ -26,6 +26,7 @@ import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.TestLogger;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -78,6 +79,44 @@ public class ClientUtilsTest extends TestLogger {
 				return new JobResult.Builder().jobId(jobID).serializedThrowable(throwable).netRuntime(1).build();
 			},
 			ClassLoader.getSystemClassLoader());
+	}
 
+	/**
+	 * Ensure that other errors are thrown.
+	 */
+	@Test
+	public void testWaitUntilJobInitializationFinished_throwsOtherErrors() {
+		JobID jobID = new JobID();
+
+		CommonTestUtils.assertThrows("Error while waiting for job to be initialized", RuntimeException.class, () -> {
+			ClientUtils.waitUntilJobInitializationFinished(() -> {
+					throw new RuntimeException("other error");
+				}, () -> {
+					SerializedThrowable throwable = new SerializedThrowable(new JobInitializationException(
+						jobID,
+						"Something is wrong",
+						new RuntimeException("Err")));
+					return new JobResult.Builder().jobId(jobID).serializedThrowable(throwable).netRuntime(1).build();
+				},
+				ClassLoader.getSystemClassLoader());
+			return null;
+		});
+	}
+
+	/**
+	 * Test normal operation.
+	 */
+	@Test
+	public void testWaitUntilJobInitializationFinished_regular() throws Exception {
+		Iterator<JobStatus> statusSequenceIterator = Arrays.asList(
+			JobStatus.INITIALIZING,
+			JobStatus.INITIALIZING,
+			JobStatus.RUNNING).iterator();
+		ClientUtils.waitUntilJobInitializationFinished(
+			statusSequenceIterator::next, () -> {
+				Assert.fail("unexpected call");
+				return null;
+			},
+			ClassLoader.getSystemClassLoader());
 	}
 }
