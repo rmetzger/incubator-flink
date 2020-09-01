@@ -52,7 +52,7 @@ public class DispatcherJobTest extends TestLogger {
 
 	@Test
 	public void testStatusWhenInitializing() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		Assert.assertThat(dispatcherJob.isInitialized(), is(false));
@@ -62,7 +62,7 @@ public class DispatcherJobTest extends TestLogger {
 
 	@Test
 	public void testStatusWhenRunning() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		// finish initialization
@@ -78,7 +78,7 @@ public class DispatcherJobTest extends TestLogger {
 
 	@Test
 	public void testStatusWhenJobFinished() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		// finish job
@@ -88,14 +88,14 @@ public class DispatcherJobTest extends TestLogger {
 		assertJobStatus(dispatcherJob, JobStatus.FINISHED);
 
 		// assert result future done
-		ArchivedExecutionGraph aeg = dispatcherJob.getResultFuture().get();
+		DispatcherJobResult result = dispatcherJob.getResultFuture().get();
 
-		Assert.assertThat(aeg.getState(), is(JobStatus.FINISHED));
+		Assert.assertThat(result.getArchivedExecutionGraph().getState(), is(JobStatus.FINISHED));
 	}
 
 	@Test
 	public void testStatusWhenCancellingWhileInitializing() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 		assertJobStatus(dispatcherJob, JobStatus.INITIALIZING);
 
@@ -116,12 +116,12 @@ public class DispatcherJobTest extends TestLogger {
 		assertJobStatus(dispatcherJob, JobStatus.CANCELED);
 		Assert.assertThat(dispatcherJob.isInitialized(), is(true));
 		// assert that the result future completes
-		Assert.assertThat(dispatcherJob.getResultFuture().get().getState(), is(JobStatus.CANCELED));
+		Assert.assertThat(dispatcherJob.getResultFuture().get().getArchivedExecutionGraph().getState(), is(JobStatus.CANCELED));
 	}
 
 	@Test
 	public void testStatusWhenCancellingWhileRunning() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		testContext.setRunning();
@@ -132,12 +132,12 @@ public class DispatcherJobTest extends TestLogger {
 
 		cancelFuture.get();
 		assertJobStatus(dispatcherJob, JobStatus.CANCELED);
-		Assert.assertThat(dispatcherJob.getResultFuture().get().getState(), is(JobStatus.CANCELED));
+		Assert.assertThat(dispatcherJob.getResultFuture().get().getArchivedExecutionGraph().getState(), is(JobStatus.CANCELED));
 	}
 
 	@Test
 	public void testStatusWhenCancellingWhileFailed() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		RuntimeException exception = new RuntimeException("Artificial failure in runner initialization");
@@ -152,7 +152,7 @@ public class DispatcherJobTest extends TestLogger {
 
 	@Test
 	public void testErrorWhileInitializing() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		// now fail
@@ -162,13 +162,13 @@ public class DispatcherJobTest extends TestLogger {
 		Assert.assertThat(dispatcherJob.isInitialized(), is(true));
 		assertJobStatus(dispatcherJob, JobStatus.FAILED);
 
-		ArchivedExecutionGraph aeg = dispatcherJob.getResultFuture().get();
+		ArchivedExecutionGraph aeg = dispatcherJob.getResultFuture().get().getArchivedExecutionGraph();
 		Assert.assertThat(aeg.getFailureInfo().getException().deserializeError(ClassLoader.getSystemClassLoader()), is(exception));
 	}
 
 	@Test
 	public void testCloseWhileInitializingSuccessfully() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		CompletableFuture<Void> closeFuture = dispatcherJob.closeAsync();
@@ -181,14 +181,14 @@ public class DispatcherJobTest extends TestLogger {
 		closeFuture.get();
 
 		// ensure the result future is complete (how it completes is up to the JobManager)
-		CompletableFuture<ArchivedExecutionGraph> resultFuture = dispatcherJob.getResultFuture();
+		CompletableFuture<DispatcherJobResult> resultFuture = dispatcherJob.getResultFuture();
 		CommonTestUtils.assertThrows("has not been finished", ExecutionException.class,
 			resultFuture::get);
 	}
 
 	@Test
 	public void testCloseWhileInitializingErroneously() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		CompletableFuture<Void> closeFuture = dispatcherJob.closeAsync();
@@ -200,26 +200,14 @@ public class DispatcherJobTest extends TestLogger {
 		closeFuture.get();
 
 		// ensure the result future is complete
-		Assert.assertThat(dispatcherJob.getResultFuture().get().getState(), is(JobStatus.FAILED));
-	}
-
-	@Test
-	public void testCloseWhileInitializingErroneouslyForRecovery() {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.RECOVERY);
-		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
-
-		CompletableFuture<Void> closeFuture = dispatcherJob.closeAsync();
-
-		testContext.failInitialization(new RuntimeException("fail"));
-
-		// ensure the result future is completing exceptionally when using RECOVERY execution
-		CommonTestUtils.assertThrows("fail", ExecutionException.class,
-			() -> dispatcherJob.getResultFuture().get());
+		DispatcherJobResult result = dispatcherJob.getResultFuture().get();
+		Assert.assertThat(result.isInitializationFailure(), is(true));
+		Assert.assertThat(result.getArchivedExecutionGraph().getState(), is(JobStatus.FAILED));
 	}
 
 	@Test
 	public void testCloseWhileRunning() throws Exception {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 
 		// complete JobManager runner future to indicate to the DispatcherJob that the Runner has been initialized
@@ -230,26 +218,26 @@ public class DispatcherJobTest extends TestLogger {
 		closeFuture.get();
 
 		// result future should complete exceptionally.
-		CompletableFuture<ArchivedExecutionGraph> resultFuture = dispatcherJob.getResultFuture();
+		CompletableFuture<DispatcherJobResult> resultFuture = dispatcherJob.getResultFuture();
 		CommonTestUtils.assertThrows("has not been finished", ExecutionException.class,
 			resultFuture::get);
 	}
 
 	@Test(expected = IllegalStateException.class)
 	public void testUnavailableJobMasterGateway() {
-		TestContext testContext = createTestContext(Dispatcher.ExecutionType.SUBMISSION);
+		TestContext testContext = createTestContext();
 		DispatcherJob dispatcherJob = testContext.getDispatcherJob();
 		dispatcherJob.getJobMasterGateway();
 	}
 
-	private TestContext createTestContext(Dispatcher.ExecutionType type) {
+	private TestContext createTestContext() {
 		final JobVertex testVertex = new JobVertex("testVertex");
 		testVertex.setInvokableClass(NoOpInvokable.class);
 
 		JobGraph jobGraph = new JobGraph(TEST_JOB_ID, "testJob", testVertex);
 		CompletableFuture<JobManagerRunner> jobManagerRunnerCompletableFuture = new CompletableFuture<>();
 		DispatcherJob dispatcherJob = DispatcherJob.createFor(jobManagerRunnerCompletableFuture,
-			jobGraph.getJobID(), jobGraph.getName(), type);
+			jobGraph.getJobID(), jobGraph.getName());
 
 		return new TestContext(
 			jobManagerRunnerCompletableFuture,

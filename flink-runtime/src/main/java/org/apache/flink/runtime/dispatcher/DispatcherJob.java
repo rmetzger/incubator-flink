@@ -30,6 +30,7 @@ import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.util.AutoCloseableAsync;
+import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
 
 import org.slf4j.Logger;
@@ -39,7 +40,6 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 /**
  * Abstraction used by the {@link Dispatcher} to manage jobs.
@@ -110,22 +110,25 @@ public final class DispatcherJob implements AutoCloseableAsync {
 				if (jobStatus != DispatcherJobStatus.CANCELLING) {
 					jobStatus = DispatcherJobStatus.JOB_MANAGER_RUNNER_INITIALIZED;
 				}
+
 				if (throwable == null) { // initialization succeeded
 					// Forward result future
 					jobManagerRunner.getResultFuture().whenComplete((archivedExecutionGraph, resultThrowable) -> {
-						jobResultFuture.complete(DispatcherJobResult.createSuccessResult(archivedExecutionGraph, resultThrowable));
+						if (archivedExecutionGraph != null) {
+							jobResultFuture.complete(DispatcherJobResult.forSuccess(archivedExecutionGraph));
+						} else {
+							jobResultFuture.completeExceptionally(ExceptionUtils.stripCompletionException(resultThrowable));
+						}
 					});
-					//FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
 				} else { // failure during initialization
-					jobResultFuture.complete(DispatcherJobResult.createFailureResult(throwable, initializationTimestamp));
-					/*Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
+					final Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
 					ArchivedExecutionGraph archivedExecutionGraph = ArchivedExecutionGraph.createFromInitializingJob(
 						jobId,
 						jobName,
 						JobStatus.FAILED,
 						strippedThrowable,
 						initializationTimestamp);
-					jobResultFuture.complete(new DispatcherJobResult(archivedExecutionGraph, true)); */
+					jobResultFuture.complete(DispatcherJobResult.forInitializationFailure(archivedExecutionGraph, strippedThrowable));
 				}
 			}
 			return null;
@@ -199,25 +202,7 @@ public final class DispatcherJob implements AutoCloseableAsync {
 		synchronized (lock) {
 			if (isInitialized()) {
 				if (jobResultFuture.isDone()) { // job is not running anymore
-					return jobResultFuture.thenApply(dispatcherJobResult -> {
-						if (dispatcherJobResult.isInitializationFailure()) {
-							DispatcherJobResult.DispatcherJobResultInitializationFailure failed = dispatcherJobResult.asFailure();
-							ArchivedExecutionGraph aeg = ArchivedExecutionGraph.createFromInitializingJob(
-								jobId,
-								jobName,
-								JobStatus.FAILED,
-								failed.getThrowable(),
-								failed.getInitializationTimestamp());
-							return aeg;
-						} else {
-							DispatcherJobResult.DispatcherJobResultInitializationSuccess success = dispatcherJobResult.asSuccess();
-							try {
-								return success.getArchivedExecutionGraphOrThrow();
-							} catch (Throwable throwable) {
-								throw new CompletionException(throwable);
-							}
-						}
-					});
+					return jobResultFuture.thenApply(DispatcherJobResult::getArchivedExecutionGraph);
 				}
 				// job is still running
 				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(
