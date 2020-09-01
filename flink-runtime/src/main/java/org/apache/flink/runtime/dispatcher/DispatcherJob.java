@@ -30,7 +30,6 @@ import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.util.AutoCloseableAsync;
-import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.Preconditions;
 
 import org.slf4j.Logger;
@@ -40,16 +39,17 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * Abstraction used by the {@link Dispatcher} to manage jobs.
  */
 public final class DispatcherJob implements AutoCloseableAsync {
 
-	private final Logger log = LoggerFactory.getLogger(DispatcherJob.class);
+	private static final Logger log = LoggerFactory.getLogger(DispatcherJob.class);
 
 	private final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture;
-	private final CompletableFuture<ArchivedExecutionGraph> jobResultFuture;
+	private final CompletableFuture<DispatcherJobResult> jobResultFuture;
 	private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
 
 	private final long initializationTimestamp;
@@ -90,16 +90,14 @@ public final class DispatcherJob implements AutoCloseableAsync {
 	static DispatcherJob createFor(
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
 		JobID jobId,
-		String jobName,
-		Dispatcher.ExecutionType executionType) {
-		return new DispatcherJob(jobManagerRunnerFuture, jobId, jobName, executionType);
+		String jobName) {
+		return new DispatcherJob(jobManagerRunnerFuture, jobId, jobName);
 	}
 
 	private DispatcherJob(
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture,
 		JobID jobId,
-		String jobName,
-		Dispatcher.ExecutionType executionType) {
+		String jobName) {
 		this.jobManagerRunnerFuture = jobManagerRunnerFuture;
 		this.jobId = jobId;
 		this.jobName = jobName;
@@ -112,28 +110,29 @@ public final class DispatcherJob implements AutoCloseableAsync {
 				if (jobStatus != DispatcherJobStatus.CANCELLING) {
 					jobStatus = DispatcherJobStatus.JOB_MANAGER_RUNNER_INITIALIZED;
 				}
-				if (throwable == null) {
+				if (throwable == null) { // initialization succeeded
 					// Forward result future
-					FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
+					jobManagerRunner.getResultFuture().whenComplete((archivedExecutionGraph, resultThrowable) -> {
+						jobResultFuture.complete(DispatcherJobResult.createSuccessResult(archivedExecutionGraph, resultThrowable));
+					});
+					//FutureUtils.forward(jobManagerRunner.getResultFuture(), jobResultFuture);
 				} else { // failure during initialization
-					if (executionType == Dispatcher.ExecutionType.RECOVERY) {
-						jobResultFuture.completeExceptionally(throwable);
-					} else {
-						Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
-						jobResultFuture.complete(ArchivedExecutionGraph.createFromInitializingJob(
-							jobId,
-							jobName,
-							JobStatus.FAILED,
-							strippedThrowable,
-							initializationTimestamp));
-					}
+					jobResultFuture.complete(DispatcherJobResult.createFailureResult(throwable, initializationTimestamp));
+					/*Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
+					ArchivedExecutionGraph archivedExecutionGraph = ArchivedExecutionGraph.createFromInitializingJob(
+						jobId,
+						jobName,
+						JobStatus.FAILED,
+						strippedThrowable,
+						initializationTimestamp);
+					jobResultFuture.complete(new DispatcherJobResult(archivedExecutionGraph, true)); */
 				}
 			}
 			return null;
 		}));
 	}
 
-	public CompletableFuture<ArchivedExecutionGraph> getResultFuture() {
+	public CompletableFuture<DispatcherJobResult> getResultFuture() {
 		return jobResultFuture;
 	}
 
@@ -200,8 +199,27 @@ public final class DispatcherJob implements AutoCloseableAsync {
 		synchronized (lock) {
 			if (isInitialized()) {
 				if (jobResultFuture.isDone()) { // job is not running anymore
-					return jobResultFuture;
+					return jobResultFuture.thenApply(dispatcherJobResult -> {
+						if (dispatcherJobResult.isInitializationFailure()) {
+							DispatcherJobResult.DispatcherJobResultInitializationFailure failed = dispatcherJobResult.asFailure();
+							ArchivedExecutionGraph aeg = ArchivedExecutionGraph.createFromInitializingJob(
+								jobId,
+								jobName,
+								JobStatus.FAILED,
+								failed.getThrowable(),
+								failed.getInitializationTimestamp());
+							return aeg;
+						} else {
+							DispatcherJobResult.DispatcherJobResultInitializationSuccess success = dispatcherJobResult.asSuccess();
+							try {
+								return success.getArchivedExecutionGraphOrThrow();
+							} catch (Throwable throwable) {
+								throw new CompletionException(throwable);
+							}
+						}
+					});
 				}
+				// job is still running
 				return getJobMasterGateway().thenCompose(jobMasterGateway -> jobMasterGateway.requestJob(
 					timeout));
 			} else {

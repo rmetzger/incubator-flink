@@ -353,7 +353,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		runJob(jobGraph, ExecutionType.SUBMISSION);
 	}
 
-	private void runJob(JobGraph jobGraph, ExecutionType execution) {
+	private void runJob(JobGraph jobGraph, ExecutionType executionType) {
 		Preconditions.checkState(!runningJobs.containsKey(jobGraph.getJobID()));
 
 		CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = createJobManagerRunner(jobGraph);
@@ -361,21 +361,63 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 		DispatcherJob dispatcherJob = DispatcherJob.createFor(
 				jobManagerRunnerFuture,
 				jobGraph.getJobID(),
-				jobGraph.getName(),
-				execution);
+				jobGraph.getName());
 		runningJobs.put(jobGraph.getJobID(), dispatcherJob);
 
 		// register handler JM failures & successful job completion
 		final JobID jobId = jobGraph.getJobID();
 		FutureUtils.assertNoException(
 			dispatcherJob.getResultFuture().handleAsync(
-				(ArchivedExecutionGraph archivedExecutionGraph, Throwable throwable) -> {
+				(DispatcherJobResult dispatcherJobResult, Throwable throwable) -> {
 					// check if we are still the active JobManagerRunner by checking the identity
 					DispatcherJob job = runningJobs.get(jobId);
 					if (job == dispatcherJob) {
-						if (archivedExecutionGraph != null) {
+						if (throwable != null) {
+							throw new IllegalStateException("Unexpected exception", throwable);
+						}
+						if (dispatcherJobResult.isInitializationFailure()) {
+							DispatcherJobResult.DispatcherJobResultInitializationFailure failure = dispatcherJobResult.asFailure();
+							if (executionType == Dispatcher.ExecutionType.RECOVERY) {
+								final Throwable strippedThrowable = ExceptionUtils.stripCompletionException(failure.getThrowable());
+
+								if (strippedThrowable instanceof JobNotFinishedException) {
+									jobNotFinished(jobId);
+								} else {
+									jobMasterFailed(jobId, strippedThrowable);
+								}
+							} else {
+								ArchivedExecutionGraph aeg = ArchivedExecutionGraph.createFromInitializingJob(
+									jobId,
+									jobGraph.getName(),
+									JobStatus.FAILED,
+									failure.getThrowable(),
+									failure.getInitializationTimestamp());
+								jobReachedGloballyTerminalState(aeg);
+							}
+						} else {
+							// initialization success
+							DispatcherJobResult.DispatcherJobResultInitializationSuccess success = dispatcherJobResult.asSuccess();
+							if (success.hasThrowable()) {
+								final Throwable strippedThrowable = ExceptionUtils.stripCompletionException(success.getThrowable());
+
+								if (strippedThrowable instanceof JobNotFinishedException) {
+									jobNotFinished(jobId);
+								} else {
+									jobMasterFailed(jobId, strippedThrowable);
+								}
+							} else {
+								jobReachedGloballyTerminalState(success.getArchivedExecutionGraph());
+							}
+						}
+
+						// old code
+					/*	if (dispatcherJobResult != null) {
+							// old: submission case
+							// new: init failed OR overall success
 							jobReachedGloballyTerminalState(archivedExecutionGraph);
 						} else {
+							// old: recovery case
+							// new overall failure
 							final Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
 
 							if (strippedThrowable instanceof JobNotFinishedException) {
@@ -383,7 +425,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 							} else {
 								jobMasterFailed(jobId, strippedThrowable);
 							}
-						}
+						} */
 					} else {
 						log.debug("Job {} is not registered anymore at dispatcher", jobId);
 					}
