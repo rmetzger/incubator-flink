@@ -18,6 +18,13 @@ import org.junit.Test;
 import java.net.URL;
 import java.util.Properties;
 
+/*
+docker run -d --rm --entrypoint "/tini" \
+          --name flink-test-kinesis \
+          -p 4567:4567 \
+          instructure/kinesalite -- \
+          /usr/src/app/node_modules/kinesalite/cli.js --path /var/lib/kinesalite --ssl
+ */
 /**
  * NOTE: This test requires kinesalite. Start it with:
  *
