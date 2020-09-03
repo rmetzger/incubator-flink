@@ -48,6 +48,9 @@ public class TestingUserCodeClassLoader implements UserCodeClassLoader {
 		return new Builder();
 	}
 
+	/**
+	 * Builder for the testing classloader.
+	 */
 	public static final class Builder {
 		private ClassLoader classLoader = Builder.class.getClassLoader();
 		private Consumer<Runnable> registerReleaseHookConsumer = ignored -> {};

@@ -427,6 +427,7 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		 */
 		private void releaseClassLoader() {
 			for (Runnable releaseHook : releaseHooks) {
+				LOG.info("Runniing release hook " + releaseHook);
 				try {
 					releaseHook.run();
 				} catch (Throwable t) {
