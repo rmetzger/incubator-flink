@@ -124,8 +124,8 @@ public final class SavepointRuntimeContext implements RuntimeContext {
 	}
 
 	@Override
-	public void registerUserCodeClassLoaderReleaseHook(Runnable releaseHook) {
-		ctx.registerUserCodeClassLoaderReleaseHook(releaseHook);
+	public void registerUserCodeClassLoaderReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook) {
+		ctx.registerUserCodeClassLoaderReleaseHookIfAbsent(releaseHookName, releaseHook);
 	}
 
 	@Override

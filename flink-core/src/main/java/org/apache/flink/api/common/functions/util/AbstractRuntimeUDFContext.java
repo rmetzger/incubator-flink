@@ -165,8 +165,8 @@ public abstract class AbstractRuntimeUDFContext implements RuntimeContext {
 	}
 
 	@Override
-	public void registerUserCodeClassLoaderReleaseHook(Runnable releaseHook) {
-		userCodeClassLoader.registerReleaseHook(releaseHook);
+	public void registerUserCodeClassLoaderReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook) {
+		userCodeClassLoader.registerReleaseHookIfAbsent(releaseHookName, releaseHook);
 	}
 
 	@Override

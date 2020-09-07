@@ -378,7 +378,7 @@ public abstract class AbstractIterativeTask<S extends Function, OT> extends Batc
 	private class IterativeRuntimeUdfContext extends DistributedRuntimeUDFContext implements IterationRuntimeContext {
 
 		public IterativeRuntimeUdfContext(TaskInfo taskInfo, UserCodeClassLoader userCodeClassLoader, ExecutionConfig executionConfig,
-										  Map<String, Future<Path>> cpTasks, Map<String, Accumulator<?, ?>> accumulatorMap,
+											Map<String, Future<Path>> cpTasks, Map<String, Accumulator<?, ?>> accumulatorMap,
 											MetricGroup metrics, ExternalResourceInfoProvider externalResourceInfoProvider) {
 			super(taskInfo, userCodeClassLoader, executionConfig, cpTasks, accumulatorMap, metrics, externalResourceInfoProvider);
 		}

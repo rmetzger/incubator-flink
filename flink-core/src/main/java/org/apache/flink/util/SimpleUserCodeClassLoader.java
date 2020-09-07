@@ -36,7 +36,7 @@ public class SimpleUserCodeClassLoader implements UserCodeClassLoader {
 	}
 
 	@Override
-	public void registerReleaseHook(Runnable releaseHook) {}
+	public void registerReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook) {}
 
 	public static SimpleUserCodeClassLoader create(ClassLoader classLoader) {
 		return new SimpleUserCodeClassLoader(classLoader);

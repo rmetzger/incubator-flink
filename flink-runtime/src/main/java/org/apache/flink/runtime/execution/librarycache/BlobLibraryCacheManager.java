@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -39,10 +40,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -366,7 +365,7 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		 */
 		private final Set<String> classPaths;
 
-		private final Collection<Runnable> releaseHooks;
+		private final Map<String, Runnable> releaseHooks;
 
 		private ResolvedClassLoader(URLClassLoader classLoader, Collection<PermanentBlobKey> requiredLibraries, Collection<URL> requiredClassPaths) {
 			this.classLoader = classLoader;
@@ -380,7 +379,7 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 			}
 			this.libraries = new HashSet<>(requiredLibraries);
 
-			this.releaseHooks = Collections.newSetFromMap(new IdentityHashMap<>());
+			this.releaseHooks = new HashMap<>();
 		}
 
 		@Override
@@ -389,8 +388,8 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		}
 
 		@Override
-		public void registerReleaseHook(Runnable releaseHook) {
-			releaseHooks.add(releaseHook);
+		public void registerReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook) {
+			releaseHooks.putIfAbsent(releaseHookName, releaseHook);
 		}
 
 		private void verifyClassLoader(Collection<PermanentBlobKey> requiredLibraries, Collection<URL> requiredClassPaths) {
@@ -426,16 +425,19 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		 * and the cached libraries are deleted immediately.
 		 */
 		private void releaseClassLoader() {
-			for (Runnable releaseHook : releaseHooks) {
-				LOG.info("Runniing release hook " + releaseHook);
-				try {
-					releaseHook.run();
-				} catch (Throwable t) {
-					LOG.debug("Failed to run release hook for user code class loader.", t);
+			Set<Map.Entry<String, Runnable>> hooks = releaseHooks.entrySet();
+			if (!hooks.isEmpty()) {
+				LOG.debug("Running {} class loader shutdown hook(s): {}.", hooks.size(), releaseHooks.keySet());
+				for (Map.Entry<String, Runnable> hookEntry : hooks) {
+					try {
+						hookEntry.getValue().run();
+					} catch (Throwable t) {
+						LOG.debug("Failed to run release hook '{}' for user code class loader.", hookEntry.getValue(), t);
+					}
 				}
-			}
 
-			releaseHooks.clear();
+				releaseHooks.clear();
+			}
 
 			try {
 				classLoader.close();

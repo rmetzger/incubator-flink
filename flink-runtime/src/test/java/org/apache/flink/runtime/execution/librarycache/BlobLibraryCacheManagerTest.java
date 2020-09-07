@@ -514,7 +514,26 @@ public class BlobLibraryCacheManagerTest extends TestLogger {
 		final UserCodeClassLoader userCodeClassLoader = classLoaderLease.getOrResolveClassLoader(Collections.emptyList(), Collections.emptyList());
 
 		final OneShotLatch releaseHookLatch = new OneShotLatch();
-		userCodeClassLoader.registerReleaseHook(releaseHookLatch::trigger);
+		userCodeClassLoader.registerReleaseHookIfAbsent("test", releaseHookLatch::trigger);
+
+		// this should trigger the release of the class loader
+		classLoaderLease.release();
+
+		releaseHookLatch.await();
+	}
+
+	@Test
+	public void releaseUserCodeClassLoader_willRegisterOnce() throws Exception {
+		final BlobLibraryCacheManager libraryCacheManager = new TestingBlobLibraryCacheManagerBuilder().build();
+
+		final LibraryCacheManager.ClassLoaderLease classLoaderLease = libraryCacheManager.registerClassLoaderLease(new JobID());
+		final UserCodeClassLoader userCodeClassLoader = classLoaderLease.getOrResolveClassLoader(Collections.emptyList(), Collections.emptyList());
+
+		final OneShotLatch releaseHookLatch = new OneShotLatch();
+		userCodeClassLoader.registerReleaseHookIfAbsent("test", releaseHookLatch::trigger);
+		userCodeClassLoader.registerReleaseHookIfAbsent("test", () -> {
+			throw new RuntimeException("This hook is not expected to be executed");
+		});
 
 		// this should trigger the release of the class loader
 		classLoaderLease.release();

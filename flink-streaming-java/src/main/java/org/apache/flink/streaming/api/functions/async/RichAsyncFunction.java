@@ -149,8 +149,8 @@ public abstract class RichAsyncFunction<IN, OUT> extends AbstractRichFunction im
 		}
 
 		@Override
-		public void registerUserCodeClassLoaderReleaseHook(Runnable releaseHook) {
-			runtimeContext.registerUserCodeClassLoaderReleaseHook(releaseHook);
+		public void registerUserCodeClassLoaderReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook) {
+			runtimeContext.registerUserCodeClassLoaderReleaseHookIfAbsent(releaseHookName, releaseHook);
 		}
 
 		@Override

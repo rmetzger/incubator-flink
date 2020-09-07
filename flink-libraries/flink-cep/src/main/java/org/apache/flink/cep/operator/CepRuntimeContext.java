@@ -110,7 +110,7 @@ class CepRuntimeContext implements RuntimeContext {
 	}
 
 	@Override
-	public void registerUserCodeClassLoaderReleaseHook(Runnable releaseHook) {
+	public void registerUserCodeClassLoaderReleaseHookIfAbsent(Runnable releaseHook) {
 		runtimeContext.getUserCodeClassLoader();
 	}
 

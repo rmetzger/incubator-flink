@@ -32,7 +32,6 @@ import org.apache.flink.streaming.connectors.kinesis.util.KinesisConfigUtil;
 import org.apache.flink.streaming.connectors.kinesis.util.TimeoutLatch;
 import org.apache.flink.util.InstantiationUtil;
 
-import com.amazonaws.metrics.AwsSdkMetrics;
 import com.amazonaws.services.kinesis.producer.Attempt;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
 import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
@@ -219,11 +218,6 @@ public class FlinkKinesisProducer<OUT> extends RichSinkFunction<OUT> implements 
 		KinesisProducerConfiguration producerConfig = KinesisConfigUtil.getValidatedProducerConfiguration(configProps);
 
 		producer = getKinesisProducer(producerConfig);
-
-		getRuntimeContext().registerUserCodeClassLoaderReleaseHook(() -> {
-			LOG.info("Cleaning up usercode classloader");
-			AwsSdkMetrics.unregisterMetricAdminMBean();
-		});
 
 		final MetricGroup kinesisMectricGroup = getRuntimeContext().getMetricGroup().addGroup(KINESIS_PRODUCER_METRIC_GROUP);
 		this.backpressureCycles = kinesisMectricGroup.counter(METRIC_BACKPRESSURE_CYCLES);

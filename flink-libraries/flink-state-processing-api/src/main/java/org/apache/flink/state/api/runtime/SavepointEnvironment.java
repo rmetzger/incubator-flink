@@ -337,8 +337,8 @@ public class SavepointEnvironment implements Environment {
 		}
 
 		@Override
-		public void registerReleaseHook(Runnable releaseHook) {
-			runtimeContext.registerUserCodeClassLoaderReleaseHook(releaseHook);
+		public void registerReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook) {
+			runtimeContext.registerUserCodeClassLoaderReleaseHookIfAbsent(releaseHookName, releaseHook);
 		}
 
 		private static UserCodeClassLoaderRuntimeContextAdapter from(RuntimeContext runtimeContext) {

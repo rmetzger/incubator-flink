@@ -36,7 +36,8 @@ public interface UserCodeClassLoader {
 	 * Registers a release hook which is being executed before the user code class
 	 * loader is being released.
 	 *
+	 * @param releaseHookName
 	 * @param releaseHook releaseHook which is executed before the user code class loader is being released.
 	 */
-	void registerReleaseHook(Runnable releaseHook);
+	void registerReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook);
 }

@@ -18,7 +18,7 @@
 
 package org.apache.flink.util;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /**
  * Testing implementation of {@link UserCodeClassLoader}.
@@ -27,9 +27,9 @@ public class TestingUserCodeClassLoader implements UserCodeClassLoader {
 
 	private final ClassLoader classLoader;
 
-	private final Consumer<Runnable> registerReleaseHookConsumer;
+	private final BiConsumer<String, Runnable> registerReleaseHookConsumer;
 
-	public TestingUserCodeClassLoader(ClassLoader classLoader, Consumer<Runnable> registerReleaseHookConsumer) {
+	public TestingUserCodeClassLoader(ClassLoader classLoader, BiConsumer<String, Runnable> registerReleaseHookConsumer) {
 		this.classLoader = classLoader;
 		this.registerReleaseHookConsumer = registerReleaseHookConsumer;
 	}
@@ -40,8 +40,8 @@ public class TestingUserCodeClassLoader implements UserCodeClassLoader {
 	}
 
 	@Override
-	public void registerReleaseHook(Runnable releaseHook) {
-		registerReleaseHookConsumer.accept(releaseHook);
+	public void registerReleaseHookIfAbsent(String releaseHookName, Runnable releaseHook) {
+		registerReleaseHookConsumer.accept(releaseHookName, releaseHook);
 	}
 
 	public static Builder newBuilder() {
@@ -53,7 +53,7 @@ public class TestingUserCodeClassLoader implements UserCodeClassLoader {
 	 */
 	public static final class Builder {
 		private ClassLoader classLoader = Builder.class.getClassLoader();
-		private Consumer<Runnable> registerReleaseHookConsumer = ignored -> {};
+		private BiConsumer<String, Runnable> registerReleaseHookConsumer = (ign, ore) -> {};
 
 		private Builder() {}
 
@@ -62,7 +62,7 @@ public class TestingUserCodeClassLoader implements UserCodeClassLoader {
 			return this;
 		}
 
-		public Builder setRegisterReleaseHookConsumer(Consumer<Runnable> registerReleaseHookConsumer) {
+		public Builder setRegisterReleaseHookConsumer(BiConsumer<String, Runnable> registerReleaseHookConsumer) {
 			this.registerReleaseHookConsumer = registerReleaseHookConsumer;
 			return this;
 		}
