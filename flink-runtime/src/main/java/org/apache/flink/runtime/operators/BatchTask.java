@@ -1051,8 +1051,6 @@ public class BatchTask<S extends Function, OT> extends AbstractInvokable impleme
 		return getEnvironment().getTaskManagerInfo();
 	}
 
-
-
 	@Override
 	public MemoryManager getMemoryManager() {
 		return getEnvironment().getMemoryManager();

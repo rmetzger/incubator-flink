@@ -535,9 +535,9 @@ public class BlobLibraryCacheManagerTest extends TestLogger {
 			throw new RuntimeException("This hook is not expected to be executed");
 		});
 
-		// this should trigger the release of the class loader
 		classLoaderLease.release();
 
+		// this will wait forever if the second hook gets registered
 		releaseHookLatch.await();
 	}
 
