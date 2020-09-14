@@ -325,10 +325,9 @@ public class DispatcherResourceCleanupTest extends TestLogger {
 	@Test
 	public void testRunningJobsRegistryCleanup() throws Exception {
 		final TestingJobManagerRunnerFactory jobManagerRunnerFactory = startDispatcherAndSubmitJob();
-
 		runningJobsRegistry.setJobRunning(jobId);
-		assertThat(runningJobsRegistry.contains(jobId), is(true));
 
+		assertThat(runningJobsRegistry.contains(jobId), is(true));
 		final TestingJobManagerRunner testingJobManagerRunner = jobManagerRunnerFactory.takeCreatedJobManagerRunner();
 		testingJobManagerRunner.completeResultFuture(new ArchivedExecutionGraphBuilder().setState(JobStatus.FINISHED).setJobID(jobId).build());
 
@@ -345,10 +344,14 @@ public class DispatcherResourceCleanupTest extends TestLogger {
 	@Test
 	public void testJobSubmissionUnderSameJobId() throws Exception {
 		final TestingJobManagerRunnerFactory jobManagerRunnerFactory = startDispatcherAndSubmitJob(1);
-
 		runningJobsRegistry.setJobRunning(jobId);
+
 		final TestingJobManagerRunner testingJobManagerRunner = jobManagerRunnerFactory.takeCreatedJobManagerRunner();
 		testingJobManagerRunner.completeResultFutureExceptionally(new JobNotFinishedException(jobId));
+
+		// wait until termination JobManagerRunner closeAsync has been called.
+		// this is necessary to avoid race conditions with completion of the 1st job and the submission of the 2nd job (DuplicateJobSubmissionException).
+		testingJobManagerRunner.getCloseAsyncCalledFuture().get();
 
 		final CompletableFuture<Acknowledge> submissionFuture = dispatcherGateway.submitJob(jobGraph, timeout);
 
