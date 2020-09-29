@@ -300,6 +300,8 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 
 		// only allow to set the assigned resource in state SCHEDULED or CREATED
 		// note: we also accept resource assignment when being in state CREATED for testing purposes
+		LOG.info("ROB: state = {}", state);
+
 		if (state == SCHEDULED || state == CREATED) {
 			if (assignedResource == null) {
 				assignedResource = logicalSlot;
@@ -308,21 +310,28 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 					if ((state == SCHEDULED || state == CREATED) && !taskManagerLocationFuture.isDone()) {
 						taskManagerLocationFuture.complete(logicalSlot.getTaskManagerLocation());
 						assignedAllocationID = logicalSlot.getAllocationId();
+						LOG.info("ROB: assigning!");
 						return true;
 					} else {
 						// free assigned resource and return false
+
+						LOG.info("ROB: false. state = {}, future = {}", state, taskManagerLocationFuture.isDone());
 						assignedResource = null;
 						return false;
 					}
 				} else {
+					LOG.info("ROB: false, assignment of payload failed");
 					assignedResource = null;
 					return false;
 				}
 			} else {
+				LOG.info("ROB: false, already assigned to other resource: " + assignedResource);
 				// the slot already has another slot assigned
 				return false;
 			}
 		} else {
+			LOG.info("ROB: false, wrong state");
+
 			// do not allow resource assignment if we are not in state SCHEDULED
 			return false;
 		}
