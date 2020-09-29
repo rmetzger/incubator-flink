@@ -300,7 +300,7 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 
 		// only allow to set the assigned resource in state SCHEDULED or CREATED
 		// note: we also accept resource assignment when being in state CREATED for testing purposes
-		LOG.info("ROB: state = {}", state);
+		LOG.info("ROB: state = {} for logicalSlot = {}", state, logicalSlot);
 
 		if (state == SCHEDULED || state == CREATED) {
 			if (assignedResource == null) {
@@ -576,7 +576,7 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 					if (failure != null) {
 						throw new CompletionException(failure);
 					}
-
+					LOG.info("ROB: tryAssignResource for " + this);
 					if (tryAssignResource(logicalSlot)) {
 						return logicalSlot;
 					} else {

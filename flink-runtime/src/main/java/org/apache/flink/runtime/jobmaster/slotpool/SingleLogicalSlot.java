@@ -20,6 +20,7 @@ package org.apache.flink.runtime.jobmaster.slotpool;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
+import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.instance.SlotSharingGroupId;
 import org.apache.flink.runtime.jobmanager.scheduler.Locality;
 import org.apache.flink.runtime.jobmanager.slots.TaskManagerGateway;
@@ -30,6 +31,9 @@ import org.apache.flink.runtime.jobmaster.SlotRequestId;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.Preconditions;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nullable;
 
 import java.util.concurrent.CompletableFuture;
@@ -39,6 +43,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * Implementation of the {@link LogicalSlot} which is used by the {@link SlotPoolImpl}.
  */
 public class SingleLogicalSlot implements LogicalSlot, PhysicalSlot.Payload {
+
+	private static final Logger LOG = LoggerFactory.getLogger(SingleLogicalSlot.class);
 
 	private static final AtomicReferenceFieldUpdater<SingleLogicalSlot, Payload> PAYLOAD_UPDATER = AtomicReferenceFieldUpdater.newUpdater(
 		SingleLogicalSlot.class,
@@ -213,6 +219,7 @@ public class SingleLogicalSlot implements LogicalSlot, PhysicalSlot.Payload {
 	}
 
 	private void signalPayloadRelease(Throwable cause) {
+		LOG.info("ROB: signalPayloadRelease. Cause = " + cause.getMessage());
 		tryAssignPayload(TERMINATED_PAYLOAD);
 		payload.fail(cause);
 	}
