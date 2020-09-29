@@ -131,25 +131,29 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 
 	@Test
 	public void testReelectionOfJobMaster() throws Exception {
-		final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
+		for (int i = 0; i < 5000; i++) {
+			log.info("Run i = " + i);
+			setup();
+			final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
 
-		submissionFuture.get();
+			submissionFuture.get();
 
-		CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
+			CompletableFuture<JobResult> jobResultFuture = miniCluster.requestJobResult(jobId);
 
-		// need to wait until init is finished, so that the leadership revocation is possible
-		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> miniCluster.getJobStatus(jobId).get());
+			// need to wait until init is finished, so that the leadership revocation is possible
+			CommonTestUtils.waitUntilJobManagerIsInitialized(() -> miniCluster.getJobStatus(jobId).get());
 
-		highAvailabilityServices.revokeJobMasterLeadership(jobId).get();
+			highAvailabilityServices.revokeJobMasterLeadership(jobId).get();
 
-		JobResultUtils.assertIncomplete(jobResultFuture);
-		BlockingOperator.isBlocking = false;
+			JobResultUtils.assertIncomplete(jobResultFuture);
+			BlockingOperator.isBlocking = false;
 
-		highAvailabilityServices.grantJobMasterLeadership(jobId);
+			highAvailabilityServices.grantJobMasterLeadership(jobId);
 
-		JobResult jobResult = jobResultFuture.get();
+			JobResult jobResult = jobResultFuture.get();
 
-		JobResultUtils.assertSuccess(jobResult);
+			JobResultUtils.assertSuccess(jobResult);
+		}
 	}
 
 	@Test
