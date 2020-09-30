@@ -218,7 +218,10 @@ public class SingleLogicalSlot implements LogicalSlot, PhysicalSlot.Payload {
 	}
 
 	private void signalPayloadRelease(Throwable cause) {
-		LOG.info("ROB: signalPayloadRelease. Cause = " + cause.getMessage());
+		LOG.info("ROB: signalPayloadRelease");
+		if (cause != null) {
+			LOG.info("cause", cause);
+		}
 		tryAssignPayload(TERMINATED_PAYLOAD);
 		payload.fail(cause);
 	}
