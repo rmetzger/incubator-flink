@@ -308,6 +308,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 			throw new FlinkException(String.format("Failed to retrieve job scheduling status for job %s.", jobId), e);
 		}
 
+		log.info("isDuplicateJob: " + jobSchedulingStatus + " running jobs " + runningJobs.containsKey(jobId) + " running jobs " + runningJobs);
 		return jobSchedulingStatus == RunningJobsRegistry.JobSchedulingStatus.DONE || runningJobs.containsKey(jobId);
 	}
 
@@ -644,6 +645,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private CompletableFuture<Void> removeJob(JobID jobId, boolean cleanupHA) {
+		log.warn("removeJob: " + jobId);
 		DispatcherJob job = runningJobs.remove(jobId);
 
 		final CompletableFuture<Void> dispatcherJobTerminationFuture;
@@ -658,6 +660,7 @@ public abstract class Dispatcher extends PermanentlyFencedRpcEndpoint<Dispatcher
 	}
 
 	private void cleanUpJobData(JobID jobId, boolean cleanupHA) {
+		log.warn("cleanUpJobData " + jobId);
 		jobManagerMetricGroup.removeJob(jobId);
 
 		boolean cleanupHABlobs = false;
