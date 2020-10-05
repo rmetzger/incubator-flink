@@ -338,6 +338,18 @@ public class DispatcherResourceCleanupTest extends TestLogger {
 		assertThat(runningJobsRegistry.contains(jobId), is(false));
 	}
 
+	@Test
+	public void repeat() throws Exception {
+		for (int i = 0; i < 500; i++) {
+			log.info("Test run i = {}", i);
+			setup();
+
+			testJobSubmissionUnderSameJobId();
+
+			teardown();
+		}
+	}
+
 	/**
 	 * Tests that the previous JobManager needs to be completely terminated
 	 * before a new job with the same {@link JobID} is started.
