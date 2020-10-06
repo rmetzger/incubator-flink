@@ -94,7 +94,7 @@ public class SlotPoolImpl implements SlotPool {
 	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	/** The interval (in milliseconds) in which the SlotPool writes its slot distribution on debug level. */
-	private static final long STATUS_LOG_INTERVAL_MS = 5_000;
+	private static final long STATUS_LOG_INTERVAL_MS = 1_000;
 
 	private final JobID jobId;
 
@@ -220,6 +220,7 @@ public class SlotPoolImpl implements SlotPool {
 		scheduleRunAsync(this::checkBatchSlotTimeout, batchSlotTimeout);
 
 		if (log.isDebugEnabled()) {
+			log.debug(printStatus());
 			scheduleRunAsync(this::scheduledLogStatus, STATUS_LOG_INTERVAL_MS, TimeUnit.MILLISECONDS);
 		}
 	}

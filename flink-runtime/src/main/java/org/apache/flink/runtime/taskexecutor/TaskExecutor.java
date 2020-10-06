@@ -1323,6 +1323,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 				// check if the response is still valid
 				if (isJobManagerConnectionValid(jobId, jobMasterId)) {
 					// mark accepted slots active
+					log.debug("acceptedSlots={}, offeredSlots={}", acceptedSlots, offeredSlots);
 					for (SlotOffer acceptedSlot : acceptedSlots) {
 						try {
 							if (!taskSlotTable.markSlotActive(acceptedSlot.getAllocationId())) {
@@ -1335,6 +1336,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 									new FlinkException(message));
 							}
 						} catch (SlotNotFoundException e) {
+							log.debug("could not mark lot for job id " + jobId + " active", e);
 							final String message = "Could not mark slot " + jobId + " active.";
 							jobMasterGateway.failSlot(
 								getResourceID(),
@@ -1345,9 +1347,10 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 						offeredSlots.remove(acceptedSlot);
 					}
 
-					final Exception e = new Exception("The slot was rejected by the JobManager.");
-
+					final Exception e = new Exception("The slot was rejected by the JobManager with id " + jobMasterId);
+					log.debug("acceptedSlots={}, offeredSlots={}", acceptedSlots, offeredSlots);
 					for (SlotOffer rejectedSlot : offeredSlots) {
+						log.debug("rejectedSlot={}, jobMasterId={}", rejectedSlot, jobMasterId);
 						freeSlotInternal(rejectedSlot.getAllocationId(), e);
 					}
 				} else {

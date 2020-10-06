@@ -131,7 +131,7 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 
 	@Test
 	public void testReelectionOfJobMaster() throws Exception {
-		for (int i = 0; i < 5000; i++) {
+		for (int i = 0; i < 500; i++) {
 			log.info("Run i = " + i);
 			setup();
 			final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
