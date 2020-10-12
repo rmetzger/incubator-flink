@@ -126,6 +126,13 @@ class SlotSharingExecutionSlotAllocator implements ExecutionSlotAllocator {
 		Map<ExecutionVertexID, SlotExecutionVertexAssignment> assignments =
 			allocateLogicalSlotsFromSharedSlots(sharedSlotProfileRetriever, executionsByGroup);
 
+		Preconditions.checkState(
+			assignments
+				.values()
+				.stream()
+				.map(SlotExecutionVertexAssignment::getLogicalSlotFuture)
+				.allMatch(f -> !f.isCompletedExceptionally()));
+
 		bulkChecker.schedulePendingRequestBulkTimeoutCheck(createBulk(executionsByGroup), allocationTimeout);
 
 		return executionVertexIds.stream().map(assignments::get).collect(Collectors.toList());

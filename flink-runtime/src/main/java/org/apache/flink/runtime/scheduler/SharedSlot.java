@@ -96,6 +96,10 @@ class SharedSlot implements SlotOwner, PhysicalSlot.Payload {
 				"Unexpected physical slot payload assignment failure!");
 			return physicalSlot;
 		});
+		slotContextFuture.exceptionally(t -> {
+			LOG.error("Physical slot request {} failed for SharedSlot", physicalSlotRequestId, t);
+			return null;
+		});
 		this.requestedLogicalSlots = new DualKeyLinkedMap<>(executionSlotSharingGroup.getExecutionVertexIds().size());
 		this.slotWillBeOccupiedIndefinitely = slotWillBeOccupiedIndefinitely;
 		this.externalReleaseCallback = externalReleaseCallback;

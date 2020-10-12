@@ -108,7 +108,7 @@ public class DefaultPreferredLocationsRetriever implements PreferredLocationsRet
 			} else {
 				optionalLocationFuture = Optional.empty();
 			}
-			optionalLocationFuture.ifPresent(locationsFutures::add);
+			optionalLocationFuture.filter(future -> future.isDone() && !future.isCompletedExceptionally()).ifPresent(locationsFutures::add);
 
 			// inputs which have too many distinct sources are not considered because
 			// input locality does not make much difference in this case and it could
