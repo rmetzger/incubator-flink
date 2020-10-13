@@ -21,6 +21,14 @@
 # This file contains tooling for compiling Flink
 #
 
+
+echo "DEBUGGING!!!"
+
+env
+
+echo "variable access $BUILD_REASON"
+
+
 HERE="`dirname \"$0\"`"             # relative
 HERE="`( cd \"$HERE\" && pwd )`"    # absolutized and normalized
 if [ -z "$HERE" ] ; then
