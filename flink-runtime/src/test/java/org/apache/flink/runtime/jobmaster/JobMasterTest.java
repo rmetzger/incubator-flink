@@ -35,9 +35,13 @@ import org.apache.flink.configuration.RestartStrategyOptions;
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.core.io.InputSplitAssigner;
 import org.apache.flink.core.io.InputSplitSource;
+import org.apache.flink.core.plugin.PluginManager;
+import org.apache.flink.core.plugin.PluginUtils;
 import org.apache.flink.core.testutils.OneShotLatch;
 import org.apache.flink.queryablestate.KvStateID;
 import org.apache.flink.runtime.akka.AkkaUtils;
+import org.apache.flink.runtime.blob.BlobCacheService;
+import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.runtime.checkpoint.CheckpointProperties;
 import org.apache.flink.runtime.checkpoint.CheckpointRetentionPolicy;
 import org.apache.flink.runtime.checkpoint.Checkpoints;
@@ -62,12 +66,14 @@ import org.apache.flink.runtime.executiongraph.AccessExecutionVertex;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.failover.flip1.FailoverStrategyFactoryLoader;
+import org.apache.flink.runtime.externalresource.ExternalResourceInfoProvider;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.heartbeat.TestingHeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.highavailability.TestingHighAvailabilityServices;
 import org.apache.flink.runtime.instance.SimpleSlotContext;
 import org.apache.flink.runtime.io.network.partition.NoOpJobMasterPartitionTracker;
+import org.apache.flink.runtime.io.network.partition.PartitionTrackerFactory;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.io.network.partition.TestingJobMasterPartitionTracker;
@@ -85,6 +91,7 @@ import org.apache.flink.runtime.jobgraph.utils.JobGraphTestUtils;
 import org.apache.flink.runtime.jobmanager.OnCompletionActions;
 import org.apache.flink.runtime.jobmanager.PartitionProducerDisposedException;
 import org.apache.flink.runtime.jobmanager.slots.TaskManagerGateway;
+import org.apache.flink.runtime.jobmaster.factories.JobManagerJobMetricGroupFactory;
 import org.apache.flink.runtime.jobmaster.factories.UnregisteredJobManagerJobMetricGroupFactory;
 import org.apache.flink.runtime.jobmaster.slotpool.PhysicalSlot;
 import org.apache.flink.runtime.jobmaster.slotpool.SlotInfoWithUtilization;
@@ -95,6 +102,7 @@ import org.apache.flink.runtime.leaderretrieval.SettableLeaderRetrievalService;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
 import org.apache.flink.runtime.messages.checkpoint.DeclineCheckpoint;
+import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
 import org.apache.flink.runtime.query.KvStateLocation;
 import org.apache.flink.runtime.query.UnknownKvStateLocation;
 import org.apache.flink.runtime.registration.RegistrationResponse;
@@ -102,6 +110,7 @@ import org.apache.flink.runtime.resourcemanager.ResourceManagerGateway;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerId;
 import org.apache.flink.runtime.resourcemanager.SlotRequest;
 import org.apache.flink.runtime.resourcemanager.utils.TestingResourceManagerGateway;
+import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.RpcUtils;
 import org.apache.flink.runtime.rpc.TestingRpcService;
@@ -109,13 +118,18 @@ import org.apache.flink.runtime.rpc.akka.AkkaRpcService;
 import org.apache.flink.runtime.rpc.akka.AkkaRpcServiceConfiguration;
 import org.apache.flink.runtime.scheduler.SchedulerNGFactory;
 import org.apache.flink.runtime.shuffle.NettyShuffleMaster;
+import org.apache.flink.runtime.shuffle.ShuffleMaster;
 import org.apache.flink.runtime.state.CompletedCheckpointStorageLocation;
 import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.runtime.state.OperatorStreamStateHandle;
 import org.apache.flink.runtime.state.StreamStateHandle;
 import org.apache.flink.runtime.state.memory.ByteStreamStateHandle;
+import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
+import org.apache.flink.runtime.taskexecutor.TaskExecutorResourceUtils;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorToJobManagerHeartbeatPayload;
+import org.apache.flink.runtime.taskexecutor.TaskManagerConfiguration;
+import org.apache.flink.runtime.taskexecutor.TaskManagerRunner;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TestingTaskExecutorGatewayBuilder;
 import org.apache.flink.runtime.taskexecutor.rpc.RpcCheckpointResponder;
@@ -123,6 +137,7 @@ import org.apache.flink.runtime.taskexecutor.slot.SlotOffer;
 import org.apache.flink.runtime.taskmanager.LocalUnresolvedTaskManagerLocation;
 import org.apache.flink.runtime.taskmanager.TaskExecutionState;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
+import org.apache.flink.runtime.taskmanager.TestingTaskManagerActions;
 import org.apache.flink.runtime.taskmanager.UnresolvedTaskManagerLocation;
 import org.apache.flink.runtime.testtasks.BlockingNoOpInvokable;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
@@ -135,11 +150,13 @@ import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.SerializedThrowable;
 import org.apache.flink.util.TestLogger;
+import org.apache.flink.util.function.SupplierWithException;
 
 import akka.actor.ActorSystem;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -282,19 +299,18 @@ public class JobMasterTest extends TestLogger {
 
 	/**
 	 * This test ensures that the bookkeeping of TaskExecutors in the JobMaster handles cases where TaskExecutors with the same
-	 * ID re-register properly. FLINK-19237 was a bug where the TaskExecutors and the SlotPool got out of sync.
+	 * ID re-register properly. FLINK-19237 was a bug where the TaskExecutors and the SlotPool got out of sync, and
+	 * slot offers were rejected.
 	 */
 	@Test
-	public void testTaskExecutorBookkeepingOnSuspend() throws Exception {
-
-		final CompletableFuture<Throwable> declineCheckpointMessageFuture = new CompletableFuture<>();
+	public void testAcceptSlotOfferAfterLeaderchange() throws Exception {
 
 		final JobManagerSharedServices jobManagerSharedServices = new TestingJobManagerSharedServicesBuilder().build();
 		final JobMasterConfiguration jobMasterConfiguration = JobMasterConfiguration.fromConfiguration(configuration);
 
 		final SchedulerNGFactory schedulerNGFactory = SchedulerNGFactoryFactory.createSchedulerNGFactory(configuration);
 
-		final JobMaster jobMaster = new JobMaster(
+		final TestingJobMaster jobMaster = new TestingJobMaster(
 			rpcService,
 			jobMasterConfiguration,
 			jmResourceId,
@@ -316,7 +332,75 @@ public class JobMasterTest extends TestLogger {
 
 		jobMaster.start(jobMasterId).get();
 
-		jobMaster.registerTaskManager()
+		log.info("Register TaskManager");
+	/*	RpcService taskManagerRpcService = null;
+
+			final ActorSystem actorSystem1 = AkkaUtils.createDefaultActorSystem();
+
+			AkkaRpcServiceConfiguration akkaRpcServiceConfig = AkkaRpcServiceConfiguration.fromConfiguration(configuration);
+			rpcService1 = new AkkaRpcService(actorSystem1, akkaRpcServiceConfig); */
+
+
+	/*	Configuration taskExecutorConfiguration = TaskExecutorResourceUtils.adjustForLocalExecution(new Configuration());
+		ResourceID taskExecutorResourceId = ResourceID.generate();
+		TaskExecutor taskExecutor = TaskManagerRunner.startTaskManager(
+			taskExecutorConfiguration,
+			taskExecutorResourceId,
+			rpcService,
+			haServices,
+			new TestingHeartbeatServices(),
+			NoOpMetricRegistry.INSTANCE,
+			new BlobCacheService(
+				taskExecutorConfiguration,
+				new VoidBlobStore(),
+				null),
+			false,
+			ExternalResourceInfoProvider.NO_EXTERNAL_RESOURCES,
+			error -> {
+			});
+
+		// rpcService.
+		UnresolvedTaskManagerLocation unresolvedTaskManagerLocation = new UnresolvedTaskManagerLocation(taskExecutorResourceId, taskExecutor.getRpcService().getAddress(), taskExecutor.getRpcService().getPort());
+		Assert.assertThat(jobMaster.registerTaskManager(taskExecutor.getRpcService().getAddress(), unresolvedTaskManagerLocation, testingTimeout).get(), instanceOf(RegistrationResponse.Success.class)); */
+		String testingTaskManagerAddress = "fake";
+		UnresolvedTaskManagerLocation unresolvedTaskManagerLocation = new LocalUnresolvedTaskManagerLocation();
+		TestingTaskExecutorGateway testingTaskExecutorGateway = new TestingTaskExecutorGatewayBuilder().createTestingTaskExecutorGateway();
+		rpcService.registerGateway(testingTaskManagerAddress, testingTaskExecutorGateway);
+		Assert.assertThat(jobMaster.registerTaskManager(testingTaskManagerAddress, unresolvedTaskManagerLocation, testingTimeout).get(), instanceOf(RegistrationResponse.Success.class));
+
+		log.info("Revoke leadership & re-grant leadership");
+		jobMaster.suspend(new FlinkException("Lost leadership")).get();
+
+		jobMaster.start(JobMasterId.generate()).get();
+
+		log.info("re-register same TaskManager");
+		Assert.assertThat(jobMaster.registerTaskManager(testingTaskManagerAddress, unresolvedTaskManagerLocation, testingTimeout).get(), instanceOf(RegistrationResponse.Success.class));
+
+		log.info("Ensure JobMaster accepts slot offer");
+		final SlotOffer slotOffer = new SlotOffer(new AllocationID(), 0, ResourceProfile.ANY);
+
+		Collection<SlotOffer> acceptedSlots = jobMaster.executeInMainThreadExecutor(() -> jobMaster.offerSlots(unresolvedTaskManagerLocation.getResourceID(), Collections.singleton(slotOffer), testingTimeout).get()).get();
+		Assert.assertThat(acceptedSlots.size(), is(1));
+
+	}
+
+	public static class TestingJobMaster extends JobMaster {
+
+		public TestingJobMaster(RpcService rpcService, JobMasterConfiguration jobMasterConfiguration, ResourceID resourceId, JobGraph jobGraph, HighAvailabilityServices highAvailabilityService, SlotPoolFactory slotPoolFactory, JobManagerSharedServices jobManagerSharedServices, HeartbeatServices heartbeatServices, JobManagerJobMetricGroupFactory jobMetricGroupFactory, OnCompletionActions jobCompletionActions, FatalErrorHandler fatalErrorHandler, ClassLoader userCodeLoader, SchedulerNGFactory schedulerNGFactory, ShuffleMaster<?> shuffleMaster, PartitionTrackerFactory partitionTrackerFactory, ExecutionDeploymentTracker executionDeploymentTracker, ExecutionDeploymentReconciler.Factory executionDeploymentReconcilerFactory, long initializationTimestamp) throws Exception {
+			super(rpcService, jobMasterConfiguration, resourceId, jobGraph, highAvailabilityService, slotPoolFactory, jobManagerSharedServices, heartbeatServices, jobMetricGroupFactory, jobCompletionActions, fatalErrorHandler, userCodeLoader, schedulerNGFactory, shuffleMaster, partitionTrackerFactory, executionDeploymentTracker, executionDeploymentReconcilerFactory, initializationTimestamp);
+		}
+
+		public <T> CompletableFuture<T> executeInMainThreadExecutor(SupplierWithException<T, Throwable> runnable) {
+			CompletableFuture<T> result = new CompletableFuture<>();
+			getMainThreadExecutor().execute(() -> {
+				try {
+					result.complete(runnable.get());
+				} catch (Throwable throwable) {
+					result.completeExceptionally(throwable);
+				}
+			});
+			return result;
+		}
 	}
 
 	@Test
