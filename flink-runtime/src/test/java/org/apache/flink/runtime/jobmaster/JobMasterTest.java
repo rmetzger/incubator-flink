@@ -280,6 +280,45 @@ public class JobMasterTest extends TestLogger {
 		}
 	}
 
+	/**
+	 * This test ensures that the bookkeeping of TaskExecutors in the JobMaster handles cases where TaskExecutors with the same
+	 * ID re-register properly. FLINK-19237 was a bug where the TaskExecutors and the SlotPool got out of sync.
+	 */
+	@Test
+	public void testTaskExecutorBookkeepingOnSuspend() throws Exception {
+
+		final CompletableFuture<Throwable> declineCheckpointMessageFuture = new CompletableFuture<>();
+
+		final JobManagerSharedServices jobManagerSharedServices = new TestingJobManagerSharedServicesBuilder().build();
+		final JobMasterConfiguration jobMasterConfiguration = JobMasterConfiguration.fromConfiguration(configuration);
+
+		final SchedulerNGFactory schedulerNGFactory = SchedulerNGFactoryFactory.createSchedulerNGFactory(configuration);
+
+		final JobMaster jobMaster = new JobMaster(
+			rpcService,
+			jobMasterConfiguration,
+			jmResourceId,
+			jobGraph,
+			haServices,
+			SlotPoolFactory.fromConfiguration(configuration),
+			jobManagerSharedServices,
+			heartbeatServices,
+			UnregisteredJobManagerJobMetricGroupFactory.INSTANCE,
+			new JobMasterBuilder.TestingOnCompletionActions(),
+			testingFatalErrorHandler,
+			JobMasterTest.class.getClassLoader(),
+			schedulerNGFactory,
+			NettyShuffleMaster.INSTANCE,
+			NoOpJobMasterPartitionTracker.FACTORY,
+			new DefaultExecutionDeploymentTracker(),
+			DefaultExecutionDeploymentReconciler::new,
+			System.currentTimeMillis());
+
+		jobMaster.start(jobMasterId).get();
+
+		jobMaster.registerTaskManager()
+	}
+
 	@Test
 	public void testDeclineCheckpointInvocationWithUserException() throws Exception {
 		RpcService rpcService1 = null;
