@@ -1442,6 +1442,7 @@ public class Task implements Runnable, TaskSlotPayload, TaskActions, PartitionPr
 
 				// send the initial interruption signal, if requested
 				if (invokable.shouldInterruptOnCancel()) {
+					logger.info("Interrupting task '{}' once during cancellation.", taskName);
 					executer.interrupt();
 				}
 			}
