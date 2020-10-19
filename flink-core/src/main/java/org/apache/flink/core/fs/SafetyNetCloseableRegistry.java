@@ -133,6 +133,7 @@ public class SafetyNetCloseableRegistry extends
 			synchronized (REAPER_THREAD_LOCK) {
 				--GLOBAL_SAFETY_NET_REGISTRY_COUNT;
 				if (0 == GLOBAL_SAFETY_NET_REGISTRY_COUNT) {
+					LOG.info("Interrupting reaper thread");
 					REAPER_THREAD.interrupt();
 					REAPER_THREAD = null;
 				}

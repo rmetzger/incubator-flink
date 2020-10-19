@@ -18,6 +18,9 @@
 
 package org.apache.flink.runtime.operators.sort;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nullable;
 
 import java.io.IOException;
@@ -32,6 +35,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * they terminate immediately when the <code>shutdown()</code> method is called.
  */
 abstract class ThreadBase<E> extends Thread implements Thread.UncaughtExceptionHandler, StageRunner {
+
+	private static final Logger LOG = LoggerFactory.getLogger(ThreadBase.class);
 
 	/**
 	 * The queue of empty buffer that can be used for reading;
@@ -103,6 +108,8 @@ abstract class ThreadBase<E> extends Thread implements Thread.UncaughtExceptionH
 	@Override
 	public void close() throws InterruptedException {
 		this.alive = false;
+
+		LOG.info("Interrupting self");
 		this.interrupt();
 		this.join();
 	}
