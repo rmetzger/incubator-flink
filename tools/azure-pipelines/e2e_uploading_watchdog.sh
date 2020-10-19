@@ -28,8 +28,9 @@ if [ -z "$HERE" ] ; then
 fi
 
 OUTPUT_FILE=/tmp/_e2e_watchdog.output
-# 30 minutes for compile + 5m buffer
-START_LOG_UPLOAD_SECONDS_FROM_END=$((35*60))
+# Start uploading 11 minutes before the timeout imposed by Azure (11 minutes because the upload happens 
+# every 5 minutes, so we should ideally get 2 uploads and then the operation gets killed)
+START_LOG_UPLOAD_SECONDS_FROM_END=$((11*60))
 
 DEFINED_TIMEOUT_MINUTES=`cat $HERE/jobs-template.yml | grep "timeoutInMinutes" | tail -n 1 | cut -d ":" -f 2 | tr -d '[:space:]'`
 DEFINED_TIMEOUT_SECONDS=$(($DEFINED_TIMEOUT_MINUTES*60))
@@ -47,9 +48,9 @@ function warning_watchdog {
 function log_upload_watchdog {
 	SLEEP_TIME=$(($DEFINED_TIMEOUT_SECONDS-$START_LOG_UPLOAD_SECONDS_FROM_END))
 	sleep $SLEEP_TIME
-	echo "======================================================================================================="
-	echo "=== WARNING: This E2E Run will be killed in the next few minutes. Starting to upload the log output ==="
-	echo "======================================================================================================="
+	echo "======================================================================================================"
+	echo "=== WARNING: This E2E Run will time out in the next few minutes. Starting to upload the log output ==="
+	echo "======================================================================================================"
 
 	INDEX=0
 	while true; do
