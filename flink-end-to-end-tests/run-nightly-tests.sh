@@ -43,6 +43,9 @@ if [ ! -z "$TF_BUILD" ] ; then
 	function run_on_exit {
 		collect_coredumps $(pwd) $ARTIFACTS_DIR
 		compress_logs
+
+		echo "DEBUG"
+		find .
 	}
 
 	# compress and register logs for publication on exit

@@ -38,7 +38,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Unsafe;
 
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -87,7 +89,16 @@ public class StreamingKafkaITCase extends TestLogger {
 
 	@Test
 	public void testKafka() throws Exception {
-		System.exit(1337);
+		Field f = Unsafe.class.getDeclaredField("theUnsafe");
+		f.setAccessible(true);
+		Unsafe unsafe = (Unsafe) f.get(null);
+
+		// Overwrite Object's class field, so that 'instanceof' cannot work
+		Object obj = 0;
+		unsafe.putInt(obj, 8L, -1);
+		if (obj instanceof Runnable) {
+			System.out.println("yolo");
+		}
 		try (final ClusterController clusterController = flink.startCluster(1)) {
 
 			final String inputTopic = "test-input-" + kafkaVersion + "-" + UUID.randomUUID().toString();
