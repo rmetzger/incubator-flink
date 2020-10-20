@@ -87,6 +87,7 @@ public class StreamingKafkaITCase extends TestLogger {
 
 	@Test
 	public void testKafka() throws Exception {
+		System.exit(1337);
 		try (final ClusterController clusterController = flink.startCluster(1)) {
 
 			final String inputTopic = "test-input-" + kafkaVersion + "-" + UUID.randomUUID().toString();
