@@ -36,6 +36,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -70,6 +71,7 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(Parameterized.class)
 @Category(value = {TravisGroup1.class, PreCommit.class, FailsOnJava11.class})
+@Ignore("Unstable")
 public class SQLClientHBaseITCase extends TestLogger {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SQLClientHBaseITCase.class);
