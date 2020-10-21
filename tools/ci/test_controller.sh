@@ -111,6 +111,19 @@ else
 	EXIT_CODE=$?
 fi
 
+cd flink-connectors/flink-connector-elasticsearch6
+EXIT_CODE=0
+for i in $(seq 1 100); do
+	echo "Run i = $i"
+	if [[ "$EXIT_CODE" == "0" ]]; then
+		run_mvn $MVN_COMMON_OPTIONS $MVN_TEST_OPTIONS $PROFILE verify -Dtest=ElasticsearchSinkITCase
+		EXIT_CODE=$?
+	else
+		exit $EXIT_CODE
+	fi
+done
+
+
 # =============================================================================
 # Step 3: Put extra logs into $DEBUG_FILES_OUTPUT_DIR
 # =============================================================================
