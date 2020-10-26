@@ -140,16 +140,19 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 		// need to wait until init is finished, so that the leadership revocation is possible
 		CommonTestUtils.waitUntilJobManagerIsInitialized(() -> miniCluster.getJobStatus(jobId).get());
 
+		log.info("revoke leadership");
 		highAvailabilityServices.revokeJobMasterLeadership(jobId).get();
 
 		JobResultUtils.assertIncomplete(jobResultFuture);
 		BlockingOperator.isBlocking = false;
 
+		log.info("grant leadership");
 		highAvailabilityServices.grantJobMasterLeadership(jobId);
 
 		JobResult jobResult = jobResultFuture.get();
-
+		log.info("got result");
 		JobResultUtils.assertSuccess(jobResult);
+		log.info("done");
 	}
 
 	@Test
