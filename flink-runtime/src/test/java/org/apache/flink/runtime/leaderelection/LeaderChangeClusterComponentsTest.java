@@ -130,6 +130,21 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 	}
 
 	@Test
+	public void repeatMe() throws Exception {
+		teardownClass();
+		for (int i = 0 ; i < 500; i++) {
+			log.warn("PREPARE NEXT RUN");
+			setupClass();
+			setup();
+			log.warn("START NEXT RUN");
+			testReelectionOfJobMaster();
+			log.warn("FINISHED RUN");
+			teardownClass();
+		}
+		setupClass();
+	}
+
+	@Test
 	public void testReelectionOfJobMaster() throws Exception {
 		final CompletableFuture<JobSubmissionResult> submissionFuture = miniCluster.submitJob(jobGraph);
 
