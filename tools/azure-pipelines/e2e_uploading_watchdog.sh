@@ -67,9 +67,11 @@ log_upload_watchdog &
 # ts from moreutils prepends the time to each line
 ( $COMMAND & PID=$! ; wait $PID )  | ts | tee $OUTPUT_FILE
 
-EXIT_CODE=$(<$CMD_EXIT)
 
-echo "EXIT_CODE = $EXIT_CODE ; pipestatus = ${PIPESTATUS[0]}"
+
+echo "EXIT_CODE = $? ; pipestatus = ${PIPESTATUS[0]}"
+
+EXIT_CODE=${PIPESTATUS[0]}
 
 # properly forward exit code
 exit $EXIT_CODE
