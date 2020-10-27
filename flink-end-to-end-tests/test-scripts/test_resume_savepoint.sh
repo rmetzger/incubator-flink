@@ -109,7 +109,7 @@ run_resume_savepoint_test() {
   OLD_NUM_METRICS=$(get_num_metric_samples)
 
   # resume state machine job with savepoint
-  DATASTREAM_JOB=$($FLINK_DIR/bin/flink run -s $SAVEPOINT_PATH -p $NEW_DOP -d $TEST_PROGRAM_JAR \
+  DATASTREAM_JOB=$($FLINK_DIR/bin/flink run -p 99999 -d $TEST_PROGRAM_JAR \
     --test.semantics exactly-once \
     --environment.parallelism $NEW_DOP \
     --state_backend $STATE_BACKEND_TYPE \
