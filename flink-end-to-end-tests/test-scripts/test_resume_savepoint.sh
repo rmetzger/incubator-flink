@@ -52,6 +52,7 @@ STATE_BACKEND_ROCKS_TIMER_SERVICE_TYPE=${5:-rocks}
 
 
 run_resume_savepoint_test() {
+  exit 1
   if (( $ORIGINAL_DOP >= $NEW_DOP )); then
     NUM_SLOTS=$ORIGINAL_DOP
   else
