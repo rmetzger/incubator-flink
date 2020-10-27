@@ -18,7 +18,7 @@
 # a) It reads the e2e timeout from the configuration file
 # b) It prints a warning if the test has reached 80% of it's execution time
 # c) N minutes before the end of the execution time, it will start uploading the current output as azure artifacts
-
+set -x
 COMMAND=$1
 
 HERE="`dirname \"$0\"`"             # relative
@@ -74,8 +74,24 @@ echo "EXIT_CODE = $? ; pipestatus = ${PIPESTATUS[0]} ; WARNING_WATCHDOG_PID=$WAR
 
 TEST_EXIT_CODE=${PIPESTATUS[0]}
 
+jobs
+sudo pstree
+
 # kill watchdogs
-kill $WARNING_WATCHDOG_PID
-kill $LOG_UPLOAD_WATCHDOG_PID
+kill -9 $WARNING_WATCHDOG_PID
+kill -9 $LOG_UPLOAD_WATCHDOG_PID
+
+jobs
+sudo pstree
+wait $WARNING_WATCHDOG_PID
+wait $LOG_UPLOAD_WATCHDOG_PID
+echo "done waiting"
+
+sleep 5
+
+echo "done sleeping"
+jobs
+sudo pstree
+
 # properly forward exit code
 exit $TEST_EXIT_CODE
