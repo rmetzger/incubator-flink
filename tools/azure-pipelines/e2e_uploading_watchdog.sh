@@ -62,16 +62,20 @@ function log_upload_watchdog {
 }
 
 warning_watchdog &
+WARNING_WATCHDOG_PID=$!
 log_upload_watchdog &
+LOG_UPLOAD_WATCHDOG_PID=$!
+
 
 # ts from moreutils prepends the time to each line
 ( $COMMAND & PID=$! ; wait $PID )  | ts | tee $OUTPUT_FILE
 
+echo "EXIT_CODE = $? ; pipestatus = ${PIPESTATUS[0]} ; WARNING_WATCHDOG_PID=$WARNING_WATCHDOG_PID ; LOG_UPLOAD_WATCHDOG_PID=$LOG_UPLOAD_WATCHDOG_PID"
 
+TEST_EXIT_CODE=${PIPESTATUS[0]}
 
-echo "EXIT_CODE = $? ; pipestatus = ${PIPESTATUS[0]}"
-
-EXIT_CODE=${PIPESTATUS[0]}
-
+# kill watchdogs
+kill $WARNING_WATCHDOG_PID
+kill $LOG_UPLOAD_WATCHDOG_PID
 # properly forward exit code
-exit $EXIT_CODE
+exit $TEST_EXIT_CODE
