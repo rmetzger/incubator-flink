@@ -65,7 +65,7 @@ warning_watchdog &
 log_upload_watchdog &
 
 # ts from moreutils prepends the time to each line
-( $COMMAND & PID=$! ; wait $PID ; echo $? >&4) 4>$CMD_EXIT | ts | tee $OUTPUT_FILE
+( $COMMAND & PID=$! ; wait $PID )  | ts | tee $OUTPUT_FILE
 
 EXIT_CODE=$(<$CMD_EXIT)
 

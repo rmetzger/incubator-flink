@@ -58,6 +58,8 @@ run_resume_savepoint_test() {
     NUM_SLOTS=$NEW_DOP
   fi
 
+  exit 1
+  
   set_config_key "taskmanager.numberOfTaskSlots" "${NUM_SLOTS}"
 
   if [ $STATE_BACKEND_ROCKS_TIMER_SERVICE_TYPE == 'heap' ]; then
