@@ -1,0 +1,4 @@
+This file contains notes from Flink committers about license checks:
+
+- flink-s3-fs-hadoop contains two CDDL 1.1 dependencies, which are not shaded, but copied. Checking the shade output is not enough here.
+-

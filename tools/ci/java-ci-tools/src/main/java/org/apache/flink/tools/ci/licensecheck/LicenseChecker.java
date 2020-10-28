@@ -77,8 +77,7 @@ public class LicenseChecker {
 
 	private static final Pattern INCLUDE_MODULE_PATTERN = Pattern.compile(".*Including ([^:]+):([^:]+):jar:([^ ]+) in the shaded jar");
 	private static final Pattern NEXT_MODULE_PATTERN = Pattern.compile(".*:shade \\(shade-flink\\) @ ([^ _]+)(_[0-9.]+)? --.*");
-	private static final Pattern NOTICE_DEPENDENCY_PATTERN = Pattern.compile("- ([^:]+):([^:]+):([^\n]+)$");
-
+	private static final Pattern NOTICE_DEPENDENCY_PATTERN = Pattern.compile("- ([^:]+):([^:]+):([^ ]+)($| )|.*bundles \"([^:]+):([^:]+):([^\"]+)\".*");
 
 	private int run(File buildResult, File root) throws IOException {
 		int severeIssueCount = 0;
@@ -146,6 +145,11 @@ public class LicenseChecker {
 					String groupId = noticeDependencyMatcher.group(1);
 					String artifactId = noticeDependencyMatcher.group(2);
 					String version = noticeDependencyMatcher.group(3);
+					if (groupId == null && artifactId == null && version == null) { // "bundles" case
+						groupId = noticeDependencyMatcher.group(5);
+						artifactId = noticeDependencyMatcher.group(6);
+						version = noticeDependencyMatcher.group(7);
+					}
 					Dependency toAdd = Dependency.create(groupId, artifactId, version);
 					if (!declaredDependencies.add(toAdd)) {
 						LOG.warn("Dependency {} has been declared twice in module {}", toAdd, moduleName);
