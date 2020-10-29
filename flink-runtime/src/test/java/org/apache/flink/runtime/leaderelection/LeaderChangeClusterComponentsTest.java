@@ -59,7 +59,7 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 	private static final Duration TESTING_TIMEOUT = Duration.ofMinutes(2L);
 
 	private static final int SLOTS_PER_TM = 2;
-	private static final int NUM_TMS = 2;
+	private static final int NUM_TMS = 1;
 	public static final int PARALLELISM = SLOTS_PER_TM * NUM_TMS;
 
 	private static TestingMiniCluster miniCluster;
