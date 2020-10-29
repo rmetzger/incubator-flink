@@ -1579,7 +1579,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 		if (task != null) {
 			if (!task.getExecutionState().isTerminal()) {
 				try {
-					task.failExternally(new IllegalStateException("Task is being remove from TaskManager."));
+					task.failExternally(new IllegalStateException("Task is being removed from TaskManager."));
 				} catch (Exception e) {
 					log.error("Could not properly fail task.", e);
 				}

@@ -21,6 +21,9 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.taskexecutor.ExecutionDeploymentReport;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +33,6 @@ import java.util.Set;
  * to a provided {@link ExecutionDeploymentReconciliationHandler} to resolve them.
  */
 public class DefaultExecutionDeploymentReconciler implements ExecutionDeploymentReconciler {
-
 	private final ExecutionDeploymentReconciliationHandler handler;
 
 	public DefaultExecutionDeploymentReconciler(ExecutionDeploymentReconciliationHandler handler) {
