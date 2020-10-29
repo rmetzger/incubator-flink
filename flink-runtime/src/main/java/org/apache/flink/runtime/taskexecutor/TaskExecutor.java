@@ -514,6 +514,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 			Time timeout) {
 
 		try {
+			log.info("Starting submission of task {} from JobMaster {}, deploy into slot with allocation id {}.",
+					tdd.getExecutionAttemptId(), jobMasterId, tdd.getAllocationId());
 			final JobID jobId = tdd.getJobId();
 			final ExecutionAttemptID executionAttemptID = tdd.getExecutionAttemptId();
 
@@ -647,8 +649,8 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 
 			taskMetricGroup.gauge(MetricNames.IS_BACKPRESSURED, task::isBackPressured);
 
-			log.info("Received task {} ({}), deploy into slot with allocation id {}.",
-				task.getTaskInfo().getTaskNameWithSubtasks(), tdd.getExecutionAttemptId(), tdd.getAllocationId());
+			log.info("Received task {} ({}) from JobMaster {}, deploy into slot with allocation id {}.",
+				task.getTaskInfo().getTaskNameWithSubtasks(), tdd.getExecutionAttemptId(), jobMasterId, tdd.getAllocationId());
 
 			boolean taskAdded;
 
