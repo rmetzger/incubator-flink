@@ -75,14 +75,20 @@ public class LicenseChecker {
 
 	private static final List<String> MODULES_DEFINING_EXCESS_DEPENDENCIES = loadFromResources("modules-defining-excess-dependencies.modulelist");
 
-	private static final Pattern INCLUDE_MODULE_PATTERN = Pattern.compile(".*Including ([^:]+):([^:]+):jar:([^ ]+) in the shaded jar");
-	private static final Pattern NEXT_MODULE_PATTERN = Pattern.compile(".*:shade \\(shade-flink\\) @ ([^ _]+)(_[0-9.]+)? --.*");
+	// pattern for maven shade plugin
+	private static final Pattern SHADE_NEXT_MODULE_PATTERN = Pattern.compile(".*:shade \\((shade-flink|default)\\) @ ([^ _]+)(_[0-9.]+)? --.*");
+	private static final Pattern SHADE_INCLUDE_MODULE_PATTERN = Pattern.compile(".*Including ([^:]+):([^:]+):jar:([^ ]+) in the shaded jar");
+
+	// pattern for maven-dependency-plugin copyied dependencies
+	private static final Pattern DEPENDENCY_COPY_NEXT_MODULE_PATTERN = Pattern.compile(".*maven-dependency-plugin:3.1.1:copy \\([^)]+\\) @ ([^ _]+)(_[0-9.]+)? --.*");
+	private static final Pattern DEPENDENCY_COPY_INCLUDE_MODULE_PATTERN = Pattern.compile(".*Configured Artifact: ([^:]+):([^:]+):([^:]+):jar.*");
+
 	private static final Pattern NOTICE_DEPENDENCY_PATTERN = Pattern.compile("- ([^:]+):([^:]+):([^ ]+)($| )|.*bundles \"([^:]+):([^:]+):([^\"]+)\".*");
 
 	private int run(File buildResult, File root) throws IOException {
 		int severeIssueCount = 0;
 		// parse included dependencies from build output
-		Multimap<String, Dependency> modulesWithShadedDependencies = parseModulesFromBuildResult(buildResult);
+		Multimap<String, IncludedDependency> modulesWithShadedDependencies = parseModulesFromBuildResult(buildResult);
 		LOG.info("Extracted " + modulesWithShadedDependencies.asMap().keySet().size() + " modules with a total of " + modulesWithShadedDependencies.values().size() + " dependencies");
 
 		// find modules producing a shaded-jar
@@ -102,7 +108,7 @@ public class LicenseChecker {
 		return severeIssueCount;
 	}
 
-	private int ensureRequiredNoticeFiles(Multimap<String, Dependency> modulesWithShadedDependencies, List<File> noticeFiles) {
+	private int ensureRequiredNoticeFiles(Multimap<String, IncludedDependency> modulesWithShadedDependencies, List<File> noticeFiles) {
 		int severeIssueCount = 0;
 		Set<String> shadingModules = new HashSet<>(modulesWithShadedDependencies.keys());
 		shadingModules.removeAll(noticeFiles.stream().map(LicenseChecker::getModuleFromNoticeFile).collect(Collectors.toList()));
@@ -124,7 +130,7 @@ public class LicenseChecker {
 		return moduleFile.getName();
 	}
 
-	private int checkNoticeFile(Multimap<String, Dependency> modulesWithShadedDependencies, File noticeFile) throws IOException {
+	private int checkNoticeFile(Multimap<String, IncludedDependency> modulesWithShadedDependencies, File noticeFile) throws IOException {
 		int severeIssueCount = 0;
 		String moduleName = getModuleFromNoticeFile(noticeFile);
 
@@ -136,7 +142,7 @@ public class LicenseChecker {
 		}
 
 		// collect all declared dependencies from NOTICE file
-		Set<Dependency> declaredDependencies = new HashSet<>();
+		Set<IncludedDependency> declaredDependencies = new HashSet<>();
 		try (BufferedReader br = new BufferedReader(new StringReader(noticeContents))) {
 			String line;
 			while ((line = br.readLine()) != null) {
@@ -150,7 +156,7 @@ public class LicenseChecker {
 						artifactId = noticeDependencyMatcher.group(6);
 						version = noticeDependencyMatcher.group(7);
 					}
-					Dependency toAdd = Dependency.create(groupId, artifactId, version);
+					IncludedDependency toAdd = IncludedDependency.create(groupId, artifactId, version);
 					if (!declaredDependencies.add(toAdd)) {
 						LOG.warn("Dependency {} has been declared twice in module {}", toAdd, moduleName);
 					}
@@ -158,18 +164,18 @@ public class LicenseChecker {
 			}
 		}
 		// print all dependencies missing from NOTICE file
-		Set<Dependency> expectedDependencies = new HashSet<>(modulesWithShadedDependencies.get(moduleName));
+		Set<IncludedDependency> expectedDependencies = new HashSet<>(modulesWithShadedDependencies.get(moduleName));
 		expectedDependencies.removeAll(declaredDependencies);
-		for (Dependency missingDependency : expectedDependencies) {
+		for (IncludedDependency missingDependency : expectedDependencies) {
 			LOG.error("Could not find dependency {} in NOTICE file {}", missingDependency, noticeFile);
 			severeIssueCount++;
 		}
 
 		if (!MODULES_DEFINING_EXCESS_DEPENDENCIES.contains(moduleName)) {
 			// print all dependencies defined in NOTICE file, which were not expected
-			Set<Dependency> excessDependencies = new HashSet<>(declaredDependencies);
+			Set<IncludedDependency> excessDependencies = new HashSet<>(declaredDependencies);
 			excessDependencies.removeAll(modulesWithShadedDependencies.get(moduleName));
-			for (Dependency excessDependency : excessDependencies) {
+			for (IncludedDependency excessDependency : excessDependencies) {
 				LOG.warn("Dependency {} is mentioned in NOTICE file {}, but is not expected there", excessDependency, noticeFile);
 			}
 		}
@@ -194,30 +200,51 @@ public class LicenseChecker {
 			.collect(Collectors.toList());
 	}
 
-	private Multimap<String, Dependency> parseModulesFromBuildResult(File buildResult) throws IOException {
-		Multimap<String, Dependency> result = ArrayListMultimap.create();
+	private Multimap<String, IncludedDependency> parseModulesFromBuildResult(File buildResult) throws IOException {
+		Multimap<String, IncludedDependency> result = ArrayListMultimap.create();
 		try (BufferedReader br = new BufferedReader(new FileReader(buildResult))) {
 			String line;
-			String currentModule = null;
+			String currentShadeModule = null;
+			String currentDependencyCopyModule = null;
 			while ((line = br.readLine()) != null) {
-				Matcher nextModuleMatcher = NEXT_MODULE_PATTERN.matcher(line);
-				if (nextModuleMatcher.find()) {
-					currentModule = nextModuleMatcher.group(1);
+				Matcher nextShadeModuleMatcher = SHADE_NEXT_MODULE_PATTERN.matcher(line);
+				if (nextShadeModuleMatcher.find()) {
+					currentShadeModule = nextShadeModuleMatcher.group(2);
 				}
 
-				if (currentModule != null) {
-					Matcher includeMatcher = INCLUDE_MODULE_PATTERN.matcher(line);
+				Matcher nextDependencyCopyModuleMatcher = DEPENDENCY_COPY_NEXT_MODULE_PATTERN.matcher(line);
+				if (nextDependencyCopyModuleMatcher.find()) {
+					currentDependencyCopyModule = nextDependencyCopyModuleMatcher.group(1);
+				}
+
+				if (currentShadeModule != null) {
+					Matcher includeMatcher = SHADE_INCLUDE_MODULE_PATTERN.matcher(line);
 					if (includeMatcher.find()) {
 						String groupId = includeMatcher.group(1);
 						String artifactId = includeMatcher.group(2);
 						String version = includeMatcher.group(3);
 						if (!"org.apache.flink".equals(groupId)) {
-							result.put(currentModule, Dependency.create(groupId, artifactId, version));
+							result.put(currentShadeModule, IncludedDependency.create(groupId, artifactId, version));
 						}
 					}
 				}
-				if (line.contains("eplacing original artifact with shaded artifact")) {
-					currentModule = null;
+
+				if (currentDependencyCopyModule != null) {
+					Matcher copyMatcher = DEPENDENCY_COPY_INCLUDE_MODULE_PATTERN.matcher(line);
+					if (copyMatcher.find()) {
+						String groupId = copyMatcher.group(1);
+						String artifactId = copyMatcher.group(2);
+						String version = copyMatcher.group(3);
+						if (!"org.apache.flink".equals(groupId)) {
+							result.put(currentDependencyCopyModule, IncludedDependency.create(groupId, artifactId, version));
+						}
+					}
+				}
+				if (line.contains("Replacing original artifact with shaded artifact")) {
+					currentShadeModule = null;
+				}
+				if (line.contains("Copying")) {
+					currentDependencyCopyModule = null;
 				}
 			}
 		}
@@ -229,7 +256,10 @@ public class LicenseChecker {
 		try (InputStream in = LicenseChecker.class.getResourceAsStream("/" + fileName)) {
 			try (Scanner scanner = new Scanner(in)) {
 				while (scanner.hasNext()) {
-					res.add(scanner.nextLine());
+					String line = scanner.nextLine();
+					if (!line.startsWith("#")){
+						res.add(line);
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -239,20 +269,20 @@ public class LicenseChecker {
 		return res;
 	}
 
-	private static final class Dependency {
+	private static final class IncludedDependency {
 
 		private final String groupId;
 		private final String artifactId;
 		private final String version;
 
-		private Dependency(String groupId, String artifactId, String version) {
+		private IncludedDependency(String groupId, String artifactId, String version) {
 			this.groupId = Preconditions.checkNotNull(groupId);
 			this.artifactId = Preconditions.checkNotNull(artifactId);
 			this.version = Preconditions.checkNotNull(version);
 		}
 
-		public static Dependency create(String groupId, String artifactId, String version) {
-			return new Dependency(groupId, artifactId, version);
+		public static IncludedDependency create(String groupId, String artifactId, String version) {
+			return new IncludedDependency(groupId, artifactId, version);
 		}
 
 		@Override
@@ -269,7 +299,7 @@ public class LicenseChecker {
 				return false;
 			}
 
-			Dependency that = (Dependency) o;
+			IncludedDependency that = (IncludedDependency) o;
 
 			if (!groupId.equals(that.groupId)) {
 				return false;
