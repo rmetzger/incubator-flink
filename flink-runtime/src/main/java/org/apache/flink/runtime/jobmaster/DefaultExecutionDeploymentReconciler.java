@@ -21,6 +21,9 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.taskexecutor.ExecutionDeploymentReport;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +33,8 @@ import java.util.Set;
  * to a provided {@link ExecutionDeploymentReconciliationHandler} to resolve them.
  */
 public class DefaultExecutionDeploymentReconciler implements ExecutionDeploymentReconciler {
+	private static final Logger LOG = LoggerFactory.getLogger(DefaultExecutionDeploymentReconciler.class);
+
 	private final ExecutionDeploymentReconciliationHandler handler;
 
 	public DefaultExecutionDeploymentReconciler(ExecutionDeploymentReconciliationHandler handler) {
@@ -40,6 +45,8 @@ public class DefaultExecutionDeploymentReconciler implements ExecutionDeployment
 	public void reconcileExecutionDeployments(ResourceID taskExecutorHost, ExecutionDeploymentReport executionDeploymentReport, Map<ExecutionAttemptID, ExecutionDeploymentState> expectedDeployedExecutions) {
 		final Set<ExecutionAttemptID> unknownExecutions = new HashSet<>(executionDeploymentReport.getExecutions());
 		final Set<ExecutionAttemptID> missingExecutions = new HashSet<>();
+
+		LOG.info("Reconciling with taskExecutorHost={}, executionDeploymentReport={}, expectedDeployedExecutions={}", taskExecutorHost, executionDeploymentReport, expectedDeployedExecutions);
 
 		for (Map.Entry<ExecutionAttemptID, ExecutionDeploymentState> execution : expectedDeployedExecutions.entrySet()) {
 			boolean deployed = unknownExecutions.remove(execution.getKey());
