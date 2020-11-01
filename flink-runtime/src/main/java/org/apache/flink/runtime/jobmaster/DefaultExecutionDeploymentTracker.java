@@ -20,6 +20,9 @@ package org.apache.flink.runtime.jobmaster;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +34,7 @@ import java.util.stream.Collectors;
  * Default {@link ExecutionDeploymentTracker} implementation.
  */
 public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTracker {
+	static final Logger LOG = LoggerFactory.getLogger(DefaultExecutionDeploymentTracker.class);
 
 	private final Set<ExecutionAttemptID> pendingDeployments = new HashSet<>();
 	private final Map<ResourceID, Set<ExecutionAttemptID>> executionsByHost = new HashMap<>();
@@ -38,6 +42,7 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 
 	@Override
 	public void startTrackingPendingDeploymentOf(ExecutionAttemptID executionAttemptId, ResourceID host) {
+		LOG.debug("Start tracking pending deployment of " + executionAttemptId);
 		pendingDeployments.add(executionAttemptId);
 		hostByExecution.put(executionAttemptId, host);
 		executionsByHost.computeIfAbsent(host, ignored -> new HashSet<>()).add(executionAttemptId);
@@ -45,11 +50,13 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 
 	@Override
 	public void completeDeploymentOf(ExecutionAttemptID executionAttemptId) {
+		LOG.debug("Complete deployment of " + executionAttemptId);
 		pendingDeployments.remove(executionAttemptId);
 	}
 
 	@Override
 	public void stopTrackingDeploymentOf(ExecutionAttemptID executionAttemptId) {
+		LOG.debug("Stop tracking deployment of " + executionAttemptId);
 		pendingDeployments.remove(executionAttemptId);
 		ResourceID host = hostByExecution.remove(executionAttemptId);
 		if (host != null) {
@@ -65,10 +72,16 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 
 	@Override
 	public Map<ExecutionAttemptID, ExecutionDeploymentState> getExecutionsOn(ResourceID host) {
+		LOG.debug("executionsByHost = " + executionsByHost);
 		return executionsByHost.getOrDefault(host, Collections.emptySet())
 			.stream()
 			.collect(Collectors.toMap(
 				x -> x,
 				x -> pendingDeployments.contains(x) ? ExecutionDeploymentState.PENDING : ExecutionDeploymentState.DEPLOYED));
+	}
+
+	@Override
+	public int getSize() {
+		return executionsByHost.size();
 	}
 }

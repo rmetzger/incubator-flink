@@ -176,6 +176,7 @@ public abstract class SchedulerBase implements SchedulerNG {
 	protected final ExecutionVertexVersioner executionVertexVersioner;
 
 	private final Map<OperatorID, OperatorCoordinatorHolder> coordinatorMap;
+	private final ExecutionDeploymentTracker executionDeploymentTracker;
 
 	private ComponentMainThreadExecutor mainThreadExecutor = new ComponentMainThreadExecutor.DummyComponentMainThreadExecutor(
 		"SchedulerBase is not initialized with proper main thread executor. " +
@@ -232,6 +233,7 @@ public abstract class SchedulerBase implements SchedulerNG {
 		this.slotRequestTimeout = checkNotNull(slotRequestTimeout);
 		this.executionVertexVersioner = checkNotNull(executionVertexVersioner);
 		this.legacyScheduling = legacyScheduling;
+		this.executionDeploymentTracker = executionDeploymentTracker;
 
 		this.executionGraph = createAndRestoreExecutionGraph(jobManagerJobMetricGroup, checkNotNull(shuffleMaster), checkNotNull(partitionTracker), checkNotNull(executionDeploymentTracker), initializationTimestamp);
 
@@ -495,6 +497,7 @@ public abstract class SchedulerBase implements SchedulerNG {
 		incrementVersionsOfAllVertices();
 		executionGraph.suspend(cause);
 		disposeAllOperatorCoordinators();
+		log.info("Number of tracked deployments " + executionDeploymentTracker.getSize());
 	}
 
 	@Override

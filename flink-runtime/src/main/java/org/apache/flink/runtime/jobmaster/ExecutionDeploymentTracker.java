@@ -56,4 +56,6 @@ public interface ExecutionDeploymentTracker {
 	 * @return tracked executions
 	 */
 	Map<ExecutionAttemptID, ExecutionDeploymentState> getExecutionsOn(ResourceID host);
+
+	int getSize();
 }
