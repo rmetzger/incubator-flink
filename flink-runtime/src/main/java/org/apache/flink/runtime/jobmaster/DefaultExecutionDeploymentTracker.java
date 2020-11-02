@@ -43,6 +43,10 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 
 	private final UUID myId = UUID.randomUUID();
 
+	public DefaultExecutionDeploymentTracker() {
+		LOG.info("Starting new instance with id " + myId);
+	}
+
 	@Override
 	public void startTrackingPendingDeploymentOf(ExecutionAttemptID executionAttemptId, ResourceID host) {
 		LOG.debug(myId + ": Start tracking pending deployment of " + executionAttemptId);
