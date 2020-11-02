@@ -498,7 +498,9 @@ public abstract class SchedulerBase implements SchedulerNG {
 		incrementVersionsOfAllVertices();
 		executionGraph.suspend(cause);
 		disposeAllOperatorCoordinators();
-		log.info("Number of tracked deployments " + executionDeploymentTracker.getSize());
+		if (!executionDeploymentTracker.isEmpty()) {
+			throw new IllegalStateException("Execution deployment tracker is in an invalid state. Nothing should be tracked at this point");
+		}
 	}
 
 	@Override
