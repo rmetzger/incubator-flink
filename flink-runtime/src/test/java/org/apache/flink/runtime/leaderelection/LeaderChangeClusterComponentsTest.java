@@ -21,6 +21,7 @@ package org.apache.flink.runtime.leaderelection;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.api.common.time.Deadline;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.highavailability.nonha.embedded.TestingEmbeddedHaServices;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -73,11 +74,13 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 	@BeforeClass
 	public static void setupClass() throws Exception  {
 		highAvailabilityServices = new TestingEmbeddedHaServices(TestingUtils.defaultExecutor());
-
+		Configuration config = new Configuration();
+		//config.setInteger("heartbeat.interval", 1000);
 		miniCluster = new TestingMiniCluster(
 			new TestingMiniClusterConfiguration.Builder()
 				.setNumTaskManagers(NUM_TMS)
 				.setNumSlotsPerTaskManager(SLOTS_PER_TM)
+				.setConfiguration(config)
 				.build(),
 			() -> highAvailabilityServices);
 

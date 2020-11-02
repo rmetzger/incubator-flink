@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -40,24 +41,32 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 	private final Map<ResourceID, Set<ExecutionAttemptID>> executionsByHost = new HashMap<>();
 	private final Map<ExecutionAttemptID, ResourceID> hostByExecution = new HashMap<>();
 
+	private final UUID myId = UUID.randomUUID();
+
 	@Override
 	public void startTrackingPendingDeploymentOf(ExecutionAttemptID executionAttemptId, ResourceID host) {
-		LOG.debug("Start tracking pending deployment of " + executionAttemptId);
+		LOG.debug(myId + ": Start tracking pending deployment of " + executionAttemptId);
 		pendingDeployments.add(executionAttemptId);
 		hostByExecution.put(executionAttemptId, host);
 		executionsByHost.computeIfAbsent(host, ignored -> new HashSet<>()).add(executionAttemptId);
+		LOG.debug(myId + ": pendingDeployments.size() = " + pendingDeployments.size());
 	}
 
 	@Override
 	public void completeDeploymentOf(ExecutionAttemptID executionAttemptId) {
-		LOG.debug("Complete deployment of " + executionAttemptId);
-		pendingDeployments.remove(executionAttemptId);
+		LOG.debug(myId + ": Complete deployment of " + executionAttemptId);
+		if (!pendingDeployments.remove(executionAttemptId)) {
+			LOG.debug(myId + ": Unable to remove executionAttemptId=" + executionAttemptId);
+		}
+		LOG.debug(myId + ": pendingDeployments.size() = " + pendingDeployments.size());
 	}
 
 	@Override
 	public void stopTrackingDeploymentOf(ExecutionAttemptID executionAttemptId) {
-		LOG.debug("Stop tracking deployment of " + executionAttemptId);
-		pendingDeployments.remove(executionAttemptId);
+		LOG.debug(myId + ": Stop tracking deployment of " + executionAttemptId);
+		if (!pendingDeployments.remove(executionAttemptId)) {
+			LOG.debug(myId + ": Unable to remove executionAttemptId=" + executionAttemptId);
+		}
 		ResourceID host = hostByExecution.remove(executionAttemptId);
 		if (host != null) {
 			executionsByHost.computeIfPresent(host, (resourceID, executionAttemptIds) -> {
@@ -72,7 +81,7 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 
 	@Override
 	public Map<ExecutionAttemptID, ExecutionDeploymentState> getExecutionsOn(ResourceID host) {
-		LOG.debug("executionsByHost = " + executionsByHost);
+		LOG.debug(myId + ": executionsByHost = " + executionsByHost + " pendingDeployments = " + pendingDeployments);
 		return executionsByHost.getOrDefault(host, Collections.emptySet())
 			.stream()
 			.collect(Collectors.toMap(
@@ -82,6 +91,7 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 
 	@Override
 	public int getSize() {
+		LOG.debug(myId + ": getSize() executionsByHost = " + executionsByHost.size() + " pendingDeployments = " + pendingDeployments.size() + " hostByExecution = " + hostByExecution.size());
 		return executionsByHost.size();
 	}
 }
