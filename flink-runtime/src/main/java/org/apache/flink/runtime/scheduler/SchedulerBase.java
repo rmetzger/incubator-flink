@@ -280,6 +280,7 @@ public abstract class SchedulerBase implements SchedulerNG {
 
 		ExecutionDeploymentListener executionDeploymentListener = new ExecutionDeploymentTrackerDeploymentListenerAdapter(executionDeploymentTracker);
 		ExecutionStateUpdateListener executionStateUpdateListener = (execution, newState) -> {
+			log.debug("Listener called with execution={}, newState={}", execution, newState);
 			if (newState.isTerminal()) {
 				executionDeploymentTracker.stopTrackingDeploymentOf(execution);
 			}
