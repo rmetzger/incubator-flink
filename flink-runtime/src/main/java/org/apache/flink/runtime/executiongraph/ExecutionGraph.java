@@ -1686,6 +1686,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 			final Throwable error) {
 
 		if (!isLegacyScheduling()) {
+			LOG.debug("legacy scheduling");
 			return;
 		}
 

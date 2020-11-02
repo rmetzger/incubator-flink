@@ -877,10 +877,13 @@ public class ExecutionVertex implements AccessExecutionVertex, Archiveable<Archi
 	 * Simply forward this notification.
 	 */
 	void notifyStateTransition(Execution execution, ExecutionState newState, Throwable error) {
+		LOG.debug("notifyStateTransition(execution={}, newState={}, error={})", execution, newState, error);
 		// only forward this notification if the execution is still the current execution
 		// otherwise we have an outdated execution
 		if (isCurrentExecution(execution)) {
 			getExecutionGraph().notifyExecutionChange(execution, newState, error);
+		} else {
+			LOG.debug("execution {} is not the current execution", execution);
 		}
 	}
 

@@ -121,7 +121,7 @@ public class ExecutionGraphBuilder {
 			partitionTracker,
 			failoverStrategy,
 			NoOpExecutionDeploymentListener.get(),
-			(execution, newState) -> {},
+			(execution, newState) -> log.debug("Empty listener called"),
 			initializationTimestamp);
 	}
 
