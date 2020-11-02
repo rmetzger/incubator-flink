@@ -1067,7 +1067,7 @@ public class TaskExecutor extends RpcEndpoint implements TaskExecutorGateway {
 		final Task task = taskSlotTable.getTask(executionAttemptID);
 		if (task == null) {
 			return FutureUtils.completedExceptionally(new TaskNotRunningException(
-				"Task " + executionAttemptID + " not running on TaskManager"));
+				"Task " + executionAttemptID.toHexString() + " not running on TaskManager"));
 		}
 
 		try {
