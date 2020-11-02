@@ -1685,12 +1685,12 @@ public class ExecutionGraph implements AccessExecutionGraph {
 			final ExecutionState newExecutionState,
 			final Throwable error) {
 
+		executionStateUpdateListener.onStateUpdate(execution.getAttemptId(), newExecutionState);
+
 		if (!isLegacyScheduling()) {
 			LOG.debug("legacy scheduling");
 			return;
 		}
-
-		executionStateUpdateListener.onStateUpdate(execution.getAttemptId(), newExecutionState);
 
 		// see what this means for us. currently, the first FAILED state means -> FAILED
 		if (newExecutionState == ExecutionState.FAILED) {
