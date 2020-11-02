@@ -70,13 +70,14 @@ public class HeartbeatManagerSenderImpl<I, O> extends HeartbeatManagerImpl<I, O>
 			heartbeatMonitorFactory);
 
 		this.heartbeatPeriod = heartbeatPeriod;
+		log.debug("heartbeatPeriod = {}", heartbeatPeriod);
 		mainThreadExecutor.schedule(this, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public void run() {
 		if (!stopped) {
-			log.debug("Trigger heartbeat request.");
+			log.debug("Trigger heartbeat request from {} targets", getHeartbeatTargets().size());
 			for (HeartbeatMonitor<O> heartbeatMonitor : getHeartbeatTargets().values()) {
 				requestHeartbeat(heartbeatMonitor);
 			}

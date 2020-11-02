@@ -75,7 +75,7 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 	public static void setupClass() throws Exception  {
 		highAvailabilityServices = new TestingEmbeddedHaServices(TestingUtils.defaultExecutor());
 		Configuration config = new Configuration();
-		//config.setInteger("heartbeat.interval", 1000);
+		config.setInteger("heartbeat.interval", 100);
 		miniCluster = new TestingMiniCluster(
 			new TestingMiniClusterConfiguration.Builder()
 				.setNumTaskManagers(NUM_TMS)
@@ -139,9 +139,9 @@ public class LeaderChangeClusterComponentsTest extends TestLogger {
 			log.warn("PREPARE NEXT RUN");
 			setupClass();
 			setup();
-			log.warn("START NEXT RUN");
+			log.warn("START NEXT RUN  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 			testReelectionOfJobMaster();
-			log.warn("FINISHED RUN");
+			log.warn("FINISHED RUN ˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆˆ");
 			teardownClass();
 		}
 		setupClass();
