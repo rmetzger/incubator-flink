@@ -57,5 +57,5 @@ public interface ExecutionDeploymentTracker {
 	 */
 	Map<ExecutionAttemptID, ExecutionDeploymentState> getExecutionsOn(ResourceID host);
 
-	int getSize();
+	boolean isEmpty();
 }

@@ -94,8 +94,8 @@ public class DefaultExecutionDeploymentTracker implements ExecutionDeploymentTra
 	}
 
 	@Override
-	public int getSize() {
+	public boolean isEmpty() {
 		LOG.debug(myId + ": getSize() executionsByHost = " + executionsByHost.size() + " pendingDeployments = " + pendingDeployments.size() + " hostByExecution = " + hostByExecution.size());
-		return executionsByHost.size();
+		return executionsByHost.size() == 0 && pendingDeployments.size() == 0 && hostByExecution.size() == 0;
 	}
 }
