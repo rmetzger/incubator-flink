@@ -46,6 +46,7 @@ import org.apache.flink.util.function.SupplierWithException;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -69,6 +70,7 @@ import java.util.stream.Collectors;
  * End-to-end test for the availability of metrics.
  */
 @Category(TravisGroup1.class)
+@Ignore
 public class MetricsAvailabilityITCase extends TestLogger {
 
 	private static final String HOST = "localhost";
