@@ -118,7 +118,7 @@ function post_test_validation {
 function ensure_clean_environment {
 	local num_processes_before=$1
 	local num_processes_after=$(sudo ps -e -o pid= -o comm= | wc -l)
-	if [ "num_processes_before" -ne "$num_processes_after" ]; then
+	if [ "$num_processes_before" -ne "$num_processes_after" ]; then
 		echo "WARNING: This test has leftover processes. Tests running before the test: $num_processes_before and after: $num_processes_after.Failing."
 
 		echo "All running processes"
