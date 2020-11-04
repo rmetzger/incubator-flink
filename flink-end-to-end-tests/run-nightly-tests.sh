@@ -91,7 +91,7 @@ PROFILE="$PROFILE -Pe2e-travis1 -Pe2e-travis2 -Pe2e-travis3 -Pe2e-travis4 -Pe2e-
 run_mvn ${MVN_COMMON_OPTIONS} ${MVN_LOGGING_OPTIONS} ${PROFILE} verify -pl ${e2e_modules} -DdistDir=$(readlink -e build-target) -Dcache-dir=$E2E_CACHE_FOLDER -Dcache-ttl=P1M -Dcache-download-attempt-timeout=4min -Dcache-download-global-timeout=10min
 EXIT_CODE=$?
 
-for i in $(seq 1 250); do
+for i in $(seq 1 75); do
 	echo "Run i = $i"
 	if [[ "$EXIT_CODE" == "0" ]]; then
 		run_mvn ${MVN_COMMON_OPTIONS} ${MVN_LOGGING_OPTIONS} ${PROFILE} verify -pl ${e2e_modules} -DdistDir=$(readlink -e build-target) -Dcache-dir=$E2E_CACHE_FOLDER -Dcache-ttl=P1M -Dcache-download-attempt-timeout=4min -Dcache-download-global-timeout=10min
