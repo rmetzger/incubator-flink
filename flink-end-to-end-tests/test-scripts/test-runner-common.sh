@@ -37,6 +37,8 @@ function run_test {
     printf "Running '${description}'\n"
     printf "==============================================================================\n"
 
+    local num_processes_before=$(sudo ps -e -o pid= -o comm= | wc -l)
+
     # used to randomize created directories
     export TEST_DATA_DIR=$TEST_INFRA_DIR/temp-test-directory-$(date +%S%N)
     echo "TEST_DATA_DIR: $TEST_DATA_DIR"
@@ -58,6 +60,7 @@ function run_test {
     exit_code="$?"
     # remove trap for test execution
     trap - ERR
+    ensure_clean_environment ${num_processes_before}
     post_test_validation ${exit_code} "$description" "$skip_check_exceptions"
 }
 
@@ -110,10 +113,26 @@ function post_test_validation {
     fi
 }
 
+# Ensure that the number of running processes has not increased (no leftover daemons,
+# potentially affecting subsequent tests due to allocated ports etc.)
+function ensure_clean_environment {
+	local num_processes_before=$1
+	local num_processes_after=$(sudo ps -e -o pid= -o comm= | wc -l)
+	if [ "num_processes_before" -ne "$num_processes_after" ]; then
+		echo "WARNING: This test has leftover processes. Tests running before the test: $num_processes_before and after: $num_processes_after.Failing."
+
+		echo "All running processes"
+		sudo ps aux
+
+		log_environment_info
+		exit 1
+	fi
+}
+
 function log_environment_info {
     echo "##[group]Environment Information"
-    echo "Jps"
-    jps
+    echo "Running JVMs"
+    jps -v
 
     echo "Disk information"
     df -hH
@@ -123,6 +142,7 @@ function log_environment_info {
 
     echo "Running docker containers"
     docker ps -a
+
     echo "##[endgroup]"
 }
 
