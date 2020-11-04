@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Utility class checking for proper NOTICE files based on the maven build output.
@@ -180,8 +181,6 @@ public class LicenseChecker {
 		boolean moduleDefinesExcessDependencies = MODULES_DEFINING_EXCESS_DEPENDENCIES.contains(moduleName);
 
 		// print all dependencies defined in NOTICE file, which were not expected
-		Set<IncludedDependency> excessDependencies = new HashSet<>(declaredDependencies);
-		excessDependencies.removeAll(modulesWithShadedDependencies.get(moduleName));
 		for (IncludedDependency declaredDependency : declaredDependencies) {
 			if (!expectedDependencies.contains(declaredDependency)) {
 				if (moduleDefinesExcessDependencies) {
@@ -216,11 +215,11 @@ public class LicenseChecker {
 	private static Multimap<String, IncludedDependency> parseModulesFromBuildResult(File buildResult) throws IOException {
 		Multimap<String, IncludedDependency> result = ArrayListMultimap.create();
 
-		try (BufferedReader br = new BufferedReader(new FileReader(buildResult))) {
-			String line;
+		try (Stream<String> lines = Files.lines(buildResult.toPath())) {
+			//String line;
 			String currentShadeModule = null;
 			String currentDependencyCopyModule = null;
-			while ((line = br.readLine()) != null) {
+			for (String line : (Iterable<String>) lines::iterator) {
 				Matcher nextShadeModuleMatcher = SHADE_NEXT_MODULE_PATTERN.matcher(line);
 				if (nextShadeModuleMatcher.find()) {
 					currentShadeModule = nextShadeModuleMatcher.group(2);
@@ -276,9 +275,9 @@ public class LicenseChecker {
 			LOG.debug("Loaded {} items from resource {}", result.size(), fileName);
 			return result;
 		} catch (Throwable e) {
-			LOG.warn("Error while loading resource", e);
+			// wrap anything in a RuntimeException to be callable from the static initializer
+			throw new RuntimeException("Error while loading resource", e);
 		}
-		return Collections.emptyList();
 	}
 
 	private static final class IncludedDependency {
