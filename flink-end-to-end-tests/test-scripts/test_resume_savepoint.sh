@@ -58,10 +58,10 @@ run_resume_savepoint_test() {
     NUM_SLOTS=$NEW_DOP
   fi
 
-  echo "DEBUG "
-  python2.7 -m SimpleHTTPServer &
-  netcat -l 4444 &
-  echo "STUFF STARTED"
+#  echo "DEBUG "
+#  python2.7 -m SimpleHTTPServer &
+#  netcat -l 4444 &
+#  echo "STUFF STARTED"
 
 
   set_config_key "taskmanager.numberOfTaskSlots" "${NUM_SLOTS}"

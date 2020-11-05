@@ -40,6 +40,10 @@ function run_test {
     printf "Running '${description}'\n"
     printf "==============================================================================\n"
 
+    echo "All running processes"
+    sudo ps aux
+    docker ps
+
     local num_processes_before=$(get_num_processes)
 
     # used to randomize created directories
@@ -117,24 +121,24 @@ function post_test_validation {
     fi
 }
 function get_num_processes {
-	echo $(( $(sudo ps -e -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
+    echo $(( $(sudo ps -e -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
 }
 
 # Ensure that the number of running processes has not increased (no leftover daemons,
 # potentially affecting subsequent tests due to allocated ports etc.)
 function ensure_clean_environment {
-	local num_processes_before=$1
-	local num_processes_after=$(get_num_processes)
-	if [ "$num_processes_before" -ne "$num_processes_after" ]; then
-		echo "WARNING: This test has leftover processes (potentially including docker)."
-		echo "Processes running before the test: $num_processes_before and after: $num_processes_after. Failing."
+    local num_processes_before=$1
+    local num_processes_after=$(get_num_processes)
+    if [ "$num_processes_before" -ne "$num_processes_after" ]; then
+        echo "WARNING: This test has leftover processes (potentially including docker)."
+        echo "Processes running before the test: $num_processes_before and after: $num_processes_after. Failing."
 
-		echo "All running processes"
-		sudo ps aux
-		docker ps
+        echo "All running processes"
+        sudo ps aux
+        docker ps
 
-		exit 1
-	fi
+        exit 1
+    fi
 }
 
 function log_environment_info {
