@@ -19,6 +19,9 @@
 
 source "${END_TO_END_DIR}"/test-scripts/common.sh
 
+
+set -x
+
 export FLINK_VERSION=$(MVN_RUN_VERBOSE=false run_mvn --file ${END_TO_END_DIR}/pom.xml org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
 
 #######################################
@@ -37,7 +40,7 @@ function run_test {
     printf "Running '${description}'\n"
     printf "==============================================================================\n"
 
-    local num_processes_before=$(sudo ps -e -o pid= -o comm= | wc -l)
+    local num_processes_before=$(get_num_processes)
 
     # used to randomize created directories
     export TEST_DATA_DIR=$TEST_INFRA_DIR/temp-test-directory-$(date +%S%N)
@@ -60,8 +63,7 @@ function run_test {
     exit_code="$?"
     # remove trap for test execution
     trap - ERR
-    ensure_clean_environment ${num_processes_before}
-    post_test_validation ${exit_code} "$description" "$skip_check_exceptions"
+    post_test_validation ${exit_code} "$description" "$skip_check_exceptions" "$num_processes_before"
 }
 
 # Validates the test result and exit code after its execution.
@@ -69,6 +71,7 @@ function post_test_validation {
     local exit_code="$1"
     local description="$2"
     local skip_check_exceptions="$3"
+    local num_processes_before="$4"
 
     local time_elapsed=$(end_timer)
 
@@ -100,6 +103,7 @@ function post_test_validation {
     if [[ ${exit_code} == 0 ]]; then
         cleanup
         log_environment_info
+        ensure_clean_environment ${num_processes_before} || exit $?
     else
         log_environment_info
         # make logs available if ARTIFACTS_DIR is set
@@ -112,19 +116,23 @@ function post_test_validation {
         exit "${exit_code}"
     fi
 }
+function get_num_processes {
+	echo $(( $(sudo ps -e -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
+}
 
 # Ensure that the number of running processes has not increased (no leftover daemons,
 # potentially affecting subsequent tests due to allocated ports etc.)
 function ensure_clean_environment {
 	local num_processes_before=$1
-	local num_processes_after=$(sudo ps -e -o pid= -o comm= | wc -l)
+	local num_processes_after=$(get_num_processes)
 	if [ "$num_processes_before" -ne "$num_processes_after" ]; then
-		echo "WARNING: This test has leftover processes. Tests running before the test: $num_processes_before and after: $num_processes_after.Failing."
+		echo "WARNING: This test has leftover processes (potentially including docker)."
+		echo "Processes running before the test: $num_processes_before and after: $num_processes_after. Failing."
 
 		echo "All running processes"
 		sudo ps aux
+		docker ps
 
-		log_environment_info
 		exit 1
 	fi
 }
