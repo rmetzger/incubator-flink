@@ -19,9 +19,6 @@
 
 source "${END_TO_END_DIR}"/test-scripts/common.sh
 
-
-set -x
-
 export FLINK_VERSION=$(MVN_RUN_VERBOSE=false run_mvn --file ${END_TO_END_DIR}/pom.xml org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
 
 #######################################

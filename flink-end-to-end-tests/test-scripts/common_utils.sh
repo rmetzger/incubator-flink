@@ -30,8 +30,11 @@ function _on_exit_callback {
   trap "exit -1" INT
 
   for command in "${_on_exit_commands[@]-}"; do
+    echo "Running command \"$command\""
     eval "${command}"
   done
+
+  echo "_on_exit_callback done"
 }
 
 # Register for multiple signals: some shells interpret them as mutually exclusive.
@@ -42,6 +45,8 @@ trap _on_exit_callback INT EXIT
 # Note: tests should not use `trap $command INT|EXIT` directly, to avoid having "Highlander" situation.
 function on_exit {
   local command="$1"
+
+  echo "Adding command \"$command\" to on_exit"
 
   # Keep commands in reverse order, so commands would be executed in LIFO order.
   _on_exit_commands=("${command}" "${_on_exit_commands[@]-}")
