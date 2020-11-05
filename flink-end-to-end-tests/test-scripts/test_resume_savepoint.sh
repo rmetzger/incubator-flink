@@ -133,4 +133,5 @@ run_resume_savepoint_test() {
   # output would be non-empty and the test will not pass
 }
 
-run_test_with_timeout 900 run_resume_savepoint_test
+#run_test_with_timeout 900 run_resume_savepoint_test
+run_resume_savepoint_test
