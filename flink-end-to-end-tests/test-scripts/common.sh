@@ -585,7 +585,10 @@ function tm_kill_all {
 
 # Kills all processes that match the given name.
 function kill_all {
-  local pid=`jps | grep -E "${1}" | cut -d " " -f 1 || true`
+  # using ps instead of jps to identify jvms in shutdown as well, so that we can wait for the shutdown to finish
+  # use awk to strip leading and trailing whitespaces
+  # use cut to get the pid
+  local pid=`ps ax | grep "java" | grep -E "${1}" | awk '{$1=$1;print}' | cut -d " " -f 1 || true`
   kill ${pid} 2> /dev/null || true
   wait ${pid} 2> /dev/null || true
 }

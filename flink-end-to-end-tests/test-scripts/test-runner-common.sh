@@ -118,7 +118,9 @@ function post_test_validation {
     fi
 }
 function get_num_processes {
-    echo $(( $(sudo ps -e -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
+    # "ps --ppid 2 -p 2 --deselect" shows all non-kernel processes
+    # "ps -o pid= -o comm=" removes the header line
+    echo $(( $(sudo ps --ppid 2 -p 2 --deselect -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
 }
 
 # Ensure that the number of running processes has not increased (no leftover daemons,
