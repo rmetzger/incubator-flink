@@ -18,6 +18,8 @@
 # limitations under the License.
 ################################################################################
 
+set -x
+
 source "$(dirname "$0")"/common.sh
 
 # This function checks the logs for entries that indicate problems with local recovery
@@ -112,6 +114,7 @@ function run_local_recovery_test {
 trap cleanup_after_test_and_exit_fail EXIT
 run_test_with_timeout 600 run_local_recovery_test "$@"
 EXIT_CODE=$?
+echo "EXIT_CODE=$EXIT_CODE at this point"
 trap - EXIT
 
 exit $EXIT_CODE
