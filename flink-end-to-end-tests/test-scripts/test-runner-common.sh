@@ -37,12 +37,7 @@ function run_test {
     printf "Running '${description}'\n"
     printf "==============================================================================\n"
 
-    echo "All running processes"
-    sudo ps aux
-    sudo pstree -hp
-    docker ps
-
-    local num_processes_before=$(get_num_processes)
+    local num_ports_before=$(get_num_ports)
 
     # used to randomize created directories
     export TEST_DATA_DIR=$TEST_INFRA_DIR/temp-test-directory-$(date +%S%N)
@@ -65,7 +60,7 @@ function run_test {
     exit_code="$?"
     # remove trap for test execution
     trap - ERR
-    post_test_validation ${exit_code} "$description" "$skip_check_exceptions" "$num_processes_before"
+    post_test_validation ${exit_code} "$description" "$skip_check_exceptions" "$num_ports_before"
 }
 
 # Validates the test result and exit code after its execution.
@@ -73,7 +68,7 @@ function post_test_validation {
     local exit_code="$1"
     local description="$2"
     local skip_check_exceptions="$3"
-    local num_processes_before="$4"
+    local num_ports_before="$4"
 
     local time_elapsed=$(end_timer)
 
@@ -118,27 +113,30 @@ function post_test_validation {
         exit "${exit_code}"
     fi
 }
-function get_num_processes {
+
+# returns the number of allocated ports
+function get_num_ports {
     # "ps --ppid 2 -p 2 --deselect" shows all non-kernel processes
     # "ps --ppid $$" shows all children of this bash process
     # "ps -o pid= -o comm=" removes the header line
-    echo $(( $(sudo ps --ppid $$ -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
+    echo $(sudo netstat -tulpn | wc -l)
 }
 
 # Ensure that the number of running processes has not increased (no leftover daemons,
 # potentially affecting subsequent tests due to allocated ports etc.)
 function ensure_clean_environment {
-    local num_processes_before=$1
-    local num_processes_after=$(get_num_processes)
-    if [ "$num_processes_before" -ne "$num_processes_after" ]; then
-        echo "WARNING: This test has leftover processes (potentially including docker)."
-        echo "Processes running before the test: $num_processes_before and after: $num_processes_after. Failing."
+    local num_ports_before=$1
+    local num_ports_after=$(get_num_ports)
+    if [ "$num_ports_before" -ne "$num_ports_after" ]; then
+        echo "WARNING: This test has left ports allocated."
+        echo "Allocated ports before the test: $num_ports_before and after: $num_ports_after. Failing."
+        exit 1
+    fi
 
-        echo "All running processes"
-        sudo ps aux
-        sudo pstree -hp
-        docker ps
-
+    if [ $(jps | wc -l) -ne 1 ]; then
+        echo "WARNING: This test has left JVMs running"
+        echo "The following JVMs are still running:"
+        jps -v
         exit 1
     fi
 }
