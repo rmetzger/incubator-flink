@@ -39,6 +39,7 @@ function run_test {
 
     echo "All running processes"
     sudo ps aux
+    sudo pstree -hp
     docker ps
 
     local num_processes_before=$(get_num_processes)
@@ -119,8 +120,9 @@ function post_test_validation {
 }
 function get_num_processes {
     # "ps --ppid 2 -p 2 --deselect" shows all non-kernel processes
+    # "ps --ppid $$" shows all children of this bash process
     # "ps -o pid= -o comm=" removes the header line
-    echo $(( $(sudo ps --ppid 2 -p 2 --deselect -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
+    echo $(( $(sudo ps --ppid $$ -o pid= -o comm= | wc -l) + $(docker ps -q | wc -l) ))
 }
 
 # Ensure that the number of running processes has not increased (no leftover daemons,
@@ -134,6 +136,7 @@ function ensure_clean_environment {
 
         echo "All running processes"
         sudo ps aux
+        sudo pstree -hp
         docker ps
 
         exit 1

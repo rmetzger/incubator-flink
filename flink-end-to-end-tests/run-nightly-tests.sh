@@ -85,6 +85,8 @@ echo "Running with profile '$PROFILE'"
 # those checks are disabled, one should take care that a proper checks are performed in the tests itself that ensure that the test finished
 # in an expected state.
 
+echo "DEBUG: My pid is $$"
+
 printf "\n\n==============================================================================\n"
 printf "Running bash end-to-end tests\n"
 printf "==============================================================================\n"
