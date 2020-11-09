@@ -50,8 +50,8 @@ function check_logs {
 # This function does a cleanup after the test. The watchdog is terminated and temporary
 # files and folders are deleted.
 function cleanup_after_test {
-    kill ${watchdog_pid} 2> /dev/null
-    wait ${watchdog_pid} 2> /dev/null
+    kill ${watchdog_pid} 2> /dev/null || true
+    wait ${watchdog_pid} 2> /dev/null || true
 }
 on_exit cleanup_after_test
 
