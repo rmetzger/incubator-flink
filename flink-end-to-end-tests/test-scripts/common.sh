@@ -588,15 +588,18 @@ function kill_all {
   # using ps instead of jps to identify jvms in shutdown as well, so that we can wait for the shutdown to finish
   # use awk to strip leading and trailing whitespaces
   # use cut to get the pid
-  local pid=`ps ax | grep "java" | grep -E "${1}" | awk '{$1=$1;print}' | cut -d " " -f 1 || true`
-  kill ${pid} 2> /dev/null || true
-  if [[ "$OS_TYPE" == "mac" ]]; then
-      # works on mac, but does seem to return before the process has finished on Linux
-      wait ${pid} 2> /dev/null || true
-  else
-      # use tail to wait for a process to finish: https://stackoverflow.com/questions/1058047/wait-for-a-process-to-finish/11719943
-      tail --pid=${pid} -f /dev/null || true
-  fi
+  for pid in $(ps ax | grep "java" | grep -E "${1}" | awk '{$1=$1;print}' | cut -d " " -f 1)
+  do
+      echo "Ensuring process with pid = $pid matching '${1}' is stopped"
+      kill ${pid} 2> /dev/null || true
+      if [[ "$OS_TYPE" == "mac" ]]; then
+          # works on mac, but does seem to return before the process has finished on Linux
+          wait ${pid} 2> /dev/null || true
+      else
+          # use tail to wait for a process to finish: https://stackoverflow.com/questions/1058047/wait-for-a-process-to-finish/11719943
+          tail --pid=${pid} -f /dev/null || true
+      fi
+  done
 }
 
 function kill_random_taskmanager {
