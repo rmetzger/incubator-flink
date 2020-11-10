@@ -277,7 +277,7 @@ function wait_rest_endpoint_up {
 }
 
 function wait_dispatcher_running {
-  local query_url="${REST_PROTOCOL}://${NODENAME}:8081/taskmanagers"
+  local query_url="${REST_PROTOCOL}://${NODENAME}:8081/taskmanagersxxx"
   wait_rest_endpoint_up "${query_url}" "Dispatcher" "\{\"taskmanagers\":\[.+\]\}"
 }
 
