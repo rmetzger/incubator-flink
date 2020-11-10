@@ -100,7 +100,7 @@ function post_test_validation {
     if [[ ${exit_code} == 0 ]]; then
         cleanup
         log_environment_info
-        ensure_clean_environment ${num_processes_before} || exit $?
+        ensure_clean_environment ${num_ports_before} || exit $?
     else
         log_environment_info
         # make logs available if ARTIFACTS_DIR is set
