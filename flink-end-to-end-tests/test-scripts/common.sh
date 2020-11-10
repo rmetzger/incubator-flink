@@ -839,18 +839,19 @@ internal_run_with_timeout() {
   (
       command_pid=$BASHPID
       (# this subshell contains the watchdog
-	local wakeup_time=$(( ${timeout_in_seconds} + $(date +%s) ))
-	while true; do
-		sleep 1
-		if [ $wakeup_time -le $(date +%s) ]; then
-      			echo "${command_label:-"The command '${command}'"} (pid: $command_pid) did not finish after $timeout_in_seconds seconds."
-      			eval "${on_failure}"
-      			kill "$command_pid"
-			pkill -P "$command_pid"
-		fi
-	done
+        local wakeup_time=$(( ${timeout_in_seconds} + $(date +%s) ))
+        while true; do
+          sleep 1
+          if [ $wakeup_time -le $(date +%s) ]; then
+            echo "${command_label:-"The command '${command}'"} (pid: $command_pid) did not finish after $timeout_in_seconds seconds."
+            eval "${on_failure}"
+            kill "$command_pid"
+            pkill -P "$command_pid"
+          fi
+        done
       ) & watchdog_pid=$!
       echo $watchdog_pid > $TEST_DATA_DIR/job_watchdog.pid
+      echo "Started watchdog with pid = $watchdog_pid"
       # invoke
       $command
   )
