@@ -449,6 +449,7 @@ function stop_cluster {
   if [[ ${zookeeper_process_count} -gt 0 ]]; then
     echo "Stopping zookeeper..."
     "$FLINK_DIR"/bin/zookeeper.sh stop
+    kill_all 'QuorumPeer'
   fi
 }
 

@@ -117,7 +117,7 @@ function stop_kafka_cluster {
   $KAFKA_DIR/bin/zookeeper-server-stop.sh
 
   kill_all 'kafka'
-  kill_all 'QuorumPeerMain'
+  kill_all 'QuorumPeer'
 }
 
 function create_kafka_topic {
