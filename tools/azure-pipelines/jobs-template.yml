@@ -83,6 +83,9 @@ jobs:
     - script: |
         set -x
         ${{parameters.environment}} FLINK_DIR=`pwd`/build-target ./tools/azure-pipelines/e2e_uploading_watchdog.sh flink-end-to-end-tests/run-nightly-tests.sh
+        e=$?
+        echo "got e=$e"
+        exit $e
       timeoutInMinutes: 250
       displayName: Run e2e tests
       env:

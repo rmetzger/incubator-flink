@@ -135,8 +135,6 @@ function ensure_clean_environment {
 
     if [ $(jps | wc -l) -ne 1 ]; then
         echo "WARNING: This test has left JVMs running"
-        echo "The following JVMs are still running:"
-        jps -v
         exit 1
     fi
 }
