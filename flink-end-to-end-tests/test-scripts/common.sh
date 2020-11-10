@@ -821,8 +821,8 @@ kill_test_watchdog() {
     # pkill (the child processes) and the watchdog shell itself. This is necessary to prevent the
     # sleep inside the watchdog to become a daemon process, which inherits the file descriptors and
     # potentially prevents parent processes from noticing that this script is done.
-    pkill -P $watchdog_pid
     kill $watchdog_pid
+    #pkill -P $watchdog_pid
 }
 
 #
@@ -838,10 +838,18 @@ internal_run_with_timeout() {
 
   (
       command_pid=$BASHPID
-      (sleep "${timeout_in_seconds}" # set a timeout for this command
-      echo "${command_label:-"The command '${command}'"} (pid: $command_pid) did not finish after $timeout_in_seconds seconds."
-      eval "${on_failure}"
-      kill "$command_pid") & watchdog_pid=$!
+      (# this subshell contains the watchdog
+	local wakeup_time=$(( ${timeout_in_seconds} + $(date +%s) ))
+	while true; do
+		sleep 1
+		if [ $wakeup_time -le $(date +%s) ]; then
+      			echo "${command_label:-"The command '${command}'"} (pid: $command_pid) did not finish after $timeout_in_seconds seconds."
+      			eval "${on_failure}"
+      			kill "$command_pid"
+			pkill -P "$command_pid"
+		fi
+	done
+      ) & watchdog_pid=$!
       echo $watchdog_pid > $TEST_DATA_DIR/job_watchdog.pid
       # invoke
       $command
