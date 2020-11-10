@@ -587,9 +587,21 @@ function tm_kill_all {
 
 # Kills all processes that match the given name.
 function kill_all {
-  local pid=`jps | grep -E "${1}" | cut -d " " -f 1 || true`
-  kill ${pid} 2> /dev/null || true
-  wait ${pid} 2> /dev/null || true
+  # using ps instead of jps to identify jvms in shutdown as well, so that we can wait for the shutdown to finish (jps doesn't show killed JVMs while shutting down)
+  # use awk to strip leading and trailing whitespaces
+  # use cut to get the pid
+  for pid in $(ps ax | grep "java" | grep -E "${1}" | awk '{$1=$1;print}' | cut -d " " -f 1)
+  do
+      echo "Ensuring process with pid = $pid matching '${1}' is stopped"
+      kill ${pid} 2> /dev/null || true
+      if [[ "$OS_TYPE" == "mac" ]]; then
+          # works on mac, but does seem to return before the process has finished on Linux
+          wait ${pid} 2> /dev/null || true
+      else
+          # use tail to wait for a process to finish: https://stackoverflow.com/questions/1058047/wait-for-a-process-to-finish/11719943
+          tail --pid=${pid} -f /dev/null || true
+      fi
+  done
 }
 
 function kill_random_taskmanager {
@@ -806,6 +818,10 @@ function extract_job_id_from_job_submission_return() {
 kill_test_watchdog() {
     local watchdog_pid=$(cat $TEST_DATA_DIR/job_watchdog.pid)
     echo "Stopping job timeout watchdog (with pid=$watchdog_pid)"
+    # pkill (the child processes) and the watchdog shell itself. This is necessary to prevent the
+    # sleep inside the watchdog to become a daemon process, which inherits the file descriptors and
+    # potentially prevents parent processes from noticing that this script is done.
+    pkill -P $watchdog_pid
     kill $watchdog_pid
 }
 
