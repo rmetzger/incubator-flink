@@ -128,13 +128,17 @@ function ensure_clean_environment {
     local num_ports_before=$1
     local num_ports_after=$(get_num_ports)
     if [ "$num_ports_before" -ne "$num_ports_after" ]; then
-        echo "WARNING: This test has left ports allocated."
-        echo "Allocated ports before the test: $num_ports_before and after: $num_ports_after. Failing."
+        printf "\n==============================================================================\n"
+        echo "FATAL: This test has left ports allocated."
+        echo "Allocated ports before the test: $num_ports_before and after: $num_ports_after. Stopping test execution."
+        printf "\n==============================================================================\n"
         exit 1
     fi
 
     if [ $(jps | wc -l) -ne 1 ]; then
-        echo "WARNING: This test has left JVMs running"
+        printf "\n==============================================================================\n"
+        echo "FATAL: This test has left JVMs running. Stopping test execution."
+        printf "\n==============================================================================\n"
         exit 1
     fi
 }

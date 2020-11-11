@@ -593,14 +593,18 @@ function kill_all {
   # use cut to get the pid
   for pid in $(ps ax | grep "java" | grep -E "${1}" | awk '{$1=$1;print}' | cut -d " " -f 1)
   do
-      echo "Ensuring process with pid = $pid matching '${1}' is stopped"
+      echo "Ensuring process ('$(ps -o cmd fp $pid | tail -n 1)') with pid = $pid matching '${1}' is stopped"
       kill ${pid} 2> /dev/null || true
       if [[ "$OS_TYPE" == "mac" ]]; then
           # works on mac, but does seem to return before the process has finished on Linux
           wait ${pid} 2> /dev/null || true
       else
           # use tail to wait for a process to finish: https://stackoverflow.com/questions/1058047/wait-for-a-process-to-finish/11719943
-          tail --pid=${pid} -f /dev/null || true
+          timeout 60 tail --pid=${pid} -f /dev/null
+          if [ "$?" -eq 124 ]; then
+            echo "Process didn't stop within 60 seconds. Killing it:"
+            kill -9 $pid
+          fi
       fi
   done
 }
