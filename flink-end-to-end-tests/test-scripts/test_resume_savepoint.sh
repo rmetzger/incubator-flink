@@ -70,6 +70,7 @@ run_resume_savepoint_test() {
   start_cluster
 
   CHECKPOINT_DIR="file://$TEST_DATA_DIR/savepoint-e2e-test-chckpt-dir"
+  exit 1
 
   # run the DataStream allroundjob
   TEST_PROGRAM_JAR=${END_TO_END_DIR}/flink-datastream-allround-test/target/DataStreamAllroundTestProgram.jar
@@ -128,3 +129,4 @@ run_resume_savepoint_test() {
 }
 
 run_test_with_timeout 900 run_resume_savepoint_test
+
