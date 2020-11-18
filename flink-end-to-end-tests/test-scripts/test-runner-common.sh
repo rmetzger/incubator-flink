@@ -119,7 +119,8 @@ function get_num_ports {
     # "ps --ppid 2 -p 2 --deselect" shows all non-kernel processes
     # "ps --ppid $$" shows all children of this bash process
     # "ps -o pid= -o comm=" removes the header line
-    echo $(sudo netstat -tulpn | wc -l)
+    # We exclude dotnet, as it sometimes runs in the beginning of the test execution on CI.
+    echo $(sudo netstat -tulpn | grep -v "dotnet" | wc -l)
 }
 
 # Ensure that the number of running processes has not increased (no leftover daemons,
