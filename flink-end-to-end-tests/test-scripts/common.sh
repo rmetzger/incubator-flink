@@ -601,10 +601,13 @@ function kill_all {
       else
           # use tail to wait for a process to finish: https://stackoverflow.com/questions/1058047/wait-for-a-process-to-finish/11719943
           timeout 60 tail --pid=${pid} -f /dev/null
-          if [ "$?" -eq 124 ]; then
+          result=$?
+          echo "got exit code $result"
+          if [ "$result" -eq 124 ]; then
             echo "Process (pid = $pid) didn't stop within 60 seconds. Killing it:"
             kill -9 $pid
           fi
+          sudo pstree -p
       fi
   done
 }
