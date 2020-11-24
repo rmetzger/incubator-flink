@@ -21,6 +21,8 @@
 #set -Eexuo pipefail
 set -o pipefail
 
+set -x
+
 if [[ -z $FLINK_DIR ]]; then
     echo "FLINK_DIR needs to point to a Flink distribution directory"
     exit 1

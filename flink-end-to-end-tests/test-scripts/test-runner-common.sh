@@ -47,6 +47,7 @@ function run_test {
     start_timer
 
     function test_error() {
+      echo "exit code = $?"
       echo "[FAIL] Test script contains errors."
       post_test_validation 1 "$description" "$skip_check_exceptions"
     }
