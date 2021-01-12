@@ -94,6 +94,29 @@ public class DeclarativeSchedulerClusterITCase extends TestLogger {
         assertTrue(jobResult.isSuccess());
     }
 
+    @Test
+    public void testAutomaticScaleUp() throws Exception {
+        assumeTrue(ClusterOptions.isDeclarativeResourceManagementEnabled(configuration));
+
+        final MiniCluster miniCluster = miniClusterResource.getMiniCluster();
+        final JobGraph jobGraph = createBlockingJobGraph(PARALLELISM);
+
+        log.info("Submitting job with parallelism of " + PARALLELISM);
+        miniCluster.submitJob(jobGraph).join();
+
+        OnceBlockingNoOpInvokable.waitUntilOpsAreRunning();
+
+        log.info("Start additional TaskManager");
+        miniCluster.startTaskManager();
+
+        log.info("Waiting until Invokable is running with higher parallelism");
+        while (OnceBlockingNoOpInvokable.getInstanceCount()
+                < NUMBER_SLOTS_PER_TASK_MANAGER * (NUMBER_TASK_MANAGERS + 1)) {
+            Thread.sleep(50);
+        }
+        miniCluster.cancelJob(jobGraph.getJobID());
+    }
+
     private JobGraph createBlockingJobGraph(int parallelism) throws IOException {
         final JobVertex blockingOperator = new JobVertex("Blocking operator");
 
