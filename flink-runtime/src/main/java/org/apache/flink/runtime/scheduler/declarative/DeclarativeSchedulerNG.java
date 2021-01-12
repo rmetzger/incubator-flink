@@ -97,6 +97,7 @@ import org.apache.flink.runtime.scheduler.declarative.allocator.VertexAssignment
 import org.apache.flink.runtime.shuffle.ShuffleMaster;
 import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
+import org.apache.flink.runtime.util.FatalExitExceptionHandler;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
@@ -114,6 +115,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -121,13 +123,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 /** Declarative scheduler ng. */
 public class DeclarativeSchedulerNG implements SchedulerNG {
 
     private static final Logger LOG = LoggerFactory.getLogger(DeclarativeSchedulerNG.class);
 
-    private final JobGraph jobGraph;
+    private final JobGraphJobInformation jobInformation;
 
     private final DeclarativeSlotPool declarativeSlotPool;
 
@@ -181,7 +184,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
             long initializationTimestamp)
             throws JobExecutionException {
 
-        this.jobGraph = jobGraph;
+        this.jobInformation = new JobGraphJobInformation(jobGraph);
         this.declarativeSlotPool = declarativeSlotPool;
         this.initializationTimestamp = initializationTimestamp;
         this.configuration = configuration;
@@ -247,18 +250,19 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
     private ArchivedExecutionGraph createArchivedExecutionGraph(
             JobStatus jobStatus, @Nullable Throwable throwable) {
         return ArchivedExecutionGraph.createFromInitializingJob(
-                jobGraph.getJobID(),
-                jobGraph.getName(),
+                jobInformation.getJobID(),
+                jobInformation.getName(),
                 jobStatus,
                 throwable,
                 initializationTimestamp);
     }
 
     private ResourceCounter calculateDesiredResources() {
-        return slotAllocator.calculateRequiredSlots(jobGraph.getVertices());
+        return slotAllocator.calculateRequiredSlots(jobInformation.getVertices());
     }
 
-    private ExecutionGraph createExecutionGraphAndRestoreState() throws Exception {
+    private ExecutionGraph createExecutionGraphAndRestoreState(JobGraph adjustedJobGraph)
+            throws Exception {
         ExecutionDeploymentListener executionDeploymentListener =
                 new ExecutionDeploymentTrackerDeploymentListenerAdapter(executionDeploymentTracker);
         ExecutionStateUpdateListener executionStateUpdateListener =
@@ -270,7 +274,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         final ExecutionGraph newExecutionGraph =
                 ExecutionGraphBuilder.buildGraph(
-                        jobGraph,
+                        adjustedJobGraph,
                         configuration,
                         futureExecutor,
                         ioExecutor,
@@ -300,7 +304,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
                 // check whether we can restore from a savepoint
                 tryRestoreExecutionGraphFromSavepoint(
-                        newExecutionGraph, jobGraph.getSavepointRestoreSettings());
+                        newExecutionGraph, adjustedJobGraph.getSavepointRestoreSettings());
             }
         }
 
@@ -640,7 +644,12 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         componentMainThreadExecutor.schedule(
                 () -> {
                     if (state == expectedState) {
-                        action.run();
+                        try {
+                            action.run();
+                        } catch (Throwable t) {
+                            FatalExitExceptionHandler.INSTANCE.uncaughtException(
+                                    Thread.currentThread(), t);
+                        }
                     } else {
                         LOG.debug(
                                 "Ignoring scheduled action because expected state {} is not the actual state {}.",
@@ -776,16 +785,16 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                                 throws JobExecutionException {
             final Optional<T> parallelism =
                     slotAllocator.determineParallelism(
-                            new JobGraphJobInformation(jobGraph),
-                            declarativeSlotPool.getFreeSlotsInformation());
+                            jobInformation, declarativeSlotPool.getFreeSlotsInformation());
 
             if (!parallelism.isPresent()) {
                 throw new JobExecutionException(
-                        jobGraph.getJobID(), "Not enough resources available for scheduling.");
+                        jobInformation.getJobID(),
+                        "Not enough resources available for scheduling.");
             }
 
             return slotAllocator.assignResources(
-                    new JobGraphJobInformation(jobGraph),
+                    jobInformation,
                     declarativeSlotPool.getFreeSlotsInformation(),
                     parallelism.get());
         }
@@ -795,20 +804,21 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
             final DeclarativeScheduler.ParallelismAndResourceAssignments
                     parallelismAndResourceAssignments =
                             determineParallelismAndAssignResources(slotAllocator);
-
-            for (JobVertex vertex : jobGraph.getVertices()) {
+            JobGraph adjustedJobGraph = jobInformation.getMutableJobGraph();
+            for (JobVertex vertex : adjustedJobGraph.getVertices()) {
                 vertex.setParallelism(
                         parallelismAndResourceAssignments.getParallelism(vertex.getID()));
             }
 
-            final ExecutionGraph executionGraph = createExecutionGraphAndRestoreState();
+            final ExecutionGraph executionGraph =
+                    createExecutionGraphAndRestoreState(adjustedJobGraph);
 
             executionGraph.start(componentMainThreadExecutor);
             executionGraph.transitionToRunning();
 
             executionGraph.setInternalTaskFailuresListener(
                     new UpdateSchedulerNgOnInternalFailuresListener(
-                            DeclarativeSchedulerNG.this, jobGraph.getJobID()));
+                            DeclarativeSchedulerNG.this, adjustedJobGraph.getJobID()));
 
             for (ExecutionVertex executionVertex : executionGraph.getAllExecutionVertices()) {
                 final LogicalSlot assignedSlot =
@@ -822,7 +832,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         }
     }
 
-    private final class Executing extends StateWithExecutionGraph {
+    private final class Executing extends StateWithExecutionGraph implements ResourceConsumer {
 
         private Executing(ExecutionGraph executionGraph) {
             super(executionGraph);
@@ -901,6 +911,38 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         private void handleDeploymentFailure(ExecutionVertex executionVertex, JobException e) {
             executionVertex.markFailed(e);
+        }
+
+        @Override
+        public void newResourcesAvailable() {
+            int availableSlots = declarativeSlotPool.getFreeSlotsInformation().size();
+
+            if (availableSlots > 0) {
+                // check if rescaling would increase the parallelism of at least one vertex
+                final Optional<? extends VertexAssignment> potentialNewParallelism =
+                        slotAllocator.determineParallelism(
+                                jobInformation, declarativeSlotPool.getAllSlotsInformation());
+
+                if (potentialNewParallelism.isPresent()
+                        && isParallelismHigher(potentialNewParallelism.get())) {
+                    // todo log cumulative increase in parallelism.
+                    LOG.info(
+                            "{} additional slots available. Restarting job to scale up.",
+                            availableSlots);
+                    transitionToState(new Restarting(executionGraph, 0L));
+                }
+            }
+        }
+
+        private boolean isParallelismHigher(VertexAssignment vertexAssignment) {
+            Map<JobVertexID, Integer> perVertex = vertexAssignment.getMaxParallelismForVertices();
+
+            return StreamSupport.stream(
+                            executionGraph.getAllExecutionVertices().spliterator(), false)
+                    .anyMatch(
+                            vertex ->
+                                    perVertex.get(vertex.getJobvertexId())
+                                            > vertex.getJobVertex().getParallelism());
         }
     }
 
@@ -994,7 +1036,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
             if (jobStatusListener != null) {
                 jobStatusListener.jobStatusChanges(
-                        jobGraph.getJobID(),
+                        jobInformation.getJobID(),
                         archivedExecutionGraph.getState(),
                         archivedExecutionGraph.getStatusTimestamp(
                                 archivedExecutionGraph.getState()),
@@ -1179,14 +1221,14 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                     executionGraph.getCheckpointCoordinator();
             if (checkpointCoordinator == null) {
                 throw new IllegalStateException(
-                        String.format("Job %s is not a streaming job.", jobGraph.getJobID()));
+                        String.format("Job %s is not a streaming job.", jobInformation.getJobID()));
             } else if (targetDirectory == null
                     && !checkpointCoordinator
                             .getCheckpointStorage()
                             .hasDefaultSavepointLocation()) {
                 LOG.info(
                         "Trying to cancel job {} with savepoint, but no savepoint directory configured.",
-                        jobGraph.getJobID());
+                        jobInformation.getJobID());
 
                 throw new IllegalStateException(
                         "No savepoint directory configured. You can either specify a directory "
@@ -1199,7 +1241,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
             LOG.info(
                     "Triggering {}savepoint for job {}.",
                     cancelJob ? "cancel-with-" : "",
-                    jobGraph.getJobID());
+                    jobInformation.getJobID());
 
             if (cancelJob) {
                 checkpointCoordinator.stopCheckpointScheduler();
@@ -1219,7 +1261,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                                     LOG.info(
                                             "Savepoint stored in {}. Now cancelling {}.",
                                             path,
-                                            jobGraph.getJobID());
+                                            jobInformation.getJobID());
                                     cancel();
                                 }
                                 return path;
@@ -1236,7 +1278,8 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                 return FutureUtils.completedExceptionally(
                         new IllegalStateException(
                                 String.format(
-                                        "Job %s is not a streaming job.", jobGraph.getJobID())));
+                                        "Job %s is not a streaming job.",
+                                        jobInformation.getJobID())));
             }
 
             if (targetDirectory == null
@@ -1245,7 +1288,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                             .hasDefaultSavepointLocation()) {
                 LOG.info(
                         "Trying to cancel job {} with savepoint, but no savepoint directory configured.",
-                        jobGraph.getJobID());
+                        jobInformation.getJobID());
 
                 return FutureUtils.completedExceptionally(
                         new IllegalStateException(
@@ -1256,7 +1299,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                                         + "'."));
             }
 
-            LOG.info("Triggering stop-with-savepoint for job {}.", jobGraph.getJobID());
+            LOG.info("Triggering stop-with-savepoint for job {}.", jobInformation.getJobID());
 
             // we stop the checkpoint coordinator so that we are guaranteed
             // to have only the data of the synchronous savepoint committed.
@@ -1277,13 +1320,13 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                                         if (throwable != null) {
                                             LOG.info(
                                                     "Failed during stopping job {} with a savepoint. Reason: {}",
-                                                    jobGraph.getJobID(),
+                                                    jobInformation.getJobID(),
                                                     throwable.getMessage());
                                             throw new CompletionException(throwable);
                                         } else if (jobstatus != JobStatus.FINISHED) {
                                             LOG.info(
                                                     "Failed during stopping job {} with a savepoint. Reason: Reached state {} instead of FINISHED.",
-                                                    jobGraph.getJobID(),
+                                                    jobInformation.getJobID(),
                                                     jobstatus);
                                             throw new CompletionException(
                                                     new FlinkException(

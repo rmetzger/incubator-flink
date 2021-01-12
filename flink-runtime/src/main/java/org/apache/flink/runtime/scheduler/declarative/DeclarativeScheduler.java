@@ -107,6 +107,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.flink.runtime.scheduler.declarative.JobGraphJobInformation.jobGraphVerticesToVertexInformation;
+
 /**
  * Declarative {@link SchedulerNG} implementation which first declares the required resources and
  * then decides on the parallelism with which to execute the given {@link JobGraph}.
@@ -531,7 +533,9 @@ public class DeclarativeScheduler implements SchedulerNG {
     }
 
     private void declareResources() {
-        desiredResources = slotAllocator.calculateRequiredSlots(jobGraph.getVertices());
+        desiredResources =
+                slotAllocator.calculateRequiredSlots(
+                        jobGraphVerticesToVertexInformation(jobGraph.getVertices()));
         declarativeSlotPool.increaseResourceRequirementsBy(desiredResources);
     }
 
