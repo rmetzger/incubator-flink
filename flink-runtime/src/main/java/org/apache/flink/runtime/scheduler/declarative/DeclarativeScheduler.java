@@ -113,6 +113,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static org.apache.flink.runtime.scheduler.declarative.JobGraphJobInformation.jobGraphVerticesToVertexInformation;
+
 /** Declarative scheduler. */
 public class DeclarativeScheduler
         implements SchedulerNG,
