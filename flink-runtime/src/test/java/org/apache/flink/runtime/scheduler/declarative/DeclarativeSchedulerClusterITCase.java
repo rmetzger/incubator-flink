@@ -40,6 +40,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -110,10 +111,13 @@ public class DeclarativeSchedulerClusterITCase extends TestLogger {
         miniCluster.startTaskManager();
 
         log.info("Waiting until Invokable is running with higher parallelism");
-        while (OnceBlockingNoOpInvokable.getInstanceCount()
-                < NUMBER_SLOTS_PER_TASK_MANAGER * (NUMBER_TASK_MANAGERS + 1)) {
+        int targetInstanceCount = NUMBER_SLOTS_PER_TASK_MANAGER * (NUMBER_TASK_MANAGERS + 1);
+        while (OnceBlockingNoOpInvokable.getInstanceCount() < targetInstanceCount) {
+            log.info("instance count " + OnceBlockingNoOpInvokable.getInstanceCount());
             Thread.sleep(50);
         }
+        log.info("final instance count " + OnceBlockingNoOpInvokable.getInstanceCount());
+        assertEquals(targetInstanceCount, OnceBlockingNoOpInvokable.getInstanceCount());
         miniCluster.cancelJob(jobGraph.getJobID());
     }
 

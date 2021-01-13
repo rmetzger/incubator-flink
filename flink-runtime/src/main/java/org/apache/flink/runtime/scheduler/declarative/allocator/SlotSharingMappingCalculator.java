@@ -38,7 +38,6 @@ class SlotSharingMappingCalculator implements MappingCalculator {
     @Override
     public Optional<SlotSharingAssignments> determineParallelismAndAssignResources(
             JobInformation jobInformation, Collection<SlotInfoWithUtilization> freeSlots) {
-
         // TODO: This can waste slots if the max parallelism for slot sharing groups is not equal
         final int slotsPerSlotSharingGroup =
                 freeSlots.size() / jobInformation.getSlotSharingGroups().size();

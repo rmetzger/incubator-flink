@@ -640,7 +640,11 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         componentMainThreadExecutor.schedule(
                 () -> {
                     if (state == expectedState) {
-                        action.run();
+                        try {
+                            action.run();
+                        } catch (Throwable t) {
+                            LOG.warn("Error in runnable", t);
+                        }
                     } else {
                         LOG.debug(
                                 "Ignoring scheduled action because expected state {} is not the actual state {}.",
@@ -729,7 +733,9 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         @Override
         public void newResourcesAvailable() {
+            LOG.info("newResourcesAvailable");
             if (hasEnoughResources()) {
+                LOG.info("hasEnoughResources: true");
                 transitionToState(createExecutionGraphWithAvailableResources());
             }
         }
@@ -797,6 +803,10 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                             determineParallelismAndAssignResources(slotAllocator);
 
             for (JobVertex vertex : jobGraph.getVertices()) {
+                LOG.info(
+                        "Assigning vertex={}, parallelism={}",
+                        vertex.getID(),
+                        parallelismAndResourceAssignments.getParallelism(vertex.getID()));
                 vertex.setParallelism(
                         parallelismAndResourceAssignments.getParallelism(vertex.getID()));
             }
@@ -822,16 +832,92 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         }
     }
 
+    // todo turn into RescaleManager, with pluggable rescale strategies
+    private final class Rescaler {
+        private final JobGraph jobGraph;
+        private final ComponentMainThreadExecutor componentMainThreadExecutor;
+        private final ExecutionGraph executionGraph;
+        private DeclarativeSlotPool declarativeSlotPool;
+        private final int RUN_DELAY_SECONDS = 4;
+        private boolean running = true;
+
+        public Rescaler(
+                ComponentMainThreadExecutor componentMainThreadExecutor,
+                JobGraph jobGraph,
+                DeclarativeSlotPool declarativeSlotPool,
+                ExecutionGraph executionGraph) {
+            // request a lot of resources
+            // 666 is the magic placeholder for "many"
+            ResourceCounter incr = ResourceCounter.withResource(ResourceProfile.UNKNOWN, 666);
+            declarativeSlotPool.increaseResourceRequirementsBy(incr);
+
+            this.jobGraph = jobGraph;
+            this.declarativeSlotPool = declarativeSlotPool;
+            this.componentMainThreadExecutor = componentMainThreadExecutor;
+            this.executionGraph = executionGraph;
+
+            LOG.info("Starting rescaler");
+            checkRescale();
+        }
+
+        /** Checks if additional slots are available */
+        private void checkRescale() {
+            if (!running) {
+                return;
+            }
+            int currentSlots = 0;
+            for (JobVertex vertex : jobGraph.getVertices()) {
+                currentSlots += vertex.getParallelism();
+            }
+            int availableSlots = declarativeSlotPool.getFreeSlotsInformation().size();
+
+            LOG.info("currentSlots={}, availableSlots={}", currentSlots, availableSlots);
+
+            if (availableSlots > 0) {
+                LOG.info("{} additional slots present. Allocating them", availableSlots);
+                transitionToState(new Restarting(executionGraph, 0L));
+                return; // do not schedule next run
+            }
+
+            // schedule next run
+            componentMainThreadExecutor.schedule(
+                    this::checkRescale, RUN_DELAY_SECONDS, TimeUnit.SECONDS);
+        }
+
+        public void stop() {
+            LOG.info("Stopping rescaler");
+            running = false;
+        }
+    }
+
     private final class Executing extends StateWithExecutionGraph {
+
+        private Optional<Rescaler> rescaler = Optional.empty();
 
         private Executing(ExecutionGraph executionGraph) {
             super(executionGraph);
 
-            runIfState(this, this::deploy);
+            runIfState(
+                    this,
+                    () -> {
+                        deploy();
+                        startRescaler();
+                    });
+        }
+
+        private void startRescaler() {
+            rescaler =
+                    Optional.of(
+                            new Rescaler(
+                                    componentMainThreadExecutor,
+                                    jobGraph,
+                                    declarativeSlotPool,
+                                    executionGraph));
         }
 
         @Override
         public State cancel() {
+            rescaler.ifPresent(Rescaler::stop);
             return new Canceling(executionGraph);
         }
 
@@ -857,6 +943,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         }
 
         private State handleAnyFailure(Throwable cause) {
+            rescaler.ifPresent(Rescaler::stop);
             if (ExecutionFailureHandler.isUnrecoverableError(cause)) {
                 Throwable finalCause = new JobException("The failure is not recoverable", cause);
                 executionGraph.failJob(finalCause);
@@ -879,6 +966,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         @Override
         void onTerminalState(JobStatus jobStatus) {
+            rescaler.ifPresent(Rescaler::stop);
             transitionToState(new Finished(ArchivedExecutionGraph.createFrom(executionGraph)));
         }
 
