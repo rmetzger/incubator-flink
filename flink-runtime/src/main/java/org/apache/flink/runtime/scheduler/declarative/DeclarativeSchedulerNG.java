@@ -833,7 +833,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
     }
 
     // todo turn into RescaleManager, with pluggable rescale strategies
-    private final class Rescaler {
+    /* private final class Rescaler {
         private final JobGraph jobGraph;
         private final ComponentMainThreadExecutor componentMainThreadExecutor;
         private final ExecutionGraph executionGraph;
@@ -860,7 +860,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
             checkRescale();
         }
 
-        /** Checks if additional slots are available */
+        // Checks if additional slots are available
         private void checkRescale() {
             if (!running) {
                 return;
@@ -888,11 +888,11 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
             LOG.info("Stopping rescaler");
             running = false;
         }
-    }
+    } */
 
-    private final class Executing extends StateWithExecutionGraph {
+    private final class Executing extends StateWithExecutionGraph implements ResourceConsumer {
 
-        private Optional<Rescaler> rescaler = Optional.empty();
+        // private Optional<Rescaler> rescaler = Optional.empty();
 
         private Executing(ExecutionGraph executionGraph) {
             super(executionGraph);
@@ -901,11 +901,11 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                     this,
                     () -> {
                         deploy();
-                        startRescaler();
+                        //  startRescaler();
                     });
         }
 
-        private void startRescaler() {
+        /* private void startRescaler() {
             rescaler =
                     Optional.of(
                             new Rescaler(
@@ -913,11 +913,11 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                                     jobGraph,
                                     declarativeSlotPool,
                                     executionGraph));
-        }
+        } */
 
         @Override
         public State cancel() {
-            rescaler.ifPresent(Rescaler::stop);
+            //   rescaler.ifPresent(Rescaler::stop);
             return new Canceling(executionGraph);
         }
 
@@ -943,7 +943,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         }
 
         private State handleAnyFailure(Throwable cause) {
-            rescaler.ifPresent(Rescaler::stop);
+            // rescaler.ifPresent(Rescaler::stop);
             if (ExecutionFailureHandler.isUnrecoverableError(cause)) {
                 Throwable finalCause = new JobException("The failure is not recoverable", cause);
                 executionGraph.failJob(finalCause);
@@ -966,7 +966,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         @Override
         void onTerminalState(JobStatus jobStatus) {
-            rescaler.ifPresent(Rescaler::stop);
+            // rescaler.ifPresent(Rescaler::stop);
             transitionToState(new Finished(ArchivedExecutionGraph.createFrom(executionGraph)));
         }
 
@@ -989,6 +989,17 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         private void handleDeploymentFailure(ExecutionVertex executionVertex, JobException e) {
             executionVertex.markFailed(e);
+        }
+
+        @Override
+        public void newResourcesAvailable() {
+            LOG.info("New resources available! Check if we can rescale");
+            int availableSlots = declarativeSlotPool.getFreeSlotsInformation().size();
+
+            if (availableSlots > 0) {
+                LOG.info("{} additional slots present. Allocating them", availableSlots);
+                transitionToState(new Restarting(executionGraph, 0L));
+            }
         }
     }
 

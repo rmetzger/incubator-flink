@@ -100,18 +100,22 @@ public class DeclarativeSchedulerClusterITCase extends TestLogger {
         assumeTrue(ClusterOptions.isDeclarativeResourceManagementEnabled(configuration));
 
         final MiniCluster miniCluster = miniClusterResource.getMiniCluster();
-        final JobGraph jobGraph = createBlockingJobGraph(PARALLELISM);
+        int targetInstanceCount = NUMBER_SLOTS_PER_TASK_MANAGER * (NUMBER_TASK_MANAGERS + 1);
+        final JobGraph jobGraph = createBlockingJobGraph(targetInstanceCount);
 
-        log.info("Submitting job with parallelism of " + PARALLELISM);
+        log.info(
+                "Submitting job with parallelism of "
+                        + targetInstanceCount
+                        + ", to a cluster with only one TM.");
         miniCluster.submitJob(jobGraph).join();
 
         OnceBlockingNoOpInvokable.waitUntilOpsAreRunning();
 
-        log.info("Start additional TaskManager");
+        log.info("Start additional TaskManager to scale up to the full paralleism.");
         miniCluster.startTaskManager();
 
         log.info("Waiting until Invokable is running with higher parallelism");
-        int targetInstanceCount = NUMBER_SLOTS_PER_TASK_MANAGER * (NUMBER_TASK_MANAGERS + 1);
+
         while (OnceBlockingNoOpInvokable.getInstanceCount() < targetInstanceCount) {
             log.info("instance count " + OnceBlockingNoOpInvokable.getInstanceCount());
             Thread.sleep(50);
