@@ -51,7 +51,7 @@ public class TestProcessBuilder {
         CommonTestUtils.printLog4jDebugConfig(tempLogFile);
 
         jvmArgs.add("-Dlog.level=DEBUG");
-        jvmArgs.add("-Dlog4j.configurationFile=file:" + tempLogFile.getAbsolutePath());
+        jvmArgs.add("-Dlog4j.configurationFile=" + tempLogFile.getAbsolutePath());
         jvmArgs.add("-classpath");
         jvmArgs.add(getCurrentClasspath());
 
