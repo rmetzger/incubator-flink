@@ -94,7 +94,8 @@ public class SlotSharingSlotAllocator implements SlotAllocator<SlotSharingAssign
         final Map<JobVertexID, Integer> parallelismPerJobVertex =
                 slotSharingSlotAssignments.getMaxParallelismForVertices();
 
-        return new ParallelismAndResourceAssignments(assignedSlots, parallelismPerJobVertex);
+        return new ParallelismAndResourceAssignments(
+                assignedSlots, parallelismPerJobVertex);
     }
 
     private SharedSlot reserveSharedSlot(SlotInfo slotInfo) {

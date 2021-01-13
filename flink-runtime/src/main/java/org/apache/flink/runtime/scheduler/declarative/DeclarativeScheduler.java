@@ -89,6 +89,7 @@ import org.apache.flink.runtime.scheduler.UpdateSchedulerNgOnInternalFailuresLis
 import org.apache.flink.runtime.scheduler.declarative.allocator.SlotAllocator;
 import org.apache.flink.runtime.scheduler.declarative.allocator.SlotSharingSlotAllocator;
 import org.apache.flink.runtime.scheduler.declarative.allocator.VertexAssignment;
+import org.apache.flink.runtime.scheduler.declarative.allocator.VertexAssignment;
 import org.apache.flink.runtime.shuffle.ShuffleMaster;
 import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.util.ExceptionUtils;
