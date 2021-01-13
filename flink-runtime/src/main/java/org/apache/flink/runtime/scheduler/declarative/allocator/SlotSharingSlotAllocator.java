@@ -65,8 +65,8 @@ public class SlotSharingSlotAllocator implements SlotAllocator<SlotSharingAssign
 
     @Override
     public Optional<SlotSharingAssignments> determineParallelism(
-            JobInformation jobInformation, Collection<SlotInfoWithUtilization> freeSlots) {
-        return mappingCalculator.determineParallelismAndAssignResources(jobInformation, freeSlots);
+            JobInformation jobInformation, Collection<? extends SlotInfo> slots) {
+        return mappingCalculator.determineParallelismAndAssignResources(jobInformation, slots);
     }
 
     @Override

@@ -99,6 +99,7 @@ import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
+import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.function.FunctionWithException;
 import org.apache.flink.util.function.ThrowingConsumer;
@@ -114,6 +115,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -121,12 +123,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 /** Declarative scheduler ng. */
 public class DeclarativeSchedulerNG implements SchedulerNG {
 
     private static final Logger LOG = LoggerFactory.getLogger(DeclarativeSchedulerNG.class);
 
+    // note: do not mutate this jobGraph!
     private final JobGraph jobGraph;
 
     private final DeclarativeSlotPool declarativeSlotPool;
@@ -258,7 +262,8 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         return slotAllocator.calculateRequiredSlots(jobGraph.getVertices());
     }
 
-    private ExecutionGraph createExecutionGraphAndRestoreState() throws Exception {
+    private ExecutionGraph createExecutionGraphAndRestoreState(JobGraph adjustedJobGraph)
+            throws Exception {
         ExecutionDeploymentListener executionDeploymentListener =
                 new ExecutionDeploymentTrackerDeploymentListenerAdapter(executionDeploymentTracker);
         ExecutionStateUpdateListener executionStateUpdateListener =
@@ -270,7 +275,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         final ExecutionGraph newExecutionGraph =
                 ExecutionGraphBuilder.buildGraph(
-                        jobGraph,
+                        adjustedJobGraph,
                         configuration,
                         futureExecutor,
                         ioExecutor,
@@ -300,7 +305,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
                 // check whether we can restore from a savepoint
                 tryRestoreExecutionGraphFromSavepoint(
-                        newExecutionGraph, jobGraph.getSavepointRestoreSettings());
+                        newExecutionGraph, adjustedJobGraph.getSavepointRestoreSettings());
             }
         }
 
@@ -801,8 +806,8 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
             final DeclarativeScheduler.ParallelismAndResourceAssignments
                     parallelismAndResourceAssignments =
                             determineParallelismAndAssignResources(slotAllocator);
-
-            for (JobVertex vertex : jobGraph.getVertices()) {
+            JobGraph adjustedJobGraph = InstantiationUtil.clone(jobGraph);
+            for (JobVertex vertex : adjustedJobGraph.getVertices()) {
                 LOG.info(
                         "Assigning vertex={}, parallelism={}",
                         vertex.getID(),
@@ -811,14 +816,15 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                         parallelismAndResourceAssignments.getParallelism(vertex.getID()));
             }
 
-            final ExecutionGraph executionGraph = createExecutionGraphAndRestoreState();
+            final ExecutionGraph executionGraph =
+                    createExecutionGraphAndRestoreState(adjustedJobGraph);
 
             executionGraph.start(componentMainThreadExecutor);
             executionGraph.transitionToRunning();
 
             executionGraph.setInternalTaskFailuresListener(
                     new UpdateSchedulerNgOnInternalFailuresListener(
-                            DeclarativeSchedulerNG.this, jobGraph.getJobID()));
+                            DeclarativeSchedulerNG.this, adjustedJobGraph.getJobID()));
 
             for (ExecutionVertex executionVertex : executionGraph.getAllExecutionVertices()) {
                 final LogicalSlot assignedSlot =
@@ -971,6 +977,10 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         }
 
         private void deploy() {
+            LOG.info(
+                    "Deploying. All slots: {} / {}",
+                    declarativeSlotPool.getAllSlotsInformation().size(),
+                    declarativeSlotPool.getAllSlotsInformation());
             for (ExecutionJobVertex executionJobVertex :
                     executionGraph.getVerticesTopologically()) {
                 for (ExecutionVertex executionVertex : executionJobVertex.getTaskVertices()) {
@@ -993,13 +1003,45 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
         @Override
         public void newResourcesAvailable() {
-            LOG.info("New resources available! Check if we can rescale");
+            LOG.info("New resources available! Check if we can scale up");
             int availableSlots = declarativeSlotPool.getFreeSlotsInformation().size();
 
             if (availableSlots > 0) {
-                LOG.info("{} additional slots present. Allocating them", availableSlots);
-                transitionToState(new Restarting(executionGraph, 0L));
+                LOG.info(
+                        "{} additional slots present. Checking if rescaling using all slots would increase parallelism",
+                        availableSlots);
+
+                LOG.info("all slots size {}", declarativeSlotPool.getAllSlotsInformation().size());
+
+                // check if rescaling would increase the parallelism of at least one vertex
+                final Optional<? extends VertexAssignment> potentialNewParallelism =
+                        slotAllocator.determineParallelism(
+                                new JobGraphJobInformation(jobGraph),
+                                declarativeSlotPool.getAllSlotsInformation());
+
+                if (potentialNewParallelism.isPresent()
+                        && isParallelismHigher(potentialNewParallelism.get())) {
+                    LOG.info("Restarting");
+                    transitionToState(new Restarting(executionGraph, 0L));
+                }
             }
+        }
+
+        private boolean isParallelismHigher(VertexAssignment vertexAssignment) {
+            Map<JobVertexID, Integer> perVertex = vertexAssignment.getMaxParallelismForVertices();
+
+            return StreamSupport.stream(
+                            executionGraph.getAllExecutionVertices().spliterator(), false)
+                    .anyMatch(
+                            vertex -> {
+                                LOG.info(
+                                        "vertex={}, newPar={}, currPar={}",
+                                        vertex.getID(),
+                                        perVertex.get(vertex.getJobvertexId()),
+                                        vertex.getJobVertex().getParallelism());
+                                return perVertex.get(vertex.getJobvertexId())
+                                        > vertex.getJobVertex().getParallelism();
+                            });
         }
     }
 

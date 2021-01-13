@@ -103,6 +103,9 @@ public class DeclarativeSchedulerClusterITCase extends TestLogger {
         int targetInstanceCount = NUMBER_SLOTS_PER_TASK_MANAGER * (NUMBER_TASK_MANAGERS + 1);
         final JobGraph jobGraph = createBlockingJobGraph(targetInstanceCount);
 
+        // initially only expect 1 TM
+        OnceBlockingNoOpInvokable.resetFor(NUMBER_SLOTS_PER_TASK_MANAGER * NUMBER_TASK_MANAGERS);
+
         log.info(
                 "Submitting job with parallelism of "
                         + targetInstanceCount
@@ -121,7 +124,7 @@ public class DeclarativeSchedulerClusterITCase extends TestLogger {
             Thread.sleep(50);
         }
         log.info("final instance count " + OnceBlockingNoOpInvokable.getInstanceCount());
-        assertEquals(targetInstanceCount, OnceBlockingNoOpInvokable.getInstanceCount());
+        assertEquals(targetInstanceCount + 4, OnceBlockingNoOpInvokable.getInstanceCount());
         miniCluster.cancelJob(jobGraph.getJobID());
     }
 
