@@ -26,8 +26,10 @@ import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.executiongraph.TaskExecutionStateTransition;
+import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.scheduler.ExecutionGraphHandler;
 import org.apache.flink.runtime.scheduler.OperatorCoordinatorHandler;
+import org.apache.flink.runtime.scheduler.declarative.allocator.VertexAssignment;
 import org.apache.flink.util.Preconditions;
 
 import org.slf4j.Logger;
@@ -35,9 +37,12 @@ import org.slf4j.Logger;
 import javax.annotation.Nullable;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 /** State which represents a running job with an {@link ExecutionGraph} and assigned slots. */
-class Executing extends StateWithExecutionGraph {
+class Executing extends StateWithExecutionGraph implements ResourceConsumer {
 
     private final Context context;
 
@@ -129,6 +134,43 @@ class Executing extends StateWithExecutionGraph {
         executionVertex.markFailed(e);
     }
 
+    @Override
+    public void notifyNewResourcesAvailable() {
+        int availableSlots = context.getAvailableSlots();
+
+        if (availableSlots > 0) {
+            // check if rescaling would increase the parallelism of at least one vertex
+
+            final Optional<? extends VertexAssignment> potentialNewParallelism =
+                    context.getVertexAssignmentWithAllSlots();
+
+            if (potentialNewParallelism.isPresent()
+                    && isParallelismHigher(potentialNewParallelism.get())) {
+                // todo log cumulative increase in parallelism.
+                getLogger()
+                        .info(
+                                "{} additional slots available. Restarting job to scale up.",
+                                availableSlots);
+                context.goToRestarting(
+                        getExecutionGraph(),
+                        getExecutionGraphHandler(),
+                        getOperatorCoordinatorHandler(),
+                        Duration.ofMillis(0L));
+            }
+        }
+    }
+
+    private boolean isParallelismHigher(VertexAssignment vertexAssignment) {
+        Map<JobVertexID, Integer> perVertex = vertexAssignment.getMaxParallelismForVertices();
+
+        return StreamSupport.stream(
+                        getExecutionGraph().getAllExecutionVertices().spliterator(), false)
+                .anyMatch(
+                        vertex ->
+                                perVertex.get(vertex.getJobvertexId())
+                                        > vertex.getJobVertex().getParallelism());
+    }
+
     /** Context of the {@link Executing} state. */
     interface Context extends StateWithExecutionGraph.Context {
 
@@ -184,6 +226,10 @@ class Executing extends StateWithExecutionGraph {
                 ExecutionGraphHandler executionGraphHandler,
                 OperatorCoordinatorHandler operatorCoordinatorHandler,
                 Throwable failureCause);
+
+        int getAvailableSlots();
+
+        Optional<? extends VertexAssignment> getVertexAssignmentWithAllSlots();
     }
 
     /**
