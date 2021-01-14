@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.scheduler.declarative;
 
+import org.apache.flink.api.common.scalingpolicy.ScalingPolicy;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
@@ -84,11 +85,21 @@ public class DeclarativeSchedulerFactory implements SchedulerNGFactory {
                 jobGraph.getName(),
                 jobGraph.getJobID());
 
+        ScalingPolicy scalingPolicy =
+                jobGraph.getSerializedExecutionConfig()
+                        .deserializeValue(userCodeLoader)
+                        .getScalingPolicy();
+        if (scalingPolicy == null) {
+            log.info("No user defined scaling policy defined. Using simple fallback strategy");
+            // todo
+        }
+
         switch (jobMasterConfiguration.get(JobManagerOptions.DECLARATIVE_SCHEDULER_TYPE)) {
             case StateMachine:
                 return new DeclarativeSchedulerNG(
                         jobGraph,
                         jobMasterConfiguration,
+                        scalingPolicy,
                         log,
                         declarativeSlotPool,
                         futureExecutor,

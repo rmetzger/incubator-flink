@@ -20,6 +20,8 @@ package org.apache.flink.runtime.scheduler.declarative;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
+import org.apache.flink.api.common.scalingpolicy.ScalingPolicy;
+import org.apache.flink.api.common.scalingpolicy.ScalingPolicyDecisionContext;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
@@ -154,6 +156,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
     private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
     private final RestartBackoffTimeStrategy restartBackoffTimeStrategy;
+    private final ScalingPolicy scalingPolicy;
 
     private ComponentMainThreadExecutor componentMainThreadExecutor =
             new ComponentMainThreadExecutor.DummyComponentMainThreadExecutor("foobar");
@@ -167,6 +170,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
     public DeclarativeSchedulerNG(
             JobGraph jobGraph,
             Configuration configuration,
+            ScalingPolicy scalingPolicy,
             Logger log,
             DeclarativeSlotPool declarativeSlotPool,
             ScheduledExecutorService futureExecutor,
@@ -188,6 +192,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
         this.declarativeSlotPool = declarativeSlotPool;
         this.initializationTimestamp = initializationTimestamp;
         this.configuration = configuration;
+        this.scalingPolicy = scalingPolicy;
         this.futureExecutor = futureExecutor;
         this.ioExecutor = ioExecutor;
         this.userCodeClassLoader = userCodeClassLoader;
@@ -634,6 +639,7 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
                     newState.getClass().getSimpleName());
             state = newState;
         }
+        scalingPolicy.reportNewJobStatus(newState.getJobStatus());
     }
 
     private void runIfState(State expectedState, Runnable action) {
@@ -925,11 +931,15 @@ public class DeclarativeSchedulerNG implements SchedulerNG {
 
                 if (potentialNewParallelism.isPresent()
                         && isParallelismHigher(potentialNewParallelism.get())) {
-                    // todo log cumulative increase in parallelism.
-                    LOG.info(
-                            "{} additional slots available. Restarting job to scale up.",
-                            availableSlots);
-                    transitionToState(new Restarting(executionGraph, 0L));
+                    ScalingPolicyDecisionContext context =
+                            new ScalingPolicyDecisionContextImpl(availableSlots);
+                    if (scalingPolicy.canScaleUp(context)) {
+                        // todo log cumulative increase in parallelism.
+                        LOG.info(
+                                "{} additional slots available. Restarting job to scale up.",
+                                availableSlots);
+                        transitionToState(new Restarting(executionGraph, 0L));
+                    }
                 }
             }
         }

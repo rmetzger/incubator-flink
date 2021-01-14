@@ -22,6 +22,7 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.api.common.scalingpolicy.ScalingPolicy;
 import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
@@ -155,6 +156,8 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
     private InputDependencyConstraint defaultInputDependencyConstraint =
             InputDependencyConstraint.ANY;
 
+    private ScalingPolicy scalingPolicy;
+
     // ------------------------------- User code values --------------------------------------------
 
     private GlobalJobParameters globalJobParameters = new GlobalJobParameters();
@@ -236,7 +239,7 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
      */
     @PublicEvolving
     public ExecutionConfig setAutoWatermarkInterval(long interval) {
-        Preconditions.checkArgument(interval >= 0, "Auto watermark interval must not be negative.");
+        checkArgument(interval >= 0, "Auto watermark interval must not be negative.");
         this.autoWatermarkInterval = interval;
         return this;
     }
@@ -1012,6 +1015,15 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
     @Internal
     public ArchivedExecutionConfig archive() {
         return new ArchivedExecutionConfig(this);
+    }
+
+    @PublicEvolving
+    public void setScalingPolicy(ScalingPolicy scalingPolicy) {
+        this.scalingPolicy = scalingPolicy;
+    }
+
+    public ScalingPolicy getScalingPolicy() {
+        return scalingPolicy;
     }
 
     // ------------------------------ Utilities  ----------------------------------

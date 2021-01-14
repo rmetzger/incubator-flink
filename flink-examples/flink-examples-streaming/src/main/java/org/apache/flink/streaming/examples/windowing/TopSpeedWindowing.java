@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.examples.windowing;
 
 import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.scalingpolicy.ScalingPolicy;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -52,6 +53,8 @@ public class TopSpeedWindowing {
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.getConfig().setGlobalJobParameters(params);
+
+        env.getConfig().setScalingPolicy(new ScalingPolicy.AutoScalingPolicy());
 
         @SuppressWarnings({"rawtypes", "serial"})
         DataStream<Tuple4<Integer, Integer, Double, Long>> carData;
