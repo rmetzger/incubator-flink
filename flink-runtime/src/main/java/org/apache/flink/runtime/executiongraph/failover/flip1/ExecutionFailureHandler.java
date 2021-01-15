@@ -19,6 +19,7 @@ package org.apache.flink.runtime.executiongraph.failover.flip1;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.runtime.JobException;
+import org.apache.flink.runtime.executiongraph.FailureListener;
 import org.apache.flink.runtime.scheduler.strategy.ExecutionVertexID;
 import org.apache.flink.runtime.scheduler.strategy.SchedulingExecutionVertex;
 import org.apache.flink.runtime.scheduler.strategy.SchedulingTopology;
@@ -26,6 +27,7 @@ import org.apache.flink.runtime.throwable.ThrowableClassifier;
 import org.apache.flink.runtime.throwable.ThrowableType;
 import org.apache.flink.util.IterableUtils;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,6 +51,8 @@ public class ExecutionFailureHandler {
     /** Number of all restarts happened since this job is submitted. */
     private long numberOfRestarts;
 
+    private Set<FailureListener> failureListeners;
+
     /**
      * Creates the handler to deal with task failures.
      *
@@ -65,6 +69,7 @@ public class ExecutionFailureHandler {
         this.schedulingTopology = checkNotNull(schedulingTopology);
         this.failoverStrategy = checkNotNull(failoverStrategy);
         this.restartBackoffTimeStrategy = checkNotNull(restartBackoffTimeStrategy);
+        this.failureListeners = new HashSet<>();
     }
 
     /**
@@ -98,10 +103,21 @@ public class ExecutionFailureHandler {
                 true);
     }
 
+    /** @param failureListener the failure listener to be registered */
+    public void registerFailureListener(FailureListener failureListener) {
+        if (!failureListeners.contains(failureListener)) {
+            failureListeners.add(failureListener);
+        }
+    }
+
     private FailureHandlingResult handleFailure(
             final Throwable cause,
             final Set<ExecutionVertexID> verticesToRestart,
             final boolean globalFailure) {
+
+        for (FailureListener listener : failureListeners) {
+            listener.onFailure(cause, globalFailure);
+        }
 
         if (isUnrecoverableError(cause)) {
             return FailureHandlingResult.unrecoverable(
