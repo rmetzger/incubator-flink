@@ -19,6 +19,7 @@
 
 package org.apache.flink.runtime.dispatcher;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -27,6 +28,7 @@ import org.apache.flink.runtime.scheduler.DefaultSchedulerFactory;
 import org.apache.flink.runtime.scheduler.SchedulerNGFactory;
 import org.apache.flink.util.TestLogger;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -40,6 +42,7 @@ public class SchedulerNGFactoryFactoryTest extends TestLogger {
     private final JobGraph testGraph = new JobGraph("test");
 
     @Test
+    @Ignore(FailureClassification.CHECKS_BEHAVIOR_WITH_DEFAULT_CONFIG)
     public void createDefaultSchedulerFactoryByDefault() {
         final SchedulerNGFactory schedulerNGFactory =
                 createSchedulerNGFactory(new Configuration(), testGraph);

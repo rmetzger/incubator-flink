@@ -26,4 +26,6 @@ public class FailureClassification {
             "Relies on checkpoint data being read immediately on JM startup";
     public static final String SUBTASK_ACCESS_BEFORE_SCHEDULED =
             "Relies on subtasks being available right away";
+    public static final String CHECKS_BEHAVIOR_WITH_DEFAULT_CONFIG =
+            "Relies on certain options not being set.";
 }
