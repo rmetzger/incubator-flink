@@ -49,7 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Test for {@link org.apache.flink.runtime.executiongraph.FailureListenerFactory}. */
-public class FailureListenerFactoryTest extends PluginTestBase {
+public class FailureListenerPluginTest extends PluginTestBase {
 
     @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -87,7 +87,8 @@ public class FailureListenerFactoryTest extends PluginTestBase {
         String[] parentPatterns = {FailureListener.class.getName()};
         final PluginManager pluginManager =
                 new DefaultPluginManager(descriptors, PARENT_CLASS_LOADER, parentPatterns);
-        final List<FailureListener> serviceImplList = Lists.newArrayList(pluginManager.load(FailureListener.class));
+        final List<FailureListener> serviceImplList =
+                Lists.newArrayList(pluginManager.load(FailureListener.class));
         Assert.assertEquals(1, serviceImplList.size());
     }
 
@@ -101,10 +102,11 @@ public class FailureListenerFactoryTest extends PluginTestBase {
         CommonTestUtils.setEnv(envVariables);
 
         FailureListenerFactory failureListenerFactory =
-                new FailureListenerFactory(new Configuration());
+                new FailureListenerFactory(
+                        new Configuration(),
+                        UnregisteredMetricGroups.createUnregisteredJobManagerJobMetricGroup());
 
-        List<FailureListener> failureListeners = failureListenerFactory.createFailureListener(
-                UnregisteredMetricGroups.createUnregisteredJobManagerJobMetricGroup());
+        List<FailureListener> failureListeners = failureListenerFactory.createFailureListener();
 
         Assert.assertEquals(2, failureListeners.size());
     }
