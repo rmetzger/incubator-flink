@@ -24,4 +24,6 @@ public class FailureClassification {
             "Relies on KvState operations being available at all times";
     public static final String CHECKPOINT_DATA_READ_ON_STARTUP =
             "Relies on checkpoint data being read immediately on JM startup";
+    public static final String SUBTASK_ACCESS_BEFORE_SCHEDULED =
+            "Relies on subtasks being available right away";
 }
