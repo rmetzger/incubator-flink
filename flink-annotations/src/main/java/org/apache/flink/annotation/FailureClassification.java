@@ -22,4 +22,6 @@ public class FailureClassification {
     public static final String REQUIRES_ATTEMPT_NUMBER = "Relies on attempt numbers";
     public static final String KV_OP_DURING_WAITING_FOR_RESOURCES =
             "Relies on KvState operations being available at all times";
+    public static final String CHECKPOINT_DATA_READ_ON_STARTUP =
+            "Relies on checkpoint data being read immediately on JM startup";
 }

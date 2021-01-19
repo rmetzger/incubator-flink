@@ -767,6 +767,7 @@ public class JobMasterTest extends TestLogger {
      * submission.
      */
     @Test
+    @Ignore(FailureClassification.CHECKPOINT_DATA_READ_ON_STARTUP)
     public void testRestoringFromSavepoint() throws Exception {
 
         // create savepoint data
@@ -808,6 +809,7 @@ public class JobMasterTest extends TestLogger {
      * allowed.
      */
     @Test
+    @Ignore(FailureClassification.CHECKPOINT_DATA_READ_ON_STARTUP)
     public void testRestoringModifiedJobFromSavepoint() throws Exception {
 
         // create savepoint data
@@ -2169,6 +2171,7 @@ public class JobMasterTest extends TestLogger {
     private JobGraph createJobGraphFromJobVerticesWithCheckpointing(
             SavepointRestoreSettings savepointRestoreSettings, JobVertex... jobVertices) {
         final JobGraph jobGraph = new JobGraph(jobVertices);
+        jobGraph.setJobType(JobType.STREAMING);
 
         // enable checkpointing which is required to resume from a savepoint
         final CheckpointCoordinatorConfiguration checkpoinCoordinatorConfiguration =
