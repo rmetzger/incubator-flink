@@ -17,6 +17,7 @@
 
 package org.apache.flink.test.checkpointing;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.accumulators.IntCounter;
 import org.apache.flink.api.common.accumulators.LongCounter;
@@ -58,6 +59,7 @@ import org.apache.flink.util.TestLogger;
 
 import org.apache.flink.shaded.guava18.com.google.common.collect.Iterables;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.TemporaryFolder;
@@ -85,6 +87,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.fail;
 
 /** Base class for tests related to unaligned checkpoints. */
+@Ignore(FailureClassification.REQUIRES_ATTEMPT_NUMBER)
 public abstract class UnalignedCheckpointTestBase extends TestLogger {
     protected static final Logger LOG = LoggerFactory.getLogger(UnalignedCheckpointTestBase.class);
     protected static final String NUM_OUTPUTS = "outputs";

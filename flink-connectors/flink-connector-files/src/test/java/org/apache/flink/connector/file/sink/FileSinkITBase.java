@@ -18,6 +18,7 @@
 
 package org.apache.flink.connector.file.sink;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.connector.file.sink.utils.IntegerFileSinkTestDataUtils;
@@ -30,6 +31,7 @@ import org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.
 import org.apache.flink.util.TestLogger;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runners.Parameterized;
@@ -61,6 +63,7 @@ public abstract class FileSinkITBase extends TestLogger {
     }
 
     @Test
+    @Ignore(FailureClassification.REQUIRES_ATTEMPT_NUMBER)
     public void testFileSink() throws Exception {
         String path = TEMPORARY_FOLDER.newFolder().getAbsolutePath();
 

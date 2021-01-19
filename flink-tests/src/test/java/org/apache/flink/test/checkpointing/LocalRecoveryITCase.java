@@ -18,10 +18,12 @@
 
 package org.apache.flink.test.checkpointing;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.TestLogger;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -45,6 +47,7 @@ import static org.apache.flink.test.checkpointing.EventTimeWindowCheckpointingIT
  * EventTimeWindowCheckpointingITCase}.
  */
 @RunWith(Parameterized.class)
+@Ignore(FailureClassification.REQUIRES_ATTEMPT_NUMBER)
 public class LocalRecoveryITCase extends TestLogger {
 
     private final boolean localRecoveryEnabled = true;

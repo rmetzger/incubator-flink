@@ -18,6 +18,7 @@
 
 package org.apache.flink.test.checkpointing;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -41,6 +42,7 @@ import org.apache.flink.util.Collector;
 import org.apache.flink.util.TestLogger;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -53,6 +55,7 @@ import static org.junit.Assert.fail;
  * <p>This is a version of {@link EventTimeWindowCheckpointingITCase} for All-Windows.
  */
 @SuppressWarnings("serial")
+@Ignore(FailureClassification.REQUIRES_ATTEMPT_NUMBER)
 public class EventTimeAllWindowCheckpointingITCase extends TestLogger {
 
     private static final int PARALLELISM = 4;

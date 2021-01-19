@@ -19,6 +19,7 @@
 
 package org.apache.flink.test.checkpointing;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.api.common.functions.Partitioner;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.state.ListState;
@@ -39,6 +40,7 @@ import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.streaming.api.functions.co.RichCoFlatMapFunction;
 import org.apache.flink.util.Collector;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -95,6 +97,7 @@ import static org.apache.flink.shaded.guava18.com.google.common.collect.Iterable
  * </ul>
  */
 @RunWith(Parameterized.class)
+@Ignore(FailureClassification.REQUIRES_ATTEMPT_NUMBER)
 public class UnalignedCheckpointITCase extends UnalignedCheckpointTestBase {
 
     @Parameterized.Parameters(name = "{0}")

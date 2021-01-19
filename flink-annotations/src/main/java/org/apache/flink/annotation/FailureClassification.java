@@ -19,4 +19,5 @@ package org.apache.flink.annotation;
 
 /** Enum-like for test failure classifications. */
 public class FailureClassification {
+    public static final String REQUIRES_ATTEMPT_NUMBER = "Relies on attempt numbers";
 }

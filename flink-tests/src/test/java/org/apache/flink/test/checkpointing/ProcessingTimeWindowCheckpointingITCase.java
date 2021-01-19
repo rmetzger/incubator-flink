@@ -18,6 +18,7 @@
 
 package org.apache.flink.test.checkpointing;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
@@ -42,6 +43,7 @@ import org.apache.flink.util.Collector;
 import org.apache.flink.util.TestLogger;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Map;
@@ -56,6 +58,7 @@ import static org.junit.Assert.fail;
  * handled correctly.
  */
 @SuppressWarnings("serial")
+@Ignore(FailureClassification.REQUIRES_ATTEMPT_NUMBER)
 public class ProcessingTimeWindowCheckpointingITCase extends TestLogger {
 
     private static final int PARALLELISM = 4;
