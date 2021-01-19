@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.jobmaster;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
@@ -144,6 +145,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -1376,6 +1378,7 @@ public class JobMasterTest extends TestLogger {
     }
 
     @Test
+    @Ignore(FailureClassification.KV_OP_DURING_WAITING_FOR_RESOURCES)
     public void testRequestKvStateOfWrongJob() throws Exception {
         final JobGraph graph = createKvJobGraph();
 
@@ -1421,6 +1424,7 @@ public class JobMasterTest extends TestLogger {
     }
 
     @Test
+    @Ignore(FailureClassification.KV_OP_DURING_WAITING_FOR_RESOURCES)
     public void testRequestKvStateWithIrrelevantRegistration() throws Exception {
         final JobGraph graph = createKvJobGraph();
 
@@ -1459,6 +1463,7 @@ public class JobMasterTest extends TestLogger {
     }
 
     @Test
+    @Ignore(FailureClassification.KV_OP_DURING_WAITING_FOR_RESOURCES)
     public void testRegisterAndUnregisterKvState() throws Exception {
         final JobGraph graph = createKvJobGraph();
         final List<JobVertex> jobVertices = graph.getVerticesSortedTopologicallyFromSources();
@@ -1526,6 +1531,7 @@ public class JobMasterTest extends TestLogger {
     }
 
     @Test
+    @Ignore(FailureClassification.KV_OP_DURING_WAITING_FOR_RESOURCES)
     public void testDuplicatedKvStateRegistrationsFailTask() throws Exception {
         final JobGraph graph = createKvJobGraph();
         final List<JobVertex> jobVertices = graph.getVerticesSortedTopologicallyFromSources();
