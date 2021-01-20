@@ -18,6 +18,7 @@
 
 package org.apache.flink.connector.file.src;
 
+import org.apache.flink.annotation.FailureClassification;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.connector.file.src.reader.TextLineFormat;
@@ -34,6 +35,7 @@ import org.apache.flink.util.TestLogger;
 import org.apache.flink.util.function.FunctionWithException;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -156,6 +158,7 @@ public class FileSourceTextLinesITCase extends TestLogger {
      * record format (text lines) and restarts TaskManager.
      */
     @Test
+    @Ignore(FailureClassification.BROKEN_TERMINAL_STATE_SEMANTICS)
     public void testContinuousTextFileSourceWithTaskManagerFailover() throws Exception {
         testContinuousTextFileSource(FailoverType.TM);
     }

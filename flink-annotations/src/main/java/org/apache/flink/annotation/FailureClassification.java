@@ -28,4 +28,6 @@ public class FailureClassification {
             "Relies on subtasks being available right away";
     public static final String CHECKS_BEHAVIOR_WITH_DEFAULT_CONFIG =
             "Relies on certain options not being set.";
+    public static final String BROKEN_TERMINAL_STATE_SEMANTICS =
+            "Relies on terminal states being, you know, terminal.";
 }
