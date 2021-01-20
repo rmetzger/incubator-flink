@@ -18,6 +18,7 @@
 
 package org.apache.flink.table.planner.runtime.stream.table
 
+import org.apache.flink.annotation.FailureClassification
 import org.apache.flink.api.scala._
 import org.apache.flink.table.api._
 import org.apache.flink.table.api.bridge.scala._
@@ -27,15 +28,13 @@ import org.apache.flink.table.planner.runtime.utils.StreamingTestBase
 import org.apache.flink.table.planner.runtime.utils.TestData.{data1, nullData4, smallTupleData3, tupleData3, tupleData5}
 import org.apache.flink.table.utils.LegacyRowResource
 import org.apache.flink.util.ExceptionUtils
-
 import org.junit.Assert.{assertEquals, assertFalse, assertTrue, fail}
-import org.junit.{Rule, Test}
+import org.junit.{Ignore, Rule, Test}
 
 import java.lang.{Long => JLong}
 import java.math.{BigDecimal => JBigDecimal}
 import java.time.{LocalDateTime, ZoneOffset}
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 
@@ -775,6 +774,7 @@ class TableSinkITCase extends StreamingTestBase {
   }
 
   @Test
+  @Ignore(FailureClassification.ASSUME_NO_DOWNSCALING_TO_OCCUR)
   def testParallelismWithSinkFunction(): Unit = {
     val negativeParallelism = -1
     val validParallelism = 1
@@ -816,6 +816,7 @@ class TableSinkITCase extends StreamingTestBase {
   }
 
   @Test
+  @Ignore(FailureClassification.ASSUME_NO_DOWNSCALING_TO_OCCUR)
   def testParallelismWithOutputFormat(): Unit = {
     val negativeParallelism = -1
     val oversizedParallelism = Int.MaxValue

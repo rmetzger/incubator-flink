@@ -30,4 +30,6 @@ public class FailureClassification {
             "Relies on certain options not being set.";
     public static final String BROKEN_TERMINAL_STATE_SEMANTICS =
             "Relies on terminal states being, you know, terminal.";
+    public static final String ASSUME_NO_DOWNSCALING_TO_OCCUR =
+            "Relies on jobs to categorically fail if the parallelism exceeds the number of slots.";
 }
