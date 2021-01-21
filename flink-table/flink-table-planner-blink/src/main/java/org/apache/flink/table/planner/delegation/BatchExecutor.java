@@ -49,6 +49,7 @@ public class BatchExecutor extends ExecutorBase {
         StreamExecutionEnvironment execEnv = getExecutionEnvironment();
         ExecutorUtils.setBatchProperties(execEnv);
         StreamGraph streamGraph = ExecutorUtils.generateStreamGraph(execEnv, transformations);
+        streamGraph.setShouldExecuteInBatchMode(true);
         streamGraph.setJobName(getNonEmptyJobName(jobName));
         ExecutorUtils.setBatchProperties(streamGraph, tableConfig);
         return streamGraph;
