@@ -21,11 +21,11 @@ package org.apache.flink.runtime.scheduler;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.core.failurelistener.FailureListener;
 import org.apache.flink.runtime.blob.BlobWriter;
 import org.apache.flink.runtime.checkpoint.CheckpointRecoveryFactory;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.runtime.concurrent.ScheduledExecutorServiceAdapter;
-import org.apache.flink.runtime.executiongraph.FailureListenerFactory;
 import org.apache.flink.runtime.executiongraph.JobStatusListener;
 import org.apache.flink.runtime.executiongraph.failover.flip1.FailoverStrategyFactoryLoader;
 import org.apache.flink.runtime.executiongraph.failover.flip1.RestartBackoffTimeStrategy;
@@ -39,6 +39,7 @@ import org.apache.flink.runtime.shuffle.ShuffleMaster;
 
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -67,7 +68,7 @@ public class DefaultSchedulerFactory implements SchedulerNGFactory {
             long initializationTimestamp,
             final ComponentMainThreadExecutor mainThreadExecutor,
             final JobStatusListener jobStatusListener,
-            final FailureListenerFactory failureListenerFactory)
+            final List<FailureListener> failureListeners)
             throws Exception {
 
         final DefaultSchedulerComponents schedulerComponents =
@@ -116,6 +117,6 @@ public class DefaultSchedulerFactory implements SchedulerNGFactory {
                 initializationTimestamp,
                 mainThreadExecutor,
                 jobStatusListener,
-                failureListenerFactory);
+                failureListeners);
     }
 }

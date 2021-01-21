@@ -21,6 +21,7 @@ package org.apache.flink.runtime.scheduler;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.core.failurelistener.FailureListener;
 import org.apache.flink.runtime.blob.BlobWriter;
 import org.apache.flink.runtime.blob.VoidBlobWriter;
 import org.apache.flink.runtime.checkpoint.CheckpointCoordinator;
@@ -37,7 +38,6 @@ import org.apache.flink.runtime.concurrent.ScheduledExecutorServiceAdapter;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
-import org.apache.flink.runtime.executiongraph.FailureListenerFactory;
 import org.apache.flink.runtime.executiongraph.JobStatusListener;
 import org.apache.flink.runtime.executiongraph.failover.flip1.FailoverStrategy;
 import org.apache.flink.runtime.executiongraph.failover.flip1.NoRestartBackoffTimeStrategy;
@@ -414,8 +414,7 @@ public class SchedulerTestingUtils {
                 new TestExecutionSlotAllocatorFactory();
         private JobStatusListener jobStatusListener =
                 (ignoredA, ignoredB, ignoredC, ignoredD) -> {};
-        private FailureListenerFactory failureListenerFactory =
-                new FailureListenerFactory(jobMasterConfiguration, jobManagerJobMetricGroup);
+        private List<FailureListener> failureListeners = new ArrayList<>();
 
         public DefaultSchedulerBuilder(
                 final JobGraph jobGraph, ComponentMainThreadExecutor mainThreadExecutor) {
@@ -530,8 +529,8 @@ public class SchedulerTestingUtils {
         }
 
         public DefaultSchedulerBuilder setFailureListenerFactory(
-                FailureListenerFactory failureListenerFactory) {
-            this.failureListenerFactory = failureListenerFactory;
+                List<FailureListener> failureListeners) {
+            this.failureListeners = failureListeners;
             return this;
         }
 
@@ -561,7 +560,7 @@ public class SchedulerTestingUtils {
                     System.currentTimeMillis(),
                     mainThreadExecutor,
                     jobStatusListener,
-                    failureListenerFactory);
+                    failureListeners);
         }
     }
 }
