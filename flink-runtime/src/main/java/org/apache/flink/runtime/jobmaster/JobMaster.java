@@ -347,7 +347,7 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
             throws Exception {
 
         List<FailureListener> failureListeners =
-                FailureListenerUtils.createFailureListener(configuration, jobManagerJobMetricGroup);
+                FailureListenerUtils.getFailureListerners(configuration, jobManagerJobMetricGroup);
 
         final SchedulerNG scheduler =
                 schedulerNGFactory.createInstance(
