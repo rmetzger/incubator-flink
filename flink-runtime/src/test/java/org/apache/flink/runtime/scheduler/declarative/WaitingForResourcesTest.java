@@ -72,7 +72,7 @@ public class WaitingForResourcesTest extends TestLogger {
         wfr.onEnter();
         assertThat(
                 ctx.getStateTransitions(),
-                contains(Tuple2.of(MockContext.States.FINISHED, JobStatus.FAILED)));
+                contains(Tuple2.of(ContextTestingBase.States.FINISHED, JobStatus.FAILED)));
     }
 
     @Test
@@ -90,7 +90,7 @@ public class WaitingForResourcesTest extends TestLogger {
         wfr.notifyNewResourcesAvailable();
         assertThat(
                 ctx.getStateTransitions(),
-                contains(Tuple2.of(MockContext.States.EXECUTING, JobStatus.RUNNING)));
+                contains(Tuple2.of(ContextTestingBase.States.EXECUTING, JobStatus.RUNNING)));
     }
 
     @Test
@@ -108,7 +108,7 @@ public class WaitingForResourcesTest extends TestLogger {
 
         assertThat(
                 ctx.getStateTransitions(),
-                contains(Tuple2.of(MockContext.States.EXECUTING, JobStatus.RUNNING)));
+                contains(Tuple2.of(ContextTestingBase.States.EXECUTING, JobStatus.RUNNING)));
     }
 
     @Test
@@ -121,7 +121,7 @@ public class WaitingForResourcesTest extends TestLogger {
         wfr.handleGlobalFailure(new RuntimeException("mock failure"));
         assertThat(
                 ctx.getStateTransitions(),
-                contains(Tuple2.of(MockContext.States.FINISHED, JobStatus.INITIALIZING)));
+                contains(Tuple2.of(ContextTestingBase.States.FINISHED, JobStatus.INITIALIZING)));
     }
 
     @Test
@@ -134,7 +134,7 @@ public class WaitingForResourcesTest extends TestLogger {
         wfr.cancel();
         assertThat(
                 ctx.getStateTransitions(),
-                contains(Tuple2.of(MockContext.States.FINISHED, JobStatus.CANCELED)));
+                contains(Tuple2.of(ContextTestingBase.States.FINISHED, JobStatus.CANCELED)));
     }
 
     @Test
@@ -147,17 +147,12 @@ public class WaitingForResourcesTest extends TestLogger {
         wfr.suspend(new Exception("test"));
         assertThat(
                 ctx.getStateTransitions(),
-                contains(Tuple2.of(MockContext.States.FINISHED, JobStatus.SUSPENDED)));
+                contains(Tuple2.of(ContextTestingBase.States.FINISHED, JobStatus.SUSPENDED)));
     }
 
-    private static class MockContext implements WaitingForResources.Context {
+    private static class MockContext extends ContextTestingBase
+            implements WaitingForResources.Context {
 
-        private enum States {
-            EXECUTING,
-            FINISHED
-        }
-
-        private final List<Tuple2<States, JobStatus>> stateTransitions = new ArrayList<>();
         private Supplier<Boolean> hasEnoughResourcesSupplier = () -> false;
         private Supplier<ExecutionGraph> createExecutionGraphWithAvailableResources = () -> null;
         private final List<Tuple3<State, Runnable, Duration>> actions = new ArrayList<>();
@@ -194,10 +189,6 @@ public class WaitingForResourcesTest extends TestLogger {
         }
 
         // ---- Testing extensions ------
-
-        public List<Tuple2<States, JobStatus>> getStateTransitions() {
-            return stateTransitions;
-        }
 
         public List<Tuple3<State, Runnable, Duration>> getActions() {
             return actions;
