@@ -126,7 +126,7 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
             long initializationTimestamp,
             final ComponentMainThreadExecutor mainThreadExecutor,
             final JobStatusListener jobStatusListener,
-            final List<FailureListener> failureListeners)
+            final Set<FailureListener> failureListeners)
             throws Exception {
 
         super(

@@ -23,7 +23,6 @@ import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.core.failurelistener.FailureListener;
 import org.apache.flink.queryablestate.KvStateID;
@@ -104,7 +103,6 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -322,12 +320,20 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
 
         this.jobManagerJobMetricGroup = jobMetricGroupFactory.create(jobGraph);
         this.jobStatusListener = new JobManagerJobStatusListener();
+
+        Set<FailureListener> failureListeners =
+                FailureListenerUtils.getFailureListeners(
+                        jobMasterConfiguration.getConfiguration(),
+                        jid,
+                        jobName,
+                        jobManagerJobMetricGroup);
+
         this.schedulerNG =
                 createScheduler(
-                        jobMasterConfiguration.getConfiguration(),
                         executionDeploymentTracker,
                         jobManagerJobMetricGroup,
-                        jobStatusListener);
+                        jobStatusListener,
+                        failureListeners);
 
         this.heartbeatServices = checkNotNull(heartbeatServices);
         this.taskManagerHeartbeatManager = NoOpHeartbeatManager.getInstance();
@@ -340,14 +346,11 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
     }
 
     private SchedulerNG createScheduler(
-            Configuration configuration,
             ExecutionDeploymentTracker executionDeploymentTracker,
             JobManagerJobMetricGroup jobManagerJobMetricGroup,
-            JobStatusListener jobStatusListener)
+            JobStatusListener jobStatusListener,
+            Set<FailureListener> failureListeners)
             throws Exception {
-
-        List<FailureListener> failureListeners =
-                FailureListenerUtils.getFailureListerners(configuration, jobManagerJobMetricGroup);
 
         final SchedulerNG scheduler =
                 schedulerNGFactory.createInstance(
