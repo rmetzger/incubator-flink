@@ -78,14 +78,14 @@ public class ExecutingTest extends TestLogger {
     public void testTransitionToFailing() throws Exception {
         final String failureMsg = "test exception";
         try (MockExecutingContext ctx = new MockExecutingContext()) {
+            Executing exec = getExecutingState(ctx);
+            exec.onEnter();
             ctx.setExpectFailing(
                     (failingArguments -> {
                         assertThat(failingArguments.getExecutionGraph(), notNullValue());
                         assertThat(failingArguments.getFailureCause().getMessage(), is(failureMsg));
                     }));
             ctx.setHowToHandleFailure(Executing.FailureResult::canNotRestart);
-            Executing exec = getExecutingState(ctx);
-            exec.onEnter();
             exec.handleGlobalFailure(new RuntimeException(failureMsg));
         }
     }
@@ -94,12 +94,12 @@ public class ExecutingTest extends TestLogger {
     public void testTransitionToRestarting() throws Exception {
         final Duration duration = Duration.ZERO;
         try (MockExecutingContext ctx = new MockExecutingContext()) {
+            Executing exec = getExecutingState(ctx);
+            exec.onEnter();
             ctx.setExpectRestarting(
                     (restartingArguments ->
                             assertThat(restartingArguments.getBackoffTime(), is(duration))));
             ctx.setHowToHandleFailure((t) -> Executing.FailureResult.canRestart(duration));
-            Executing exec = getExecutingState(ctx);
-            exec.onEnter();
             exec.handleGlobalFailure(new RuntimeException("Recoverable error"));
         }
     }
@@ -107,9 +107,9 @@ public class ExecutingTest extends TestLogger {
     @Test
     public void testTransitionToCancelling() throws Exception {
         try (MockExecutingContext ctx = new MockExecutingContext()) {
-            ctx.setExpectCancelling(assertNonNull());
             Executing exec = getExecutingState(ctx);
             exec.onEnter();
+            ctx.setExpectCancelling(assertNonNull());
             exec.cancel();
         }
     }
@@ -119,13 +119,14 @@ public class ExecutingTest extends TestLogger {
         ManuallyTriggeredScheduledExecutorService executor =
                 new ManuallyTriggeredScheduledExecutorService();
         try (MockExecutingContext ctx = new MockExecutingContext()) {
+            ctx.setGetMainThreadExecutor(() -> executor);
+            Executing exec = getExecutingState(ctx);
+            exec.onEnter();
             ctx.setExpectFinished(
                     archivedExecutionGraph ->
                             assertThat(archivedExecutionGraph.getState(), is(JobStatus.FAILED)));
-            ctx.setGetMainThreadExecutor(() -> executor);
-            Executing exec = getExecutingState(ctx);
+
             ctx.setExpectedStateChecker((state) -> state == exec);
-            exec.onEnter();
             // transition EG into terminal state, which will notify the Executing state about the
             // failure (async via the supplied executor)
             exec.getExecutionGraph().failJob(new RuntimeException("test failure"));
@@ -139,11 +140,11 @@ public class ExecutingTest extends TestLogger {
     @Test
     public void testTransitionToFinishedOnSuspend() throws Exception {
         try (MockExecutingContext ctx = new MockExecutingContext()) {
+            Executing exec = getExecutingState(ctx);
             ctx.setExpectFinished(
                     archivedExecutionGraph -> {
                         assertThat(archivedExecutionGraph.getState(), is(JobStatus.SUSPENDED));
                     });
-            Executing exec = getExecutingState(ctx);
             exec.onEnter();
             exec.suspend(new RuntimeException("suspend"));
         }
@@ -152,14 +153,15 @@ public class ExecutingTest extends TestLogger {
     @Test
     public void testScaleUp() throws Exception {
         try (MockExecutingContext ctx = new MockExecutingContext()) {
+            Executing exec = getExecutingState(ctx);
+            exec.onEnter();
+
             ctx.setExpectRestarting(
                     restartingArguments -> {
                         // expect immediate restart on scale up
                         assertThat(restartingArguments.getBackoffTime(), is(Duration.ZERO));
                     });
             ctx.setCanScaleUp(() -> true);
-            Executing exec = getExecutingState(ctx);
-            exec.onEnter();
             exec.notifyNewResourcesAvailable();
         }
     }
@@ -167,8 +169,8 @@ public class ExecutingTest extends TestLogger {
     @Test
     public void testNoScaleUp() throws Exception {
         try (MockExecutingContext ctx = new MockExecutingContext()) {
-            ctx.setCanScaleUp(() -> false);
             Executing exec = getExecutingState(ctx);
+            ctx.setCanScaleUp(() -> false);
             exec.onEnter();
             exec.notifyNewResourcesAvailable();
         }
@@ -201,14 +203,13 @@ public class ExecutingTest extends TestLogger {
     @Test
     public void testFailureReportedViaUpdateTaskExecutionState() throws Exception {
         try (MockExecutingContext ctx = new MockExecutingContext()) {
+            ExecutionGraph returnsFailedStateExecutionGraph =
+                    new ReturnsTrueOnUpdateExecutionGraph();
+            Executing exec = getExecutingState(ctx, returnsFailedStateExecutionGraph, null);
+            exec.onEnter();
             ctx.setCanScaleUp(() -> false);
             ctx.setHowToHandleFailure(Executing.FailureResult::canNotRestart);
             ctx.setExpectFailing(assertNonNull());
-
-            ExecutionGraph returnsFailedStateExecutionGraph =
-                    new ReturnsFailedStateExecutionGraph();
-            Executing exec = getExecutingState(ctx, returnsFailedStateExecutionGraph, null);
-            exec.onEnter(); // deploy
 
             TaskExecutionStateTransition stateTransition =
                     new TaskExecutionStateTransition(
@@ -251,9 +252,9 @@ public class ExecutingTest extends TestLogger {
         if (jobGraph != null) {
             executionGraph.attachJobGraph(jobGraph.getVerticesSortedTopologicallyFromSources());
         }
-        ExecutionGraphHandler executionGraphHandler =
-                new ExecutionGraphHandler(executionGraph, log, ForkJoinPool.commonPool());
-        OperatorCoordinatorHandler operatorCoordinatorHandler =
+        final ExecutionGraphHandler executionGraphHandler =
+                new ExecutionGraphHandler(executionGraph, log, ctx.getMainThreadExecutor());
+        final OperatorCoordinatorHandler operatorCoordinatorHandler =
                 new OperatorCoordinatorHandler(
                         executionGraph,
                         (throwable) -> {
@@ -268,7 +269,7 @@ public class ExecutingTest extends TestLogger {
                 ClassLoader.getSystemClassLoader());
     }
 
-    private class MockExecutingContext implements Executing.Context, AutoCloseable {
+    private static class MockExecutingContext implements Executing.Context, AutoCloseable {
 
         private final StateValidator<FailingArguments> failingStateValidator =
                 new StateValidator<>("failing");
@@ -276,12 +277,12 @@ public class ExecutingTest extends TestLogger {
                 new StateValidator<>("restarting");
         private final StateValidator<CancellingArguments> cancellingStateValidator =
                 new StateValidator<>("cancelling");
-        private StateValidator<ArchivedExecutionGraph> finishedStateValidator =
+        private final StateValidator<ArchivedExecutionGraph> finishedStateValidator =
                 new StateValidator<>("finished");
 
         private Function<Throwable, Executing.FailureResult> howToHandleFailure;
         private Supplier<Boolean> canScaleUp;
-        private Supplier<Executor> getMainThreadExecutor = () -> ForkJoinPool.commonPool();
+        private Supplier<Executor> getMainThreadExecutor = ForkJoinPool::commonPool;
         private Function<State, Boolean> expectedStateChecker;
 
         public void setExpectFailing(Consumer<FailingArguments> asserter) {
@@ -458,8 +459,8 @@ public class ExecutingTest extends TestLogger {
         }
     }
 
-    private class ReturnsFailedStateExecutionGraph extends ExecutionGraph {
-        public ReturnsFailedStateExecutionGraph() throws IOException {
+    private static class ReturnsTrueOnUpdateExecutionGraph extends ExecutionGraph {
+        ReturnsTrueOnUpdateExecutionGraph() throws IOException {
             super(
                     new JobInformation(
                             new JobID(),
