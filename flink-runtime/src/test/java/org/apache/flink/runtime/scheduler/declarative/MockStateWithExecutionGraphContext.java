@@ -18,13 +18,13 @@
 
 package org.apache.flink.runtime.scheduler.declarative;
 
+import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 class MockStateWithExecutionGraphContext implements StateWithExecutionGraph.Context, AutoCloseable {
 
@@ -36,11 +36,8 @@ class MockStateWithExecutionGraphContext implements StateWithExecutionGraph.Cont
                 throw new UnsupportedOperationException("Remember to set me");
             };
 
-    private Supplier<Executor> getMainThreadExecutor = ForkJoinPool::commonPool;
-
-    public void setGetMainThreadExecutor(Supplier<Executor> supplier) {
-        this.getMainThreadExecutor = supplier;
-    }
+    private final ManuallyTriggeredScheduledExecutorService executor =
+            new ManuallyTriggeredScheduledExecutorService();
 
     public void setExpectedStateChecker(Function<State, Boolean> function) {
         this.expectedStateChecker = function;
@@ -69,11 +66,15 @@ class MockStateWithExecutionGraphContext implements StateWithExecutionGraph.Cont
 
     @Override
     public Executor getMainThreadExecutor() {
-        return getMainThreadExecutor.get();
+        return executor;
     }
 
     @Override
     public void close() throws Exception {
+        // trigger executor to make sure there are no outstanding state transitions
+        executor.triggerAll();
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.MINUTES);
         finishedStateValidator.close();
     }
 }

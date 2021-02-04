@@ -26,7 +26,6 @@ import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.blob.VoidBlobWriter;
 import org.apache.flink.runtime.client.JobExecutionException;
-import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
@@ -59,7 +58,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -114,10 +112,7 @@ public class ExecutingTest extends TestLogger {
 
     @Test
     public void testTransitionToFinishedOnTerminalState() throws Exception {
-        ManuallyTriggeredScheduledExecutorService executor =
-                new ManuallyTriggeredScheduledExecutorService();
         try (MockExecutingContext ctx = new MockExecutingContext()) {
-            ctx.setGetMainThreadExecutor(() -> executor);
             Executing exec = getExecutingState(ctx);
             exec.onEnter();
             ctx.setExpectFinished(
@@ -128,10 +123,6 @@ public class ExecutingTest extends TestLogger {
             // transition EG into terminal state, which will notify the Executing state about the
             // failure (async via the supplied executor)
             exec.getExecutionGraph().failJob(new RuntimeException("test failure"));
-            executor.triggerAll();
-        } finally {
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
         }
     }
 
@@ -139,6 +130,8 @@ public class ExecutingTest extends TestLogger {
     public void testTransitionToFinishedOnSuspend() throws Exception {
         try (MockExecutingContext ctx = new MockExecutingContext()) {
             Executing exec = getExecutingState(ctx);
+            ctx.setExpectedStateChecker((state) -> state == exec);
+
             ctx.setExpectFinished(
                     archivedExecutionGraph -> {
                         assertThat(archivedExecutionGraph.getState(), is(JobStatus.SUSPENDED));
@@ -352,6 +345,7 @@ public class ExecutingTest extends TestLogger {
 
         @Override
         public void close() throws Exception {
+            super.close();
             failingStateValidator.close();
             restartingStateValidator.close();
             cancellingStateValidator.close();

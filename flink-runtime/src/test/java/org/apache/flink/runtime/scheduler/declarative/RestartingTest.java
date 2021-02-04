@@ -18,9 +18,9 @@
 
 package org.apache.flink.runtime.scheduler.declarative;
 
+import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.client.JobExecutionException;
-import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.TestingExecutionGraphBuilder;
 import org.apache.flink.runtime.scheduler.ExecutionGraphHandler;
@@ -30,33 +30,22 @@ import org.apache.flink.util.TestLogger;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.apache.flink.runtime.scheduler.declarative.WaitingForResourcesTest.assertNonNull;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /** Tests for the {@link Restarting} state of the declarative scheduler. */
 public class RestartingTest extends TestLogger {
 
     @Test
     public void testOnEnter() throws Exception {
-        ManuallyTriggeredScheduledExecutorService executor =
-                new ManuallyTriggeredScheduledExecutorService();
         try (MockRestartingContext ctx = new MockRestartingContext()) {
-            ctx.setGetMainThreadExecutor(
-                    () ->
-                            executor); // the executor needs to be set before initializing the
-                                       // state, otherwise, the termination future of the execution
-                                       // graph will execute on the wrong executor
             Restarting restarting = getRestartingState(ctx);
-            // ctx.setExpectedStateChecker((state) -> state == restarting);
-            ctx.setExpectedStateChecker((state) -> true);
+            ctx.setExpectedStateChecker((state) -> state == restarting);
             ctx.setExpectWaitingForResources();
             restarting.onEnter();
-            executor.triggerAll();
-        } finally {
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
         }
     }
 
@@ -66,6 +55,27 @@ public class RestartingTest extends TestLogger {
             Restarting restarting = getRestartingState(ctx);
             ctx.setExpectCancelling(assertNonNull());
             restarting.cancel();
+        }
+    }
+
+    @Test
+    public void testSuspend() throws Exception {
+        try (MockRestartingContext ctx = new MockRestartingContext()) {
+            Restarting restarting = getRestartingState(ctx);
+            ctx.setExpectedStateChecker((state) -> state == restarting);
+            ctx.setExpectFinished(
+                    archivedExecutionGraph ->
+                            assertThat(archivedExecutionGraph.getState(), is(JobStatus.SUSPENDED)));
+            restarting.suspend(new RuntimeException("suspend"));
+        }
+    }
+
+    @Test
+    public void testGlobalFailure() throws Exception {
+        try (MockRestartingContext ctx = new MockRestartingContext()) {
+            Restarting restarting = getRestartingState(ctx);
+            restarting.handleGlobalFailure(new RuntimeException());
+            // no state transition expected
         }
     }
 

@@ -50,6 +50,7 @@ public class StateValidator<T> {
         Preconditions.checkNotNull(consumer, "no consumer set. Unexpected state transition?");
         trap = () -> {};
         consumer.accept(input);
+        consumer = null;
     }
 
     public void close() {

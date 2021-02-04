@@ -51,7 +51,6 @@ import org.apache.flink.runtime.scheduler.KvStateHandler;
 import org.apache.flink.runtime.scheduler.OperatorCoordinatorHandler;
 import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.util.FlinkException;
-import org.apache.flink.util.Preconditions;
 
 import org.slf4j.Logger;
 
@@ -96,13 +95,8 @@ abstract class StateWithExecutionGraph implements State {
                         .getTerminationFuture()
                         .thenAcceptAsync(
                                 jobStatus -> {
-                                    try {
-                                        operatorCoordinatorHandler.disposeAllOperatorCoordinators();
-                                        context.runIfState(this, () -> onTerminalState(jobStatus));
-                                    } catch (Throwable t) {
-                                        logger.info("Caught exception", t);
-                                        throw t;
-                                    }
+                                    operatorCoordinatorHandler.disposeAllOperatorCoordinators();
+                                    context.runIfState(this, () -> onTerminalState(jobStatus));
                                 },
                                 context.getMainThreadExecutor()));
     }
@@ -131,9 +125,11 @@ abstract class StateWithExecutionGraph implements State {
 
     @Override
     public void suspend(Throwable cause) {
-        executionGraph.suspend(cause);
-        Preconditions.checkState(executionGraph.getState() == JobStatus.SUSPENDED);
-        context.goToFinished(ArchivedExecutionGraph.createFrom(executionGraph));
+        executionGraph.suspend(
+                cause); // suspend will call the onTerminalState(JobStatus) callback, triggering a
+                        // state transition.
+        // Preconditions.checkState(executionGraph.getState() == JobStatus.SUSPENDED);
+        // context.goToFinished(ArchivedExecutionGraph.createFrom(executionGraph));
     }
 
     @Override
