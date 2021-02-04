@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  * Utility for state test classes (e.g. {@link ExecutingTest}) to track if correct input has been
  * presented.
  *
- * @param <T>
+ * @param <T> Type of the state transition arguments.
  */
 public class StateValidator<T> {
 

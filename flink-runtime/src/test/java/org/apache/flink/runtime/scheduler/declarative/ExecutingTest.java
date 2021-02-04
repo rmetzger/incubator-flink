@@ -22,6 +22,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.client.JobExecutionException;
+import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionVertexDeploymentTest;
@@ -41,8 +42,6 @@ import javax.annotation.Nullable;
 
 import java.time.Duration;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -99,7 +98,8 @@ public class ExecutingTest extends TestLogger {
 
     @Test
     public void testTransitionToFinishedOnTerminalState() throws Exception {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ManuallyTriggeredScheduledExecutorService executor =
+                new ManuallyTriggeredScheduledExecutorService();
         try (MockExecutingContext ctx = new MockExecutingContext()) {
             ctx.setExpectFinished(
                     archivedExecutionGraph ->
@@ -111,6 +111,8 @@ public class ExecutingTest extends TestLogger {
             // transition EG into terminal state, which will notify the Executing state about the
             // failure (async via the supplied executor)
             exec.getExecutionGraph().failJob(new RuntimeException("test failure"));
+            executor.triggerAll();
+        } finally {
             executor.shutdown();
             executor.awaitTermination(10, TimeUnit.SECONDS);
         }

@@ -59,7 +59,7 @@ class Created implements State {
 
     @Override
     public void handleGlobalFailure(Throwable cause) {
-        context.goToFinished(context.getArchivedExecutionGraph(JobStatus.INITIALIZING, cause));
+        context.goToFinished(context.getArchivedExecutionGraph(JobStatus.FAILED, cause));
     }
 
     @Override
