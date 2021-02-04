@@ -31,7 +31,10 @@ class MockStateWithExecutionGraphContext implements StateWithExecutionGraph.Cont
     private final StateValidator<ArchivedExecutionGraph> finishedStateValidator =
             new StateValidator<>("finished");
 
-    private Function<State, Boolean> expectedStateChecker;
+    Function<State, Boolean> expectedStateChecker =
+            (ign) -> {
+                throw new UnsupportedOperationException("Remember to set me");
+            };
 
     private Supplier<Executor> getMainThreadExecutor = ForkJoinPool::commonPool;
 

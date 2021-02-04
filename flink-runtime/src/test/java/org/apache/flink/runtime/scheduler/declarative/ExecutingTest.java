@@ -358,7 +358,7 @@ public class ExecutingTest extends TestLogger {
         }
     }
 
-    private static class CancellingArguments {
+    static class CancellingArguments {
         private final ExecutionGraph executionGraph;
         private final ExecutionGraphHandler executionGraphHandler;
         private final OperatorCoordinatorHandler operatorCoordinatorHandle;
@@ -385,7 +385,7 @@ public class ExecutingTest extends TestLogger {
         }
     }
 
-    private static class RestartingArguments extends CancellingArguments {
+    static class RestartingArguments extends CancellingArguments {
         private final Duration backoffTime;
 
         public RestartingArguments(
@@ -402,7 +402,7 @@ public class ExecutingTest extends TestLogger {
         }
     }
 
-    private static class FailingArguments extends CancellingArguments {
+    static class FailingArguments extends CancellingArguments {
         private final Throwable failureCause;
 
         public FailingArguments(

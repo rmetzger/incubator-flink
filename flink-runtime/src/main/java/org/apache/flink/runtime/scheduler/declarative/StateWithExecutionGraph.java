@@ -91,14 +91,20 @@ abstract class StateWithExecutionGraph implements State {
         this.kvStateHandler = new KvStateHandler(executionGraph);
         this.logger = logger;
 
-        executionGraph
-                .getTerminationFuture()
-                .thenAcceptAsync(
-                        jobStatus -> {
-                            operatorCoordinatorHandler.disposeAllOperatorCoordinators();
-                            context.runIfState(this, () -> onTerminalState(jobStatus));
-                        },
-                        context.getMainThreadExecutor());
+        FutureUtils.assertNoException(
+                executionGraph
+                        .getTerminationFuture()
+                        .thenAcceptAsync(
+                                jobStatus -> {
+                                    try {
+                                        operatorCoordinatorHandler.disposeAllOperatorCoordinators();
+                                        context.runIfState(this, () -> onTerminalState(jobStatus));
+                                    } catch (Throwable t) {
+                                        logger.info("Caught exception", t);
+                                        throw t;
+                                    }
+                                },
+                                context.getMainThreadExecutor()));
     }
 
     ExecutionGraph getExecutionGraph() {
