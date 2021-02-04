@@ -59,8 +59,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -269,7 +267,8 @@ public class ExecutingTest extends TestLogger {
                 ClassLoader.getSystemClassLoader());
     }
 
-    private static class MockExecutingContext implements Executing.Context, AutoCloseable {
+    private static class MockExecutingContext extends MockStateWithExecutionGraphContext
+            implements Executing.Context {
 
         private final StateValidator<FailingArguments> failingStateValidator =
                 new StateValidator<>("failing");
@@ -277,13 +276,9 @@ public class ExecutingTest extends TestLogger {
                 new StateValidator<>("restarting");
         private final StateValidator<CancellingArguments> cancellingStateValidator =
                 new StateValidator<>("cancelling");
-        private final StateValidator<ArchivedExecutionGraph> finishedStateValidator =
-                new StateValidator<>("finished");
 
         private Function<Throwable, Executing.FailureResult> howToHandleFailure;
         private Supplier<Boolean> canScaleUp;
-        private Supplier<Executor> getMainThreadExecutor = ForkJoinPool::commonPool;
-        private Function<State, Boolean> expectedStateChecker;
 
         public void setExpectFailing(Consumer<FailingArguments> asserter) {
             failingStateValidator.activate(asserter);
@@ -297,24 +292,12 @@ public class ExecutingTest extends TestLogger {
             cancellingStateValidator.activate(asserter);
         }
 
-        public void setExpectFinished(Consumer<ArchivedExecutionGraph> asserter) {
-            finishedStateValidator.activate(asserter);
-        }
-
         public void setHowToHandleFailure(Function<Throwable, Executing.FailureResult> function) {
             this.howToHandleFailure = function;
         }
 
         public void setCanScaleUp(Supplier<Boolean> supplier) {
             this.canScaleUp = supplier;
-        }
-
-        public void setGetMainThreadExecutor(Supplier<Executor> supplier) {
-            this.getMainThreadExecutor = supplier;
-        }
-
-        public void setExpectedStateChecker(Function<State, Boolean> function) {
-            this.expectedStateChecker = function;
         }
 
         // --------- Interface Implementations ------- //
@@ -368,33 +351,10 @@ public class ExecutingTest extends TestLogger {
         }
 
         @Override
-        public void runIfState(State expectedState, Runnable action) {
-            if (expectedStateChecker.apply(expectedState)) {
-                action.run();
-            }
-        }
-
-        @Override
-        public boolean isState(State expectedState) {
-            throw new UnsupportedOperationException("Not covered by this test at the moment");
-        }
-
-        @Override
-        public Executor getMainThreadExecutor() {
-            return getMainThreadExecutor.get();
-        }
-
-        @Override
-        public void goToFinished(ArchivedExecutionGraph archivedExecutionGraph) {
-            finishedStateValidator.validateInput(archivedExecutionGraph);
-        }
-
-        @Override
         public void close() throws Exception {
             failingStateValidator.close();
             restartingStateValidator.close();
             cancellingStateValidator.close();
-            finishedStateValidator.close();
         }
     }
 
