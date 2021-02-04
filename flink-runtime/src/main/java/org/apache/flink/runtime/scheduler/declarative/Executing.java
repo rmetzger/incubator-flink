@@ -77,15 +77,15 @@ class Executing extends StateWithExecutionGraph
     @Override
     public void notifyTaskFailure(
             ExecutionAttemptID attemptId,
-            Throwable t,
+            Throwable cause,
             boolean cancelTask,
             boolean releasePartitions) {
-        handleAnyFailure(t);
+        handleAnyFailure(cause);
     }
 
     @Override
-    public void notifyGlobalFailure(Throwable t) {
-        handleAnyFailure(t);
+    public void notifyGlobalFailure(Throwable cause) {
+        handleAnyFailure(cause);
     }
 
     private void handleAnyFailure(Throwable cause) {

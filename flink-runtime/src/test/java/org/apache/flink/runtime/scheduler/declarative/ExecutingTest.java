@@ -18,29 +18,47 @@
 
 package org.apache.flink.runtime.scheduler.declarative;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.JobException;
+import org.apache.flink.runtime.akka.AkkaUtils;
+import org.apache.flink.runtime.blob.VoidBlobWriter;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.concurrent.ManuallyTriggeredScheduledExecutorService;
+import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
+import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionVertexDeploymentTest;
+import org.apache.flink.runtime.executiongraph.JobInformation;
+import org.apache.flink.runtime.executiongraph.NoOpExecutionDeploymentListener;
+import org.apache.flink.runtime.executiongraph.TaskExecutionStateTransition;
 import org.apache.flink.runtime.executiongraph.TestingExecutionGraphBuilder;
+import org.apache.flink.runtime.executiongraph.failover.flip1.partitionrelease.PartitionReleaseStrategyFactoryLoader;
+import org.apache.flink.runtime.io.network.partition.NoOpJobMasterPartitionTracker;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
+import org.apache.flink.runtime.jobgraph.ScheduleMode;
 import org.apache.flink.runtime.jobmanager.slots.TaskManagerGateway;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.TestingLogicalSlotBuilder;
 import org.apache.flink.runtime.scheduler.ExecutionGraphHandler;
 import org.apache.flink.runtime.scheduler.OperatorCoordinatorHandler;
+import org.apache.flink.runtime.shuffle.NettyShuffleMaster;
+import org.apache.flink.runtime.taskmanager.TaskExecutionState;
+import org.apache.flink.runtime.testingUtils.TestingUtils;
+import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.TestLogger;
 
 import org.junit.Test;
 
 import javax.annotation.Nullable;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -165,7 +183,7 @@ public class ExecutingTest extends TestLogger {
 
             // create ExecutionGraph with one ExecutionVertex, which fails during deployment.
             JobGraph jobGraph = new JobGraph(new JobVertex("test"));
-            Executing exec = getExecutingState(ctx, jobGraph);
+            Executing exec = getExecutingState(ctx, null, jobGraph);
             TestingLogicalSlotBuilder slotBuilder = new TestingLogicalSlotBuilder();
             TaskManagerGateway taskManagerGateway =
                     new ExecutionVertexDeploymentTest.SubmitFailingSimpleAckingTaskManagerGateway();
@@ -177,6 +195,30 @@ public class ExecutingTest extends TestLogger {
 
             // trigger deployment
             exec.onEnter();
+        }
+    }
+
+    @Test
+    public void testFailureReportedViaUpdateTaskExecutionState() throws Exception {
+        try (MockExecutingContext ctx = new MockExecutingContext()) {
+            ctx.setCanScaleUp(() -> false);
+            ctx.setHowToHandleFailure(Executing.FailureResult::canNotRestart);
+            ctx.setExpectFailing(assertNonNull());
+
+            ExecutionGraph returnsFailedStateExecutionGraph =
+                    new ReturnsFailedStateExecutionGraph();
+            Executing exec = getExecutingState(ctx, returnsFailedStateExecutionGraph, null);
+            exec.onEnter(); // deploy
+
+            TaskExecutionStateTransition stateTransition =
+                    new TaskExecutionStateTransition(
+                            new TaskExecutionState(
+                                    exec.getExecutionGraph().getJobID(),
+                                    new ExecutionAttemptID(),
+                                    ExecutionState.FAILED,
+                                    new RuntimeException()));
+
+            exec.updateTaskExecutionState(stateTransition);
         }
     }
 
@@ -194,12 +236,18 @@ public class ExecutingTest extends TestLogger {
 
     public Executing getExecutingState(MockExecutingContext ctx)
             throws JobException, JobExecutionException {
-        return getExecutingState(ctx, null);
+        return getExecutingState(ctx, null, null);
     }
 
-    public Executing getExecutingState(MockExecutingContext ctx, @Nullable JobGraph jobGraph)
+    public Executing getExecutingState(
+            MockExecutingContext ctx,
+            @Nullable ExecutionGraph alternativeEG,
+            @Nullable JobGraph jobGraph)
             throws JobException, JobExecutionException {
-        ExecutionGraph executionGraph = TestingExecutionGraphBuilder.newBuilder().build();
+        ExecutionGraph executionGraph = alternativeEG;
+        if (alternativeEG == null) {
+            executionGraph = TestingExecutionGraphBuilder.newBuilder().build();
+        }
         if (jobGraph != null) {
             executionGraph.attachJobGraph(jobGraph.getVerticesSortedTopologicallyFromSources());
         }
@@ -407,6 +455,38 @@ public class ExecutingTest extends TestLogger {
 
         public Throwable getFailureCause() {
             return failureCause;
+        }
+    }
+
+    private class ReturnsFailedStateExecutionGraph extends ExecutionGraph {
+        public ReturnsFailedStateExecutionGraph() throws IOException {
+            super(
+                    new JobInformation(
+                            new JobID(),
+                            "Test Job",
+                            new SerializedValue<>(new ExecutionConfig()),
+                            new Configuration(),
+                            Collections.emptyList(),
+                            Collections.emptyList()),
+                    TestingUtils.defaultExecutor(),
+                    TestingUtils.defaultExecutor(),
+                    AkkaUtils.getDefaultTimeout(),
+                    1,
+                    ExecutionGraph.class.getClassLoader(),
+                    VoidBlobWriter.getInstance(),
+                    PartitionReleaseStrategyFactoryLoader.loadPartitionReleaseStrategyFactory(
+                            new Configuration()),
+                    NettyShuffleMaster.INSTANCE,
+                    NoOpJobMasterPartitionTracker.INSTANCE,
+                    ScheduleMode.EAGER,
+                    NoOpExecutionDeploymentListener.get(),
+                    (execution, newState) -> {},
+                    0L);
+        }
+
+        @Override
+        public boolean updateState(TaskExecutionStateTransition state) {
+            return true;
         }
     }
 }
