@@ -65,7 +65,6 @@ public class ReactiveModeITCase extends TestLogger {
     @Test
     public void testScaleUpAndDownWithMaxParallelism() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(1); // we set parallelism to ensure it's overwritten
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(Integer.MAX_VALUE, 0L));
         final DataStream<String> input = env.addSource(new ParallelismTrackingSource());
         // we set maxParallelism = 1 and assert it never exceeds it
@@ -101,7 +100,7 @@ public class ReactiveModeITCase extends TestLogger {
     private static class ParallelismTrackingSource implements ParallelSourceFunction<String> {
         private volatile boolean running = true;
 
-        private static CountDownLatch instances;
+        private static volatile CountDownLatch instances;
 
         public static void expectInstances(int count) {
             instances = new CountDownLatch(count);
@@ -115,7 +114,9 @@ public class ReactiveModeITCase extends TestLogger {
         public void run(SourceContext<String> ctx) throws Exception {
             instances.countDown();
             while (running) {
-                ctx.collect("test");
+                synchronized (ctx.getCheckpointLock()) {
+                    ctx.collect("test");
+                }
                 Thread.sleep(100);
             }
         }
@@ -127,7 +128,7 @@ public class ReactiveModeITCase extends TestLogger {
     }
 
     private static class ParallelismTrackingSink<T> extends RichSinkFunction<T> {
-        private static CountDownLatch instances;
+        private static volatile CountDownLatch instances;
 
         public static void expectInstances(int count) {
             instances = new CountDownLatch(count);

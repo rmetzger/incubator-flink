@@ -459,6 +459,7 @@ public class JobMasterTest extends TestLogger {
                         .withSlotPoolServiceSchedulerFactory(
                                 DefaultSlotPoolServiceSchedulerFactory.create(
                                         new TestingSlotPoolFactory(hasReceivedSlotOffers),
+                                        JobManagerOptions.SchedulerType.Ng,
                                         new DefaultSchedulerFactory()))
                         .createJobMaster();
 
@@ -1423,6 +1424,7 @@ public class JobMasterTest extends TestLogger {
                         .withSlotPoolServiceSchedulerFactory(
                                 DefaultSlotPoolServiceSchedulerFactory.create(
                                         TestingSlotPoolServiceBuilder.newBuilder(),
+                                        JobManagerOptions.SchedulerType.Ng,
                                         new TestingSchedulerNGFactory(testingSchedulerNG)))
                         .createJobMaster();
 
