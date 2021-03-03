@@ -30,8 +30,8 @@ import org.apache.flink.runtime.scheduler.ExecutionGraphHandler;
 import org.apache.flink.runtime.scheduler.OperatorCoordinatorHandler;
 import org.apache.flink.runtime.scheduler.SchedulerBase;
 import org.apache.flink.runtime.scheduler.SchedulerUtils;
-import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointTerminationHandlerImpl;
-import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointTerminationManager;
+import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointOperationHandlerImpl;
+import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointOperationManager;
 
 import org.slf4j.Logger;
 
@@ -45,7 +45,7 @@ import java.util.concurrent.CompletableFuture;
  * When a "stop with savepoint" operation (wait until savepoint has been created, then cancel job)
  * is triggered on the {@link Executing} state, we transition into this state. This state is
  * delegating the tracking of the stop with savepoint operation to the {@link
- * StopWithSavepointTerminationManager}, which is shared with {@link SchedulerBase}.
+ * StopWithSavepointOperationManager}, which is shared with {@link SchedulerBase}.
  */
 class StopWithSavepoint extends StateWithExecutionGraph implements StopWithSavepointOperations {
 
@@ -71,14 +71,16 @@ class StopWithSavepoint extends StateWithExecutionGraph implements StopWithSavep
         final CompletableFuture<Collection<ExecutionState>> executionTerminationsFuture =
                 SchedulerUtils.getCombinedExecutionTerminationFuture(executionGraph);
 
-        final StopWithSavepointTerminationManager stopWithSavepointTerminationManager =
-                new StopWithSavepointTerminationManager(
-                        new StopWithSavepointTerminationHandlerImpl(
+        final StopWithSavepointOperationManager stopWithSavepointOperationManager =
+                new StopWithSavepointOperationManager(
+                        this,
+                        new StopWithSavepointOperationHandlerImpl(
                                 executionGraph.getJobID(), context, this, logger));
 
         this.operationCompletionFuture =
-                stopWithSavepointTerminationManager.trackStopWithSavepoint(
-                        savepointFuture,
+                stopWithSavepointOperationManager.trackStopWithSavepoint(
+                        terminate,
+                        targetDirectory,
                         executionTerminationsFuture,
                         context.getMainThreadExecutor());
     }

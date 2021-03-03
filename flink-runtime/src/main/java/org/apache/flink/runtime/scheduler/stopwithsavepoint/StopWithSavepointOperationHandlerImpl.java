@@ -48,10 +48,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * <p>The implementation expects the savepoint creation being completed before the executions
  * terminate.
  *
- * @see StopWithSavepointTerminationManager
+ * @see StopWithSavepointOperationManager
  */
-public class StopWithSavepointTerminationHandlerImpl
-        implements StopWithSavepointTerminationHandler {
+public class StopWithSavepointOperationHandlerImpl implements StopWithSavepointTerminationHandler {
 
     private final Logger log;
 
@@ -64,12 +63,12 @@ public class StopWithSavepointTerminationHandlerImpl
     private State state = new WaitingForSavepoint();
 
     public <S extends GlobalFailureHandler & StopWithSavepointOperations>
-            StopWithSavepointTerminationHandlerImpl(
+            StopWithSavepointOperationHandlerImpl(
                     JobID jobId, S schedulerWithCheckpointing, Logger log) {
         this(jobId, schedulerWithCheckpointing, schedulerWithCheckpointing, log);
     }
 
-    public StopWithSavepointTerminationHandlerImpl(
+    public StopWithSavepointOperationHandlerImpl(
             JobID jobId,
             GlobalFailureHandler globalFailureHandler,
             StopWithSavepointOperations stopWithSavepointOperations,

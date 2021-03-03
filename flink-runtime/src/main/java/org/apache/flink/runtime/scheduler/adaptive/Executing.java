@@ -29,7 +29,7 @@ import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.executiongraph.TaskExecutionStateTransition;
 import org.apache.flink.runtime.scheduler.ExecutionGraphHandler;
 import org.apache.flink.runtime.scheduler.OperatorCoordinatorHandler;
-import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointTerminationManager;
+import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointOperationManager;
 import org.apache.flink.util.Preconditions;
 
 import org.slf4j.Logger;
@@ -152,7 +152,7 @@ class Executing extends StateWithExecutionGraph implements ResourceConsumer {
         final ExecutionGraph executionGraph = getExecutionGraph();
 
         Optional<IllegalStateException> argumentCheckException =
-                StopWithSavepointTerminationManager.checkStopWithSavepointPreconditions(
+                StopWithSavepointOperationManager.checkStopWithSavepointPreconditions(
                         executionGraph.getCheckpointCoordinator(),
                         targetDirectory,
                         executionGraph.getJobID(),
