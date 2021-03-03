@@ -19,14 +19,11 @@
 package org.apache.flink.runtime.scheduler.adaptive;
 
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.time.Time;
-import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
-import org.apache.flink.configuration.SchedulerExecutionMode;
 import org.apache.flink.queryablestate.KvStateID;
 import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot;
@@ -249,27 +246,6 @@ public class AdaptiveScheduler
                 new SlotSharingSlotAllocator(
                         declarativeSlotPool::reserveFreeSlot,
                         declarativeSlotPool::freeReservedSlot);
-
-        if (configuration.get(JobManagerOptions.SCHEDULER_MODE)
-                == SchedulerExecutionMode.REACTIVE) {
-            LOG.info("Modifying job parallelism for running in reactive mode.");
-            for (JobVertex vertex : jobGraph.getVertices()) {
-                if (vertex.getMaxParallelism() == JobVertex.MAX_PARALLELISM_DEFAULT) {
-                    vertex.setParallelism(Transformation.UPPER_BOUND_MAX_PARALLELISM);
-                    vertex.setMaxParallelism(Transformation.UPPER_BOUND_MAX_PARALLELISM);
-                } else {
-                    vertex.setParallelism(vertex.getMaxParallelism());
-                }
-            }
-        } else {
-            // non-reactive mode (test execution with adaptive scheduler): ensure parallelism is set
-            // for all vertices.
-            for (JobVertex vertex : jobGraph.getVertices()) {
-                if (vertex.getParallelism() == ExecutionConfig.PARALLELISM_DEFAULT) {
-                    vertex.setParallelism(1);
-                }
-            }
-        }
 
         declarativeSlotPool.registerNewSlotsListener(this::newResourcesAvailable);
 

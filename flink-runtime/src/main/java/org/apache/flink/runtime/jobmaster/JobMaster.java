@@ -22,8 +22,10 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.JobManagerOptions;
+import org.apache.flink.configuration.SchedulerExecutionMode;
 import org.apache.flink.queryablestate.KvStateID;
 import org.apache.flink.runtime.accumulators.AccumulatorSnapshot;
 import org.apache.flink.runtime.blob.BlobWriter;
@@ -46,6 +48,7 @@ import org.apache.flink.runtime.io.network.partition.PartitionTrackerFactory;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobmanager.OnCompletionActions;
@@ -88,6 +91,7 @@ import org.apache.flink.runtime.taskmanager.UnresolvedTaskManagerLocation;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.InstantiationUtil;
+import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
 
 import org.slf4j.Logger;
@@ -286,6 +290,23 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
         final JobID jid = jobGraph.getJobID();
 
         log.info("Initializing job {} ({}).", jobName, jid);
+
+        if (jobMasterConfiguration.getConfiguration().get(JobManagerOptions.SCHEDULER_MODE)
+                == SchedulerExecutionMode.REACTIVE) {
+            Preconditions.checkState(
+                    slotPoolServiceSchedulerFactory.getSchedulerType()
+                            == JobManagerOptions.SchedulerType.Adaptive,
+                    "Expecting Adaptive Scheduler for reactive mode");
+            log.info("Modifying job parallelism for running in reactive mode.");
+            for (JobVertex vertex : jobGraph.getVertices()) {
+                if (vertex.getMaxParallelism() == JobVertex.MAX_PARALLELISM_DEFAULT) {
+                    vertex.setParallelism(Transformation.UPPER_BOUND_MAX_PARALLELISM);
+                    vertex.setMaxParallelism(Transformation.UPPER_BOUND_MAX_PARALLELISM);
+                } else {
+                    vertex.setParallelism(vertex.getMaxParallelism());
+                }
+            }
+        }
 
         resourceManagerLeaderRetriever =
                 highAvailabilityServices.getResourceManagerLeaderRetriever();
