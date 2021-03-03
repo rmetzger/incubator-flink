@@ -18,12 +18,18 @@
 
 package org.apache.flink.runtime.scheduler.stopwithsavepoint;
 
+import org.apache.flink.api.common.JobID;
+import org.apache.flink.configuration.CheckpointingOptions;
+import org.apache.flink.runtime.checkpoint.CheckpointCoordinator;
 import org.apache.flink.runtime.checkpoint.CompletedCheckpoint;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.util.Preconditions;
 
+import org.slf4j.Logger;
+
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -78,5 +84,33 @@ public class StopWithSavepointTerminationManager {
                                                         mainThreadExecutor))));
 
         return stopWithSavepointTerminationHandler.getSavepointPath();
+    }
+
+    public static Optional<IllegalStateException> checkStopWithSavepointPreconditions(
+            CheckpointCoordinator checkpointCoordinator,
+            String targetDirectory,
+            JobID jobId,
+            Logger logger) {
+        if (checkpointCoordinator == null) {
+            return Optional.of(
+                    new IllegalStateException(
+                            String.format("Job %s is not a streaming job.", jobId)));
+        }
+
+        if (targetDirectory == null
+                && !checkpointCoordinator.getCheckpointStorage().hasDefaultSavepointLocation()) {
+            logger.info(
+                    "Trying to cancel job {} with savepoint, but no savepoint directory configured.",
+                    jobId);
+
+            return Optional.of(
+                    new IllegalStateException(
+                            "No savepoint directory configured. You can either specify a directory "
+                                    + "while cancelling via -s :targetDirectory or configure a cluster-wide "
+                                    + "default via key '"
+                                    + CheckpointingOptions.SAVEPOINT_DIRECTORY.key()
+                                    + "'."));
+        }
+        return Optional.empty();
     }
 }

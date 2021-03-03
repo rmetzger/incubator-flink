@@ -32,7 +32,6 @@ import org.apache.flink.runtime.scheduler.SchedulerBase;
 import org.apache.flink.runtime.scheduler.SchedulerUtils;
 import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointTerminationHandlerImpl;
 import org.apache.flink.runtime.scheduler.stopwithsavepoint.StopWithSavepointTerminationManager;
-import org.apache.flink.util.FlinkException;
 
 import org.slf4j.Logger;
 
@@ -46,12 +45,9 @@ import java.util.concurrent.CompletableFuture;
  * When a "stop with savepoint" operation (wait until savepoint has been created, then cancel job)
  * is triggered on the {@link Executing} state, we transition into this state. This state is
  * delegating the tracking of the stop with savepoint operation to the {@link
- * StopWithSavepointTerminationManager}, which is shared with {@link SchedulerBase}. What remains
- * for this state is reacting to signals from the termination manager, and tracking the
- * "operationCompletionFuture" (notify the user if we got cancelled, suspended etc. in the meantime)
+ * StopWithSavepointTerminationManager}, which is shared with {@link SchedulerBase}.
  */
-public class StopWithSavepoint extends StateWithExecutionGraph
-        implements StopWithSavepointOperations {
+class StopWithSavepoint extends StateWithExecutionGraph implements StopWithSavepointOperations {
 
     private final CompletableFuture<String> operationCompletionFuture;
     private final Context context;
@@ -74,14 +70,6 @@ public class StopWithSavepoint extends StateWithExecutionGraph
         // we track the job termination via all execution termination futures (FLINK-21030).
         final CompletableFuture<Collection<ExecutionState>> executionTerminationsFuture =
                 SchedulerUtils.getCombinedExecutionTerminationFuture(executionGraph);
-
-        // do not trigger checkpoints while creating the final savepoint
-        stopCheckpointScheduler();
-
-        // trigger savepoint. This operation will also terminate/suspend the job once the savepoint
-        // has been created.
-        final CompletableFuture<CompletedCheckpoint> savepointFuture =
-                triggerSynchronousSavepoint(terminate, targetDirectory);
 
         final StopWithSavepointTerminationManager stopWithSavepointTerminationManager =
                 new StopWithSavepointTerminationManager(
@@ -134,12 +122,9 @@ public class StopWithSavepoint extends StateWithExecutionGraph
     }
 
     private void handleAnyFailure(Throwable cause) {
-        operationCompletionFuture.completeExceptionally(
-                new FlinkException("Failure while stopping with savepoint", cause));
         final Executing.FailureResult failureResult = context.howToHandleFailure(cause);
 
         if (failureResult.canRestart()) {
-            startCheckpointScheduler();
             context.goToRestarting(
                     getExecutionGraph(),
                     getExecutionGraphHandler(),
@@ -196,7 +181,7 @@ public class StopWithSavepoint extends StateWithExecutionGraph
                 .triggerSynchronousSavepoint(terminate, targetLocation);
     }
 
-    interface Context extends StateWithExecutionGraph.Context, SchedulerFailureHandler {
+    interface Context extends StateWithExecutionGraph.Context, GlobalFailureHandler {
         /**
          * Asks how to handle the failure.
          *

@@ -441,10 +441,11 @@ public class JobMaster extends PermanentlyFencedRpcEndpoint<JobMasterId>
                                         + " was not found."));
             }
         } catch (Throwable throwable) {
-            // if the taskExecutionState contains an error, it does not make sense to let the RPC
-            // system notify the sender about the failure, because the sender is failed already and
-            // will ignore this error.
-            if (taskExecutionState.getError(userCodeLoader) != null) {
+            // if the taskExecutionState contains an error or if the sender is in a terminal
+            // state, it does not make sense to let the RPC system notify the sender about the
+            // failure, because the sender will ignore this error.
+            if (taskExecutionState.getError(userCodeLoader) != null
+                    || taskExecutionState.getExecutionState().isTerminal()) {
                 fatalErrorHandler.onFatalError(
                         new RuntimeException(
                                 "Unexpected error while updating task execution state", throwable));

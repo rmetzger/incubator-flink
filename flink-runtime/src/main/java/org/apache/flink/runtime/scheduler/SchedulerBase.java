@@ -946,25 +946,11 @@ public abstract class SchedulerBase implements SchedulerNG, StopWithSavepointOpe
         final CheckpointCoordinator checkpointCoordinator =
                 executionGraph.getCheckpointCoordinator();
 
-        if (checkpointCoordinator == null) {
-            return FutureUtils.completedExceptionally(
-                    new IllegalStateException(
-                            String.format("Job %s is not a streaming job.", jobGraph.getJobID())));
-        }
-
-        if (targetDirectory == null
-                && !checkpointCoordinator.getCheckpointStorage().hasDefaultSavepointLocation()) {
-            log.info(
-                    "Trying to cancel job {} with savepoint, but no savepoint directory configured.",
-                    jobGraph.getJobID());
-
-            return FutureUtils.completedExceptionally(
-                    new IllegalStateException(
-                            "No savepoint directory configured. You can either specify a directory "
-                                    + "while cancelling via -s :targetDirectory or configure a cluster-wide "
-                                    + "default via key '"
-                                    + CheckpointingOptions.SAVEPOINT_DIRECTORY.key()
-                                    + "'."));
+        Optional<IllegalStateException> argumentCheckException =
+                StopWithSavepointTerminationManager.checkStopWithSavepointPreconditions(
+                        checkpointCoordinator, targetDirectory, executionGraph.getJobID(), log);
+        if (argumentCheckException.isPresent()) {
+            return FutureUtils.completedExceptionally(argumentCheckException.get());
         }
 
         log.info("Triggering stop-with-savepoint for job {}.", jobGraph.getJobID());

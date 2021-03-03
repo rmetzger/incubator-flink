@@ -915,7 +915,7 @@ public class AdaptiveScheduler
     }
 
     @Override
-    public ComponentMainThreadExecutor getMainThreadExecutor() {
+    public Executor getMainThreadExecutor() {
         return componentMainThreadExecutor;
     }
 

@@ -471,10 +471,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 
         checkpointCoordinator.setCheckpointStatsTracker(checkpointStatsTracker);
 
-        // interval of max long value indicates disable periodic checkpoint,
-        // the CheckpointActivatorDeactivator should be created only if the interval is not max
-        // value
-        if (chkConfig.getCheckpointInterval() != Long.MAX_VALUE) {
+        if (checkpointCoordinator.isPeriodicCheckpointingConfigured()) {
             // the periodic checkpoint scheduler is activated and deactivated as a result of
             // job status changes (running -> on, all other states -> off)
             registerJobStatusListener(checkpointCoordinator.createActivatorDeactivator());
