@@ -148,6 +148,12 @@ public class ClusterOptions {
     }
 
     public static boolean isAdaptiveSchedulerEnabled(Configuration configuration) {
+        if (configuration.contains(JobManagerOptions.SCHEDULER_MODE)
+                && configuration.get(JobManagerOptions.SCHEDULER_MODE)
+                        == SchedulerExecutionMode.REACTIVE) {
+            return true;
+        }
+
         if (configuration.contains(JobManagerOptions.SCHEDULER)) {
             return configuration.get(JobManagerOptions.SCHEDULER)
                     == JobManagerOptions.SchedulerType.Adaptive;
