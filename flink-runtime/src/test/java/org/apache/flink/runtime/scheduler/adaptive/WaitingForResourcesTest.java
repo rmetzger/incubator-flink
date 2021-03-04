@@ -244,7 +244,7 @@ public class WaitingForResourcesTest extends TestLogger {
         }
 
         @Override
-        public boolean hasEnoughResources(ResourceCounter desiredResources) {
+        public boolean hasEnoughResourcesToExecute(ResourceCounter desiredResources) {
             return hasEnoughResourcesSupplier.get();
         }
 

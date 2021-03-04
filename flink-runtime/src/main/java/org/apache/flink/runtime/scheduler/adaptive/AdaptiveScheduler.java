@@ -40,7 +40,6 @@ import org.apache.flink.runtime.checkpoint.CheckpointsCleaner;
 import org.apache.flink.runtime.checkpoint.CompletedCheckpointStore;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.client.JobExecutionException;
-import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptorFactory;
@@ -72,7 +71,6 @@ import org.apache.flink.runtime.jobmaster.ExecutionDeploymentTracker;
 import org.apache.flink.runtime.jobmaster.ExecutionDeploymentTrackerDeploymentListenerAdapter;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.SerializedInputSplit;
-import org.apache.flink.runtime.jobmaster.SlotInfo;
 import org.apache.flink.runtime.jobmaster.slotpool.DeclarativeSlotPool;
 import org.apache.flink.runtime.jobmaster.slotpool.PhysicalSlot;
 import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
@@ -118,7 +116,6 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -558,8 +555,12 @@ public class AdaptiveScheduler
     // ----------------------------------------------------------------
 
     @Override
-    public boolean hasEnoughResources(ResourceCounter desiredResources) {
-        final Collection<? extends SlotInfo> allSlots =
+    public boolean hasEnoughResourcesToExecute(ResourceCounter desiredResources) {
+        return slotAllocator
+                .determineParallelism(jobInformation, declarativeSlotPool.getAllSlotsInformation())
+                .isPresent();
+
+        /*final Collection<? extends SlotInfo> allSlots =
                 declarativeSlotPool.getFreeSlotsInformation();
         ResourceCounter outstandingResources = desiredResources;
 
@@ -576,7 +577,7 @@ public class AdaptiveScheduler
             }
         }
 
-        return outstandingResources.isEmpty();
+        return outstandingResources.isEmpty(); */
     }
 
     private <T extends VertexParallelism>
