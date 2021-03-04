@@ -58,13 +58,18 @@ public final class DefaultSlotPoolServiceSchedulerFactory
     private static final Logger LOG =
             LoggerFactory.getLogger(DefaultSlotPoolServiceSchedulerFactory.class);
 
+    private final JobManagerOptions.SchedulerType schedulerType;
+
     private final SlotPoolServiceFactory slotPoolServiceFactory;
 
     private final SchedulerNGFactory schedulerNGFactory;
 
     private DefaultSlotPoolServiceSchedulerFactory(
-            SlotPoolServiceFactory slotPoolServiceFactory, SchedulerNGFactory schedulerNGFactory) {
+            SlotPoolServiceFactory slotPoolServiceFactory,
+            JobManagerOptions.SchedulerType schedulerType,
+            SchedulerNGFactory schedulerNGFactory) {
         this.slotPoolServiceFactory = slotPoolServiceFactory;
+        this.schedulerType = schedulerType;
         this.schedulerNGFactory = schedulerNGFactory;
     }
 
@@ -76,6 +81,11 @@ public final class DefaultSlotPoolServiceSchedulerFactory
     @Override
     public SlotPoolService createSlotPoolService(JobID jid) {
         return slotPoolServiceFactory.createSlotPoolService(jid);
+    }
+
+    @Override
+    public JobManagerOptions.SchedulerType getSchedulerType() {
+        return schedulerType;
     }
 
     @Override
@@ -123,9 +133,11 @@ public final class DefaultSlotPoolServiceSchedulerFactory
     }
 
     public static DefaultSlotPoolServiceSchedulerFactory create(
-            SlotPoolServiceFactory slotPoolServiceFactory, SchedulerNGFactory schedulerNGFactory) {
+            SlotPoolServiceFactory slotPoolServiceFactory,
+            JobManagerOptions.SchedulerType schedulerType,
+            SchedulerNGFactory schedulerNGFactory) {
         return new DefaultSlotPoolServiceSchedulerFactory(
-                slotPoolServiceFactory, schedulerNGFactory);
+                slotPoolServiceFactory, schedulerType, schedulerNGFactory);
     }
 
     public static DefaultSlotPoolServiceSchedulerFactory fromConfiguration(
@@ -140,10 +152,9 @@ public final class DefaultSlotPoolServiceSchedulerFactory
         final SlotPoolServiceFactory slotPoolServiceFactory;
         final SchedulerNGFactory schedulerNGFactory;
 
+        JobManagerOptions.SchedulerType schedulerType =
+                ClusterOptions.getSchedulerType(configuration);
         if (ClusterOptions.isDeclarativeResourceManagementEnabled(configuration)) {
-            JobManagerOptions.SchedulerType schedulerType =
-                    ClusterOptions.getSchedulerType(configuration);
-
             if (schedulerType == JobManagerOptions.SchedulerType.Adaptive
                     && jobType == JobType.BATCH) {
                 LOG.info(
@@ -187,6 +198,6 @@ public final class DefaultSlotPoolServiceSchedulerFactory
         }
 
         return new DefaultSlotPoolServiceSchedulerFactory(
-                slotPoolServiceFactory, schedulerNGFactory);
+                slotPoolServiceFactory, schedulerType, schedulerNGFactory);
     }
 }

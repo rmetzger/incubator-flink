@@ -20,6 +20,7 @@ package org.apache.flink.runtime.jobmaster;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.runtime.blob.BlobWriter;
 import org.apache.flink.runtime.checkpoint.CheckpointRecoveryFactory;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutor;
@@ -69,6 +70,7 @@ public class JobMasterSchedulerTest extends TestLogger {
                         .withSlotPoolServiceSchedulerFactory(
                                 DefaultSlotPoolServiceSchedulerFactory.create(
                                         TestingSlotPoolServiceBuilder.newBuilder(),
+                                        JobManagerOptions.SchedulerType.Ng,
                                         schedulerFactory))
                         .withOnCompletionActions(onCompletionActions)
                         .createJobMaster();
