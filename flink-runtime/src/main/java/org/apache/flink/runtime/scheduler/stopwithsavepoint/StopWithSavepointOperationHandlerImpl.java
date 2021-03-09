@@ -117,7 +117,7 @@ public class StopWithSavepointOperationHandlerImpl implements StopWithSavepointO
 
     @Override
     public void abortOperation(Throwable cause) {
-        transitionToState(() -> state.onAbort(cause), String.format("on abort for job %s.", jobId));
+        transitionToState(() -> state.onAbort(cause), String.format("abort for job %s.", jobId));
     }
 
     private void handleSavepointCreationSuccess(CompletedCheckpoint completedCheckpoint) {
@@ -160,10 +160,11 @@ public class StopWithSavepointOperationHandlerImpl implements StopWithSavepointO
             inStateTransition = false;
         }
 
-        log.debug(
+        log.info(
                 String.format(
                         "Stop-with-savepoint transitioned from %s to %s on %s",
-                        oldState.getName(), state.getName(), message));
+                        oldState.getName(), state.getName(), message),
+                new RuntimeException());
     }
 
     /**
